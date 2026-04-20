@@ -1,9 +1,26 @@
 {
   "permissions": {
-    "allow": [
-      "Bash(git --version)",
-      "Bash(npm --version)",
-      "Read(//c/Users/Mechrevo/.claude/**)"
+    "defaultMode": "acceptEdits",
+    "disableBypassPermissionsMode": "disable",
+
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(./config/credentials.json)",
+      "Read(./*.key)",
+      "Read(./*.pem)",
+      "Read(./*.p12)",
+      "Read(./*.jks)",
+      "Read(./id_rsa)",
+      "Read(./id_ed25519)"
+    ],
+
+    "ask": [
+      "Bash(find *)",
+      "Bash(fd *)",
+      "Bash(rg *)",
+      "Bash(tree *)"
     ]
   }
 }
