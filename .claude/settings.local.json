@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git --version)",
+      "Bash(npm --version)",
+      "Read(//c/Users/Mechrevo/.claude/**)"
+    ]
+  }
+}

@@ -40,3 +40,8 @@
   - issue card can be created and re-opened,
   - archive files can be written and read back,
   - schema validation passes for all generated structured outputs.
+
+## Commit policy
+- The agent must create one Git commit after completing each task.
+- Do not start the next task before the current task has been committed.
+- Each commit should correspond to a single clear task outcome and use a concise, descriptive commit message.
