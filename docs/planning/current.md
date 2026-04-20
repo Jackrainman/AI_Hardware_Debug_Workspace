@@ -12,14 +12,14 @@
   - 具备 Electron 外壳（或明确延后决策）。
 
 ## 当前唯一执行中的原子任务
-- 无。W-L3：WSL 运行基线验证已完成，等待下一轮按“下一任务选择流程”重新选择唯一原子任务。
+- 无。D-005：schema 校验库选型决策已落盘（选用 zod，见 `docs/planning/decisions.md` D-005），等待下一轮按“下一任务选择流程”重新选择唯一原子任务。
 
 ## 当前前沿任务窗口（候选，不等于顺推队列）
-1. S1-A2：schema 校验代码骨架（建议位置 `apps/desktop/src/domain/schemas/`）。
-2. S1-A3：本地存储最小读写与问题卡重开验证。
+1. S1-A2：schema 校验代码骨架（按 D-005 使用 `zod`，位置 `apps/desktop/src/domain/schemas/`，每实体一个文件，导出 `*Schema` 与 `z.infer` 派生的类型）。
+2. S1-A3：本地存储最小读写与问题卡重开验证（依赖 S1-A2 的 zod schema 做读盘 `safeParse`）。
 3. S1-A4：Electron 外壳（main / preload / IPC），把 SPA 包装为桌面进程。
 
-> 以上只是候选。完成 W-L3 后，必须先按“下一任务选择流程”重新判断，再选定唯一下一任务。
+> 以上只是候选。完成 D-005 后，必须先按“下一任务选择流程”重新判断，再选定唯一下一任务。
 
 ## 下一任务选择流程（完成当前任务后执行）
 1. 重新读取：`AGENTS.md`、本文件、`docs/planning/handoff.md`、`.agent-state/handoff.json`、`git status`、最近 commit、与任务相关目录/文件。

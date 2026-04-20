@@ -9,12 +9,12 @@
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 需要在下一轮继续保留的关键说明"
   },
-  "timestamp": "2026-04-21T00:30:00+08:00",
+  "timestamp": "2026-04-21T02:00:00+08:00",
   "current_stage": "S1",
-  "current_stage_goal": "桌面壳与本地存储最小闭环：壳已落地、WSL 运行基线已通过，接下来接入 schema 与本地读写。",
+  "current_stage_goal": "桌面壳与本地存储最小闭环：壳已落地、WSL 运行基线已通过、schema 校验选型已决（zod），接下来接入 schema 代码骨架与本地读写。",
   "current_atomic_task": "WAITING_FOR_PLANNING_SELECTION",
   "frontier_tasks": [
-    "S1-A2_schema_validation_scaffold",
+    "S1-A2_schema_validation_scaffold_with_zod",
     "S1-A3_local_storage_min_loop",
     "S1-A4_electron_shell_wrap"
   ],
@@ -28,7 +28,8 @@
     "W-R1_workflow_paradigm_refactor",
     "W-L1_wsl_linux_baseline_hygiene",
     "W-L2_wsl_linux_residual_cleanup",
-    "W-L3_wsl_runtime_baseline_verification"
+    "W-L3_wsl_runtime_baseline_verification",
+    "D-005_schema_validation_library_decision"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -50,12 +51,13 @@
   },
   "risks": [
     "dev server 已验证可返回 HTTP 200 与完整 index.html（localhost:5173），但尚未做浏览器渲染/交互级人工确认",
-    "Electron 外壳尚未接入，桌面端目前只能作为浏览器 SPA 运行",
-    "schema 校验方案尚未在 decisions.md 决定（zod vs 手写 guard），动代码前需先落决策"
+    "Electron 外壳尚未接入，桌面端目前只能作为浏览器 SPA 运行"
   ],
   "notes": [
+    "D-005 完成：schema 运行时校验统一使用 zod（v3.x）；类型通过 z.infer 从 schema 派生；读盘与 AI 产出统一用 safeParse 以拿到结构化错误，对齐 AGENTS §9 的反馈闭环要求",
+    "S1-A2 执行时应放在 apps/desktop/src/domain/schemas/，每实体一个文件，导出 *Schema 与派生类型；package.json 需新增 zod 为 dependency（非 devDependency）",
     "W-L3 完成：WSL 运行基线已通过（node v24.14.0 / npm 11.9.0 / Linux 6.6.87.2-microsoft-standard-WSL2）",
-    "新增根 .gitignore，仅忽略 .codex（Codex CLI 空标记文件，非项目内容）",
+    "根 .gitignore 仅忽略 .codex（Codex CLI 空标记文件，非项目内容）",
     "apps/desktop/package-lock.json 因 npm 11 格式微漂移被同步更新（仅删除若干 'peer': true 字段）",
     "下一轮必须按 current.md 的“下一任务选择流程”重新判断，不得机械顺推",
     "apps/desktop 技术栈：Vite 5 + React 18 + TypeScript 5",

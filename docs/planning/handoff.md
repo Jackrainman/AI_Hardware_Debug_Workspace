@@ -11,19 +11,20 @@
   - W-L1：WSL/Linux 迁移第一批基础卫生（LF 换行策略、产品文档 LF 化、工作区权限规范、本地 filemode 可见）。
   - W-L2：WSL/Linux 迁移第二批残留收敛（Linux 优先字体后备、README 环境口径）。
   - W-L3：WSL 运行基线验证（node v24.14.0 / npm 11.9.0 下 `npm install` + `npm run build` + `npm run dev` 三件套全部通过；`.codex` 归为工具痕迹，纳入根 `.gitignore`；`package-lock.json` 因 npm 11 格式微漂移被同步更新）。
+  - D-005：schema 校验选型决策落盘（选 zod；见 `docs/planning/decisions.md` D-005），解锁 S1-A2/A3 代码落地。
 - 当前唯一执行中的原子任务：无，等待下一轮重新读取仓库并选择。
 - 桌面壳当前形态：SPA（浏览器），三个占位区块（Project / Issue / Archive），显示 `Desktop shell initialized`。
 
 ## planning 与实际一致性检查
-- `current.md` 已按“滚动前沿”规范改写，前沿任务窗口仅保留 3 个候选，明确唯一执行中任务。
-- `.agent-state/handoff.json` 字段已扩展为新范式所需结构（见下）。
+- `current.md` 已按“滚动前沿”规范改写，前沿任务窗口仅保留 3 个候选，明确唯一执行中任务，并在 S1-A2 候选里写入 D-005 决定的 zod 选型。
+- `.agent-state/handoff.json` 字段已扩展为新范式所需结构（见下），且"schema 方案未决"的 risk 已随 D-005 消除。
 - `AGENTS.md` 与 `README.md` 口径一致，均描述“完成后重新选择下一任务”。
 - W-L1 将当前迁移任务沉淀到 planning / handoff / agent-state；提交完成前不得继续第二批。
 - 无“已完成但未提交”的脱节项（以本轮 commit 完成为准）。
 
 ## 依赖是否满足
-- S1-A2（schema 骨架）：前置已就绪（apps/desktop 可构建；目录 `apps/desktop/src/domain/` 可建）。
-- S1-A3（本地存储最小读写）：依赖 S1-A2 的类型定义；当前未就绪。
+- S1-A2（schema 骨架）：前置全部满足——apps/desktop 可构建、目录 `apps/desktop/src/domain/` 可建、D-005 已锁定使用 zod。可作为下一轮的首选执行任务。
+- S1-A3（本地存储最小读写）：依赖 S1-A2 的 zod schema；S1-A2 未完成前不进入。
 - S1-A4（Electron 外壳）：不阻塞 S1-A2/A3，可并行决策；建议推迟到至少一条 IssueCard 能落盘后再启动。
 
 ## 下一轮开始前必须先检查什么
@@ -34,8 +35,7 @@
 5. 如 planning 与实际脱节（例如窗口里的任务已实际完成），**先更新 planning，再开始执行**。
 
 ## 下一步最推荐动作（候选，不是指令）
-- 推荐：S1-A2 schema 校验代码骨架。理由：依赖已满足；它是 S1-A3 存储层的前置；符合 MVP“尽快跑通最小闭环”。
-- 备选：若决定先收敛技术决策，可在 `docs/planning/decisions.md` 补一条 D-005（zod vs 手写 guard），再开始 S1-A2。
+- 推荐：S1-A2 schema 校验代码骨架（使用 zod，位置 `apps/desktop/src/domain/schemas/`）。理由：D-005 已锁定选型，依赖全部满足；它是 S1-A3 存储层的前置；符合 MVP“尽快跑通最小闭环”。
 - 备选：若优先桌面化体验，可启动 S1-A4（Electron 外壳），但会推迟最小闭环。
 
 > 上述只是建议。下一轮必须按 `current.md` 的“下一任务选择流程”重新判断后再选定唯一一个。
@@ -51,7 +51,7 @@
 ## 已踩坑与约束
 - Vite 构建成功 ≠ Dev server 启动成功；W-L3 已本机人工验证 `npm run dev` 可在 http://localhost:5173 返回 HTTP 200 与完整 HTML，但仍未做浏览器渲染/交互级检查。
 - `apps/desktop/.gitignore` 已忽略 `node_modules` / `dist` / `*.tsbuildinfo` / `vite.config.{d.ts,js}`；根 `.gitignore` 已忽略 `.codex`（Codex CLI 工具痕迹，空文件，非项目内容）。
-- schema 校验方案（zod vs 手写 guard）需在 `docs/planning/decisions.md` 先落一条决策，再动代码。
+- schema 校验库已由 D-005 锁定为 zod；S1-A2 直接按此落盘，不再需要前置决策。
 - WSL/Linux 迁移：运行基线已打通（W-L3）；后续未再积压迁移类残项。
 
 ## 如何启动当前桌面壳
