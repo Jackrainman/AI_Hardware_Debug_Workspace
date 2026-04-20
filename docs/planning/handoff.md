@@ -9,6 +9,7 @@
   - S1-A1：`apps/desktop` 最小可运行壳（Vite 5 + React 18 + TypeScript 5），`npm install` + `npm run build` 均成功。
   - W-R1：工作流范式升级（滚动前沿 + 下一任务自动选择 + 受控上下文重置）。
   - W-L1：WSL/Linux 迁移第一批基础卫生（LF 换行策略、产品文档 LF 化、工作区权限规范、本地 filemode 可见）。
+  - W-L2：WSL/Linux 迁移第二批残留收敛（Linux 优先字体后备、README 环境口径）。
 - 当前唯一执行中的原子任务：无，等待下一轮重新读取仓库并选择。
 - 桌面壳当前形态：SPA（浏览器），三个占位区块（Project / Issue / Archive），显示 `Desktop shell initialized`。
 
@@ -50,7 +51,7 @@
 - Vite 构建成功 ≠ Dev server 启动成功；后续如需要截图/交互验证，请人工跑 `npm run dev`。
 - `apps/desktop/.gitignore` 已忽略 `node_modules` / `dist` / `*.tsbuildinfo` / `vite.config.{d.ts,js}`。
 - schema 校验方案（zod vs 手写 guard）需在 `docs/planning/decisions.md` 先落一条决策，再动代码。
-- WSL/Linux 迁移第一批只做基础卫生；未处理的残留包括 `apps/desktop/src/index.css` 的 Windows 字体后备、README 中 Linux/WSL 目标说明、未跟踪空文件 `.codex` 的用途确认。
+- WSL/Linux 迁移已处理确认项；未跟踪空文件 `.codex` 用途仍待确认，未擅自删除或忽略。
 
 ## 如何启动当前桌面壳
 ```bash

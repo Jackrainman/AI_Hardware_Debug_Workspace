@@ -1,7 +1,8 @@
 :root {
   color-scheme: light dark;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+    Arial, "Noto Sans CJK SC", "WenQuanYi Micro Hei", "PingFang SC",
+    "Microsoft YaHei", sans-serif;
   line-height: 1.5;
 }
 

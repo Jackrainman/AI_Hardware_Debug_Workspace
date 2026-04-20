@@ -148,6 +148,7 @@ AI_Hardware_Debug_Workspace/
 ## 7. 快速开始
 
 ### 7.1 环境要求
+- 当前目标开发环境：Ubuntu / WSL / Linux，文档中的命令默认使用 bash。
 - Git >= 2.40
 - Node.js >= 20（后续桌面端开发）
 
@@ -176,9 +177,10 @@ AI_Hardware_Debug_Workspace/
 - AGENTS 全局规则已升级为“滚动前沿 + 下一任务自动选择 + 受控上下文重置”范式。
 - 关键 skills 骨架已统一（含 `planning`、`task-execution`、`task-verification`）。
 - `apps/desktop` 最小壳已落地（Vite + React + TypeScript），`npm run build` 通过。
+- WSL/Linux 迁移基础卫生已完成：LF 策略、权限规范、Linux 优先的字体后备和 README 环境口径已收敛。
 
 ### 正在做
-- W-R1：工作流范式升级（本轮）。
+- 无。等待下一轮按真实仓库状态重新选择唯一原子任务。
 
 ### 前沿任务窗口（候选，不等于顺推队列）
 - S1-A2：schema 校验代码骨架（IssueCard / InvestigationRecord / ErrorEntry / ArchiveDocument）。
