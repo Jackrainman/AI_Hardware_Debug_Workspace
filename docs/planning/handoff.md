@@ -7,12 +7,13 @@
   - 规划区六文件已建立：`roadmap/backlog/current/decisions/handoff/architecture`。
   - `AGENTS.md` 已重构为长期 AI 协作规则文件（含 planning/skill/feedback/commit/handoff 约束）。
   - `README.md` 已重构为课程/作业风格中文文档，并按“已实现/MVP中/规划中”标注状态。
+  - skills 已重构：新增 `planning`、`task-execution`、`task-verification`，并统一 `repo-onboard`/`debug-intake`/`debug-closeout` 骨架结构。
 - 进行中：
-  - skills 骨架重构（下一原子任务）。
+  - 最终结构校验与总交接（下一原子任务）。
 
 ## 下一步最推荐动作
-1. 新增 `planning`、`task-execution`、`task-verification` 三个 skills。
-2. 重构 `repo-onboard`、`debug-intake`、`debug-closeout` 为统一骨架格式并与 `AGENTS.md` 对齐。
+1. 进行最终一致性校验：目录树、README 结构说明、planning/current 与 .agent-state 对齐。
+2. 输出本轮规范化总结并准备下一轮可接续任务列表。
 
 ## 已踩坑与约束
 - 必须每个原子任务单独 commit，不能跨任务混提。

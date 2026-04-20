@@ -9,10 +9,11 @@
 - [x] 建立 `docs/product` 并迁移产品文档。
 - [x] 重构 `AGENTS.md` 为长期 AI 协作规则。
 - [x] 重构课程/作业风格中文 `README.md`。
+- [x] 新增并统一关键 skills 骨架（planning/task-execution/task-verification/repo-onboard/debug-intake/debug-closeout）。
 
 ## 进行中
-- [ ] 重构 skills 骨架并统一关键流程规则。
+- [ ] 最终一致性校验与总交接。
 
 ## 下一步
-1. 重构 skills 骨架并提交。
-2. 做最终目录与交接校验并提交。
+1. 校验 README 目录树与实际结构一致。
+2. 完成最终交接更新并提交。
