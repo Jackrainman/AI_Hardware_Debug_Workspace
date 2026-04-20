@@ -2,27 +2,31 @@
 
 ## 当前进度快照
 - 已完成：
-  - 目录规范化起步：`docs/product`、`docs/planning`、`.agent-state` 已创建。
-  - 产品文档已迁移：`产品介绍.md` → `docs/product/产品介绍.md`。
-  - 规划区六文件已建立：`roadmap/backlog/current/decisions/handoff/architecture`。
-  - `AGENTS.md` 已重构为长期 AI 协作规则文件（含 planning/skill/feedback/commit/handoff 约束）。
-  - `README.md` 已重构为课程/作业风格中文文档，并按“已实现/MVP中/规划中”标注状态。
-  - skills 已重构：新增 `planning`、`task-execution`、`task-verification`，并统一 `repo-onboard`/`debug-intake`/`debug-closeout` 骨架结构。
-  - 收尾一致性校验完成：README 目录树、planning 状态与 `.agent-state` 已同步。
+  - 规范化阶段（S0）全部闭环：目录、AGENTS、README、skills、最终一致性校验。
+  - S1-A1：`apps/desktop` 最小可运行壳（Vite 5 + React 18 + TypeScript 5）已落地，`npm install` + `npm run build` 均成功。
+  - 壳页面包含三个占位区块（Project / Issue / Archive）与阶段标识 `Desktop shell initialized`。
 - 进行中：
-  - 进入 S1：桌面壳与本地存储最小可运行闭环。
+  - S1-A2：schema 校验代码骨架。
+
+## 如何启动当前桌面壳
+```bash
+cd apps/desktop
+npm install    # 已执行过一次，依赖已落盘；换机时重跑
+npm run dev    # 默认 http://localhost:5173
+npm run build  # 产物到 apps/desktop/dist
+```
 
 ## 下一步最推荐动作
-1. 初始化 `apps/desktop` 并验证应用可启动。
-2. 建立 schema 校验代码骨架并接入最小闭环（IssueCard -> closeout）。
-3. 写入首个可读回的归档样例（markdown + error-table entry）。
+1. S1-A2：在 `apps/desktop/src/domain/schemas/` 建立 IssueCard / InvestigationRecord / ErrorEntry / ArchiveDocument 的 TS 类型与运行时校验器（zod 或手写 guard，二选一，需在 decisions.md 记录）。
+2. S1-A3：在 `apps/desktop` 上实现本地存储最小读写（读写 `.debug_workspace/active` 下一条 IssueCard 的 markdown + json 双写）。
+3. S1-A4：给 SPA 套 Electron 外壳（main / preload / contextBridge），让它能作为桌面进程启动。
 
 ## 已踩坑与约束
-- 必须每个原子任务单独 commit，不能跨任务混提。
-- 每个任务完成后必须同步更新 `docs/planning/current.md` 与本文件。
-- 不要把“规划中”写成“已实现”。
-- root 层文档移动后需同步修正 README 目录树，避免信息过期。
+- 本轮刻意不引入 Electron / 路由 / 状态管理 / UI 库，避免"最小壳"被扩展成半成品。
+- Vite 构建成功 ≠ Dev server 启动成功；后续如需要截图/交互验证，请人工跑 `npm run dev` 并截一张首页图。
+- `apps/desktop/.gitignore` 已忽略 `node_modules` / `dist` / `*.tsbuildinfo` / `vite.config.{d.ts,js}`。
 
 ## 不要重复折腾
-- `docs/product/产品介绍.md` 内容可继续复用，不建议重复复制回根目录。
-- `.debug_workspace/` 目录已存在，后续只补充内容与校验流程，不要重复重建。
+- 不要再改 `docs/product/产品介绍.md`，内容已定稿。
+- 不要在桌面壳里提前堆业务（schema / 存储 / 大模型 / MCP），按原子任务推进。
+- 不要用 `create-vite` 模板重新生成覆盖当前骨架——当前骨架已经过精简并通过构建。

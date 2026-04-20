@@ -132,7 +132,14 @@ AI_Hardware_Debug_Workspace/
 - Node.js >= 20（后续桌面端开发）
 
 ### 7.2 如何运行
-- 当前状态：仓库以规范化文档和 skill 规则为主，桌面应用尚未实现可执行入口。
+- 桌面壳（S1-A1 起可用，最小 SPA 版本）：
+  ```bash
+  cd apps/desktop
+  npm install
+  npm run dev     # 默认 http://localhost:5173
+  ```
+  打开后可看到阶段标识 `Desktop shell initialized` 与三个占位区块（Project / Issue / Debug / Archive）。
+- Electron 桌面外壳尚未接入，当前仅以浏览器 SPA 形式运行。
 
 ### 7.3 最小可演示流程（当前可演示）
 1. 阅读 `AGENTS.md` 与 `docs/planning/current.md`。
@@ -146,13 +153,14 @@ AI_Hardware_Debug_Workspace/
 - 产品定义文档已归位到 `docs/product/产品介绍.md`。
 - AGENTS 全局规则已重构。
 - 关键 skills 骨架已统一（含 `planning`、`task-execution`、`task-verification`）。
+- `apps/desktop` 最小壳已落地（Vite + React + TypeScript），`npm run build` 通过。
 
 ### 正在做
-- S0 规范化收尾校验与交接更新。
+- S1-A2：schema 校验代码骨架（IssueCard / InvestigationRecord / ErrorEntry / ArchiveDocument）。
 
 ### 后续计划
-- 启动 `apps/desktop` MVP 壳与本地存储。
-- 落地 schema 校验与归档读回验证代码实现。
+- 桌面壳接入本地存储最小读写与问题卡重开（S1-A3）。
+- 将 SPA 包装为 Electron 桌面进程（main / preload / IPC）。
 
 ## 9. Demo 演示建议（3 分钟内）
 1. 痛点说明（30s）：为什么碎片记录和仓库上下文必须绑定。

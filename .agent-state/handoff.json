@@ -1,26 +1,28 @@
 {
-  "timestamp": "2026-04-20T12:50:00+08:00",
+  "timestamp": "2026-04-20T19:35:00+08:00",
   "phase": "S1",
-  "current_atomic_task": "S1-A1_bootstrap_desktop_shell",
+  "current_atomic_task": "S1-A2_schema_validation_scaffold",
   "completed_atomic_tasks": [
     "A1_setup_planning_and_handoff_workspace",
     "A2_rewrite_agents_md",
     "A3_rewrite_readme_md",
     "A4_restructure_skills",
-    "A5_final_verification_and_handoff"
+    "A5_final_verification_and_handoff",
+    "S1-A1_bootstrap_desktop_shell"
   ],
   "next_recommended_tasks": [
-    "S1-A1_bootstrap_desktop_shell",
     "S1-A2_schema_validation_scaffold",
-    "S1-A3_local_storage_min_loop"
+    "S1-A3_local_storage_min_loop",
+    "S1-A4_electron_shell_wrap"
   ],
   "risks": [
-    "当前仍为文档与规则阶段，尚无可运行桌面代码"
+    "dev server 未做交互验证，仅完成 npm run build 通过；首次人工验证前应先跑一次 npm run dev",
+    "Electron 外壳尚未接入，桌面端目前只能作为浏览器 SPA 运行"
   ],
   "notes": [
-    "产品文档已迁移到 docs/product/产品介绍.md",
-    "后续每个原子任务完成后必须更新 docs/planning/current.md 与 docs/planning/handoff.md",
-    "已新增 planning/task-execution/task-verification 三个 skills",
-    "S0 规范化阶段已闭环完成"
+    "apps/desktop 技术栈：Vite 5 + React 18 + TypeScript 5",
+    "页面已落地三个占位区块：Project / Issue / Archive，并显示阶段标识 'Desktop shell initialized'",
+    "apps/desktop/.gitignore 已排除 node_modules/dist/*.tsbuildinfo/vite.config.{d.ts,js}",
+    "schema 校验方案（zod vs 手写 guard）需在 docs/planning/decisions.md 定稿后再动代码"
   ]
 }
