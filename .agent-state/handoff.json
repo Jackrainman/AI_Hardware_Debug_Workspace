@@ -9,13 +9,13 @@
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 需要在下一轮继续保留的关键说明"
   },
-  "timestamp": "2026-04-21T03:45:00+08:00",
+  "timestamp": "2026-04-21T04:20:00+08:00",
   "current_stage": "S2",
-  "current_stage_goal": "调试闭环主流程：S2-A1 intake 表单已就绪。前沿聚焦 IssueCard 列表视图（S2-A2）、InvestigationRecord 追加（S2-A3）。localStorage + SPA 继续承载；fs / Electron 推迟（D-007）。",
+  "current_stage_goal": "调试闭环主流程：intake 表单（S2-A1）与列表视图（S2-A2）已就绪；前沿聚焦 InvestigationRecord 追加（S2-A3）。localStorage + SPA 继续承载，fs / Electron 推迟（D-007）。",
   "current_atomic_task": "WAITING_FOR_PLANNING_SELECTION",
   "frontier_tasks": [
-    "S2-A2_issue_card_list_view",
     "S2-A3_investigation_record_append",
+    "S2-A4_closeout_error_entry_archive_document_pre_plan_only",
     "M-1_fix_typecheck_script"
   ],
   "completed_atomic_tasks": [
@@ -33,7 +33,8 @@
     "S1-A2_schema_validation_scaffold_with_zod",
     "S1-A3_local_storage_min_loop_with_localstorage",
     "D-007_defer_electron_shell_close_s1",
-    "S2-A1_issue_card_intake_minimal_form"
+    "S2-A1_issue_card_intake_minimal_form",
+    "S2-A2_issue_card_list_view"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -54,27 +55,30 @@
     "output_rule": "从前沿窗口中选择唯一一个下一原子任务，写入 current_atomic_task，再执行。"
   },
   "risks": [
-    "S2-A1 intake 表单只过了 Node 侧 polyfill 验证（3 断言 PASS），浏览器点击 Create 按钮的人工交互未做。下一轮 S2-A2 列表视图落地时建议人工开一次 dev server 看 UI 渲染。",
-    "Electron 外壳已由 D-007 明确延后；若 S2 主闭环推进过程中出现真正需要 fs 或主进程能力的阻塞，需要重新评估把 S1-A4 或其等价任务拉回前沿窗口。",
+    "浏览器侧人工交互验证（Create / Refresh / Save / Load 按钮）仍未做；Node 侧黑盒验证覆盖已累计到 S1-A3 3 + S2-A1 3 + S2-A2 5 = 11 PASS 断言，但不能替代浏览器渲染/交互级确认。下一轮条件允许时建议真开一次 dev server 点一遍。",
+    "S2-A3 追记需要'选中当前 IssueCard'的 UI 入口；S2-A2 的 ListView 目前只渲染不持 state。下一轮要决定粒度：先独立做'选中 + state 抬升'小任务，还是把选中和追记合成一个原子任务。",
+    "Electron 外壳已由 D-007 延后；若 S2-A4（结案归档）需要直接写磁盘 `.debug_workspace/`，需要重新评估是否把 Electron 外壳或 fs 适配层拉回前沿。",
     "`npm run typecheck` 脚本当前报 TS6310；临时替代 `npx tsc --noEmit -p tsconfig.json` 可用；修复在候选 M-1。",
-    "listIssueCards（S2-A2）遇到 localStorage 里被外部污染的 key 或手工写坏 JSON 时，需要结构化 error 列表而非 throw；S2-A2 实现要显式覆盖这条路径。",
-    "App.tsx 的 Issue pane 目前同时挂了 IntakeForm + sample Save/Load；sample 按钮会以固定 id 覆盖写，和 intake 表单生成的随机 id 卡不冲突，但若 S2-A2 列表刷新策略不当，可能同时看到 sample + intake 两类卡。这不是错误，但下一轮要记得在 UI 提示里区分。"
+    "listIssueCards 对外来前缀 key 忽略；但浏览器的 localStorage 在同域下所有应用共用，极端情况下 id 冲突时会污染同前缀桶；当前不做 defensive 处理，交给用户 / 后续 fs 迁移时收敛。"
   ],
   "notes": [
-    "S2-A1 代码路径：apps/desktop/src/domain/issue-intake.ts（buildIssueCardFromIntake / nowISO / generateIssueId / defaultIntakeOptions / IntakeInput / IntakeResult）；apps/desktop/src/App.tsx 新增 IssueIntakeForm；apps/desktop/scripts/verify-s2-a1.mts 做 Node 侧 3 断言黑盒验证。",
-    "S2-A1 验证：`npm run build`（tsc -b && vite build）46 modules ~200 kB 通过；`node --experimental-strip-types scripts/verify-s2-a1.mts` 3 断言 PASS；`verify-s1-a3.mts` 无倒退（3 PASS）。",
-    "buildIssueCardFromIntake 的行为契约：trim 去空 → 空标题结构化拒绝（reason 以 'title is required' 开头）→ safeParse → 失败把 `error.issues[0].path + message` 作为 reason 返回。默认 projectId='default-project'；id 由 opts.id（或 generateIssueId）提供。S2-A2 / A3 可以复用这个结构化错误模式。",
-    "D-007：S1 阶段 Electron 外壳延后，S1 已关闭，阶段过渡到 S2。S2 主闭环推进过程中如遇硬阻塞可重新拉回。",
-    "D-006：S1 阶段 IssueCard 本地持久化用 window.localStorage，键前缀 repo-debug:issue-card:<id>；读盘必走 safeParse 并返回结构化错误（not_found / parse_error / validation_error）。S2-A2 listIssueCards 遍历时必须用这个前缀，并忽略或结构化报告非本前缀 / 损坏 JSON / schema 不符的 key。",
-    "Node 24 strip-types 不补相对 TS 扩展名：S2-A1 给 issue-intake.ts 的 `./schemas/issue-card.ts` 继续用 `.ts` 后缀；verify-s2-a1.mts 的 `../src/domain/issue-intake.ts` / `../src/storage/issue-card-store.ts` 同样带 `.ts`。S2-A2 / A3 新写脚本时保持这个习惯。",
-    "S1-A2 五个 schema 文件（repo-snapshot / issue-card / investigation-record / error-entry / archive-document）已落地；S2-A3 追加 InvestigationRecord 时直接复用 investigation-record.ts 的 schema，不要再写新 schema 或手写 guard。",
-    "S1-A2 round 为让 node/npm 可在 sandbox 下运行，`.claude/settings.local.json` 的 sandbox.filesystem.allowRead 追加了 ~/.nvm/ 与 ~/.npm/，allowWrite 追加了 ~/.npm/；该文件未纳入任何 commit，仍留在工作区由用户决定是否 commit。本轮 S2-A1 commit 未包含此文件。",
-    "D-005：schema 运行时校验统一使用 zod（v3.x，实装 ^3.23.8）；读盘与 AI 产出统一用 safeParse 拿结构化错误。",
-    "下一轮若选 S2-A2，推荐做法：1) issue-card-store 加 listIssueCards 返回摘要+损坏列表；2) App 加 IssueCardList 组件，点刷新拉最新；3) 扩展 verify 脚本（或新建 verify-s2-a2.mts）验证多条 save → list 全命中 + 1 条污染 key → 结构化分离。不要顺带做 InvestigationRecord 追加（留给 S2-A3）。",
+    "S2-A2 代码路径：apps/desktop/src/storage/issue-card-store.ts 新增 listIssueCards / IssueCardSummary / IssueCardListInvalidEntry / IssueCardListResult；apps/desktop/src/App.tsx 新增 IssueCardListView；apps/desktop/scripts/verify-s2-a2.mts 做 Node 侧 5 断言黑盒验证。",
+    "S2-A2 验证：`npm run build`（tsc -b && vite build）46 modules ~205 kB 通过；`node --experimental-strip-types scripts/verify-s2-a2.mts` 5 PASS；`verify-s1-a3` 与 `verify-s2-a1` 无倒退。",
+    "listIssueCards 排序契约：valid 按 createdAt 倒序（最新在前）；invalid 按 id 字典序。filter 契约：只扫描前缀 `repo-debug:issue-card:`。S2-A3 新实体遵循同样的前缀隔离原则。",
+    "S2-A1 代码路径：apps/desktop/src/domain/issue-intake.ts（buildIssueCardFromIntake / nowISO / generateIssueId / defaultIntakeOptions / IntakeInput / IntakeResult）；apps/desktop/src/App.tsx IssueIntakeForm；apps/desktop/scripts/verify-s2-a1.mts。",
+    "buildIssueCardFromIntake 契约：trim → 空标题 fail with reason 'title is required' + path ['title'] → safeParse → 失败把 `error.issues[0].path + message` 作 reason。S2-A3 追记工厂建议复用这个结构化错误模式。",
+    "D-007：S1 阶段 Electron 外壳延后，S1 已关闭，阶段过渡到 S2。S2-A4 结案归档若需要直接写磁盘，可重新评估。",
+    "D-006：S1 阶段 IssueCard 本地持久化用 window.localStorage，键前缀 repo-debug:issue-card:<id>；读盘必走 safeParse 并返回结构化错误。",
+    "Node 24 strip-types 不补相对 TS 扩展名：所有跨模块相对 import 必须带 `.ts` 后缀（已在 issue-intake.ts / issue-card-store.ts / 所有 verify 脚本实施）。S2-A3 新写代码保持习惯。",
+    "S1-A2 五个 schema 文件（repo-snapshot / issue-card / investigation-record / error-entry / archive-document）已落地；S2-A3 追加 InvestigationRecord 时直接复用 investigation-record.ts，不要再写新 schema 或手写 guard。",
+    "S1-A2 round 为让 node/npm 可在 sandbox 下运行，`.claude/settings.local.json` 的 sandbox.filesystem.allowRead 追加了 ~/.nvm/ 与 ~/.npm/，allowWrite 追加了 ~/.npm/；该文件未纳入任何 commit，留在工作区由用户处理。",
+    "D-005：schema 运行时校验统一使用 zod（v3.x，^3.23.8）；读盘与 AI 产出统一用 safeParse。",
+    "下一轮若选 S2-A3，推荐做法（小原子粒度）：1) 在 ListView 增加点击选中，抬升 currentIssueId state 到 App / IssuePane；2) 新增 apps/desktop/src/storage/investigation-record-store.ts 导出 saveInvestigationRecord / listInvestigationRecordsByIssueId / 类型；独立键前缀 `repo-debug:investigation-record:<recordId>`，每条带 issueId 外键；3) 在选中卡下方加追记表单（type 枚举 + note 文本），提交经 InvestigationRecordSchema.safeParse；4) 新建 scripts/verify-s2-a3.mts 跑多 issue 多 record → listByIssueId。",
+    "S2-A2 的 ListView 只负责 render 与 Refresh，不维护 state；选中语义留给 S2-A3。",
     "W-L3：WSL 运行基线已通过（node v24.14.0 / npm 11.9.0 / Linux 6.6.87.2-microsoft-standard-WSL2）。",
-    "根 .gitignore 仅忽略 .codex（Codex CLI 空标记文件，非项目内容）。",
+    "根 .gitignore 仅忽略 .codex。",
     "下一轮必须按 current.md 的下一任务选择流程重新判断，不得机械顺推。",
-    "apps/desktop 技术栈：Vite 5 + React 18 + TypeScript 5 + zod 3.23.8；Stage footer 已更新为 'S2-A1 · IssueCard intake form + localStorage save'。S2-A2 落地时再同步 footer 文案。",
+    "apps/desktop 技术栈：Vite 5 + React 18 + TypeScript 5 + zod 3.23.8；Stage footer 现为 'S2-A2 · IssueCard intake + list view'。",
     "apps/desktop/.gitignore 已排除 node_modules/dist/*.tsbuildinfo/vite.config.{d.ts,js}。"
   ]
 }

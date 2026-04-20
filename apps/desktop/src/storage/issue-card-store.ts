@@ -1,5 +1,10 @@
-import type { ZodIssue } from "zod";
-import { IssueCardSchema, type IssueCard } from "../domain/schemas/issue-card.ts";
+import type { z, ZodIssue } from "zod";
+import {
+  IssueCardSchema,
+  IssueSeverity,
+  IssueStatus,
+  type IssueCard,
+} from "../domain/schemas/issue-card.ts";
 
 const KEY_PREFIX = "repo-debug:issue-card:";
 
@@ -12,8 +17,41 @@ export type LoadIssueCardResult =
   | { ok: true; card: IssueCard }
   | { ok: false; error: LoadIssueCardError };
 
+export interface IssueCardSummary {
+  id: string;
+  title: string;
+  severity: z.infer<typeof IssueSeverity>;
+  status: z.infer<typeof IssueStatus>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type IssueCardListInvalidEntry =
+  | { kind: "parse_error"; key: string; id: string; message: string }
+  | { kind: "validation_error"; key: string; id: string; issues: ZodIssue[] };
+
+export interface IssueCardListResult {
+  valid: IssueCardSummary[];
+  invalid: IssueCardListInvalidEntry[];
+}
+
 function storageKey(id: string): string {
   return KEY_PREFIX + id;
+}
+
+function idFromKey(key: string): string {
+  return key.startsWith(KEY_PREFIX) ? key.slice(KEY_PREFIX.length) : key;
+}
+
+function toSummary(card: IssueCard): IssueCardSummary {
+  return {
+    id: card.id,
+    title: card.title,
+    severity: card.severity,
+    status: card.status,
+    createdAt: card.createdAt,
+    updatedAt: card.updatedAt,
+  };
 }
 
 export function saveIssueCard(card: IssueCard): void {
@@ -46,4 +84,52 @@ export function loadIssueCard(id: string): LoadIssueCardResult {
     };
   }
   return { ok: true, card: result.data };
+}
+
+export function listIssueCards(): IssueCardListResult {
+  const storage = window.localStorage;
+  const valid: IssueCardSummary[] = [];
+  const invalid: IssueCardListInvalidEntry[] = [];
+
+  const keys: string[] = [];
+  for (let i = 0; i < storage.length; i += 1) {
+    const key = storage.key(i);
+    if (key !== null && key.startsWith(KEY_PREFIX)) {
+      keys.push(key);
+    }
+  }
+
+  for (const key of keys) {
+    const id = idFromKey(key);
+    const raw = storage.getItem(key);
+    if (raw === null) continue;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (err) {
+      invalid.push({
+        kind: "parse_error",
+        key,
+        id,
+        message: err instanceof Error ? err.message : String(err),
+      });
+      continue;
+    }
+    const result = IssueCardSchema.safeParse(parsed);
+    if (!result.success) {
+      invalid.push({
+        kind: "validation_error",
+        key,
+        id,
+        issues: result.error.issues,
+      });
+      continue;
+    }
+    valid.push(toSummary(result.data));
+  }
+
+  valid.sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
+  invalid.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+
+  return { valid, invalid };
 }

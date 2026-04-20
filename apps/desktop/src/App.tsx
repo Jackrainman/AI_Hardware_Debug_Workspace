@@ -10,8 +10,10 @@ import {
   type IntakeSeverity,
 } from "./domain/issue-intake";
 import {
+  listIssueCards,
   loadIssueCard,
   saveIssueCard,
+  type IssueCardListResult,
   type LoadIssueCardResult,
 } from "./storage/issue-card-store";
 
@@ -170,6 +172,52 @@ function renderIntakeStatus(status: IntakeSubmitStatus): string {
   }
 }
 
+function IssueCardListView() {
+  const [result, setResult] = useState<IssueCardListResult | null>(null);
+
+  const handleRefresh = () => {
+    setResult(listIssueCards());
+  };
+
+  return (
+    <div className="list-view" data-testid="issue-card-list">
+      <div className="list-header">
+        <button type="button" onClick={handleRefresh}>
+          Refresh list
+        </button>
+        <span className="storage-line" data-testid="list-summary">
+          {result === null
+            ? "(not refreshed yet)"
+            : `valid: ${result.valid.length} · invalid: ${result.invalid.length}`}
+        </span>
+      </div>
+      {result && result.valid.length > 0 && (
+        <ul className="list-items" data-testid="list-valid">
+          {result.valid.map((summary) => (
+            <li key={summary.id} className="list-item">
+              <span className="list-item-title">{summary.title || "(untitled)"}</span>
+              <span className="list-item-meta">
+                {summary.severity} · {summary.status} · {summary.createdAt}
+              </span>
+              <span className="list-item-id">id: {summary.id}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {result && result.invalid.length > 0 && (
+        <ul className="list-invalid" data-testid="list-invalid">
+          {result.invalid.map((entry) => (
+            <li key={entry.key} className="storage-line">
+              invalid · {entry.kind} · key={entry.key}
+              {entry.kind === "parse_error" ? ` · ${entry.message}` : ` · ${entry.issues.length} issue(s)`}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function renderLoadStatus(result: LoadIssueCardResult | null): string {
   if (result === null) return "(not loaded yet)";
   if (result.ok) {
@@ -200,7 +248,7 @@ const PANES: Pane[] = [
   {
     id: "issue",
     title: "问题卡区 (Issue / Debug)",
-    hint: "S2-A1：填写最小表单创建 IssueCard；S1-A3 sample 按钮保留作冒烟",
+    hint: "S2-A2：创建 IssueCard + 列表视图（localStorage scan）",
   },
   {
     id: "archive",
@@ -226,6 +274,7 @@ export default function App() {
             {pane.id === "issue" ? (
               <div className="issue-pane-stack">
                 <IssueIntakeForm />
+                <IssueCardListView />
                 <IssueStorageControls />
               </div>
             ) : (
@@ -235,7 +284,7 @@ export default function App() {
         ))}
       </main>
       <footer className="app-footer">
-        <span>Stage: S2-A1 · IssueCard intake form + localStorage save</span>
+        <span>Stage: S2-A2 · IssueCard intake + list view</span>
       </footer>
     </div>
   );

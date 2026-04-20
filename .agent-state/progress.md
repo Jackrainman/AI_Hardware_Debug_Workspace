@@ -20,14 +20,15 @@
 - [x] S1-A2：schema 校验代码骨架。`apps/desktop/src/domain/schemas/` 下新增 `repo-snapshot.ts` / `issue-card.ts` / `investigation-record.ts` / `error-entry.ts` / `archive-document.ts` 五个文件，导出 `*Schema` 与 `z.infer` 派生类型；`package.json` 加入 `zod ^3.23.8`；`npm run build`（`tsc -b && vite build`）通过。
 - [x] S1-A3：本地存储最小读写。D-006 锁定 IssueCard 使用 `window.localStorage`（键前缀 `repo-debug:issue-card:`）；新增 `apps/desktop/src/storage/issue-card-store.ts`（save/load + 结构化 `LoadIssueCardResult`）；`App.tsx` 的"问题卡区"嵌入最小 save/load 按钮与状态行；`apps/desktop/scripts/verify-s1-a3.mts` 在 Node 侧用 polyfill 跑 round-trip 黑盒验证（3 断言 PASS）；`npm run build`（45 modules，~200 kB）通过。
 - [x] D-007：S1 阶段 Electron 外壳延后决策落盘（`docs/planning/decisions.md` D-007）。S1 阶段完成定义最后一项以"延后决策"形式满足，S1 阶段关闭，阶段过渡到 S2。
-- [x] S2-A1：IssueCard intake 最小表单。`apps/desktop/src/domain/issue-intake.ts` 提供 `buildIssueCardFromIntake(input, opts)` 纯函数工厂（trim、空标题结构化拒绝、`IssueCardSchema.safeParse`），外加 `nowISO` / `generateIssueId` / `defaultIntakeOptions` 辅助；`App.tsx` 新增 `IssueIntakeForm` 受控表单并保留 sample `IssueStorageControls`；Stage footer 改为 `S2-A1 · IssueCard intake form + localStorage save`；新增 `scripts/verify-s2-a1.mts` 3 断言 PASS（schema-valid intake / save→load round-trip / 空标题拒绝且不落盘）；`npm run build` 46 modules ~200 kB 通过；`verify-s1-a3.mts` 无倒退。
+- [x] S2-A1：IssueCard intake 最小表单。`apps/desktop/src/domain/issue-intake.ts` 提供 `buildIssueCardFromIntake(input, opts)` 纯函数工厂（trim、空标题结构化拒绝、`IssueCardSchema.safeParse`），外加 `nowISO` / `generateIssueId` / `defaultIntakeOptions` 辅助；`App.tsx` 新增 `IssueIntakeForm` 受控表单并保留 sample `IssueStorageControls`；Stage footer 改为 `S2-A1 · IssueCard intake form + localStorage save`；新增 `scripts/verify-s2-a1.mts` 3 断言 PASS；`npm run build` 46 modules ~200 kB 通过；`verify-s1-a3.mts` 无倒退。
+- [x] S2-A2：IssueCard 列表视图。`apps/desktop/src/storage/issue-card-store.ts` 新增 `listIssueCards()` 前缀扫描 + 逐条 safeParse，返回 `{valid: IssueCardSummary[], invalid: IssueCardListInvalidEntry[]}`（valid 按 createdAt 倒序、invalid 按 id 字典序）；`App.tsx` 新增 `IssueCardListView`（Refresh 按钮 + valid / invalid 分区渲染）；`App.css` 追加 list-view / list-item 样式；stage footer 改为 `S2-A2 · IssueCard intake + list view`；`scripts/verify-s2-a2.mts` 5 断言 PASS（空存储 / 两条有效倒序 / 坏 JSON / schema 不符 / 外来前缀忽略）；`npm run build` 46 modules ~205 kB 通过；`verify-s1-a3` / `verify-s2-a1` 无倒退。
 
 ## 当前唯一执行中
-- 无。S2-A1 已完成。等待下一轮按「下一任务选择流程」重新选择唯一原子任务。
+- 无。S2-A2 已完成。等待下一轮按「下一任务选择流程」重新选择唯一原子任务。
 
 ## 下一步
 - 不直接顺推，而是按 `docs/planning/current.md` 的「下一任务选择流程」重新判断，再选定唯一下一任务。
 - 依赖已就绪的候选：
-  - **S2-A2**：IssueCard 列表视图（`listIssueCards()` + `IssueCardList` 组件；是 S2-A3 追记的前置）。
-  - **S2-A3**：InvestigationRecord 追加（建议在 S2-A2 之后做）。
+  - **S2-A3**：InvestigationRecord 追加（需要选中 IssueCard 的入口 + investigation-record-store + 表单 + Node verify）。
+  - **S2-A4（预）**：结案 → ErrorEntry + ArchiveDocument 生成；依赖 S2-A3，暂不拉入。
   - **M-1**（一行改动）：把 `typecheck` 脚本从 `tsc -b --noEmit` 改为 `tsc --noEmit -p tsconfig.json`。
