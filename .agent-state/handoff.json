@@ -1,23 +1,22 @@
 {
-  "timestamp": "2026-04-20T10:30:00+08:00",
+  "timestamp": "2026-04-20T11:20:00+08:00",
   "phase": "S0",
-  "current_atomic_task": "A3_rewrite_readme_md",
+  "current_atomic_task": "A4_restructure_skills",
   "completed_atomic_tasks": [
     "A1_setup_planning_and_handoff_workspace",
-    "A2_rewrite_agents_md"
+    "A2_rewrite_agents_md",
+    "A3_rewrite_readme_md"
   ],
   "next_recommended_tasks": [
-    "A3_rewrite_readme_md",
     "A4_restructure_skills",
     "A5_final_verification_and_handoff"
   ],
   "risks": [
-    "README 需要严格标注真实状态，避免把规划写成已实现",
     "skills 文档需要与 AGENTS 规则保持一致，避免规则冲突"
   ],
   "notes": [
     "产品文档已迁移到 docs/product/产品介绍.md",
     "后续每个原子任务完成后必须更新 docs/planning/current.md 与 docs/planning/handoff.md",
-    "仓库根目录旧路径 产品介绍.md 尚需在后续提交中清理删除记录"
+    "README 已改为课程/作业风格，后续需在 skills 重构后同步目录树说明"
   ]
 }

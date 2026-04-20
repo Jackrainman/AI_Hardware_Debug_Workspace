@@ -1,237 +1,176 @@
-# AI Hardware Debug Workspace
+# RepoDebug Harness（仓库绑定式调试闭环系统）
 
-一个绑定代码仓库的**硬件调试闭环桌面工具**。用户在调试现场用极低成本记录碎片问题，系统自动结合 AI 与仓库上下文，把"瞬时混乱"收束成"可追踪、可排查、可归档"的问题闭环。
+一句话定义：把“调试现场碎片记录”变成“可追踪、可验证、可归档”的项目内工程资产。
 
----
+## 1. 痛点与问题背景
+- 硬件/嵌入式调试现场输入碎片化，后续难复盘。
+- 普通聊天和普通笔记工具缺少“仓库上下文”和“结案归档闭环”。
+- 问题、排查过程、Git 变更长期脱节，导致同类错误反复出现。
+- 因此需要做成 Harness + Agent 系统：让规则、流程、验证与交接可自动执行。
 
-## 1. 项目简介
+## 2. 解决方案概述
+- 产品做什么：
+  - 绑定本地仓库，围绕 IssueCard 管理调试全流程。
+  - 用 Skills 做结构化生成、排查更新、结案归档。
+  - 用 schema 校验 + 读回验证形成反馈闭环。
+- 主流程：
+  - 项目绑定 -> 快闪记录 -> 问题卡 -> 持续排查 -> 结案总结 -> 错误表归档。
+- 产品不是什么：
+  - 不是通用笔记工具。
+  - 不是自动改代码平台。
+  - 不是一开始就追求复杂 MCP 编排的平台。
 
-本产品不是笔记软件，也不是通用待办工具。它围绕**项目仓库路径**绑定，把一次调试的完整生命周期落成可复用的工程资产：
+## 3. 核心功能（按状态）
 
-- **核心实体**：问题卡（IssueCard）。
-- **主流程**：快闪记录 → AI 补全结构化 → 追记排查 → 结案 → 错误表 + markdown 归档。
-- **上下文**：Git 分支、提交、未提交改动、关联文件、历史相似问题。
-- **目标用户**：做硬件 / 嵌入式 / 机器人 / ROS / 控制系统调试的学生与工程师。
+### 3.1 项目绑定
+- 已实现：`repo-onboard` 规则文档（skill 级规范）。
+- MVP 中：仓库路径校验与快照采集运行时。
+- 规划中：多项目快速切换与健康检查面板。
 
----
+### 3.2 快闪记录
+- 已实现：流程定义与数据模型文档。
+- MVP 中：桌面快闪输入窗。
+- 规划中：全局快捷键和语音输入。
 
-## 2. MVP 范围
+### 3.3 问题卡
+- 已实现：IssueCard 结构定义与 `debug-intake` 规则文档。
+- MVP 中：问题卡创建、持久化与重开。
+- 规划中：相似问题自动关联。
 
-MVP 只做一条最小闭环（6 步），其他一律延后：
+### 3.4 持续排查
+- 已实现：InvestigationRecord 结构定义与 `debug-session-update` 规则文档。
+- MVP 中：时间线追加与类型标注。
+- 规划中：排查看板与阶段汇总。
 
-1. 绑定本地 Git 仓库。
-2. 快闪输入一句碎片问题。
-3. 自动生成问题卡（AI 补全 + 挂载仓库快照）。
-4. 持续追加排查记录。
-5. AI 结案总结。
-6. 归档为错误表项 + markdown 文档。
+### 3.5 结案总结
+- 已实现：`debug-closeout` 归档规则文档。
+- MVP 中：结案摘要生成与归档状态机。
+- 规划中：修复建议模板与复发统计。
 
-MVP **不做**：多人协作、云同步、自动读取串口/示波器、自动改代码、embedding 检索、跨仓库推理、真正自治 agent 编排。
+### 3.6 错误表归档
+- 已实现：`.debug_workspace/error-table` 与归档目录骨架。
+- MVP 中：`errors.json` + markdown 双写与读回验证。
+- 规划中：跨项目检索与聚类。
 
----
+## 4. Harness 设计说明
 
-## 3. 目录结构
+### 4.1 上下文管理 / Agent Skill
+- 规则入口：
+  - `AGENTS.md`：全局协作、验证、提交、交接规则。
+  - `.agents/skills/*/SKILL.md`：各 skill 的输入、步骤、输出、约束。
+- 为什么不能把所有信息直接塞给模型：
+  - 成本高且不可追踪。
+  - 输出不稳定，无法做局部纠错。
+  - 长期协作时上下文会漂移，必须依赖结构化状态文档。
 
-```
+### 4.2 外部工具调用 / Tool / MCP
+- 当前真实数据来源：
+  - Git CLI（分支、提交、工作区状态）。
+  - 本地文件系统（规划文档、归档文件、错误表）。
+  - 本地归档目录（`.debug_workspace`）。
+- 当前策略：MVP 优先本地 CLI + 本地存储，先把闭环跑通。
+
+### 4.3 验证与反馈循环（FeedbackLoop）
+- AI 输出先过 schema 校验，不通过不入库。
+- 工具调用必须检查 exit code。
+- 写盘后做读回验证（文件存在、条目存在、必填字段非空）。
+- 连续失败触发重试上限与人工确认，不允许静默“伪成功”。
+
+## 5. 项目架构（文字版）
+- UI 层：`apps/desktop`（计划承载快闪窗、问题卡页、错误表页）。
+- 仓库上下文层：采集 Git 快照与关联文件信息。
+- AI/Skill 层：按 skill 契约执行 intake/update/closeout。
+- 归档层：`.debug_workspace` 存 active/archive/error-table/attachments。
+- 规划层：`docs/planning` + `.agent-state`，负责长期推进与上下文重置交接。
+
+## 6. 项目结构
+```text
 AI_Hardware_Debug_Workspace/
-├── AGENTS.md                   # 给 AI 代理读的行为约束（schema、反馈闭环、构建里程碑）
-├── 产品介绍.md                  # 产品定位、场景、数据模型、状态机
-├── README.md                   # 本文件
-├── apps/
-│   └── desktop/                # 桌面端代码（MVP 目标：Electron/Tauri 选型未定，暂空）
+├── AGENTS.md
+├── README.md
+├── docs/
+│   ├── product/
+│   │   └── 产品介绍.md
+│   └── planning/
+│       ├── roadmap.md
+│       ├── backlog.md
+│       ├── current.md
+│       ├── decisions.md
+│       ├── handoff.md
+│       └── architecture.md
 ├── .agents/
-│   └── skills/                 # AI 技能声明（由应用代码读取并派发）
-│       ├── repo-onboard/SKILL.md
-│       ├── debug-intake/SKILL.md
-│       ├── debug-closeout/SKILL.md
-│       ├── debug-hypothesis/SKILL.md
-│       └── debug-session-update/SKILL.md
-└── .debug_workspace/           # 本地运行时存储
-    ├── active/                 # 尚未结案的问题卡
-    ├── archive/                # 已结案的 markdown 归档
-    ├── attachments/            # 附件（截图、串口片段等）
-    └── error-table/            # errors.json + README.md
+│   └── skills/
+│       ├── repo-onboard/
+│       ├── debug-intake/
+│       ├── debug-closeout/
+│       ├── debug-hypothesis/
+│       └── debug-session-update/
+├── .agent-state/
+│   ├── progress.md
+│   ├── session-log.md
+│   └── handoff.json
+├── .debug_workspace/
+│   ├── active/
+│   ├── archive/
+│   ├── error-table/
+│   └── attachments/
+└── apps/
+    └── desktop/
 ```
-
----
-
-## 4. 上下文管理 / Agent Skill
-
-### 4.1 约定
-
-所有 AI 能做的事，都被拆成一个个 **skill**。每个 skill 就是 `.agents/skills/<name>/SKILL.md` 里一份清晰的契约。应用代码在运行时读取这份契约，装配 prompt，调用模型，校验结果。
-
-### 4.2 SKILL.md 规则是如何写清楚的
-
-每个 SKILL.md 必须写死这几块，不含糊：
-
-1. **frontmatter**：`name`、`description`、`trigger`。这三条决定了它什么时候被派发、以及它对外展示给人看的一句话说明。
-2. **目的**：这个 skill 要解决的一件事。一个 skill 只做一件事，禁止"顺便"。
-3. **触发条件**：哪些事件会触发它——UI 按钮、状态机迁移、上游 skill 的输出。
-4. **输入 schema**：JSON 字段 + 类型 + 是否必填。禁止"上下文随便传"。
-5. **输出 schema**：JSON 字段 + 类型，必须对齐 `产品介绍.md` 第六节的核心实体（IssueCard / InvestigationRecord / ErrorEntry / ArchiveDocument / RepoSnapshot）。
-6. **执行步骤**：分步可审计的动作序列。
-7. **工具调用**：显式写出依赖哪些 CLI / 文件系统 / MCP。
-8. **反馈闭环与自动纠错**：schema 校验失败怎么办、重试几次、失败怎么降级。
-9. **不做的事**：防止 skill 蔓延成万能助手。
-
-### 4.3 已经定义的 skills
-
-| 名称 | 状态 | 用途 |
-|---|---|---|
-| `repo-onboard` | MVP 必需 | 绑定仓库，采集首个 RepoSnapshot |
-| `debug-intake` | MVP 必需 | 碎片输入 → IssueCard |
-| `debug-closeout` | MVP 必需 | 结案 → ErrorEntry + ArchiveDocument |
-| `debug-hypothesis` | 可后补 | 给出带依据的怀疑方向列表 |
-| `debug-session-update` | 可后补 | 追加记录 → InvestigationRecord |
-
----
-
-## 5. 外部工具调用 / Tool / MCP
-
-### 5.1 本产品如何"触达真实世界"
-
-桌面应用需要读真实仓库状态、写真实文件、跑 Git 子命令。MVP 的策略是：**能用本地 CLI 和文件系统解决的，绝不引入 MCP server**。理由见第 9 节。
-
-### 5.2 真实数据的来源
-
-| 数据 | 来源 | 实现 |
-|---|---|---|
-| 当前分支 / HEAD commit | `git` CLI | Node `child_process.execFile("git", [...])` |
-| working tree 脏状态 | `git status --porcelain` | 同上 |
-| 最近提交列表 | `git log -n 10 --pretty=...` | 同上 |
-| 变更文件 | `git diff --name-status` | 同上 |
-| 仓库文件内容（按需） | 本地文件系统 | Node `fs.promises` |
-| 历史问题 / 错误表 | `.debug_workspace/**` | 本地 JSON + md |
-| AI 文本生成 | Anthropic Claude API | 桌面端进程内 SDK 调用 |
-
-### 5.3 未来才考虑的 MCP
-
-- **serial-mcp**：串口日志抓取（用户全局 `~/.claude/mcp.json` 已自行配置，但**非 MVP 依赖**）。
-- **filesystem-mcp** / **git-mcp**：当桌面端需要把这些能力透出给外部 agent 宿主时才有意义。MVP 阶段我们是自己调 CLI，不需要透出。
-
-### 5.4 工具调用的硬性约束
-
-所有工具调用都必须：
-
-1. 检查 exit code（或 promise reject）。
-2. 把 stdout/stderr 捕获进运行时日志，不得丢弃。
-3. 超时时间明确（Git 命令默认 5 秒，文件写入默认 3 秒）。
-4. 失败不得静默吞掉——必须返回失败原因给上游。
-
----
-
-## 6. 反馈闭环 / 自动纠错
-
-这是本产品最重要的底座，直接抄自 `AGENTS.md`，并在这里具体化。
-
-### 6.1 为什么需要
-
-AI 输出在生产中必然出错：字段缺失、类型错误、JSON 格式崩掉、胡编乱造。Git/文件系统调用也会失败：磁盘满、路径权限、分支不存在。**系统必须自己感知到这些失败，并主动修复**，而不是把错误静默写进归档里留给用户将来踩坑。
-
-### 6.2 四道防线
-
-**第一道：结构化 schema 校验**
-- 所有 AI 输出必须符合固定 schema（IssueCard / InvestigationRecord / ErrorEntry / ArchiveDocument / RepoSnapshot）。
-- 校验失败不接受结果。
-
-**第二道：工具调用 exit code 检查**
-- Git 命令必须 exit 0。
-- 文件写入必须成功返回。
-- 任一环节失败立刻终止当前 skill。
-
-**第三道：归档后回读验证**
-- 写完 markdown 后，用 fs 再读一遍，确认文件存在 + 关键段落非空。
-- 写完 errors.json 条目后，重新解析 JSON，确认新 entry 存在且必填字段非空。
-- 回读失败则**不得**把 IssueCard 标记为 `archived`。
-
-**第四道：分级重试与人工兜底**
-- AI schema 失败：只重生错误的那个字段，不整体重跑。重试上限 2 次。
-- 工具调用失败：给出明确错误码给 UI，不自动重试 git 写操作。
-- 连续失败则创建一条"修复任务"（而不是"已归档"），状态保持 `resolved`，等待人工确认。
-
-### 6.3 绝对禁止
-
-- 不得丢弃用户原始输入。任何时候 `rawInput` / `rawText` 都必须原样保留。
-- 不得把部分成功当作全部成功。
-- 不得跳过回读验证。
-- 不得静默重试超过 2 次。
-
-### 6.4 运行时日志字段
-
-每次 skill 调用都会写一条日志：
-
-```
-{
-  "skill": "...",
-  "issueId": "...",
-  "toolCalls": [{ "name": "...", "exitCode": 0, "durationMs": 0 }],
-  "validationFailures": [{ "field": "...", "reason": "..." }],
-  "retries": 0,
-  "finalStatus": "ok | partial | failed | manual_review"
-}
-```
-
----
+- `docs/product`：需求来源和产品定义。
+- `docs/planning`：规划、任务窗口、决策、交接。
+- `.agent-state`：上下文重置后继续执行的结构化状态。
+- `.debug_workspace`：产品运行过程中的调试数据。
 
 ## 7. 快速开始
 
-当前仓库只有规范文档和 skill 骨架，桌面端代码尚未动工。
+### 7.1 环境要求
+- Git >= 2.40
+- Node.js >= 20（后续桌面端开发）
 
-### 7.1 环境前置
+### 7.2 如何运行
+- 当前状态：仓库以规范化文档和 skill 规则为主，桌面应用尚未实现可执行入口。
 
-- Node.js ≥ 20（本机已检测 v24.13.0）
-- Python ≥ 3.10（本机已检测 3.12.10）
-- Git ≥ 2.40（本机已检测 2.52.0）
+### 7.3 最小可演示流程（当前可演示）
+1. 阅读 `AGENTS.md` 与 `docs/planning/current.md`。
+2. 按原子任务推进并提交 commit。
+3. 在 `docs/planning/handoff.md` 与 `.agent-state/handoff.json` 完成交接。
 
-### 7.2 阅读顺序
+## 8. 当前进度
 
-1. 先读 `产品介绍.md`：了解产品定位、数据模型、状态机。
-2. 再读 `AGENTS.md`：了解 AI 行为约束和构建里程碑。
-3. 然后读 `.agents/skills/*/SKILL.md`：了解每个 AI 模块的 I/O。
-4. 最后读本 README 第 6 节：吃透反馈闭环规则，再写任何应用代码。
+### 已完成
+- 规范化目录基础已建立（`docs/planning`、`.agent-state`、`.debug_workspace`）。
+- 产品定义文档已归位到 `docs/product/产品介绍.md`。
+- AGENTS 全局规则已重构。
+- 现有 debug 系列 skills 已具备基础规则文档。
 
-### 7.3 下一步（应用代码作者）
+### 正在做
+- README 课程化重构（本次提交）。
+- 后续 skills 统一骨架改造。
 
-1. 在 `apps/desktop/` 选型一个桌面技术栈（Electron + React + TS，或 Tauri + React + TS）。
-2. 实现三个 MVP skills 的运行时：读 SKILL.md → 装配 prompt → 调 Claude → 校验 schema → 按第 6 节闭环处理。
-3. 写最小 UI：项目主页 + 快闪窗 + 问题卡详情页 + 错误表页。
+### 后续计划
+- 新增 `planning`、`task-execution`、`task-verification` 三个 skill。
+- 对 `repo-onboard`/`debug-intake`/`debug-closeout` 做结构统一。
+- 启动 `apps/desktop` MVP 壳与本地存储。
 
----
+## 9. Demo 演示建议（3 分钟内）
+1. 痛点说明（30s）：为什么碎片记录和仓库上下文必须绑定。
+2. Harness 设计（60s）：AGENTS + skills + feedback loop 的分工。
+3. 产品运行展示（75s）：展示 planning 区推进、交接区读写、归档目录结构。
+4. 收尾（15s）：下一步是接入桌面壳并跑通最小闭环。
 
-## 8. 当前已实现 / 待实现
+## 10. 项目亮点与不足
 
-### 已实现
+### 优点
+- 先把流程规则与验证闭环固化，避免“功能先行、治理缺位”。
+- 规划区与交接区分离，支持上下文重置后的持续推进。
+- 提交粒度按原子任务切分，便于追踪与回滚。
 
-- 目录骨架（`apps/`、`.agents/skills/`、`.debug_workspace/`）。
-- 产品文档：`产品介绍.md`、`AGENTS.md`。
-- Skill 规范文档：5 份 `SKILL.md`（repo-onboard / debug-intake / debug-closeout / debug-hypothesis / debug-session-update）。
-- 中文 README。
+### 当前不足
+- 尚无可运行桌面端与真实业务流程。
+- schema 校验与归档写入逻辑还停留在规则层。
+- 错误表与历史检索尚未代码化。
 
-### 待实现
-
-- 桌面端技术栈选型与脚手架（MVP 关键依赖）。
-- schema 校验运行库（建议用 Zod 或 Ajv）。
-- 5 个 skills 的运行时实现。
-- 最小 4 页 + 1 快闪窗的 UI。
-- 运行时日志模块。
-- errors.json 检索（MVP 可用线性扫描）。
-
----
-
-## 9. 为什么第一版不强依赖很多外部 MCP
-
-本项目在 MVP 阶段**刻意保持 MCP 依赖数接近 0**。原因如下：
-
-1. **MVP 只需要四件事**：读 Git、读文件、写文件、调 Claude。这四件事本地原生 API 都能做，套一层 MCP 只是增加进程边界、加重调试负担。
-2. **MCP 的价值在于跨宿主**：如果我们打算让 Claude Code 或其他外部 agent 来操作本工具，那才值得把能力用 MCP 透出。MVP 没有这个跨宿主需求。
-3. **错误面最小化**：每多一个 MCP server，就多一组"启动失败 / 端口冲突 / 版本漂移"的故障模式。MVP 的验证重点是"闭环是否真的跑通"，不是"多工具调度是否优雅"。
-4. **反馈闭环必须先打通**：只有自己写的 CLI 封装才能 100% 控制 exit code、stdout/stderr、超时、重试。一上来就接第三方 MCP，一旦出错溯源成本会指数级增加。
-
-MCP 不是不好，只是**不是 MVP 的第一要务**。等桌面端跑起来、闭环稳定、并开始考虑把能力对外开放给其他 agent 宿主的时候，再重新评估是否把 `repo-onboard`、`debug-intake`、`debug-closeout` 打成 MCP server。
-
----
-
-## 许可
-
-尚未指定。
+### 先不做复杂能力的原因
+- 当前目标是先跑通最小闭环并验证可靠性。
+- 复杂能力（多 MCP、复杂检索、自动化编排）会显著增加调试成本。
