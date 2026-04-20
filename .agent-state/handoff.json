@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-04-20T00:00:00+08:00",
+  "phase": "S0",
+  "current_atomic_task": "A2_rewrite_agents_md",
+  "completed_atomic_tasks": [
+    "A1_setup_planning_and_handoff_workspace"
+  ],
+  "next_recommended_tasks": [
+    "A2_rewrite_agents_md",
+    "A3_rewrite_readme_md",
+    "A4_restructure_skills"
+  ],
+  "risks": [
+    "README 和 AGENTS 需要严格标注真实状态，避免把规划写成已实现"
+  ],
+  "notes": [
+    "产品文档已迁移到 docs/product/产品介绍.md",
+    "后续每个原子任务完成后必须更新 docs/planning/current.md 与 docs/planning/handoff.md"
+  ]
+}
