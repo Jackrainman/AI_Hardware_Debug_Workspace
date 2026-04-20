@@ -100,6 +100,9 @@ AI_Hardware_Debug_Workspace/
 │       └── architecture.md
 ├── .agents/
 │   └── skills/
+│       ├── planning/
+│       ├── task-execution/
+│       ├── task-verification/
 │       ├── repo-onboard/
 │       ├── debug-intake/
 │       ├── debug-closeout/
@@ -142,16 +145,14 @@ AI_Hardware_Debug_Workspace/
 - 规范化目录基础已建立（`docs/planning`、`.agent-state`、`.debug_workspace`）。
 - 产品定义文档已归位到 `docs/product/产品介绍.md`。
 - AGENTS 全局规则已重构。
-- 现有 debug 系列 skills 已具备基础规则文档。
+- 关键 skills 骨架已统一（含 `planning`、`task-execution`、`task-verification`）。
 
 ### 正在做
-- README 课程化重构（本次提交）。
-- 后续 skills 统一骨架改造。
+- S0 规范化收尾校验与交接更新。
 
 ### 后续计划
-- 新增 `planning`、`task-execution`、`task-verification` 三个 skill。
-- 对 `repo-onboard`/`debug-intake`/`debug-closeout` 做结构统一。
 - 启动 `apps/desktop` MVP 壳与本地存储。
+- 落地 schema 校验与归档读回验证代码实现。
 
 ## 9. Demo 演示建议（3 分钟内）
 1. 痛点说明（30s）：为什么碎片记录和仓库上下文必须绑定。
