@@ -43,3 +43,22 @@
   - 解锁 S1-A2：schema 骨架应放在 `apps/desktop/src/domain/schemas/`，每个实体一个文件，导出 `*Schema` 与通过 `z.infer` 派生的类型。
   - 依赖：`apps/desktop/package.json` 将新增 `zod` 为 dependency（非 devDependency，因为运行时需要）。
   - `handoff.json` 中"schema 校验方案尚未决定"的 risk 由本决策消解。
+
+## D-006：S1-A3 本地存储采用浏览器 localStorage
+- 日期：2026-04-21
+- 背景：S1-A3 需要把"样例 IssueCard → 保存 → 重开读取 → schema 校验"最小闭环跑通。当前 `apps/desktop` 仍是纯 Vite SPA，S1-A4 Electron 外壳尚未接入，没有 Node / IPC / 文件桥接，渲染进程无法直接写 `.debug_workspace/` 下的磁盘文件。动代码前需要锁定持久化介质。
+- 决策：S1-A3 阶段 IssueCard 的本地持久化使用浏览器 `window.localStorage`，键名固定为 `repo-debug:issue-card:<id>`，值为 `JSON.stringify(IssueCard)`。读取后必须经过 `IssueCardSchema.safeParse`：通过则返回 `{ok:true, card}`；未命中 / JSON 损坏 / schema 不符必须返回结构化错误（`not_found` / `parse_error` / `validation_error`），不得静默降级。
+- 原因：
+  - 最短路径：不引入 Electron / Node fs / 文件桥接即可跑通 MVP 最小闭环；与 S1-A4 的进度解耦。
+  - 与 D-004 一致：`window.localStorage` 是纯浏览器本地持久化，不引入远端调用、不依赖额外 MCP。
+  - 易验证：Node 侧用 Map-based 轻量 polyfill 即可做 round-trip 黑盒测试，无需浏览器。
+  - 覆盖"重开"语义：localStorage 跨 tab reload 持久，足够验证完成标准 #5"能人工验证问题卡被保存并重新读取"。
+- 放弃方案：
+  - 直接写 `.debug_workspace/active/<issueId>.json`：需要 Node fs 或 Electron IPC 桥接，越出 S1-A3 范围，强耦合 S1-A4。
+  - IndexedDB：单实体 key-value 场景过重；调试与序列化复杂度 MVP 阶段不必要。
+  - 内存单例 / React state：不跨页面刷新，等同于没有"重开"语义，不满足完成标准。
+- 适用范围：仅 S1-A3 的 IssueCard 持久化；InvestigationRecord / ErrorEntry / ArchiveDocument 的落盘**不**在本决策范围（归 S2 归档链路）。
+- 影响与后续动作：
+  - 落地位置：`apps/desktop/src/storage/issue-card-store.ts`，导出 `saveIssueCard(card)` / `loadIssueCard(id)` / `LoadIssueCardResult` 联合类型。
+  - 当 S1-A4 Electron 外壳落地后，可在 `src/storage/` 下把 `window.localStorage` 封成一层 `IssueCardStore` 抽象，浏览器用 localStorage、主进程用 fs（典型 adapter 模式）。本次不做。
+  - 本决策不改写 D-001 ~ D-005，仅补充 S1-A3 阶段的具体存储选型。

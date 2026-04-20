@@ -12,14 +12,13 @@
   - 具备 Electron 外壳（或明确延后决策）。
 
 ## 当前唯一执行中的原子任务
-- 无。S1-A2 已完成：`apps/desktop/src/domain/schemas/` 下落地了 RepoSnapshot / IssueCard / InvestigationRecord / ErrorEntry / ArchiveDocument 五个 zod schema 与派生类型，`zod ^3.23.8` 作为 runtime dependency 已装入，`npm run build`（`tsc -b && vite build`）全绿。等待下一轮按「下一任务选择流程」重新选择唯一原子任务。
+- 无。S1-A3 已完成：浏览器 `window.localStorage` 作为 IssueCard 的本地持久化介质（D-006），`apps/desktop/src/storage/issue-card-store.ts` 导出 `saveIssueCard` / `loadIssueCard` / 结构化 `LoadIssueCardResult`；`apps/desktop/src/App.tsx` 在"问题卡区"嵌入最小保存/读取按钮与状态行；`apps/desktop/scripts/verify-s1-a3.mts` 用 Map-based localStorage polyfill 做 save→load→schema 校验 round-trip 黑盒验证。`npm run build`（tsc -b + vite build，45 modules，~200 kB）与 `node --experimental-strip-types scripts/verify-s1-a3.mts`（3 个断言全 PASS）均通过。等待下一轮按「下一任务选择流程」重新选择唯一原子任务。
 
 ## 当前前沿任务窗口（候选，不等于顺推队列）
-1. S1-A3：本地存储最小读写与问题卡重开验证（依赖 S1-A2 的 zod schema 已就绪，读盘用 `safeParse`）。
-2. S1-A4：Electron 外壳（main / preload / IPC），把 SPA 包装为桌面进程。
-3. M-1：修复 `apps/desktop` 的 `npm run typecheck` 脚本——当前 `tsc -b --noEmit` 与 composite referenced project（`tsconfig.node.json`）冲突（TS6310）。临时替代 `npx tsc --noEmit -p tsconfig.json` 可用。
+1. S1-A4：Electron 外壳（main / preload / IPC），把 SPA 包装为桌面进程；或者由用户落一条 D-007 明确延后，届时 S1 阶段完成定义的最后一项即以"延后决策"形式满足。
+2. M-1：修复 `apps/desktop` 的 `npm run typecheck` 脚本（`tsc -b --noEmit` 与 composite referenced project 冲突 TS6310）。临时替代 `npx tsc --noEmit -p tsconfig.json` 可用；修复把脚本改为 `tsc --noEmit -p tsconfig.json` 即可。
 
-> 以上只是候选。完成 S1-A2 后，必须先按「下一任务选择流程」重新判断，再选定唯一下一任务。
+> 以上只是候选。完成 S1-A3 后，必须先按「下一任务选择流程」重新判断，再选定唯一下一任务。
 
 ## 下一任务选择流程（完成当前任务后执行）
 1. 重新读取：`AGENTS.md`、本文件、`docs/planning/handoff.md`、`.agent-state/handoff.json`、`git status`、最近 commit、与任务相关目录/文件。

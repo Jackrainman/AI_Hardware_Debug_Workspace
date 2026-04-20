@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { RepoSnapshotSchema } from "./repo-snapshot";
+import { RepoSnapshotSchema } from "./repo-snapshot.ts";
 
 export const IssueSeverity = z.enum(["low", "medium", "high", "critical"]);
 

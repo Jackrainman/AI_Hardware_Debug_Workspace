@@ -67,6 +67,40 @@
   opacity: 0.6;
 }
 
+.storage-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.storage-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.storage-buttons button {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(127, 127, 127, 0.4);
+  background: rgba(37, 99, 235, 0.15);
+  cursor: pointer;
+}
+
+.storage-buttons button:hover {
+  background: rgba(37, 99, 235, 0.3);
+}
+
+.storage-line {
+  margin: 0;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  word-break: break-all;
+  opacity: 0.85;
+}
+
 @media (max-width: 900px) {
   .app-grid {
     grid-template-columns: 1fr;
