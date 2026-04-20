@@ -101,6 +101,70 @@
   opacity: 0.85;
 }
 
+.issue-pane-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.intake-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px dashed rgba(127, 127, 127, 0.35);
+  border-radius: 8px;
+}
+
+.intake-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+}
+
+.intake-field > span {
+  opacity: 0.75;
+}
+
+.intake-field input,
+.intake-field textarea,
+.intake-field select {
+  font: inherit;
+  padding: 4px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(127, 127, 127, 0.4);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+@media (prefers-color-scheme: dark) {
+  .intake-field input,
+  .intake-field textarea,
+  .intake-field select {
+    background: rgba(13, 17, 23, 0.8);
+    color: inherit;
+  }
+}
+
+.intake-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.intake-actions button {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(127, 127, 127, 0.4);
+  background: rgba(16, 185, 129, 0.2);
+  cursor: pointer;
+}
+
+.intake-actions button:hover {
+  background: rgba(16, 185, 129, 0.35);
+}
+
 @media (max-width: 900px) {
   .app-grid {
     grid-template-columns: 1fr;

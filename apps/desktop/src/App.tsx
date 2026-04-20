@@ -2,6 +2,14 @@ import { useState } from "react";
 import "./App.css";
 import type { IssueCard } from "./domain/schemas/issue-card";
 import {
+  buildIssueCardFromIntake,
+  defaultIntakeOptions,
+  nowISO,
+  type IntakeInput,
+  type IntakeResult,
+  type IntakeSeverity,
+} from "./domain/issue-intake";
+import {
   loadIssueCard,
   saveIssueCard,
   type LoadIssueCardResult,
@@ -76,6 +84,92 @@ function IssueStorageControls() {
   );
 }
 
+const SEVERITIES: IntakeSeverity[] = ["low", "medium", "high", "critical"];
+
+type IntakeSubmitStatus =
+  | { state: "idle" }
+  | { state: "saved"; id: string; at: string }
+  | { state: "error"; reason: string };
+
+function IssueIntakeForm() {
+  const [title, setTitle] = useState<string>("");
+  const [description, setDescription] = useState<string>("");
+  const [severity, setSeverity] = useState<IntakeSeverity>("medium");
+  const [status, setStatus] = useState<IntakeSubmitStatus>({ state: "idle" });
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const input: IntakeInput = { title, description, severity };
+    const result: IntakeResult = buildIssueCardFromIntake(
+      input,
+      defaultIntakeOptions(nowISO()),
+    );
+    if (!result.ok) {
+      setStatus({ state: "error", reason: result.reason });
+      return;
+    }
+    saveIssueCard(result.card);
+    setStatus({ state: "saved", id: result.card.id, at: result.card.createdAt });
+    setTitle("");
+    setDescription("");
+    setSeverity("medium");
+  };
+
+  return (
+    <form className="intake-form" onSubmit={handleSubmit} data-testid="issue-intake-form">
+      <label className="intake-field">
+        <span>Title</span>
+        <input
+          type="text"
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          placeholder="e.g. UART boot log stuck at 0x40"
+          required
+        />
+      </label>
+      <label className="intake-field">
+        <span>Description</span>
+        <textarea
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+          rows={3}
+          placeholder="Raw context / symptoms / what you just saw..."
+        />
+      </label>
+      <label className="intake-field">
+        <span>Severity</span>
+        <select
+          value={severity}
+          onChange={(event) => setSeverity(event.target.value as IntakeSeverity)}
+        >
+          {SEVERITIES.map((value) => (
+            <option key={value} value={value}>
+              {value}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="intake-actions">
+        <button type="submit">Create IssueCard</button>
+      </div>
+      <p className="storage-line" data-testid="intake-status">
+        intake: {renderIntakeStatus(status)}
+      </p>
+    </form>
+  );
+}
+
+function renderIntakeStatus(status: IntakeSubmitStatus): string {
+  switch (status.state) {
+    case "idle":
+      return "(not submitted yet)";
+    case "saved":
+      return `OK — saved id=${status.id} at ${status.at}`;
+    case "error":
+      return `ERROR — ${status.reason}`;
+  }
+}
+
 function renderLoadStatus(result: LoadIssueCardResult | null): string {
   if (result === null) return "(not loaded yet)";
   if (result.ok) {
@@ -106,7 +200,7 @@ const PANES: Pane[] = [
   {
     id: "issue",
     title: "问题卡区 (Issue / Debug)",
-    hint: "S1-A3：localStorage 保存 / 读取 / schema 校验的最小闭环",
+    hint: "S2-A1：填写最小表单创建 IssueCard；S1-A3 sample 按钮保留作冒烟",
   },
   {
     id: "archive",
@@ -130,7 +224,10 @@ export default function App() {
             <h2>{pane.title}</h2>
             <p className="pane-hint">{pane.hint}</p>
             {pane.id === "issue" ? (
-              <IssueStorageControls />
+              <div className="issue-pane-stack">
+                <IssueIntakeForm />
+                <IssueStorageControls />
+              </div>
             ) : (
               <p className="pane-status">status: placeholder</p>
             )}
@@ -138,7 +235,7 @@ export default function App() {
         ))}
       </main>
       <footer className="app-footer">
-        <span>Stage: S1-A3 · localStorage save/load loop for IssueCard</span>
+        <span>Stage: S2-A1 · IssueCard intake form + localStorage save</span>
       </footer>
     </div>
   );
