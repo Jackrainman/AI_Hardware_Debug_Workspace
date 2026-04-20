@@ -10,6 +10,7 @@
   - W-R1：工作流范式升级（滚动前沿 + 下一任务自动选择 + 受控上下文重置）。
   - W-L1：WSL/Linux 迁移第一批基础卫生（LF 换行策略、产品文档 LF 化、工作区权限规范、本地 filemode 可见）。
   - W-L2：WSL/Linux 迁移第二批残留收敛（Linux 优先字体后备、README 环境口径）。
+  - W-L3：WSL 运行基线验证（node v24.14.0 / npm 11.9.0 下 `npm install` + `npm run build` + `npm run dev` 三件套全部通过；`.codex` 归为工具痕迹，纳入根 `.gitignore`；`package-lock.json` 因 npm 11 格式微漂移被同步更新）。
 - 当前唯一执行中的原子任务：无，等待下一轮重新读取仓库并选择。
 - 桌面壳当前形态：SPA（浏览器），三个占位区块（Project / Issue / Archive），显示 `Desktop shell initialized`。
 
@@ -48,10 +49,10 @@
 - 不要用 `create-vite` 模板重新生成覆盖当前骨架。
 
 ## 已踩坑与约束
-- Vite 构建成功 ≠ Dev server 启动成功；后续如需要截图/交互验证，请人工跑 `npm run dev`。
-- `apps/desktop/.gitignore` 已忽略 `node_modules` / `dist` / `*.tsbuildinfo` / `vite.config.{d.ts,js}`。
+- Vite 构建成功 ≠ Dev server 启动成功；W-L3 已本机人工验证 `npm run dev` 可在 http://localhost:5173 返回 HTTP 200 与完整 HTML，但仍未做浏览器渲染/交互级检查。
+- `apps/desktop/.gitignore` 已忽略 `node_modules` / `dist` / `*.tsbuildinfo` / `vite.config.{d.ts,js}`；根 `.gitignore` 已忽略 `.codex`（Codex CLI 工具痕迹，空文件，非项目内容）。
 - schema 校验方案（zod vs 手写 guard）需在 `docs/planning/decisions.md` 先落一条决策，再动代码。
-- WSL/Linux 迁移已处理确认项；未跟踪空文件 `.codex` 用途仍待确认，未擅自删除或忽略。
+- WSL/Linux 迁移：运行基线已打通（W-L3）；后续未再积压迁移类残项。
 
 ## 如何启动当前桌面壳
 ```bash

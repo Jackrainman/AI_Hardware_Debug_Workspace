@@ -15,6 +15,7 @@
 - [x] W-R1：工作流范式升级（滚动前沿 + 下一任务自动选择 + 受控上下文重置）。
 - [x] W-L1：WSL/Linux 迁移第一批基础卫生（LF 策略、产品文档 LF 化、权限规范、filemode 可见）。
 - [x] W-L2：WSL/Linux 迁移第二批残留收敛（Linux 优先字体后备、README 环境口径）。
+- [x] W-L3：WSL 运行基线验证（node v24.14.0 + npm 11.9.0 下 `npm install` / `npm run build` / `npm run dev` 全部通过；`.codex` 归档为工具痕迹并纳入根 `.gitignore`）。
 
 ## 当前唯一执行中
 - 无。等待下一轮按真实仓库状态重新选择唯一原子任务。
@@ -22,4 +23,4 @@
 ## 下一步
 - 不直接顺推，而是按 `docs/planning/current.md` 的“下一任务选择流程”重新判断，再选定唯一下一任务。
 - 候选（仅供参考）：S1-A2 schema 校验代码骨架、S1-A3 本地存储最小读写、S1-A4 Electron 外壳。
-- WSL/Linux 迁移后续仅剩未跟踪空文件 `.codex` 用途确认；不确定用途前不删除。
+- WSL/Linux 迁移：运行基线已通过（W-L3），暂无迁移类残项。
