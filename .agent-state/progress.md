@@ -17,11 +17,12 @@
 - [x] W-L2：WSL/Linux 迁移第二批残留收敛（Linux 优先字体后备、README 环境口径）。
 - [x] W-L3：WSL 运行基线验证（node v24.14.0 + npm 11.9.0 下 `npm install` / `npm run build` / `npm run dev` 全部通过；`.codex` 归档为工具痕迹并纳入根 `.gitignore`）。
 - [x] D-005：schema 校验库选型决策（选用 zod，`docs/planning/decisions.md` D-005），解锁 S1-A2 代码落地。
+- [x] S1-A2：schema 校验代码骨架。`apps/desktop/src/domain/schemas/` 下新增 `repo-snapshot.ts` / `issue-card.ts` / `investigation-record.ts` / `error-entry.ts` / `archive-document.ts` 五个文件，导出 `*Schema` 与 `z.infer` 派生类型；`package.json` 加入 `zod ^3.23.8`；`npm run build`（`tsc -b && vite build`）通过。
 
 ## 当前唯一执行中
 - 无。等待下一轮按真实仓库状态重新选择唯一原子任务。
 
 ## 下一步
-- 不直接顺推，而是按 `docs/planning/current.md` 的“下一任务选择流程”重新判断，再选定唯一下一任务。
-- 依赖已就绪：S1-A2 可以作为下一轮的首选执行任务（按 D-005 使用 zod，位置 `apps/desktop/src/domain/schemas/`）。
-- 备选：S1-A3 本地存储最小读写（前置 S1-A2）、S1-A4 Electron 外壳（可并行但推迟）。
+- 不直接顺推，而是按 `docs/planning/current.md` 的「下一任务选择流程」重新判断，再选定唯一下一任务。
+- 依赖已就绪：S1-A3 本地存储最小读写可作为下一轮的首选执行任务（使用 S1-A2 的 zod schema 做读盘 `safeParse`，建议 `.debug_workspace/active/<issueId>.json`）。
+- 备选：M-1（修复 `npm run typecheck` 脚本 `tsc -b --noEmit` 冲突，极小任务）；S1-A4 Electron 外壳（可推迟）。
