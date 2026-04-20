@@ -7,15 +7,17 @@
 - 已完成原子任务（按时间顺序）：
   - S0 全部：目录、AGENTS、README、skills、最终一致性校验。
   - S1-A1：`apps/desktop` 最小可运行壳（Vite 5 + React 18 + TypeScript 5），`npm install` + `npm run build` 均成功。
-  - W-R1：工作流范式升级（滚动前沿 + 下一任务自动选择 + 受控上下文重置）—— 本轮。
-- 当前唯一执行中的原子任务：W-R1（即将收尾并提交）。
+  - W-R1：工作流范式升级（滚动前沿 + 下一任务自动选择 + 受控上下文重置）。
+  - W-L1：WSL/Linux 迁移第一批基础卫生（LF 换行策略、产品文档 LF 化、工作区权限规范、本地 filemode 可见）。
+- 当前唯一执行中的原子任务：无，等待下一轮重新读取仓库并选择。
 - 桌面壳当前形态：SPA（浏览器），三个占位区块（Project / Issue / Archive），显示 `Desktop shell initialized`。
 
 ## planning 与实际一致性检查
 - `current.md` 已按“滚动前沿”规范改写，前沿任务窗口仅保留 3 个候选，明确唯一执行中任务。
 - `.agent-state/handoff.json` 字段已扩展为新范式所需结构（见下）。
 - `AGENTS.md` 与 `README.md` 口径一致，均描述“完成后重新选择下一任务”。
-- 无“已完成但未提交”的脱节项。
+- W-L1 将当前迁移任务沉淀到 planning / handoff / agent-state；提交完成前不得继续第二批。
+- 无“已完成但未提交”的脱节项（以本轮 commit 完成为准）。
 
 ## 依赖是否满足
 - S1-A2（schema 骨架）：前置已就绪（apps/desktop 可构建；目录 `apps/desktop/src/domain/` 可建）。
@@ -48,6 +50,7 @@
 - Vite 构建成功 ≠ Dev server 启动成功；后续如需要截图/交互验证，请人工跑 `npm run dev`。
 - `apps/desktop/.gitignore` 已忽略 `node_modules` / `dist` / `*.tsbuildinfo` / `vite.config.{d.ts,js}`。
 - schema 校验方案（zod vs 手写 guard）需在 `docs/planning/decisions.md` 先落一条决策，再动代码。
+- WSL/Linux 迁移第一批只做基础卫生；未处理的残留包括 `apps/desktop/src/index.css` 的 Windows 字体后备、README 中 Linux/WSL 目标说明、未跟踪空文件 `.codex` 的用途确认。
 
 ## 如何启动当前桌面壳
 ```bash

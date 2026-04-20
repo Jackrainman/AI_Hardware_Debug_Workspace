@@ -9,10 +9,10 @@
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 需要在下一轮继续保留的关键说明"
   },
-  "timestamp": "2026-04-20T20:10:00+08:00",
+  "timestamp": "2026-04-20T21:09:16+08:00",
   "current_stage": "S1",
   "current_stage_goal": "桌面壳与本地存储最小闭环：壳已落地，接下来接入 schema 与本地读写。",
-  "current_atomic_task": "W-R1_workflow_paradigm_refactor",
+  "current_atomic_task": "WAITING_FOR_PLANNING_SELECTION",
   "frontier_tasks": [
     "S1-A2_schema_validation_scaffold",
     "S1-A3_local_storage_min_loop",
@@ -24,7 +24,9 @@
     "A3_rewrite_readme_md",
     "A4_restructure_skills",
     "A5_final_verification_and_handoff",
-    "S1-A1_bootstrap_desktop_shell"
+    "S1-A1_bootstrap_desktop_shell",
+    "W-R1_workflow_paradigm_refactor",
+    "W-L1_wsl_linux_baseline_hygiene"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -47,10 +49,11 @@
   "risks": [
     "dev server 未做交互验证，仅完成 npm run build 通过；首次人工验证前应先跑一次 npm run dev",
     "Electron 外壳尚未接入，桌面端目前只能作为浏览器 SPA 运行",
-    "schema 校验方案尚未在 decisions.md 决定（zod vs 手写 guard），动代码前需先落决策"
+    "schema 校验方案尚未在 decisions.md 决定（zod vs 手写 guard），动代码前需先落决策",
+    "WSL/Linux 迁移后续仍需处理前端字体后备、文档目标环境说明、未跟踪空文件 .codex 的用途确认"
   ],
   "notes": [
-    "本轮 W-R1 完成后，下一轮必须按 current.md 的“下一任务选择流程”重新判断，不得机械顺推",
+    "本轮 W-L1 完成后，下一轮必须按 current.md 的“下一任务选择流程”重新判断，不得机械顺推",
     "apps/desktop 技术栈：Vite 5 + React 18 + TypeScript 5",
     "页面已落地三个占位区块：Project / Issue / Archive，并显示阶段标识 'Desktop shell initialized'",
     "apps/desktop/.gitignore 已排除 node_modules/dist/*.tsbuildinfo/vite.config.{d.ts,js}"
