@@ -54,34 +54,54 @@
 
 ## 4. Harness 设计说明
 
-### 4.1 上下文管理 / Agent Skill
-- 规则入口：
-  - `AGENTS.md`：全局协作、验证、提交、交接规则。
-  - `.agents/skills/*/SKILL.md`：各 skill 的输入、步骤、输出、约束。
-- 为什么不能把所有信息直接塞给模型：
-  - 成本高且不可追踪。
-  - 输出不稳定，无法做局部纠错。
-  - 长期协作时上下文会漂移，必须依赖结构化状态文档。
+### 4.1 滚动前沿规划（Rolling Frontier Planning）
+- 长期目标稳定存在，但不一次性把所有未来任务拆成大计划表照单执行。
+- 规划区只维护三件事：长期目标、当前阶段目标、当前前沿任务窗口（1~3 个候选原子任务）。
+- 每轮只执行一个原子任务。完成后不自动顺推，而是：
+  1. 重新读取 `AGENTS.md`、`docs/planning/current.md`、`docs/planning/handoff.md`、`.agent-state/handoff.json` 与 `git status`。
+  2. 基于“仓库真实状态 + 依赖是否满足 + MVP 优先级 + planning 与实际是否脱节”重新选择**唯一一个**下一原子任务。
+  3. 如前沿任务已不再是最优解，先更新 `current.md`，再执行。
+- 目的：让 Agent 在长周期开发中保持“对齐当前仓库”，而不是对齐“几天前写下的计划”。
 
-### 4.2 外部工具调用 / Tool / MCP
+### 4.2 上下文管理 / 外置记忆
+- 规则入口：
+  - `AGENTS.md`：全局协作、规划、验证、提交、交接规则。
+  - `.agents/skills/*/SKILL.md`：各 skill 的输入、步骤、输出、约束。
+- 为什么不能依赖长聊天上下文：
+  - 成本高、输出不稳定、长周期协作中会漂移。
+  - 聊天历史一旦重置或压缩，信息就丢失。
+- 为什么要用 `AGENTS.md` + `docs/planning/*` + `.agent-state/*` 作为外置记忆：
+  - 它们是“受控重置”后唯一可信的续航来源。
+  - `docs/planning/current.md` + `docs/planning/handoff.md` + `.agent-state/handoff.json` 共同构成“下一轮任务选择基础”。
+  - 任何仅存在于对话历史中的约定，若未沉淀到这些文件，都会在下一轮丢失。
+
+### 4.3 外部工具调用 / Tool / MCP
 - 当前真实数据来源：
   - Git CLI（分支、提交、工作区状态）。
   - 本地文件系统（规划文档、归档文件、错误表）。
   - 本地归档目录（`.debug_workspace`）。
 - 当前策略：MVP 优先本地 CLI + 本地存储，先把闭环跑通。
 
-### 4.3 验证与反馈循环（FeedbackLoop）
+### 4.4 验证与反馈循环（FeedbackLoop）
 - AI 输出先过 schema 校验，不通过不入库。
 - 工具调用必须检查 exit code。
 - 写盘后做读回验证（文件存在、条目存在、必填字段非空）。
+- 完成门（completion gate）：最小验证 + 交接更新 + commit 三件事齐全才允许选择下一任务。
 - 连续失败触发重试上限与人工确认，不允许静默“伪成功”。
 
 ## 5. 项目架构（文字版）
+
+### 5.1 协作四层（滚动前沿视角）
+- 规划层（Planning）：`docs/planning/` —— 决定当前阶段目标、前沿任务窗口、唯一执行中的原子任务。
+- 执行层（Execution）：`apps/`、`packages/`（按需）、`scripts/`（按需）—— 一次只做一个原子任务，不混入其它改动。
+- 验证层（Verification）：`AGENTS.md` + `.agents/skills/*/SKILL.md` —— 定义 schema 校验、exit code、读回验证、完成门放行规则。
+- 交接层（Handoff）：`.agent-state/` —— 沉淀 progress / session-log / handoff.json，作为上下文重置后的续航依据。
+
+### 5.2 产品分层
 - UI 层：`apps/desktop`（计划承载快闪窗、问题卡页、错误表页）。
 - 仓库上下文层：采集 Git 快照与关联文件信息。
 - AI/Skill 层：按 skill 契约执行 intake/update/closeout。
 - 归档层：`.debug_workspace` 存 active/archive/error-table/attachments。
-- 规划层：`docs/planning` + `.agent-state`，负责长期推进与上下文重置交接。
 
 ## 6. 项目结构
 ```text
@@ -142,25 +162,28 @@ AI_Hardware_Debug_Workspace/
 - Electron 桌面外壳尚未接入，当前仅以浏览器 SPA 形式运行。
 
 ### 7.3 最小可演示流程（当前可演示）
-1. 阅读 `AGENTS.md` 与 `docs/planning/current.md`。
-2. 按原子任务推进并提交 commit。
-3. 在 `docs/planning/handoff.md` 与 `.agent-state/handoff.json` 完成交接。
+1. 阅读 `AGENTS.md` 与 `docs/planning/current.md`，了解当前阶段目标与前沿任务窗口。
+2. 每轮只执行一个原子任务；完成后重新读取仓库并选择唯一的下一任务，而不是机械顺推。
+3. 在 `docs/planning/handoff.md` 与 `.agent-state/handoff.json` 完成交接，为下一轮受控重启做准备。
 
 ## 8. 当前进度
+
+> 工作流说明：当前采用“滚动前沿规划”。下方“正在做”只列当前唯一执行中的原子任务；完成后会重新读取仓库状态，再选择下一原子任务，而不是按固定表顺推。
 
 ### 已完成
 - 规范化目录基础已建立（`docs/planning`、`.agent-state`、`.debug_workspace`）。
 - 产品定义文档已归位到 `docs/product/产品介绍.md`。
-- AGENTS 全局规则已重构。
+- AGENTS 全局规则已升级为“滚动前沿 + 下一任务自动选择 + 受控上下文重置”范式。
 - 关键 skills 骨架已统一（含 `planning`、`task-execution`、`task-verification`）。
 - `apps/desktop` 最小壳已落地（Vite + React + TypeScript），`npm run build` 通过。
 
 ### 正在做
-- S1-A2：schema 校验代码骨架（IssueCard / InvestigationRecord / ErrorEntry / ArchiveDocument）。
+- W-R1：工作流范式升级（本轮）。
 
-### 后续计划
-- 桌面壳接入本地存储最小读写与问题卡重开（S1-A3）。
-- 将 SPA 包装为 Electron 桌面进程（main / preload / IPC）。
+### 前沿任务窗口（候选，不等于顺推队列）
+- S1-A2：schema 校验代码骨架（IssueCard / InvestigationRecord / ErrorEntry / ArchiveDocument）。
+- S1-A3：桌面壳接入本地存储最小读写与问题卡重开。
+- S1-A4：将 SPA 包装为 Electron 桌面进程（main / preload / IPC）。
 
 ## 9. Demo 演示建议（3 分钟内）
 1. 痛点说明（30s）：为什么碎片记录和仓库上下文必须绑定。
