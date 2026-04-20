@@ -1,7 +1,7 @@
 # Progress
 
 ## 当前阶段
-- S1 桌面壳与本地存储最小闭环（采用“滚动前沿规划”范式推进）。
+- S2 调试闭环主流程（S1 已由 D-007 以"延后 Electron 外壳"形式关闭）。采用"滚动前沿规划"范式推进。
 
 ## 已完成
 - [x] 建立 `docs/planning` 结构化规划区。
@@ -19,12 +19,14 @@
 - [x] D-005：schema 校验库选型决策（选用 zod，`docs/planning/decisions.md` D-005），解锁 S1-A2 代码落地。
 - [x] S1-A2：schema 校验代码骨架。`apps/desktop/src/domain/schemas/` 下新增 `repo-snapshot.ts` / `issue-card.ts` / `investigation-record.ts` / `error-entry.ts` / `archive-document.ts` 五个文件，导出 `*Schema` 与 `z.infer` 派生类型；`package.json` 加入 `zod ^3.23.8`；`npm run build`（`tsc -b && vite build`）通过。
 - [x] S1-A3：本地存储最小读写。D-006 锁定 IssueCard 使用 `window.localStorage`（键前缀 `repo-debug:issue-card:`）；新增 `apps/desktop/src/storage/issue-card-store.ts`（save/load + 结构化 `LoadIssueCardResult`）；`App.tsx` 的"问题卡区"嵌入最小 save/load 按钮与状态行；`apps/desktop/scripts/verify-s1-a3.mts` 在 Node 侧用 polyfill 跑 round-trip 黑盒验证（3 断言 PASS）；`npm run build`（45 modules，~200 kB）通过。
+- [x] D-007：S1 阶段 Electron 外壳延后决策落盘（`docs/planning/decisions.md` D-007）。S1 阶段完成定义最后一项以"延后决策"形式满足，S1 阶段关闭，阶段过渡到 S2。
 
 ## 当前唯一执行中
-- 无。等待下一轮按真实仓库状态重新选择唯一原子任务。
+- 无。S1 阶段已关闭，S2 阶段前沿窗口已就绪。等待下一轮按「下一任务选择流程」重新选择唯一原子任务。
 
 ## 下一步
 - 不直接顺推，而是按 `docs/planning/current.md` 的「下一任务选择流程」重新判断，再选定唯一下一任务。
 - 依赖已就绪的候选：
-  - **S1-A4 Electron 外壳** 或 **落 D-007 明确延后**：S1 阶段完成定义最后一项，二选一；需要用户做方向性选择。
+  - **S2-A1**：IssueCard intake 最小表单（用户能真的输入字段新建 IssueCard，而不是代码里硬编码样例）。
+  - **S2-A2**：IssueCard 列表视图（展示所有 localStorage 中的 IssueCard）。
   - **M-1**（一行改动）：把 `typecheck` 脚本从 `tsc -b --noEmit` 改为 `tsc --noEmit -p tsconfig.json`。

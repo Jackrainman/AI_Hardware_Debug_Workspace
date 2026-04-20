@@ -62,3 +62,23 @@
   - 落地位置：`apps/desktop/src/storage/issue-card-store.ts`，导出 `saveIssueCard(card)` / `loadIssueCard(id)` / `LoadIssueCardResult` 联合类型。
   - 当 S1-A4 Electron 外壳落地后，可在 `src/storage/` 下把 `window.localStorage` 封成一层 `IssueCardStore` 抽象，浏览器用 localStorage、主进程用 fs（典型 adapter 模式）。本次不做。
   - 本决策不改写 D-001 ~ D-005，仅补充 S1-A3 阶段的具体存储选型。
+
+## D-007：S1 阶段 Electron 外壳延后，S1 即刻关闭，阶段过渡到 S2
+- 日期：2026-04-21
+- 背景：S1 阶段完成定义最后一项要求"具备 Electron 外壳（或明确延后决策）"。当前 SPA + localStorage 已跑通 IssueCard save/load 最小闭环（S1-A3 / D-006），可直接支撑 S2 主闭环（调试闭环 intake → 追记 → 结案归档）的前半段验证；Electron 本体的核心价值是"桌面进程 + fs/IPC 桥接"，与 S2 主闭环所需能力不是强耦合关系。处于无人值守连续推进阶段，不宜引入会占用多轮的环境依赖。
+- 决策：S1 阶段接受"Electron 外壳延后"，以本条 D-007 作为"明确延后决策"落盘，满足 S1 阶段完成定义最后一项。Electron 外壳推迟到 S2 主闭环完成、fs 持久化或主进程能力真正成为阻塞项时再接入。S1 阶段即刻关闭，下一阶段切换到 S2（调试闭环主流程）。
+- 原因：
+  - MVP 最短路径：SPA + localStorage 足够承载 IssueCard intake → update → closeout 主闭环前半段验证；先打通 S2 业务链路的价值高于先套外壳。
+  - 减少环境风险：Electron 本体 + electron-builder + main/preload/IPC 交叉调试在 WSL 下成本不低；当前无人值守阶段不宜引入会占用多轮的环境依赖。
+  - 接入点明确：S2 主闭环完成后再把 localStorage 替换为 fs 或 IPC，改动会集中在 `src/storage/` 层，已符合 D-006 预留的 adapter 路线。
+  - 不关闭路线图：S2 / S3 阶段均可重新评估 Electron 外壳，不视为永久废弃；若 S2 推进过程中出现"必须写 `.debug_workspace/` 到磁盘"或"必须主进程级能力"的硬阻塞，可重新把 S1-A4 或其等价任务拉回前沿窗口。
+- 放弃方案：
+  - 立刻实装 S1-A4 Electron 外壳：`electron` + `electron-builder` devDep + `electron/main.ts` + `electron/preload.ts` + `dev:electron` 脚本 + IPC 通道的最小骨架估算至少 1~2 轮无人值守周期，与 MVP 链路推进节奏脱节；且 WSL 下 Electron 首次运行可能需额外桌面环境配置，风险不对等。
+  - 切换到 Tauri：需引入 Rust 工具链，跨环境风险更高；若未来需要切换也应在 S2 之后重新评估。
+  - 继续延迟决策：本身已在前沿窗口挂了若干轮，继续挂起会让 planning 与实际脱节，也让 S1 无法关闭。
+- 适用范围：仅针对 S1 阶段完成定义最后一项。`apps/desktop` 继续以 SPA + localStorage 形态演进；任何 fs / IPC / 主进程能力都属于 S2 之后的任务。不改写 D-001 ~ D-006。
+- 影响与后续动作：
+  - S1 阶段完成定义最后一项已满足，S1 阶段即刻关闭。
+  - 下一阶段切换为 S2（调试闭环主流程）。
+  - 前沿窗口切换到 S2 候选：优先考虑 IssueCard intake 最小表单、IssueCard 列表视图、InvestigationRecord 追加三类任务；M-1 typecheck 脚本修复仍保留作为低风险插入项。
+  - `current.md` / `handoff.md` / `.agent-state/*` 同步更新，阶段代号从 S1 过渡到 S2。

@@ -9,12 +9,13 @@
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 需要在下一轮继续保留的关键说明"
   },
-  "timestamp": "2026-04-21T02:24:11+08:00",
-  "current_stage": "S1",
-  "current_stage_goal": "桌面壳与本地存储最小闭环：壳已落地、WSL 基线已通过、schema 骨架已落盘（S1-A2）、IssueCard localStorage save/load 闭环已跑通（S1-A3）。S1 剩下的最后一项是 Electron 外壳或显式延后决策（S1-A4 / 可能的 D-007）。",
+  "timestamp": "2026-04-21T03:05:00+08:00",
+  "current_stage": "S2",
+  "current_stage_goal": "调试闭环主流程：打通仓库绑定 → intake → 追记 → 结案归档。S1 已由 D-007 以延后 Electron 外壳形式关闭。当前前沿聚焦 IssueCard intake 表单、列表视图、InvestigationRecord 追加。",
   "current_atomic_task": "WAITING_FOR_PLANNING_SELECTION",
   "frontier_tasks": [
-    "S1-A4_electron_shell_wrap_or_defer_decision",
+    "S2-A1_issue_card_intake_minimal_form",
+    "S2-A2_issue_card_list_view",
     "M-1_fix_typecheck_script"
   ],
   "completed_atomic_tasks": [
@@ -30,7 +31,8 @@
     "W-L3_wsl_runtime_baseline_verification",
     "D-005_schema_validation_library_decision",
     "S1-A2_schema_validation_scaffold_with_zod",
-    "S1-A3_local_storage_min_loop_with_localstorage"
+    "S1-A3_local_storage_min_loop_with_localstorage",
+    "D-007_defer_electron_shell_close_s1"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -51,24 +53,25 @@
     "output_rule": "从前沿窗口中选择唯一一个下一原子任务，写入 current_atomic_task，再执行。"
   },
   "risks": [
-    "dev server 已验证可返回 HTTP 200 与完整 index.html（localhost:5173），但 S1-A3 save/load 按钮尚未做浏览器里的人工交互验证（只经过了 Node 侧 polyfill round-trip）",
-    "Electron 外壳尚未接入，桌面端目前只能作为浏览器 SPA 运行；S1 阶段完成定义最后一项待决",
-    "`npm run typecheck` 脚本当前报 TS6310 —— `tsc -b --noEmit` 与 composite referenced project 冲突；临时替代 `npx tsc --noEmit -p tsconfig.json` 可用；修复在候选 M-1"
+    "dev server 已验证可返回 HTTP 200 与完整 index.html（localhost:5173），但 S1-A3 save/load 按钮尚未做浏览器里的人工交互验证（只经过了 Node 侧 polyfill round-trip）。S2-A1 表单同样需要注意此风险：Node 侧 polyfill 黑盒验证不能替代浏览器交互验证。",
+    "Electron 外壳已由 D-007 明确延后；若 S2 主闭环推进过程中出现真正需要 fs 或主进程能力的阻塞（例如结案归档要直接写 `.debug_workspace/`），需要重新评估把 S1-A4 或其等价任务拉回前沿窗口。",
+    "`npm run typecheck` 脚本当前报 TS6310 —— `tsc -b --noEmit` 与 composite referenced project 冲突；临时替代 `npx tsc --noEmit -p tsconfig.json` 可用；修复在候选 M-1。",
+    "App.tsx 的 Stage footer 仍写 `S1-A3 · localStorage save/load loop for IssueCard`；S1 已关闭但未改文案，下一轮做 S2-A1 时应同步更新 footer 或单拎出来做一个小修复。"
   ],
   "notes": [
-    "D-006：S1 阶段 IssueCard 的本地持久化使用 window.localStorage，键前缀 repo-debug:issue-card:<id>；读盘必走 IssueCardSchema.safeParse 并返回结构化错误（not_found / parse_error / validation_error）",
-    "S1-A3 代码路径：apps/desktop/src/storage/issue-card-store.ts 导出 saveIssueCard / loadIssueCard / LoadIssueCardResult；apps/desktop/src/App.tsx 在'问题卡区'嵌入 IssueStorageControls（Save / Load 按钮 + 两行状态）；apps/desktop/scripts/verify-s1-a3.mts 做 Node 侧 polyfill 黑盒验证",
-    "S1-A3 验证：`npm run build` 45 modules ~200 kB 通过；`node --experimental-strip-types scripts/verify-s1-a3.mts` 3 断言 PASS（save→load 字段 round-trip / nonexistent id → not_found）",
-    "Node 24 strip-types 不补相对 TS 扩展名：S1-A3 给 apps/desktop/src/domain/schemas/issue-card.ts 的 `./repo-snapshot` 与 apps/desktop/src/storage/issue-card-store.ts 的 `../domain/schemas/issue-card` 补了 `.ts` 后缀；tsconfig allowImportingTsExtensions 已开，Vite 兼容，不破坏 build；其它 schema 不跨模块 import 未动",
-    "S1-A2 完成：apps/desktop/src/domain/schemas/ 下五个文件（repo-snapshot / issue-card / investigation-record / error-entry / archive-document）落地；每文件导出 *Schema 与通过 z.infer 派生的类型；字段对齐 .agents/skills/*/SKILL.md 契约；errorCode/archiveFileName 均带正则约束；datetime 统一用 { offset: true } 支持 +HH:mm",
-    "S1-A2 round 为让 node/npm 可在 sandbox 下运行，`.claude/settings.local.json` 的 sandbox.filesystem.allowRead 追加了 ~/.nvm/ 与 ~/.npm/，allowWrite 追加了 ~/.npm/；该文件未纳入 S1-A2 或 S1-A3 commit，保留在工作区由用户决定是否 commit",
-    "D-005：schema 运行时校验统一使用 zod（v3.x，实装 ^3.23.8）；读盘与 AI 产出统一用 safeParse 以拿到结构化错误",
-    "下一轮若选 S1-A4（Electron 外壳），需要补 electron / electron-builder devDep、建立 electron/main.ts + electron/preload.ts 最小骨架、接一个 dev:electron 脚本；或直接用一条 D-007 明确延后，这样 S1 阶段完成定义最后一项以'延后决策'形式满足",
-    "不要在 S1-A3 的 issue-card-store 上扩展 InvestigationRecord / ErrorEntry / ArchiveDocument 的存储；这是 S2 的事",
-    "W-L3：WSL 运行基线已通过（node v24.14.0 / npm 11.9.0 / Linux 6.6.87.2-microsoft-standard-WSL2）",
-    "根 .gitignore 仅忽略 .codex（Codex CLI 空标记文件，非项目内容）",
-    "下一轮必须按 current.md 的下一任务选择流程重新判断，不得机械顺推",
-    "apps/desktop 技术栈：Vite 5 + React 18 + TypeScript 5 + zod 3.23.8；Stage footer 已更新为 'S1-A3 · localStorage save/load loop for IssueCard'",
-    "apps/desktop/.gitignore 已排除 node_modules/dist/*.tsbuildinfo/vite.config.{d.ts,js}"
+    "D-007：S1 阶段 Electron 外壳延后，S1 即刻关闭，阶段过渡到 S2。理由是 SPA + localStorage 足够支撑 S2 主闭环前半段验证，且 WSL 下 Electron 首次接入风险不对等；Electron 不视为永久废弃，S2 主闭环如遇硬阻塞可拉回。",
+    "D-006：S1 阶段 IssueCard 的本地持久化使用 window.localStorage，键前缀 repo-debug:issue-card:<id>；读盘必走 IssueCardSchema.safeParse 并返回结构化错误（not_found / parse_error / validation_error）。S2 阶段继续沿用直到出现硬阻塞。",
+    "S1-A3 代码路径：apps/desktop/src/storage/issue-card-store.ts 导出 saveIssueCard / loadIssueCard / LoadIssueCardResult；apps/desktop/src/App.tsx 在'问题卡区'嵌入 IssueStorageControls（Save / Load 按钮 + 两行状态）；apps/desktop/scripts/verify-s1-a3.mts 做 Node 侧 polyfill 黑盒验证。S2-A2 若加 listIssueCards，应该放同一文件并在 verify 脚本里覆盖。",
+    "S1-A3 验证：`npm run build` 45 modules ~200 kB 通过；`node --experimental-strip-types scripts/verify-s1-a3.mts` 3 断言 PASS（save→load 字段 round-trip / nonexistent id → not_found）。",
+    "Node 24 strip-types 不补相对 TS 扩展名：S1-A3 给 apps/desktop/src/domain/schemas/issue-card.ts 的 `./repo-snapshot` 与 apps/desktop/src/storage/issue-card-store.ts 的 `../domain/schemas/issue-card` 补了 `.ts` 后缀；tsconfig allowImportingTsExtensions 已开，Vite 兼容，不破坏 build；S2 新写 Node 侧脚本时跨模块相对 import 要保持这个习惯。",
+    "S1-A2 完成：apps/desktop/src/domain/schemas/ 下五个文件（repo-snapshot / issue-card / investigation-record / error-entry / archive-document）落地；每文件导出 *Schema 与通过 z.infer 派生的类型；字段对齐 .agents/skills/*/SKILL.md 契约；errorCode/archiveFileName 均带正则约束；datetime 统一用 { offset: true } 支持 +HH:mm。S2 加入 Investigation/Error/Archive 存储时直接复用这些 schema，不要再写新 schema 或手写 guard。",
+    "S1-A2 round 为让 node/npm 可在 sandbox 下运行，`.claude/settings.local.json` 的 sandbox.filesystem.allowRead 追加了 ~/.nvm/ 与 ~/.npm/，allowWrite 追加了 ~/.npm/；该文件未纳入 S1-A2 / S1-A3 / D-007 commit，仍留在工作区由用户决定是否 commit。",
+    "D-005：schema 运行时校验统一使用 zod（v3.x，实装 ^3.23.8）；读盘与 AI 产出统一用 safeParse 以拿到结构化错误。",
+    "下一轮若选 S2-A1（IssueCard intake 表单），推荐做法：在 App.tsx 中渲染受控 form（title / description / severity / 触发 repoSnapshot 最少字段），提交时本地生成 id（crypto.randomUUID 或时间戳字符串）、填入当前 ISO8601（带 +08:00 offset）、调用 saveIssueCard；验证走 Node 侧 polyfill round-trip 或扩展现有 verify 脚本。不要顺带做 list 视图（留给 S2-A2）。",
+    "W-L3：WSL 运行基线已通过（node v24.14.0 / npm 11.9.0 / Linux 6.6.87.2-microsoft-standard-WSL2）。",
+    "根 .gitignore 仅忽略 .codex（Codex CLI 空标记文件，非项目内容）。",
+    "下一轮必须按 current.md 的下一任务选择流程重新判断，不得机械顺推。",
+    "apps/desktop 技术栈：Vite 5 + React 18 + TypeScript 5 + zod 3.23.8；Stage footer 目前仍显示 'S1-A3 · localStorage save/load loop for IssueCard'，S2-A1 落地时应一并更新。",
+    "apps/desktop/.gitignore 已排除 node_modules/dist/*.tsbuildinfo/vite.config.{d.ts,js}。"
   ]
 }
