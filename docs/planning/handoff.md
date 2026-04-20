@@ -5,12 +5,13 @@
   - 目录规范化起步：`docs/product`、`docs/planning`、`.agent-state` 已创建。
   - 产品文档已迁移：`产品介绍.md` → `docs/product/产品介绍.md`。
   - 规划区六文件已建立：`roadmap/backlog/current/decisions/handoff/architecture`。
+  - `AGENTS.md` 已重构为长期 AI 协作规则文件（含 planning/skill/feedback/commit/handoff 约束）。
 - 进行中：
-  - `AGENTS.md` 重构（下一原子任务）。
+  - `README.md` 重构（下一原子任务）。
 
 ## 下一步最推荐动作
-1. 完成 `AGENTS.md` 重构，覆盖规划流程、强制 skill 使用、反馈闭环、commit 与 handoff 规则。
-2. 重构 `README.md` 为课程/作业风格，状态标注必须真实。
+1. 完成 `README.md` 重构为课程/作业风格中文文档，补齐 Harness 设计与真实进度状态。
+2. 重构关键 skills 骨架，并保证与 `AGENTS.md` 规则一致。
 
 ## 已踩坑与约束
 - 必须每个原子任务单独 commit，不能跨任务混提。
