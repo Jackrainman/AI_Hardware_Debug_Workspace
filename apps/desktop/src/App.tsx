@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 import type { IssueCard } from "./domain/schemas/issue-card";
 import {
@@ -35,8 +35,14 @@ import {
   saveInvestigationRecord,
   type InvestigationRecordListResult,
 } from "./storage/investigation-record-store";
-import { saveArchiveDocument } from "./storage/archive-document-store";
-import { saveErrorEntry } from "./storage/error-entry-store";
+import {
+  listArchiveDocuments,
+  saveArchiveDocument,
+} from "./storage/archive-document-store";
+import {
+  listErrorEntries,
+  saveErrorEntry,
+} from "./storage/error-entry-store";
 
 const SAMPLE_ISSUE_ID = "sample-issue-0001";
 const SAMPLE_TIMESTAMP = "2026-04-21T02:30:00+08:00";
@@ -937,57 +943,122 @@ function StaticPaneShell({ pane }: { pane: Pane }) {
   );
 }
 
+export type ArchiveIndexItem = {
+  fileName: string;
+  filePath: string;
+  issueId: string;
+  errorCode: string | null;
+  category: string | null;
+  generatedAt: string;
+};
+
+export type ArchiveIndex = {
+  items: ArchiveIndexItem[];
+  invalidCount: number;
+};
+
+export function loadArchiveIndex(): ArchiveIndex {
+  const docList = listArchiveDocuments();
+  const errorList = listErrorEntries();
+  const errorByIssue = new Map<string, { errorCode: string; category: string }>();
+  for (const entry of errorList.valid) {
+    if (errorByIssue.has(entry.sourceIssueId)) continue;
+    errorByIssue.set(entry.sourceIssueId, {
+      errorCode: entry.errorCode,
+      category: entry.category,
+    });
+  }
+  const items: ArchiveIndexItem[] = docList.valid.map((doc) => {
+    const matched = errorByIssue.get(doc.issueId);
+    return {
+      fileName: doc.fileName,
+      filePath: doc.filePath,
+      issueId: doc.issueId,
+      errorCode: matched?.errorCode ?? null,
+      category: matched?.category ?? null,
+      generatedAt: doc.generatedAt,
+    };
+  });
+  return {
+    items,
+    invalidCount: docList.invalid.length + errorList.invalid.length,
+  };
+}
+
 export function ArchivePaneShell({
   pane,
-  latestCloseout,
+  archiveIndex,
+  onOpenList,
 }: {
   pane: Pane;
-  latestCloseout: CloseoutSummary | null;
+  archiveIndex: ArchiveIndex;
+  onOpenList: () => void;
 }) {
+  const latest = archiveIndex.items[0] ?? null;
+  const total = archiveIndex.items.length;
   return (
     <div className="archive-pane-stack" data-testid="archive-panel">
       <StaticPaneShell pane={pane} />
-      {latestCloseout === null ? (
+      <div className="archive-summary-row" data-testid="archive-summary-row">
+        <span
+          className="archive-count-chip"
+          data-testid="archive-count-chip"
+          data-total={total}
+        >
+          累计归档 {total} 条
+        </span>
+        <button
+          type="button"
+          className="button-secondary"
+          onClick={onOpenList}
+          disabled={total === 0}
+          data-testid="archive-open-list-button"
+        >
+          查看归档列表
+        </button>
+      </div>
+      {archiveIndex.invalidCount > 0 && (
+        <p className="storage-line" data-testid="archive-invalid-note">
+          有 {archiveIndex.invalidCount} 条归档数据校验失败，已跳过。
+        </p>
+      )}
+      {latest === null ? (
         <p className="empty-state archive-empty-state" data-testid="archive-empty-state">
-          尚无归档结果。完成问题卡区第 4 步“结案并生成归档摘要”后，这里会显示最近一次归档摘要与错误表条目。
+          尚无归档结果。完成问题卡区第 4 步“结案并生成归档摘要”后，这里会显示累计归档数量与最近一次归档摘要，刷新也不会丢失。
         </p>
       ) : (
         <section className="archive-result-panel" data-testid="archive-result-panel">
           <header className="archive-result-header">
-            <span className="archive-result-badge">已生成</span>
-            <h3>最近一次归档结果</h3>
+            <span className="archive-result-badge">最近一次</span>
+            <h3>最近一次归档摘要</h3>
           </header>
           <p className="archive-result-status" data-testid="archive-result-status">
-            已完成结案，已生成 ArchiveDocument 与 ErrorEntry，并写入浏览器本地存储。
+            已生成 ArchiveDocument 与 ErrorEntry，已写入浏览器本地存储；刷新页面仍可读回。
           </p>
           <dl className="archive-result-fields">
             <div>
               <dt>归档摘要</dt>
-              <dd>{latestCloseout.archiveFileName}</dd>
+              <dd>{latest.fileName}</dd>
             </div>
             <div>
               <dt>错误表编号</dt>
-              <dd>{latestCloseout.errorCode}</dd>
+              <dd>{latest.errorCode ?? "(未记录)"}</dd>
             </div>
             <div>
               <dt>来源问题</dt>
-              <dd>{latestCloseout.issueId}</dd>
-            </div>
-            <div>
-              <dt>归档状态</dt>
-              <dd>已生成 · localStorage</dd>
+              <dd>{latest.issueId}</dd>
             </div>
             <div>
               <dt>分类</dt>
-              <dd>{latestCloseout.category}</dd>
+              <dd>{latest.category ?? "(未记录)"}</dd>
             </div>
             <div>
               <dt>归档时间</dt>
-              <dd>{latestCloseout.archivedAt}</dd>
+              <dd>{latest.generatedAt}</dd>
             </div>
           </dl>
           <p className="archive-result-note">
-            后续文件写盘位置：{latestCloseout.archiveFilePath}。当前阶段不伪装为已接入 .debug_workspace。
+            后续文件写盘位置：{latest.filePath}。当前阶段不伪装为已接入 .debug_workspace。
           </p>
         </section>
       )}
@@ -995,8 +1066,106 @@ export function ArchivePaneShell({
   );
 }
 
+export function ArchiveListDrawer({
+  open,
+  archiveIndex,
+  onClose,
+}: {
+  open: boolean;
+  archiveIndex: ArchiveIndex;
+  onClose: () => void;
+}) {
+  if (!open) return null;
+  const { items, invalidCount } = archiveIndex;
+  return (
+    <div
+      className="archive-drawer-overlay"
+      data-testid="archive-drawer"
+      role="dialog"
+      aria-label="归档列表"
+      onClick={onClose}
+    >
+      <div
+        className="archive-drawer"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <header className="archive-drawer-header">
+          <div className="archive-drawer-title">
+            <h3>归档列表</h3>
+            <span className="archive-drawer-count">共 {items.length} 条（按归档时间倒序）</span>
+          </div>
+          <button
+            type="button"
+            className="button-secondary"
+            onClick={onClose}
+            data-testid="archive-drawer-close"
+          >
+            关闭
+          </button>
+        </header>
+        {invalidCount > 0 && (
+          <p className="storage-line">
+            有 {invalidCount} 条归档数据校验失败，已跳过。
+          </p>
+        )}
+        {items.length === 0 ? (
+          <p className="empty-state">尚无归档条目。完成结案后再打开此处查看。</p>
+        ) : (
+          <ul className="archive-drawer-list" data-testid="archive-drawer-list">
+            {items.map((item) => (
+              <li key={item.fileName} className="archive-drawer-item">
+                <div className="archive-drawer-item-row">
+                  <span className="archive-drawer-file">{item.fileName}</span>
+                  <span className="archive-drawer-time">{item.generatedAt}</span>
+                </div>
+                <dl className="archive-drawer-meta">
+                  <div>
+                    <dt>错误表编号</dt>
+                    <dd>{item.errorCode ?? "(未记录)"}</dd>
+                  </div>
+                  <div>
+                    <dt>分类</dt>
+                    <dd>{item.category ?? "(未记录)"}</dd>
+                  </div>
+                  <div>
+                    <dt>来源问题</dt>
+                    <dd>{item.issueId}</dd>
+                  </div>
+                  <div>
+                    <dt>后续写盘位置</dt>
+                    <dd>{item.filePath}</dd>
+                  </div>
+                </dl>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="archive-drawer-note">
+          当前归档仍在浏览器 localStorage，不是 .debug_workspace 文件写盘；接入 Electron / fs 后这里会切换到真实文件路径。
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
-  const [latestCloseout, setLatestCloseout] = useState<CloseoutSummary | null>(null);
+  const [archiveIndex, setArchiveIndex] = useState<ArchiveIndex>({
+    items: [],
+    invalidCount: 0,
+  });
+  const [isArchiveListOpen, setIsArchiveListOpen] = useState<boolean>(false);
+
+  const refreshArchiveIndex = () => {
+    setArchiveIndex(loadArchiveIndex());
+  };
+
+  useEffect(() => {
+    refreshArchiveIndex();
+  }, []);
+
+  const handleCloseoutResult = (_summary: CloseoutSummary) => {
+    refreshArchiveIndex();
+  };
 
   return (
     <div className="app-root">
@@ -1026,9 +1195,13 @@ export default function App() {
               <p className="pane-hint">{pane.hint}</p>
             </div>
             {pane.id === "issue" ? (
-              <IssuePane onCloseoutResult={setLatestCloseout} />
+              <IssuePane onCloseoutResult={handleCloseoutResult} />
             ) : pane.id === "archive" ? (
-              <ArchivePaneShell pane={pane} latestCloseout={latestCloseout} />
+              <ArchivePaneShell
+                pane={pane}
+                archiveIndex={archiveIndex}
+                onOpenList={() => setIsArchiveListOpen(true)}
+              />
             ) : (
               <StaticPaneShell pane={pane} />
             )}
@@ -1038,6 +1211,11 @@ export default function App() {
       <footer className="app-footer">
         <span>当前边界：浏览器 SPA + localStorage；Electron / fs / IPC / .debug_workspace 文件写盘未接入。</span>
       </footer>
+      <ArchiveListDrawer
+        open={isArchiveListOpen}
+        archiveIndex={archiveIndex}
+        onClose={() => setIsArchiveListOpen(false)}
+      />
     </div>
   );
 }

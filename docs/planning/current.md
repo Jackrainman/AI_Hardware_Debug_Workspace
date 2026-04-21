@@ -31,10 +31,11 @@
 - 必要时补最小中文演示路径，但不动深层数据流。
 
 ## 当前唯一执行中的原子任务
-- **无**。本轮 **D1-ARCHIVE-PANEL-FIX** 已完成：closeout 成功后，最近一次 `CloseoutSummary` 会从问题卡区同步到右侧归档区；归档区能明确区分“尚无归档结果”和“已有归档结果”，并展示最近一次归档文件名、错误表编号、来源问题、归档状态、分类和归档时间。未改项目区真实仓库绑定，未接 Electron / fs / IPC，未改 `.debug_workspace` 文件写盘，未改 schema / store 契约，未扩展完整归档浏览页。
+- **无**。本轮 **D1-ARCHIVE-PERSIST-INDEX** 已完成：右侧归档区在 mount 时从 `window.localStorage` 真实读回累计归档索引；改为展示“累计归档 N 条”徽标 + 最近一次归档摘要（文件名 / 错误表编号 / 来源问题 / 分类 / 归档时间），刷新后不再空掉；新增 [查看归档列表] 按钮，点击后打开右侧抽屉，倒序列出全部归档条目（文件名 / errorCode / 分类 / 来源问题 / 后续写盘位置 / 归档时间）；closeout 成功后自动刷新索引，计数和最近摘要立即更新。仅改 `App.tsx` / `App.css` / `archive-document-store.ts` / `error-entry-store.ts` 与 `scripts/verify-d1-archive-persist-index.mts`；未改 schema / closeout 工厂 / IssueCard 数据流 / 项目区 / Electron / fs / IPC / .debug_workspace 写盘。
 
 ## 当前前沿任务窗口（候选，不等于顺推队列）
-- D1-MAINLINE-BROWSER-SMOKE：在浏览器里真人走一遍 创建 → 自动选中 → 追记 → 结案 → 结果面板读回；只验证、不改代码。
+- D1-MAINLINE-BROWSER-SMOKE：在浏览器里真人走一遍 创建 → 自动选中 → 追记 → 结案 → 结果面板读回 → 刷新验证右侧累计归档数量与最近摘要仍在 → 点击 [查看归档列表] 看到全部条目；只验证、不改代码。
+- D1-ISSUE-LIST-HIDE-ARCHIVED：在中间问题卡列表里隐藏 `status=archived` 的卡（或折叠到“已归档”分组），让主列表只聚焦未结案问题；不改 store 契约。
 - S3-ENTRY-PLANNING：交差壳完成后切回链路 A，评估 Electron/fs adapter、runtime log、repair task 的入口任务；需 planning 明确切回技术主线。
 
 ## 下一任务选择流程

@@ -39,9 +39,16 @@
 - [x] D1-MAINLINE-WIRE-CONNECT：串联主操作区主线闭环。在 `App.tsx` 里让 `handleCardCreated(id)` 自动设置 `selectedIssueId`、加载完整卡对象并刷新 recordList；新增 `selectedCard` / `lastCloseout` 状态；新增 `MainlineResultPanel`（展示当前问题卡标题/编号/状态 chip/严重度/追记数/更新时间，以及最近一次结案归档的 fileName/filePath/errorCode/归档时间/分类/markdown 预览 + 可展开 details）；新增 `FlowGuide` 根据 `cardList` / `selectedIssueId` / `selectedCard.status` / `lastCloseout` 计算当前步骤并用 `data-step-state="done|active|pending"` 反映；`CloseoutForm.onClosed` 签名改为接收 `CloseoutSummary`，`handleSubmit` 成功分支把 archiveDocument/errorEntry 摘要 + markdownPreview 传回 IssuePane；`handleSelect` / `handleCardCreated` 也清理 `lastCloseout` 防止跨卡污染。`App.css` 追加 `.mainline-panel` / `.mainline-status-chip`（按 open/investigating/resolved/archived/needs_manual_review 分色）/ `.mainline-closeout-*`（fields dl 网格 + `<details>` markdown 预览样式）/ `.flow-guide span[data-step-state="*"]` 步骤态样式。未改 schema / domain 工厂 / store / verify 脚本 / 业务数据流；用户前现场感受到的"追加记录没用 / 结案无效"本质是 UI 串联与结果反馈缺口，本轮补齐。
 - [x] D1-README-AGENTS-PACKAGING：重写 `README.md` 为 ProbeFlash 参赛门面，强化痛点、Harness / Agent、Tool / CLI / Repo-aware、Feedback Loop、48 小时交付、架构图和流程图；同步 `AGENTS.md` 项目概览、`App.tsx` 可见产品名、`apps/desktop/package.json` 与 lockfile 元数据命名。未改 schema / store / Electron / fs / IPC，内部 `repo-debug:*` storage key 暂保留以兼容已有浏览器数据。
 - [x] D1-ARCHIVE-PANEL-FIX：修通 closeout 结果到右侧归档区显示。`App.tsx` 将最近一次 `CloseoutSummary` 从 `IssuePane` 同步到顶层 `App`，新增 `ArchivePaneShell` 区分“尚无归档结果”和“已有归档结果”，并展示归档文件名、错误表编号、来源问题、归档状态、分类、归档时间和后续写盘位置；`App.css` 增加归档结果面板样式。未改 store / schema / Electron / fs / IPC / 项目区。
+- [x] D1-ARCHIVE-PERSIST-INDEX：右侧归档区跨刷新持久化读回 + 累计索引 + 历史抽屉。
+  - `apps/desktop/src/storage/archive-document-store.ts` 新增 `listArchiveDocuments()` / `ArchiveDocumentListResult`，前缀扫描 + safeParse + 按 `generatedAt` 倒序，坏 JSON / 坏 schema 路由到 invalid 桶。
+  - `apps/desktop/src/storage/error-entry-store.ts` 新增 `listErrorEntries()` / `ErrorEntryListResult`，同样模式；用于让归档抽屉展示 errorCode / category / 来源问题。
+  - `apps/desktop/src/App.tsx` 新增 `loadArchiveIndex()`（拉两份 list → 按 `sourceIssueId` 关联 → 生成 `ArchiveIndexItem[]`）；`App` 组件 `useEffect` 在 mount 时读回一次索引，closeout 成功后再次读回；`ArchivePaneShell` 改为展示"累计归档 N 条"徽标 + [查看归档列表] 按钮（N=0 时 disabled）+ 最近一次摘要；新增 `ArchiveListDrawer` overlay，倒序列出全部归档条目（文件名 / errorCode / 分类 / 来源问题 / 后续写盘位置 / 归档时间），点击遮罩或"关闭"按钮可关闭。
+  - `apps/desktop/src/App.css` 追加 `.archive-summary-row` / `.archive-count-chip` / `.archive-drawer-*` 样式。
+  - 新增 `apps/desktop/scripts/verify-d1-archive-persist-index.mts`，6 断言 PASS（两端倒序、join 字段、坏 JSON 不污染 valid、坏 schema 不污染 valid、两前缀互不污染）。
+  - 未改 schema / closeout 工厂 / IssueCard 数据流 / 项目区 / Electron / fs / IPC / .debug_workspace 写盘。
 
 ## 当前唯一执行中
-- 无。D1-ARCHIVE-PANEL-FIX 已完成验证并进入提交收束。
+- 无。D1-ARCHIVE-PERSIST-INDEX 已完成验证并进入提交收束。
 
 ## 下一步
-- **按 `docs/planning/current.md` 的「下一任务选择流程」重选唯一下一任务**，先确认 `current_mode=delivery_priority`。最推荐 D1-MAINLINE-BROWSER-SMOKE：真人走一遍 创建 → 自动选中 → 追记 → 结案 → 中心结果面板 + 右侧归档区结果面板读回；只验证、不改代码。
+- **按 `docs/planning/current.md` 的「下一任务选择流程」重选唯一下一任务**，先确认 `current_mode=delivery_priority`。最推荐 D1-MAINLINE-BROWSER-SMOKE：真人走一遍 创建 → 自动选中 → 追记 → 结案 → 中心结果面板 + 右侧归档区结果面板读回 → 刷新验证累计归档与最近摘要仍在 → 点击 [查看归档列表] 看到全部条目；只验证、不改代码。

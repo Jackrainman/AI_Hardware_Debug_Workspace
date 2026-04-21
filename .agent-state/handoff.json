@@ -14,7 +14,7 @@
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-04-21T16:55:11+08:00",
+  "timestamp": "2026-04-21T22:30:00+08:00",
   "current_mode": "delivery_priority",
   "current_stage": "D1",
   "current_stage_name": "交差优先中文产品壳",
@@ -42,8 +42,14 @@
     {
       "id": "D1-MAINLINE-BROWSER-SMOKE",
       "track": "track_b_delivery_priority_shell",
-      "goal": "在浏览器里真人走一遍 创建 → 自动选中 → 追记 → 结案 → 中心结果面板 + 右侧归档区结果面板读回，验证 D1 主流程真实交互行为；只验证不改代码。",
-      "depends_on": ["D1-MAINLINE-WIRE-CONNECT", "D1-ARCHIVE-PANEL-FIX"]
+      "goal": "在浏览器里真人走一遍 创建 → 自动选中 → 追记 → 结案 → 中心结果面板 + 右侧归档区摘要 → 刷新验证累计归档与最近摘要仍在 → 点击 [查看归档列表] 看到全部条目，验证 D1 主流程真实交互行为；只验证不改代码。",
+      "depends_on": ["D1-MAINLINE-WIRE-CONNECT", "D1-ARCHIVE-PANEL-FIX", "D1-ARCHIVE-PERSIST-INDEX"]
+    },
+    {
+      "id": "D1-ISSUE-LIST-HIDE-ARCHIVED",
+      "track": "track_b_delivery_priority_shell",
+      "goal": "中间问题卡主列表隐藏或折叠 status=archived 的卡，让演示时主列表只剩未结案问题；不改 store 契约。",
+      "depends_on": []
     },
     {
       "id": "S3-ENTRY-PLANNING",
@@ -79,7 +85,8 @@
     "D1-DEMO-PATH-MIN-CN",
     "D1-MAINLINE-WIRE-CONNECT",
     "D1-README-AGENTS-PACKAGING",
-    "D1-ARCHIVE-PANEL-FIX"
+    "D1-ARCHIVE-PANEL-FIX",
+    "D1-ARCHIVE-PERSIST-INDEX"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -92,12 +99,15 @@
       "git log -5",
       "apps/desktop/src/App.tsx",
       "apps/desktop/src/App.css",
-      "apps/desktop/src/index.css"
+      "apps/desktop/src/index.css",
+      "apps/desktop/src/storage/archive-document-store.ts",
+      "apps/desktop/src/storage/error-entry-store.ts"
     ],
     "criteria": [
       "current_mode 是否仍为 delivery_priority",
       "是否服务 D1 交差验收",
       "主操作区主线闭环在页面上是否已经在真实跑通（D1-MAINLINE-WIRE-CONNECT 后：是）",
+      "归档区是否跨刷新保留（D1-ARCHIVE-PERSIST-INDEX 后：是）",
       "中文是否更统一",
       "页面是否更像产品壳",
       "演示是否更顺",
@@ -109,8 +119,8 @@
     "output_rule": "从 frontier_tasks 中选择唯一一个原子任务，写入 current_atomic_task，再进入 task-execution。"
   },
   "risks": [
-    "D1-MAINLINE-WIRE-CONNECT 已完成 UI 层串联与结果反馈，但浏览器人工冒烟尚未执行，真实 DOM 交互仍需后续覆盖。",
-    "ArchiveDocument / ErrorEntry 当前仍在 localStorage，不是 .debug_workspace 文件系统写盘；右侧归档区已接最小结果展示，但完整归档浏览页、文件写盘、跨刷新历史归档列表仍未接入。",
+    "D1-ARCHIVE-PERSIST-INDEX 已接通跨刷新读回 + 累计索引 + [查看归档列表] 抽屉，但浏览器人工点击冒烟（含刷新 + 抽屉）尚未执行，需下一轮 D1-MAINLINE-BROWSER-SMOKE 覆盖。",
+    "ArchiveDocument / ErrorEntry 当前仍在 localStorage，不是 .debug_workspace 文件系统写盘；归档抽屉里已明确标注'后续写盘位置'，但真实文件写盘、独立归档浏览页、跨项目检索仍未接入。",
     "Electron / fs / IPC 仍未接入，项目区与归档区只能展示真实边界，不能包装成已完成能力。"
   ],
   "notes": [
@@ -122,6 +132,7 @@
     "D1-MAINLINE-WIRE-CONNECT 已完成：创建后自动选中新卡、新增 MainlineResultPanel 集中展示当前卡与归档摘要、FlowGuide 反映当前步骤、CloseoutForm.onClosed 回传 summary；只改 App.tsx / App.css，未改 schema / store / domain 工厂 / verify 脚本 / 业务数据流。用户前反馈的'追加记录没用 / 结案无效'本质是 UI 串联缺口，本轮补齐。",
     "D1-README-AGENTS-PACKAGING 已完成：README 已重写为 ProbeFlash 参赛门面，AGENTS 项目概览、App 主标题、package 元数据已统一到 ProbeFlash。验证通过：JSON parse、git diff --check、npm run typecheck、npm run build。为保持既有 localStorage 数据兼容，内部 storage key repo-debug:* 暂不改名。",
     "D1-ARCHIVE-PANEL-FIX 已完成：右侧归档区新增明确空状态和最近一次 closeout 结果面板；closeout 后可展示归档文件名、错误表编号、来源问题、归档状态、分类和归档时间。验证通过：npm run typecheck、npm run build、verify-s2-a4.mts、临时 Vite SSR 渲染断言、git diff --check、handoff.json JSON parse。",
+    "D1-ARCHIVE-PERSIST-INDEX 已完成：归档区 mount 时从 localStorage 读回累计归档索引，刷新不再空；UI 显示'累计归档 N 条' + 最近一次摘要 + [查看归档列表] 抽屉；closeout 成功后自动刷新索引。补 listArchiveDocuments() / listErrorEntries() 读回函数（带 invalid 桶与倒序）与 verify-d1-archive-persist-index.mts。验证通过：npm run typecheck、npm run build（229.30 kB / gzip 67.90 kB）、6 个 verify 脚本全部 PASS、git diff --check、handoff.json JSON parse。SSR 断言因 Node 24 strip-types 不支持 JSX 未跑，Node 侧读回断言已覆盖同一语义。",
     "用户已要求把 AGENTS.md 与 README 一起提交；AGENTS.md 中'除非明确要求，由 AI 自行编译'偏好纳入本轮提交范围。"
   ]
 }
