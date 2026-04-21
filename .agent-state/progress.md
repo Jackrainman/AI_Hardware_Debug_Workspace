@@ -34,12 +34,12 @@
 - [x] S2-CLOSEOUT-DOCS：同步阶段状态与收口文档。`README.md` 的最小可演示流程、当前进度、当前不足、后续计划已切到 S2 主闭环已打通；`roadmap.md` 标记 S1 已完成/Electron 延后、S2 主闭环关键路径已完成、S3 下一阶段候选未开始；`backlog.md` 拆分已完成项与未完成边界；`current.md` / `handoff.md` / `.agent-state/handoff.json` 前沿窗口切到 S3-ENTRY-PLANNING 与 UI-V1。
 - [x] D1-RULES-REALIGN：基于用户交差目标切换到 `delivery_priority`，把项目重整为链路 A（技术闭环后续主线）与链路 B（当前交差优先主线），同步 `AGENTS.md`、planning、handoff、`.agent-state` 与 README 口径。
 - [x] D1-UI-V0-CN-SHELL-POLISH：完成第一轮中文产品壳优化。`App.tsx` 主页面标题、副标题、三栏说明、按钮、表单 label/placeholder、状态和空状态已中文化；项目区/归档区已改为可演示壳并保留 Electron/fs/.debug_workspace 未接入边界；`App.css` / `index.css` 统一了三栏布局、控件、空状态和配色变量；未改 schema / store / verify / 业务数据流。
+- [x] D1-UI-V1-VISUAL-HIERARCHY：完成第二轮视觉层级优化。`App.tsx` 增加展示性层级结构、三栏徽标、问题卡流程引导、未选中提示和辅助验证说明；`App.css` / `index.css` 优化页面最大宽度、三栏比例、问题卡视觉重心、表单/列表/状态/空状态和主次按钮一致性；未改 schema / store / domain 工厂 / verify 脚本 / 业务数据流。
 
 ## 当前唯一执行中
-- **无**。D1-UI-V0-CN-SHELL-POLISH 已完成；下一轮必须重新读取真实仓库状态后，从 D1 前沿窗口选择唯一原子任务。
+- **无**。D1-UI-V1-VISUAL-HIERARCHY 已完成；下一轮必须重新读取真实仓库状态后，从 D1 前沿窗口选择唯一原子任务。
 
 ## 下一步
 - **按 `docs/planning/current.md` 的「下一任务选择流程」重选唯一下一任务**，先确认 `current_mode=delivery_priority`。
 - 当前优先候选：
-  - **D1-UI-V1-VISUAL-HIERARCHY**：在 V0 后整理视觉层级、密度、空状态和主工作台布局。
   - **D1-DEMO-PATH-MIN-CN**：在 V0/V1 后补最小中文演示路径，不伪造真实写盘能力。

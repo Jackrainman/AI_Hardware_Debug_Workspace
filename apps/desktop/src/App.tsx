@@ -89,11 +89,15 @@ function IssueStorageControls() {
 
   return (
     <div className="storage-controls" data-testid="issue-storage-controls">
+      <div className="form-caption form-caption-muted">
+        <h3>辅助验证</h3>
+        <p>保存一张示例卡并读回，用于确认浏览器本地存储链路。</p>
+      </div>
       <div className="storage-buttons">
-        <button type="button" onClick={handleSave}>
+        <button type="button" className="button-secondary" onClick={handleSave}>
           保存示例卡
         </button>
-        <button type="button" onClick={handleLoad}>
+        <button type="button" className="button-secondary" onClick={handleLoad}>
           读取示例卡
         </button>
       </div>
@@ -223,7 +227,7 @@ function IssueCardListView({
         <p>刷新后选择一张问题卡，再继续追加排查记录或结案。</p>
       </div>
       <div className="list-header">
-        <button type="button" onClick={onRefresh}>
+        <button type="button" className="button-secondary" onClick={onRefresh}>
           刷新列表
         </button>
         <span className="storage-line" data-testid="list-summary">
@@ -393,8 +397,12 @@ function InvestigationRecordListView({
 }) {
   return (
     <div className="list-view" data-testid="investigation-record-list">
+      <div className="form-caption">
+        <h3>排查时间线</h3>
+        <p>读回当前问题卡下的排查记录，按创建时间从早到晚展示。</p>
+      </div>
       <div className="list-header">
-        <button type="button" onClick={onRefresh}>
+        <button type="button" className="button-secondary" onClick={onRefresh}>
           刷新记录
         </button>
         <span className="storage-line" data-testid="record-list-summary">
@@ -409,7 +417,7 @@ function InvestigationRecordListView({
       {result && result.valid.length > 0 && (
         <ul className="list-items" data-testid="record-list-valid">
           {result.valid.map((record) => (
-            <li key={record.id} className="list-item">
+            <li key={record.id} className="list-item list-item-static">
               <span className="list-item-title">
                 [{labelInvestigationType(record.type)}] {record.polishedText}
               </span>
@@ -507,7 +515,7 @@ function CloseoutForm({
     <form className="intake-form" onSubmit={handleSubmit} data-testid="closeout-form">
       <div className="form-caption">
         <h3>4. 结案归档</h3>
-        <p>填写根因和处理结论，生成本地归档摘要与错误表条目。</p>
+        <p>填写根因和处理结论，生成浏览器本地归档摘要与错误表条目。</p>
       </div>
       <p className="storage-line" data-testid="closeout-target">
         结案对象：{issueId}
@@ -609,10 +617,22 @@ function IssuePane() {
   return (
     <div className="issue-pane-stack">
       <div className="flow-guide" aria-label="问题处理步骤">
-        <span>创建</span>
-        <span>选择</span>
-        <span>追记</span>
-        <span>结案</span>
+        <span>
+          <strong>01</strong>
+          创建
+        </span>
+        <span>
+          <strong>02</strong>
+          选择
+        </span>
+        <span>
+          <strong>03</strong>
+          追记
+        </span>
+        <span>
+          <strong>04</strong>
+          结案
+        </span>
       </div>
       <IssueIntakeForm onCreated={handleCardCreated} />
       <IssueCardListView
@@ -621,6 +641,11 @@ function IssuePane() {
         onRefresh={refreshCardList}
         onSelect={handleSelect}
       />
+      {selectedIssueId === null && (
+        <p className="empty-state issue-next-step">
+          先创建或刷新问题卡列表；选中一张问题卡后，会展开排查追记和结案归档表单。
+        </p>
+      )}
       {selectedIssueId !== null && (
         <>
           <InvestigationAppendForm
@@ -657,6 +682,7 @@ function renderLoadStatus(result: LoadIssueCardResult | null): string {
 type Pane = {
   id: "project" | "issue" | "archive";
   title: string;
+  badge: string;
   hint: string;
   status: string;
   bullets: string[];
@@ -666,6 +692,7 @@ const PANES: Pane[] = [
   {
     id: "project",
     title: "项目区",
+    badge: "上下文",
     hint: "展示当前调试项目的上下文边界。真实仓库选择、Electron/fs 仍是后续能力。",
     status: "演示状态：浏览器 SPA + localStorage",
     bullets: [
@@ -677,6 +704,7 @@ const PANES: Pane[] = [
   {
     id: "issue",
     title: "问题卡区",
+    badge: "主流程",
     hint: "创建问题卡、追加排查记录、结案生成本地归档摘要。",
     status: "当前可用：问题卡、排查记录、结案归档的浏览器本地链路",
     bullets: [],
@@ -684,6 +712,7 @@ const PANES: Pane[] = [
   {
     id: "archive",
     title: "归档区",
+    badge: "沉淀物",
     hint: "展示结案后会沉淀的归档资产。当前归档仍保存在浏览器 localStorage。",
     status: "边界说明：尚未写入真实文件系统",
     bullets: [
@@ -716,7 +745,10 @@ function labelInvestigationType(type: InvestigationType): string {
 function StaticPaneShell({ pane }: { pane: Pane }) {
   return (
     <div className="demo-shell">
-      <p className="pane-status">{pane.status}</p>
+      <div className="demo-status-row">
+        <span className="demo-status-label">当前状态</span>
+        <p className="pane-status">{pane.status}</p>
+      </div>
       <ul className="demo-list">
         {pane.bullets.map((item) => (
           <li key={item}>{item}</li>
@@ -730,21 +762,28 @@ export default function App() {
   return (
     <div className="app-root">
       <header className="app-header">
-        <div>
+        <div className="app-title-block">
+          <p className="app-eyebrow">本地硬件调试闭环</p>
           <h1>RepoDebug 调试闭环工作台</h1>
           <p className="app-subtitle">
             把硬件调试现场记录收束为问题卡、排查记录和归档摘要。当前是浏览器 SPA 演示版。
           </p>
         </div>
-        <p className="stage-tag" data-testid="stage-tag">
-          D1：交差优先中文产品壳
-        </p>
+        <div className="header-status-stack">
+          <p className="stage-tag" data-testid="stage-tag">
+            D1：交差优先中文产品壳
+          </p>
+          <p className="header-boundary">SPA + localStorage，未接 Electron/fs</p>
+        </div>
       </header>
       <main className="app-grid">
         {PANES.map((pane) => (
           <section key={pane.id} className="pane" data-pane={pane.id}>
             <div className="pane-heading">
-              <h2>{pane.title}</h2>
+              <div className="pane-title-row">
+                <h2>{pane.title}</h2>
+                <span className="pane-badge">{pane.badge}</span>
+              </div>
               <p className="pane-hint">{pane.hint}</p>
             </div>
             {pane.id === "issue" ? (

@@ -14,7 +14,7 @@
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-04-21T14:47:24+08:00",
+  "timestamp": "2026-04-21T15:21:26+08:00",
   "current_mode": "delivery_priority",
   "current_stage": "D1",
   "current_stage_name": "交差优先中文产品壳",
@@ -39,14 +39,6 @@
   },
   "current_atomic_task": "WAITING_FOR_PLANNING_SELECTION",
   "frontier_tasks": [
-    {
-      "id": "D1-UI-V1-VISUAL-HIERARCHY",
-      "track": "track_b_delivery_priority_shell",
-      "goal": "在 V0 后继续整理视觉层级、卡片/列表/表单密度、主工作台布局和移动端可读性。",
-      "depends_on": [
-        "D1-UI-V0-CN-SHELL-POLISH"
-      ]
-    },
     {
       "id": "D1-DEMO-PATH-MIN-CN",
       "track": "track_b_delivery_priority_shell",
@@ -78,7 +70,8 @@
     "S2-A4_closeout_error_entry_archive_document",
     "S2-CLOSEOUT-DOCS_sync_stage_status_docs",
     "D1-RULES-REALIGN_delivery_priority_dual_track_docs",
-    "D1-UI-V0-CN-SHELL-POLISH"
+    "D1-UI-V0-CN-SHELL-POLISH",
+    "D1-UI-V1-VISUAL-HIERARCHY"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -103,11 +96,11 @@
       "是否避开 schema/store/Electron/fs/IPC 深改",
       "planning 与实际是否一致"
     ],
-    "recommended_next": "D1-UI-V1-VISUAL-HIERARCHY",
+    "recommended_next": "D1-DEMO-PATH-MIN-CN",
     "output_rule": "从 frontier_tasks 中选择唯一一个原子任务，写入 current_atomic_task，再进入 task-execution。"
   },
   "risks": [
-    "D1 V0 已完成中文产品壳，但浏览器人工冒烟尚未执行，真实 DOM 交互仍需用户或后续任务验证。",
+    "D1 V1 已完成视觉层级优化，但浏览器人工冒烟尚未执行，真实 DOM 交互仍需用户或后续任务验证。",
     "ArchiveDocument / ErrorEntry 当前仍在 localStorage，不是 .debug_workspace 文件系统写盘。",
     "Electron / fs / IPC 仍未接入，项目区与归档区只能展示真实边界，不能包装成已完成能力。"
   ],
@@ -115,7 +108,8 @@
     "链路 A 没有取消，只是降级为后续主线。",
     "链路 B 是当前阶段优先主线，后续 AI 不得把 S3 技术深化误判为最高优先级。",
     "D1-UI-V0-CN-SHELL-POLISH 已完成：主页面中文化、项目区/归档区演示壳、安全美化和问题卡区演示提示已落地，未改 schema / store / verify / 业务数据流。",
-    "下一轮推荐先做 D1-UI-V1-VISUAL-HIERARCHY：继续整理视觉层级、密度和移动端可读性，不碰深层数据流。",
+    "D1-UI-V1-VISUAL-HIERARCHY 已完成：主标题/阶段标签/三栏标题层级、问题卡区视觉重心、表单/列表/状态/空状态和页面留白已优化，未改 schema / store / domain 工厂 / verify / 业务数据流。",
+    "下一轮推荐先做 D1-DEMO-PATH-MIN-CN：补最小中文演示路径和演示友好的状态提示，不碰深层数据流。",
     "用户明确偏好：除非明确要求，不由 AI 自行编译；文档/UI 壳层任务以读回、JSON 解析、diff 检查和必要的静态检查为主。"
   ]
 }

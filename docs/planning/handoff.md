@@ -5,10 +5,10 @@
 ## 当前真实状态
 - 当前阶段：D1：交差优先中文产品壳。
 - 当前模式：`delivery_priority`。
-- 当前唯一执行中的原子任务：**无**。D1-UI-V0-CN-SHELL-POLISH 已完成；下一轮重新选择唯一原子任务。
+- 当前唯一执行中的原子任务：**无**。D1-UI-V1-VISUAL-HIERARCHY 已完成；下一轮重新选择唯一原子任务。
 - S2 主闭环关键路径已打通：IssueCard intake -> 列表选中 -> InvestigationRecord 追记 -> closeout -> ArchiveDocument + ErrorEntry -> IssueCard archived 读回。
 - 当前运行形态仍是 SPA + `window.localStorage`；Electron / fs / IPC / `.debug_workspace` 文件系统双写未接入。
-- 当前 UI 真实状态：`App.tsx` / `App.css` / `index.css` 已完成第一轮中文产品壳优化；项目区/归档区已从裸占位改为可演示壳并保留真实边界说明；问题卡区创建、选择、追记、结案的主流程文案已中文化。
+- 当前 UI 真实状态：`App.tsx` / `App.css` / `index.css` 已完成第二轮视觉层级优化；主标题/阶段标签/三栏标题、问题卡区视觉重心、表单/列表/状态/空状态和页面留白已更接近产品原型；项目区/归档区仍如实标注 Electron/fs/.debug_workspace 文件写盘未接入。
 
 ## 为什么切到交差优先
 - 用户当前目标不是继续把所有闭环功能做深，而是先交付一个“好看、中文、能用、像产品壳”的版本。
@@ -31,15 +31,16 @@
 - 项目区 / 归档区改成“可演示壳”，但必须清楚标注真实功能边界。
 - 尽量不动核心数据流，只做安全美化和演示友好化。
 
-## 下一轮最该优先做
-- 推荐唯一候选：**D1-UI-V1-VISUAL-HIERARCHY**。
+## 下一轮最推荐动作
+- 推荐唯一候选：**D1-DEMO-PATH-MIN-CN**。
+- 选择理由：D1-UI-V1 已完成视觉层级和组件一致性优化，下一步最有利于演示的是把创建、选择、追记、结案的最小中文路径做得更顺，但仍不能伪造真实仓库绑定或文件写盘能力。
 - 重点文件：
   - `apps/desktop/src/App.tsx`
   - `apps/desktop/src/App.css`
   - `apps/desktop/src/index.css`
 - 允许改动：
-  - 在 V0 中文壳基础上继续整理视觉层级、卡片/列表/表单密度和移动端可读性。
-  - 必要时微调空状态与演示提示，但仍保持真实边界说明。
+  - 微调演示提示、默认说明、成功/失败状态文案和空状态路径提示。
+  - 保持真实边界说明，不把 localStorage 包装成真实文件系统写盘。
 - 禁止改动：
   - schema / domain 工厂 / store / verify 脚本。
   - Electron / fs / IPC。
@@ -63,6 +64,7 @@
 
 ## 验证状态
 - PASS：D1-UI-V0-CN-SHELL-POLISH 只修改展示层与交接文档，未改 schema / domain 工厂 / store / verify 脚本。
+- PASS：D1-UI-V1-VISUAL-HIERARCHY 只修改展示层与交接文档，未改 schema / domain 工厂 / store / verify 脚本。
 - PASS：`.agent-state/handoff.json` 已可被 Node `JSON.parse` 解析，且 `current_mode=delivery_priority`。
 - PASS：`App.tsx` / `App.css` / `index.css` 已读回检查，主页面中文文案、项目区/归档区演示壳和统一控件样式已落盘。
 - PASS：`git diff --check` 无输出。
