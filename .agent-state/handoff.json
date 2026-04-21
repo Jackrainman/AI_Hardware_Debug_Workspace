@@ -9,12 +9,12 @@
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 需要在下一轮继续保留的关键说明"
   },
-  "timestamp": "2026-04-21T13:38:27+08:00",
+  "timestamp": "2026-04-21T14:15:05+08:00",
   "current_stage": "S2",
-  "current_stage_goal": "调试闭环主流程关键路径已打通：IssueCard intake、列表选中、InvestigationRecord 追记、closeout 生成 ArchiveDocument + ErrorEntry 并回写 IssueCard archived。下一轮建议先做 S2-CLOSEOUT-DOCS 阶段收口与 S3 入口评估；UI-V1 浏览器冒烟为备选。",
+  "current_stage_goal": "S2 阶段收口完成：IssueCard intake、列表选中、InvestigationRecord 追记、closeout 生成 ArchiveDocument + ErrorEntry 并回写 IssueCard archived 的主闭环关键路径已打通，README / roadmap / backlog / planning / handoff / .agent-state 已同步。下一轮建议先做 S3-ENTRY-PLANNING 或 UI-V1；不得直接进入 S3 功能开发。",
   "current_atomic_task": "WAITING_FOR_PLANNING_SELECTION",
   "frontier_tasks": [
-    "S2-CLOSEOUT-DOCS_stage_closeout_docs_and_s3_entry_eval",
+    "S3-ENTRY-PLANNING_validation_observability_frontier_selection",
     "UI-V1_browser_interaction_smoke_optional"
   ],
   "completed_atomic_tasks": [
@@ -36,7 +36,8 @@
     "S2-A2_issue_card_list_view",
     "M-1_fix_typecheck_script",
     "S2-A3_investigation_record_append",
-    "S2-A4_closeout_error_entry_archive_document"
+    "S2-A4_closeout_error_entry_archive_document",
+    "S2-CLOSEOUT-DOCS_sync_stage_status_docs"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -55,17 +56,18 @@
       "planning 与实际是否脱节（脱节时先更新 planning）",
       "前沿任务是否仍是最优解（不是则替换窗口）"
     ],
-    "recommended_next": "S2-CLOSEOUT-DOCS：同步 README / roadmap / backlog 的阶段状态，评估是否切换到 S3，并重新维护前沿窗口。",
+    "recommended_next": "S3-ENTRY-PLANNING：只做 S3 阶段入口评估与唯一下一原子任务选择，不直接写 S3 功能。UI-V1 浏览器冒烟为备选。",
     "output_rule": "从前沿窗口中选择唯一一个下一原子任务，写入 current_atomic_task，再执行。"
   },
   "risks": [
     "浏览器侧人工交互验证仍未做；S2-A4 Node 黑盒验证覆盖数据链路，但真实 DOM 的 Create / Select / Append / Close 交互尚未点过。",
     "ArchiveDocument / ErrorEntry 当前按 D-006/D-007 使用 localStorage 落盘，不是 .debug_workspace 文件系统写盘；若后续必须写真实文件，需要重新评估 fs adapter 或 Electron/IPC。",
     "localStorage 同域下跨应用共用，仍可能出现 id 冲突；当前策略是前缀隔离 + safeParse + 结构化错误，不做自动清理。",
-    "README 当前进度段偏旧，已留给 S2-CLOSEOUT-DOCS；本轮 S2-A4 按 in-scope 未改 README。",
-    "本轮未执行 npm run build，原因是用户全局偏好不让助手自行编译；已用 npm run typecheck + Node 黑盒验证 + git diff --check 覆盖最小完成门。"
+    "S2-CLOSEOUT-DOCS 本轮未执行 npm run build / npm run typecheck / Node 黑盒脚本，原因是本轮为纯文档与交接状态同步，且用户全局偏好不让助手自行编译。"
   ],
   "notes": [
+    "S2-CLOSEOUT-DOCS 已完成：README 当前进度 / 最小可演示流程 / 当前不足 / 后续计划已同步；roadmap 与 backlog 已标记 S1/S2 真实状态；current / handoff / progress / session-log / handoff.json 已同步。",
+    "S2 主闭环关键路径已打通，但这是 SPA + localStorage 路径；.debug_workspace 文件系统双写、Electron/IPC、runtime log、repair task 仍未产品化。",
     "S2-A4 已完成：新增 closeout 工厂、archive-document store、error-entry store、UI CloseoutForm、verify-s2-a4.mts。",
     "closeout 工厂路径：apps/desktop/src/domain/closeout.ts。契约：rootCause / resolution 为空结构化拒绝；已 archived 的 IssueCard 结构化拒绝；成功输出 ArchiveDocument、ErrorEntry、updatedIssueCard(status=archived)。",
     "ArchiveDocument store 前缀：repo-debug:archive-document:<fileName>；ErrorEntry store 前缀：repo-debug:error-entry:<entryId>。两者 load 均返回 not_found / parse_error / validation_error 结构化错误。",

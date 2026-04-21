@@ -24,32 +24,32 @@
 
 ### 3.1 项目绑定
 - 已实现：`repo-onboard` 规则文档（skill 级规范）。
-- MVP 中：仓库路径校验与快照采集运行时。
+- 当前边界：S2 主闭环使用 schema 中的 RepoSnapshot 字段承载仓库上下文，真实仓库选择与快照采集 UI 尚未产品化。
 - 规划中：多项目快速切换与健康检查面板。
 
 ### 3.2 快闪记录
 - 已实现：流程定义与数据模型文档。
-- MVP 中：桌面快闪输入窗。
+- 当前边界：S2 先使用 Issue 区表单承载 intake，尚未做独立桌面快闪输入窗。
 - 规划中：全局快捷键和语音输入。
 
 ### 3.3 问题卡
-- 已实现：IssueCard 结构定义与 `debug-intake` 规则文档。
-- MVP 中：问题卡创建、持久化与重开。
+- 已实现：IssueCard 结构定义、`debug-intake` 规则文档、intake 表单、localStorage 保存/读回与列表选中。
+- MVP 已打通：问题卡创建、持久化、刷新列表、选中。
 - 规划中：相似问题自动关联。
 
 ### 3.4 持续排查
-- 已实现：InvestigationRecord 结构定义与 `debug-session-update` 规则文档。
-- MVP 中：时间线追加与类型标注。
+- 已实现：InvestigationRecord 结构定义、`debug-session-update` 规则文档、按 IssueCard 关联的追记追加与列表读回。
+- MVP 已打通：时间线追加、类型标注、按 createdAt 升序读回。
 - 规划中：排查看板与阶段汇总。
 
 ### 3.5 结案总结
-- 已实现：`debug-closeout` 归档规则文档。
-- MVP 中：结案摘要生成与归档状态机。
+- 已实现：`debug-closeout` 归档规则文档、closeout 工厂、Closeout 表单、ArchiveDocument + ErrorEntry 生成与 IssueCard archived 回写。
+- MVP 已打通：SPA + localStorage 路径的结案摘要生成与读回验证。
 - 规划中：修复建议模板与复发统计。
 
 ### 3.6 错误表归档
-- 已实现：`.debug_workspace/error-table` 与归档目录骨架。
-- MVP 中：`errors.json` + markdown 双写与读回验证。
+- 已实现：`.debug_workspace/error-table` 与归档目录骨架、ErrorEntry schema、localStorage ErrorEntry store 与结构化读回错误。
+- 当前边界：`errors.json` + markdown 文件系统双写尚未接入。
 - 规划中：跨项目检索与聚类。
 
 ## 4. Harness 设计说明
@@ -159,13 +159,15 @@ AI_Hardware_Debug_Workspace/
   npm install
   npm run dev     # 默认 http://localhost:5173
   ```
-  打开后可看到阶段标识 `Desktop shell initialized` 与三个占位区块（Project / Issue / Debug / Archive）。
+  打开后可看到 Project / Issue / Debug / Archive 区块；Issue 区已支持 IssueCard intake、列表选中、InvestigationRecord 追记与 closeout。
 - Electron 桌面外壳尚未接入，当前仅以浏览器 SPA 形式运行。
 
 ### 7.3 最小可演示流程（当前可演示）
-1. 阅读 `AGENTS.md` 与 `docs/planning/current.md`，了解当前阶段目标与前沿任务窗口。
-2. 每轮只执行一个原子任务；完成后重新读取仓库并选择唯一的下一任务，而不是机械顺推。
-3. 在 `docs/planning/handoff.md` 与 `.agent-state/handoff.json` 完成交接，为下一轮受控重启做准备。
+1. 启动 `apps/desktop` SPA，在 Issue 区创建一条 IssueCard。
+2. 刷新 IssueCard 列表并选中该问题卡，追加一条 InvestigationRecord。
+3. 填写 closeout 字段后结案，生成 ArchiveDocument + ErrorEntry，并把 IssueCard 回写为 `archived` 状态。
+4. 使用 Node 侧黑盒验证脚本复核数据链路：`verify-s2-a4.mts` 覆盖 intake -> 追记 -> closeout -> ArchiveDocument / ErrorEntry / IssueCard 读回。
+5. 使用 `docs/planning/handoff.md` 与 `.agent-state/handoff.json` 完成交接，为下一轮受控重启做准备。
 
 ## 8. 当前进度
 
@@ -178,20 +180,25 @@ AI_Hardware_Debug_Workspace/
 - 关键 skills 骨架已统一（含 `planning`、`task-execution`、`task-verification`）。
 - `apps/desktop` 最小壳已落地（Vite + React + TypeScript），`npm run build` 通过。
 - WSL/Linux 迁移基础卫生已完成：LF 策略、权限规范、Linux 优先的字体后备和 README 环境口径已收敛。
+- S1 已关闭：Electron 外壳按 D-007 明确延后，S1 完成定义以 SPA + localStorage 路径收束。
+- S2 主闭环关键路径已打通：IssueCard intake -> 列表选中 -> InvestigationRecord 追记 -> closeout -> ArchiveDocument + ErrorEntry -> IssueCard archived 读回。
+- 关键实体读写与 closeout 工厂均走 zod schema 校验；S2-A4 Node 黑盒脚本覆盖最小 round-trip 与结构化失败路径。
+- 本轮文档收口已同步 README / roadmap / backlog / planning / handoff / `.agent-state`，避免 S1 旧口径继续滞留。
 
-### 正在做
-- 无。等待下一轮按真实仓库状态重新选择唯一原子任务。
+### 当前状态
+- S2 阶段关键业务前沿任务已清空，当前唯一执行中的原子任务为无。
+- 当前运行形态仍是浏览器 SPA + `window.localStorage`；Electron / fs / IPC 尚未接入。
+- 下一轮必须重新读取真实仓库状态后，再决定是否进入 S3 入口规划或先做 UI-V1 浏览器冒烟。
 
 ### 前沿任务窗口（候选，不等于顺推队列）
-- S1-A2：schema 校验代码骨架（IssueCard / InvestigationRecord / ErrorEntry / ArchiveDocument）。
-- S1-A3：桌面壳接入本地存储最小读写与问题卡重开。
-- S1-A4：将 SPA 包装为 Electron 桌面进程（main / preload / IPC）。
+- S3-ENTRY-PLANNING：只做 S3 阶段入口评估和唯一下一原子任务选择，不直接写 S3 功能。
+- UI-V1：浏览器真实交互冒烟，手动点 Create / Refresh list / Select / Append / Refresh records / Close issue。
 
 ## 9. Demo 演示建议（3 分钟内）
 1. 痛点说明（30s）：为什么碎片记录和仓库上下文必须绑定。
 2. Harness 设计（60s）：AGENTS + skills + feedback loop 的分工。
-3. 产品运行展示（75s）：展示 planning 区推进、交接区读写、归档目录结构。
-4. 收尾（15s）：下一步是接入桌面壳并跑通最小闭环。
+3. 产品运行展示（75s）：在 SPA 中演示 IssueCard 创建、列表选中、追记、结案，以及 localStorage 读回状态。
+4. 收尾（15s）：说明当前闭环已打通，但 Electron/fs 与浏览器人工冒烟仍是后续边界。
 
 ## 10. 项目亮点与不足
 
@@ -201,10 +208,16 @@ AI_Hardware_Debug_Workspace/
 - 提交粒度按原子任务切分，便于追踪与回滚。
 
 ### 当前不足
-- 尚无可运行桌面端与真实业务流程。
-- schema 校验与归档写入逻辑还停留在规则层。
-- 错误表与历史检索尚未代码化。
+- Electron 桌面外壳、preload / IPC 与真实文件系统写盘尚未接入；当前 ArchiveDocument / ErrorEntry 仍落在 localStorage。
+- 浏览器人工冒烟尚未执行；Node 黑盒验证覆盖数据链路，但不等价于真实 DOM 交互已点过。
+- `.debug_workspace/archive` 与 `.debug_workspace/error-table` 的真实文件双写、runtime log、repair task 机制尚未产品化。
+- 历史相似问题检索、统计视图和跨项目能力仍停留在后续增强阶段。
+
+### 后续计划
+- 必须改：下一轮先重读仓库真实状态，选择唯一原子任务；推荐先做 S3-ENTRY-PLANNING 或 UI-V1，不直接进入 S3 功能开发。
+- 建议改：做一次浏览器真实交互冒烟，确认 S2-A4 新增 closeout 表单在 DOM 中没有交互偏差。
+- 可选优化：在 S3 评估后再决定 Electron/fs adapter、runtime log、repair task 与历史检索的进入顺序。
 
 ### 先不做复杂能力的原因
-- 当前目标是先跑通最小闭环并验证可靠性。
+- 当前目标已经完成“先跑通最小闭环”，下一步重点是验证可靠性与观测能力，而不是一次性扩功能面。
 - 复杂能力（多 MCP、复杂检索、自动化编排）会显著增加调试成本。
