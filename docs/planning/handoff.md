@@ -5,10 +5,10 @@
 ## 当前真实状态
 - 当前阶段：D1：交差优先中文产品壳。
 - 当前模式：`delivery_priority`。
-- 当前唯一执行中的原子任务：**无**。D1-UI-V1-VISUAL-HIERARCHY 已完成；下一轮重新选择唯一原子任务。
+- 当前唯一执行中的原子任务：**D1-DEMO-PATH-MIN-CN**。已完成最小中文演示路径优化。
 - S2 主闭环关键路径已打通：IssueCard intake -> 列表选中 -> InvestigationRecord 追记 -> closeout -> ArchiveDocument + ErrorEntry -> IssueCard archived 读回。
 - 当前运行形态仍是 SPA + `window.localStorage`；Electron / fs / IPC / `.debug_workspace` 文件系统双写未接入。
-- 当前 UI 真实状态：`App.tsx` / `App.css` / `index.css` 已完成第二轮视觉层级优化；主标题/阶段标签/三栏标题、问题卡区视觉重心、表单/列表/状态/空状态和页面留白已更接近产品原型；项目区/归档区仍如实标注 Electron/fs/.debug_workspace 文件写盘未接入。
+- 当前 UI 真实状态：`App.tsx` / `App.css` / `index.css` 已完成最小中文演示路径优化；新增 DemoHint 组件展示"1️⃣ 填写上方表单 → 2️⃣ 点「刷新列表」选中 → 3️⃣ 追加排查记录 → 4️⃣ 填写结案归档"引导；项目区/归档区文案已更简洁。
 
 ## 为什么切到交差优先
 - 用户当前目标不是继续把所有闭环功能做深，而是先交付一个“好看、中文、能用、像产品壳”的版本。
@@ -32,20 +32,8 @@
 - 尽量不动核心数据流，只做安全美化和演示友好化。
 
 ## 下一轮最推荐动作
-- 推荐唯一候选：**D1-DEMO-PATH-MIN-CN**。
-- 选择理由：D1-UI-V1 已完成视觉层级和组件一致性优化，下一步最有利于演示的是把创建、选择、追记、结案的最小中文路径做得更顺，但仍不能伪造真实仓库绑定或文件写盘能力。
-- 重点文件：
-  - `apps/desktop/src/App.tsx`
-  - `apps/desktop/src/App.css`
-  - `apps/desktop/src/index.css`
-- 允许改动：
-  - 微调演示提示、默认说明、成功/失败状态文案和空状态路径提示。
-  - 保持真实边界说明，不把 localStorage 包装成真实文件系统写盘。
-- 禁止改动：
-  - schema / domain 工厂 / store / verify 脚本。
-  - Electron / fs / IPC。
-  - `.debug_workspace` 真实写盘。
-  - S3 功能。
+- D1 交差优先中文产品壳已完成三轮优化（V0 中文化、V1 视觉层级、DEMO-PATH 演示路径）。
+- 下一轮应重新读取真实状态，判断是否继续 D1 相关优化或切回技术主线（S3-ENTRY-PLANNING）。
 
 ## 下一轮开始前必须检查
 1. 读 `AGENTS.md` 第 3/4/5/6/7/10/12 章。

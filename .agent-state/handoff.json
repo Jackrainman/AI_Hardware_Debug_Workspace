@@ -37,7 +37,7 @@
       ]
     }
   },
-  "current_atomic_task": "WAITING_FOR_PLANNING_SELECTION",
+  "current_atomic_task": "D1-DEMO-PATH-MIN-CN",
   "frontier_tasks": [
     {
       "id": "D1-DEMO-PATH-MIN-CN",
@@ -71,7 +71,8 @@
     "S2-CLOSEOUT-DOCS_sync_stage_status_docs",
     "D1-RULES-REALIGN_delivery_priority_dual_track_docs",
     "D1-UI-V0-CN-SHELL-POLISH",
-    "D1-UI-V1-VISUAL-HIERARCHY"
+    "D1-UI-V1-VISUAL-HIERARCHY",
+    "D1-DEMO-PATH-MIN-CN"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -109,7 +110,7 @@
     "链路 B 是当前阶段优先主线，后续 AI 不得把 S3 技术深化误判为最高优先级。",
     "D1-UI-V0-CN-SHELL-POLISH 已完成：主页面中文化、项目区/归档区演示壳、安全美化和问题卡区演示提示已落地，未改 schema / store / verify / 业务数据流。",
     "D1-UI-V1-VISUAL-HIERARCHY 已完成：主标题/阶段标签/三栏标题层级、问题卡区视觉重心、表单/列表/状态/空状态和页面留白已优化，未改 schema / store / domain 工厂 / verify / 业务数据流。",
-    "下一轮推荐先做 D1-DEMO-PATH-MIN-CN：补最小中文演示路径和演示友好的状态提示，不碰深层数据流。",
+    "D1-DEMO-PATH-MIN-CN 已完成：新增 DemoHint 组件展示最小演示路径，优化项目区/归档区提示文案，未改 schema / store / domain 工厂 / verify / 业务数据流。",
     "用户明确偏好：除非明确要求，不由 AI 自行编译；文档/UI 壳层任务以读回、JSON 解析、diff 检查和必要的静态检查为主。"
   ]
 }

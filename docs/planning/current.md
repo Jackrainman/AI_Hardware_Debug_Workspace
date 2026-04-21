@@ -31,10 +31,10 @@
 - 必要时补最小中文演示路径，但不动深层数据流。
 
 ## 当前唯一执行中的原子任务
-- **无**。D1-UI-V1-VISUAL-HIERARCHY 已完成：主标题/阶段标签/三栏标题层级、问题卡区视觉重心、表单/列表/状态/空状态一致性和页面留白已完成第二轮展示层优化；未改业务数据流。
+- **D1-DEMO-PATH-MIN-CN**：已完成最小中文演示路径，新增 DemoHint 组件展示"创建 -> 选择 -> 追记 -> 结案"引导，优化项目区/归档区文案；未改业务数据流。
 
 ## 当前前沿任务窗口（候选，不等于顺推队列）
-1. D1-DEMO-PATH-MIN-CN：在 V0/V1 后补最小中文演示路径，例如默认提示、示例说明、演示友好的成功/失败状态；不得伪造真实文件写盘或仓库绑定能力。
+- 当前无前沿候选任务。D1 交差优先中文产品壳已完成三轮优化（V0 中文化、V1 视觉层级、DEMO-PATH 演示路径）。
 
 ## 下一任务选择流程
 1. 重新读取：`AGENTS.md`、`README.md`、本文件、`docs/planning/handoff.md`、`.agent-state/handoff.json`、`git status`、最近 commit、`apps/desktop/src/App.tsx`、`App.css`、`index.css`。

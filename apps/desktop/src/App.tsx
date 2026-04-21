@@ -74,6 +74,18 @@ const SAMPLE_CARD: IssueCard = {
 
 type SaveStatus = { state: "idle" } | { state: "saved"; at: string };
 
+function DemoHint() {
+  return (
+    <div className="demo-hint" data-testid="demo-hint">
+      <div className="demo-hint-title">🎯 最小演示路径</div>
+      <div className="demo-hint-steps">
+        <span>1️⃣ 填写上方表单 → 2️⃣ 点「刷新列表」选中 → 3️⃣ 追加排查记录 → 4️⃣ 填写结案归档</span>
+      </div>
+      <p className="demo-hint-note">以上步骤全部在浏览器本地执行，无需真实硬件或 Git 仓库。</p>
+    </div>
+  );
+}
+
 function IssueStorageControls() {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>({ state: "idle" });
   const [loadResult, setLoadResult] = useState<LoadIssueCardResult | null>(null);
@@ -91,7 +103,7 @@ function IssueStorageControls() {
     <div className="storage-controls" data-testid="issue-storage-controls">
       <div className="form-caption form-caption-muted">
         <h3>辅助验证</h3>
-        <p>保存一张示例卡并读回，用于确认浏览器本地存储链路。</p>
+        <p>保存/读取示例卡，验证本地存储链路。</p>
       </div>
       <div className="storage-buttons">
         <button type="button" className="button-secondary" onClick={handleSave}>
@@ -237,7 +249,7 @@ function IssueCardListView({
         </span>
       </div>
       {result && result.valid.length === 0 && result.invalid.length === 0 && (
-        <p className="empty-state">还没有问题卡。先在上方填写标题并创建一张卡。</p>
+        <p className="empty-state">暂无问题卡。请先在上方表单填写标题并创建一张卡。</p>
       )}
       {result && result.valid.length > 0 && (
         <ul className="list-items" data-testid="list-valid">
@@ -616,6 +628,7 @@ function IssuePane() {
 
   return (
     <div className="issue-pane-stack">
+      <DemoHint />
       <div className="flow-guide" aria-label="问题处理步骤">
         <span>
           <strong>01</strong>
@@ -693,11 +706,11 @@ const PANES: Pane[] = [
     id: "project",
     title: "项目区",
     badge: "上下文",
-    hint: "展示当前调试项目的上下文边界。真实仓库选择、Electron/fs 仍是后续能力。",
-    status: "演示状态：浏览器 SPA + localStorage",
+    hint: "展示当前调试项目的上下文边界。",
+    status: "当前演示：浏览器 SPA + localStorage",
     bullets: [
       "当前项目：演示工作区",
-      "仓库快照：后续接入 Git 读回",
+      "仓库快照：后续接入 Git",
       "文件写盘：后续接入 .debug_workspace",
     ],
   },
@@ -713,11 +726,11 @@ const PANES: Pane[] = [
     id: "archive",
     title: "归档区",
     badge: "沉淀物",
-    hint: "展示结案后会沉淀的归档资产。当前归档仍保存在浏览器 localStorage。",
-    status: "边界说明：尚未写入真实文件系统",
+    hint: "结案后会沉淀的归档资产。",
+    status: "当前演示：localStorage，后续接文件系统",
     bullets: [
-      "归档文档：结案摘要",
-      "错误表条目：复发检索入口",
+      "归档文档：结案摘要（localStorage）",
+      "错误表条目：复发检索入口（localStorage）",
       "后续：.debug_workspace 文件双写",
     ],
   },

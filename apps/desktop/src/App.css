@@ -289,6 +289,36 @@ select:focus-visible {
   gap: 14px;
 }
 
+.demo-hint {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px dashed var(--info-strong);
+  border-radius: 8px;
+  background: var(--info-soft);
+}
+
+.demo-hint-title {
+  color: var(--text-strong);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.demo-hint-steps {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.demo-hint-note {
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .flow-guide {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
