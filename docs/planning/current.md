@@ -31,17 +31,17 @@
 - 必要时补最小中文演示路径，但不动深层数据流。
 
 ## 当前唯一执行中的原子任务
-- **无**。本轮 **D1-FLOW-GUIDE-REMOVE** 已完成：删除主页面"最小演示路径"下面的四个步骤框（01 创建 / 02 选择 / 03 追记 / 04 结案）——`App.tsx` 移除 `MainlineStep` / `FLOW_STEPS` / `computeMainlineStep` / `FlowGuide` 四个定义以及 `IssuePane` 里 `const step = ...` 与 `<FlowGuide step={step} />` 渲染；`App.css` 移除 `.flow-guide` 主块 + active/done/pending 状态样式 + `.flow-guide strong` + 响应式 `@media (max-width: 560px)` 下 `.flow-guide` 两列栅格规则。保留 `DemoHint`（"🎯 最小演示路径 + 1️⃣→2️⃣→3️⃣→4️⃣ 文字说明"）作为演示路径说明。仅改 `App.tsx` / `App.css`；未改 schema / closeout 工厂 / IssueCard 数据流 / store 契约 / verify 脚本 / 项目区 / 归档区 / 问题卡表单与列表 / Electron / fs / IPC / .debug_workspace 写盘。
+- **无**。上一轮 **D1-FLOW-GUIDE-REMOVE** 已完成（删除主页面"最小演示路径"下方的四个步骤框，仅改 `App.tsx` / `App.css`）；完整改动详情见 `.agent-state/handoff.json.notes` 与 `git log`，本文件不再重复。
 
 ## 当前前沿任务窗口（候选，不等于顺推队列）
 - D1-ISSUE-LIST-HIDE-ARCHIVED：在中间问题卡列表里隐藏 `status=archived` 的卡（或折叠到"已归档"分组），让主列表只聚焦未结案问题；不改 store 契约。
 - D1-BRAND-UNIFY-PROBEFLASH：清理 `apps/desktop/README.md` 与 `apps/desktop/index.html` 等非 src 层的 `RepoDebug Harness` 历史命名残留，统一到 ProbeFlash；不改 schema / store / 内部 `repo-debug:*` storage key。
-- D1-STEPPER-CLEANUP-REMAINDER：本轮已删四个步骤框；如还要把"1. 创建 / 2. 选择 / 3. 追记 / 4. 结案"四块大表单的视觉重心降权（收折或轻量化），仍需独立评估 DoD（必须保证最小演示路径仍可跑通）。
-- D1-MAINLINE-BROWSER-SMOKE：浏览器真人冒烟，重点覆盖新 header 入口、ProjectSelector popover、ArchiveEntryButton 计数徽标、drawer 内嵌 ArchivePaneShell + 全部列表，确认"最小演示路径"下方不再出现四个步骤框。
+- D1-STEPPER-CLEANUP-REMAINDER：如还要把"1. 创建 / 2. 选择 / 3. 追记 / 4. 结案"四块大表单的视觉重心降权（收折或轻量化），需独立评估 DoD（必须保证最小演示路径仍可跑通）。
+- D1-MAINLINE-BROWSER-SMOKE：浏览器真人冒烟，重点覆盖新 header 入口、ProjectSelector popover、ArchiveEntryButton 计数徽标、drawer 内嵌 ArchivePaneShell + 全部列表。
 - S3-ENTRY-PLANNING：交差壳完成后切回链路 A，评估 Electron/fs adapter、runtime log、repair task 的入口任务；需 planning 明确切回技术主线。
 
 ## 下一任务选择流程
-1. 重新读取：`AGENTS.md`、`README.md`、本文件、`docs/planning/handoff.md`、`.agent-state/handoff.json`、`git status`、最近 commit、`apps/desktop/src/App.tsx`、`App.css`、`index.css`。
+1. 重新读取：`AGENTS.md`、`README.md`、本文件、`docs/planning/backlog.md`、`docs/planning/decisions.md`、`.agent-state/handoff.json`、`git status`、最近 commit、`apps/desktop/src/App.tsx`、`App.css`、`index.css`。
 2. 先确认 `current_mode` 是否仍为 `delivery_priority`；若是，优先链路 B。
 3. 评估依据：
    - 是否最利于交差演示。
@@ -49,13 +49,13 @@
    - 是否保持核心数据流、接口、时序和行为兼容。
    - 是否避开 schema / store / Electron / fs / IPC 深改。
    - planning 与实际是否脱节；脱节时先更新 planning。
-4. 从窗口中选择**唯一一个**下一原子任务，写入交接文件，再进入 `task-execution`。
+4. 从窗口中选择**唯一一个**下一原子任务，写入 `.agent-state/handoff.json.current_atomic_task`，再进入 `task-execution`。
 
 ## 原子任务完成标准（DoD）
 - 文件修改已落盘。
-- 做最小验证：读回关键文件、JSON 可解析、引用状态一致、`git diff --check` 通过；除非用户明确要求，不自行编译。
-- `docs/planning/current.md`、`docs/planning/handoff.md` 已更新。
-- `.agent-state/progress.md`、`.agent-state/session-log.md`、`.agent-state/handoff.json` 已更新。
-- 若阶段或 README 口径受影响，`README.md` / `roadmap.md` / `backlog.md` 同步。
+- 跑 AGENTS §16 验证矩阵中的必跑项（typecheck / build / `git diff --check` / `handoff.json` JSON.parse）；未跑的必跑项必须在交接中如实标注原因。
+- 本文件 `current.md`、`docs/planning/backlog.md`、`.agent-state/handoff.json` 已更新（见 AGENTS §14）。
+- 若阶段或对外口径受影响，`README.md` / `docs/planning/decisions.md` 同步。
+- 弱化文档（`handoff.md` / `roadmap.md` / `architecture.md` / `progress.md` / `session-log.md`）仅在其自身职责命中变化时才动，不默认同步。
 - 已完成独立 commit，且 message 对应单一任务结果。
 - 以上任一项未满足，不得选择或执行下一任务。

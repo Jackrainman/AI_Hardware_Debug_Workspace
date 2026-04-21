@@ -1,4 +1,11 @@
-# Session Log
+# Session Log — 已弱化
+
+> 本文件已弱化为低频维护的历史时间线，**非事实源**。不再强制逐轮追加。
+> - 当前战况以 `docs/planning/current.md` 为准。
+> - 机读状态以 `.agent-state/handoff.json` 为准。
+> - 完成项以 `handoff.json.completed_atomic_tasks` + `git log` 为准。
+> 参见 `AGENTS.md` §13 / §14。
+> 以下为历史条目，保留但不保证与当前状态一致。
 
 ## 2026-04-20
 - 完成仓库初始盘点：根目录文件、skills、debug workspace 结构均可读。
