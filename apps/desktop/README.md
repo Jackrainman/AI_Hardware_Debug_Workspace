@@ -1,6 +1,6 @@
 # apps/desktop
 
-RepoDebug Harness 桌面壳（最小可运行骨架）。
+ProbeFlash 桌面壳（最小可运行骨架）。
 
 ## 技术栈
 - Vite 5 + React 18 + TypeScript 5

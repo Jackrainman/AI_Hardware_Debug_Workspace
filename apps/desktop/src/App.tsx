@@ -238,6 +238,9 @@ function IssueCardListView({
   onRefresh: () => void;
   onSelect: (id: string) => void;
 }) {
+  const activeCards = result
+    ? result.valid.filter((summary) => summary.status !== "archived")
+    : [];
   return (
     <div className="list-view" data-testid="issue-card-list">
       <div className="form-caption">
@@ -251,15 +254,15 @@ function IssueCardListView({
         <span className="storage-line" data-testid="list-summary">
           {result === null
             ? "尚未刷新"
-            : `有效 ${result.valid.length} 条 · 异常 ${result.invalid.length} 条`}
+            : `有效 ${activeCards.length} 条 · 异常 ${result.invalid.length} 条`}
         </span>
       </div>
-      {result && result.valid.length === 0 && result.invalid.length === 0 && (
+      {result && activeCards.length === 0 && result.invalid.length === 0 && (
         <p className="empty-state">暂无问题卡。请先在上方表单填写标题并创建一张卡。</p>
       )}
-      {result && result.valid.length > 0 && (
+      {result && activeCards.length > 0 && (
         <ul className="list-items" data-testid="list-valid">
-          {result.valid.map((summary) => {
+          {activeCards.map((summary) => {
             const isSelected = summary.id === selectedIssueId;
             return (
               <li
