@@ -1,24 +1,36 @@
 # 待办池（Backlog）
 
-## P0（必须尽快完成）
-- [x] 重写 `AGENTS.md`，落地规划-执行-验证-交接闭环规则。
-- [x] 重写课程风格中文 `README.md`，确保“已实现/规划中”状态真实。
-- [x] 新增 `planning` / `task-execution` / `task-verification` 三个 skills。
-- [x] 统一 `repo-onboard` / `debug-intake` / `debug-closeout` 的最小骨架结构。
-- [x] 建立原子任务级 commit 与 handoff 更新节奏。
+> Backlog 只存候选池，不等于执行顺序。D1 阶段的当前前沿任务只放在 `current.md`，不得把技术深化任务默认塞回当前窗口。
 
-## P1（MVP 近期）
-- [x] 初始化 `apps/desktop` 最小 SPA（Electron 按 D-007 延后）。
-- [x] 定义并实现 IssueCard / InvestigationRecord / ErrorEntry / ArchiveDocument schema。
-- [x] 跑通最小闭环：IssueCard 创建 → 列表选中 → InvestigationRecord 追记 → closeout 生成 ArchiveDocument + ErrorEntry。
-- [x] 完成 localStorage 读回验证与结构化失败路径覆盖（S2-A4 Node 黑盒验证）。
-- [x] S2-CLOSEOUT-DOCS：同步 README / roadmap / backlog / planning / handoff / `.agent-state` 阶段状态。
-- [ ] UI-V1：浏览器真实交互冒烟，确认 S2-A4 DOM 路径无偏差。
-- [ ] S3-ENTRY-PLANNING：重新读取仓库状态后，只选择一个 S3 入口原子任务。
+## 已完成
+- [x] S0：工作区规范化、规划区、交接区、skills 骨架、原子任务提交节奏。
+- [x] S1：`apps/desktop` 最小 SPA、schema 骨架、IssueCard localStorage save/load。
+- [x] D-007：Electron / fs / IPC 明确延后，S1 关闭。
+- [x] S2-A1：IssueCard intake 最小表单。
+- [x] S2-A2：IssueCard 列表视图。
+- [x] M-1：typecheck 脚本修复。
+- [x] S2-A3：InvestigationRecord 追加与按 IssueCard 读回。
+- [x] S2-A4：closeout 生成 ArchiveDocument + ErrorEntry，并回写 IssueCard archived。
+- [x] S2-CLOSEOUT-DOCS：同步 S2 收口状态。
+- [x] D1-RULES-REALIGN：切换到交差优先模式，重整双链路规则、planning、handoff 与 state。
 
-## P2（后续增强）
+## 当前阶段：D1 交差优先中文产品壳
+- [ ] D1-UI-V0-CN-SHELL-POLISH：中文化主壳文案、按钮、表单标签、状态、空状态；不改业务数据流。
+- [ ] D1-UI-V1-VISUAL-HIERARCHY：优化页面视觉层级、卡片/表单/列表密度、项目区/归档区演示壳；不引入深层功能。
+- [ ] D1-DEMO-PATH-MIN-CN：补最小中文演示路径，让创建问题卡、追记、结案流程更适合演示；不伪造 Electron/fs 能力。
+
+## 后续主线：链路 A 技术闭环深化
+- [ ] S3-ENTRY-PLANNING：交差壳完成后，重新读取真实状态并选择唯一技术主线入口任务。
+- [ ] UI-V1-BROWSER-SMOKE：真实浏览器点 Create / Refresh list / Select / Append / Refresh records / Close issue。
 - [ ] `.debug_workspace/archive` 与 `.debug_workspace/error-table` 文件系统双写。
 - [ ] Electron / preload / IPC 或其它 fs adapter 接入评估。
 - [ ] runtime log 可视化与 repair task 机制产品化。
+- [ ] 失败恢复、人工升级、读回校验修复路径。
 - [ ] 历史相似问题检索增强。
 - [ ] 团队协作与统计视图（按需）。
+
+## 当前先不做
+- 不继续深挖 S3 技术闭环。
+- 不改 schema / store / Electron / fs / IPC。
+- 不把 localStorage 归档说成 `.debug_workspace` 真实文件写盘。
+- 不大规模重构 UI 组件结构。

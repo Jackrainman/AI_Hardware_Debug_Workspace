@@ -1,21 +1,79 @@
 {
   "_schema": {
-    "current_stage": "string  - 当前阶段代号（与 roadmap.md 对齐），例如 S1",
-    "current_stage_goal": "string  - 当前阶段目标的一句话描述",
-    "current_atomic_task": "string  - 当前唯一执行中的原子任务 ID（同一时刻只允许一个）",
-    "frontier_tasks": "string[] - 当前前沿任务窗口（1~3 个候选），不等于顺推队列",
+    "current_mode": "string - 当前推进模式，例如 delivery_priority 或 technical_mainline",
+    "current_stage": "string - 当前阶段代号",
+    "current_stage_name": "string - 当前阶段中文名",
+    "current_stage_goal": "string - 当前阶段目标",
+    "primary_track": "string - 当前优先链路",
+    "deferred_track": "string - 当前降级但保留的链路",
+    "dual_tracks": "object - 链路 A / 链路 B 的边界",
+    "current_atomic_task": "string - 当前唯一执行中的原子任务",
+    "frontier_tasks": "object[] - 当前前沿任务窗口，1~3 个候选",
     "completed_atomic_tasks": "string[] - 已完成原子任务 ID 列表，按时间顺序",
-    "next_task_selection_basis": "object  - 下一任务选择的评估依据（依赖/MVP/脱节/最优）",
+    "next_task_selection_basis": "object - 下一任务选择依据",
     "risks": "string[] - 当前已知风险",
-    "notes": "string[] - 需要在下一轮继续保留的关键说明"
+    "notes": "string[] - 下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-04-21T14:15:05+08:00",
-  "current_stage": "S2",
-  "current_stage_goal": "S2 阶段收口完成：IssueCard intake、列表选中、InvestigationRecord 追记、closeout 生成 ArchiveDocument + ErrorEntry 并回写 IssueCard archived 的主闭环关键路径已打通，README / roadmap / backlog / planning / handoff / .agent-state 已同步。下一轮建议先做 S3-ENTRY-PLANNING 或 UI-V1；不得直接进入 S3 功能开发。",
+  "timestamp": "2026-04-21T14:30:58+08:00",
+  "current_mode": "delivery_priority",
+  "current_stage": "D1",
+  "current_stage_name": "交差优先中文产品壳",
+  "current_stage_goal": "先交付一个好看、中文、能用、像产品壳的 SPA 演示版本；功能不伪造，Electron/fs/.debug_workspace 文件写盘等技术深化降级为后续主线。",
+  "primary_track": "track_b_delivery_priority_shell",
+  "deferred_track": "track_a_technical_close_loop_mainline",
+  "dual_tracks": {
+    "track_a_technical_close_loop_mainline": {
+      "status": "deferred",
+      "summary": "继续加固 IssueCard / InvestigationRecord / Closeout / ArchiveDocument / ErrorEntry 主闭环，推进 .debug_workspace 文件写盘、Electron/fs/IPC、runtime log、repair task、恢复机制与历史检索。",
+      "resume_condition": "D1 交差壳完成后，由 planning 重新读取真实状态并明确切回 technical_mainline。"
+    },
+    "track_b_delivery_priority_shell": {
+      "status": "active",
+      "summary": "优先做中文化、视觉统一、空状态、项目区/归档区演示壳、问题卡区视觉重心与最小中文演示路径。",
+      "hard_boundaries": [
+        "不改 schema / store / Electron / fs / IPC",
+        "不重做业务数据流",
+        "不把占位功能包装成已完成"
+      ]
+    }
+  },
   "current_atomic_task": "WAITING_FOR_PLANNING_SELECTION",
   "frontier_tasks": [
-    "S3-ENTRY-PLANNING_validation_observability_frontier_selection",
-    "UI-V1_browser_interaction_smoke_optional"
+    {
+      "id": "D1-UI-V0-CN-SHELL-POLISH",
+      "track": "track_b_delivery_priority_shell",
+      "goal": "只做一轮安全中文壳优化，统一主页面中文文案、空状态、状态标签、项目区/归档区演示壳。",
+      "write_scope": [
+        "apps/desktop/src/App.tsx",
+        "apps/desktop/src/App.css",
+        "apps/desktop/src/index.css",
+        "必要的 planning / handoff / .agent-state 文档"
+      ],
+      "forbidden_scope": [
+        "schema",
+        "store",
+        "Electron",
+        "fs",
+        "IPC",
+        "S3 功能"
+      ]
+    },
+    {
+      "id": "D1-UI-V1-VISUAL-HIERARCHY",
+      "track": "track_b_delivery_priority_shell",
+      "goal": "在 V0 后整理视觉层级、卡片/列表/表单密度、主工作台布局和移动端可读性。",
+      "depends_on": [
+        "D1-UI-V0-CN-SHELL-POLISH"
+      ]
+    },
+    {
+      "id": "D1-DEMO-PATH-MIN-CN",
+      "track": "track_b_delivery_priority_shell",
+      "goal": "在 V0/V1 后补最小中文演示路径，让创建、追记、结案更顺；不伪造真实文件写盘或仓库绑定能力。",
+      "depends_on": [
+        "D1-UI-V0-CN-SHELL-POLISH"
+      ]
+    }
   ],
   "completed_atomic_tasks": [
     "A1_setup_planning_and_handoff_workspace",
@@ -37,46 +95,45 @@
     "M-1_fix_typecheck_script",
     "S2-A3_investigation_record_append",
     "S2-A4_closeout_error_entry_archive_document",
-    "S2-CLOSEOUT-DOCS_sync_stage_status_docs"
+    "S2-CLOSEOUT-DOCS_sync_stage_status_docs",
+    "D1-RULES-REALIGN_delivery_priority_dual_track_docs"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
       "AGENTS.md",
+      "README.md",
       "docs/planning/current.md",
       "docs/planning/handoff.md",
       ".agent-state/handoff.json",
       "git status",
       "git log -5",
-      "与任务相关的关键目录/文件"
+      "apps/desktop/src/App.tsx",
+      "apps/desktop/src/App.css",
+      "apps/desktop/src/index.css"
     ],
     "criteria": [
-      "completion gate 是否闭合",
-      "依赖是否满足",
-      "MVP 优先级（越靠近最小闭环越优先）",
-      "planning 与实际是否脱节（脱节时先更新 planning）",
-      "前沿任务是否仍是最优解（不是则替换窗口）"
+      "current_mode 是否仍为 delivery_priority",
+      "是否服务 D1 交差验收",
+      "中文是否更统一",
+      "页面是否更像产品壳",
+      "演示是否更顺",
+      "是否保持核心数据流不变",
+      "是否避开 schema/store/Electron/fs/IPC 深改",
+      "planning 与实际是否一致"
     ],
-    "recommended_next": "S3-ENTRY-PLANNING：只做 S3 阶段入口评估与唯一下一原子任务选择，不直接写 S3 功能。UI-V1 浏览器冒烟为备选。",
-    "output_rule": "从前沿窗口中选择唯一一个下一原子任务，写入 current_atomic_task，再执行。"
+    "recommended_next": "D1-UI-V0-CN-SHELL-POLISH",
+    "output_rule": "从 frontier_tasks 中选择唯一一个原子任务，写入 current_atomic_task，再进入 task-execution。"
   },
   "risks": [
-    "浏览器侧人工交互验证仍未做；S2-A4 Node 黑盒验证覆盖数据链路，但真实 DOM 的 Create / Select / Append / Close 交互尚未点过。",
-    "ArchiveDocument / ErrorEntry 当前按 D-006/D-007 使用 localStorage 落盘，不是 .debug_workspace 文件系统写盘；若后续必须写真实文件，需要重新评估 fs adapter 或 Electron/IPC。",
-    "localStorage 同域下跨应用共用，仍可能出现 id 冲突；当前策略是前缀隔离 + safeParse + 结构化错误，不做自动清理。",
-    "S2-CLOSEOUT-DOCS 本轮未执行 npm run build / npm run typecheck / Node 黑盒脚本，原因是本轮为纯文档与交接状态同步，且用户全局偏好不让助手自行编译。"
+    "当前 UI 仍偏工程验证壳，大量英文文案和 sample/status 字段不利于中文演示。",
+    "项目区与归档区仍是占位；D1 可以做演示壳，但不能假装仓库绑定和文件写盘已完成。",
+    "ArchiveDocument / ErrorEntry 当前仍在 localStorage，不是 .debug_workspace 文件系统写盘。",
+    "浏览器真实人工冒烟尚未执行；Node 黑盒验证不等价于真实 DOM 交互。"
   ],
   "notes": [
-    "S2-CLOSEOUT-DOCS 已完成：README 当前进度 / 最小可演示流程 / 当前不足 / 后续计划已同步；roadmap 与 backlog 已标记 S1/S2 真实状态；current / handoff / progress / session-log / handoff.json 已同步。",
-    "S2 主闭环关键路径已打通，但这是 SPA + localStorage 路径；.debug_workspace 文件系统双写、Electron/IPC、runtime log、repair task 仍未产品化。",
-    "S2-A4 已完成：新增 closeout 工厂、archive-document store、error-entry store、UI CloseoutForm、verify-s2-a4.mts。",
-    "closeout 工厂路径：apps/desktop/src/domain/closeout.ts。契约：rootCause / resolution 为空结构化拒绝；已 archived 的 IssueCard 结构化拒绝；成功输出 ArchiveDocument、ErrorEntry、updatedIssueCard(status=archived)。",
-    "ArchiveDocument store 前缀：repo-debug:archive-document:<fileName>；ErrorEntry store 前缀：repo-debug:error-entry:<entryId>。两者 load 均返回 not_found / parse_error / validation_error 结构化错误。",
-    "UI 接入点：apps/desktop/src/App.tsx 的 IssuePane。CloseoutForm 提交时 loadIssueCard、listInvestigationRecordsByIssueId、buildCloseoutFromIssue、saveArchiveDocument、saveErrorEntry、saveIssueCard(updatedIssueCard)，然后刷新卡列表和记录列表。",
-    "verify-s2-a4.mts 覆盖：intake → 追记 → closeout → ArchiveDocument / ErrorEntry / IssueCard 读回；blank rootCause / resolution 拒绝；坏 JSON / schema 不符结构化错误；archive/error 前缀不污染 issue/record 列表。",
-    "S2-A3 排序契约保持：InvestigationRecord valid 按 createdAt 升序；S2-A4 的 ArchiveDocument timeline 沿用升序。",
-    "S2-A2 排序契约保持：IssueCard valid 按 createdAt 倒序。",
-    "D-005 仍有效：运行时校验统一用 zod safeParse。",
-    "D-006 / D-007 仍有效：主闭环阶段使用 SPA + localStorage；Electron/fs 延后。",
-    "下一轮必须按 current.md 的下一任务选择流程重新判断，不得机械顺推。"
+    "链路 A 没有取消，只是降级为后续主线。",
+    "链路 B 是当前阶段优先主线，后续 AI 不得把 S3 技术深化误判为最高优先级。",
+    "下一轮推荐先做 D1-UI-V0-CN-SHELL-POLISH：中文化和安全壳层优化，不碰深层数据流。",
+    "用户明确偏好：除非明确要求，不由 AI 自行编译；文档/UI 壳层任务以读回、JSON 解析、diff 检查和必要的静态检查为主。"
   ]
 }

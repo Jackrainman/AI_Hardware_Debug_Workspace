@@ -82,3 +82,20 @@
   - 下一阶段切换为 S2（调试闭环主流程）。
   - 前沿窗口切换到 S2 候选：优先考虑 IssueCard intake 最小表单、IssueCard 列表视图、InvestigationRecord 追加三类任务；M-1 typecheck 脚本修复仍保留作为低风险插入项。
   - `current.md` / `handoff.md` / `.agent-state/*` 同步更新，阶段代号从 S1 过渡到 S2。
+
+## D-008：切换到 D1 交差优先中文产品壳
+- 日期：2026-04-21
+- 背景：S2 主闭环关键路径已经在 SPA + localStorage 路径打通，但当前界面仍偏英文工程验证壳；用户当前目标不是继续深挖全部闭环能力，而是先交付一个“好看、中文、能用、像产品壳”的可演示版本。
+- 决策：新增当前阶段 `D1：交差优先中文产品壳`，并设置 `.agent-state/handoff.json.current_mode = "delivery_priority"`。D1 阶段链路 B（中文化、视觉统一、空状态、演示友好、产品壳）为当前优先主线；链路 A（技术闭环深化）降级为后续主线。
+- 原因：
+  - 交差验收优先看页面是否像产品、中文是否统一、演示是否顺畅。
+  - 继续推进 S3 / Electron / fs 会提升底层能力，但不能解决当前壳层不够可演示的问题。
+  - D1 可以在不改 schema / store / Electron / fs / IPC 的前提下显著提升可理解性和交付观感。
+- 放弃方案：
+  - 继续默认推进 S3-ENTRY-PLANNING：会让后续 AI 继续沿技术闭环机械前进。
+  - 立刻做 Electron / 文件写盘：对当前交差目标收益低，且会扩大风险面。
+  - 直接大改 UI 架构或引入组件库：超出“安全美化”范围，容易破坏已打通数据流。
+- 影响与后续动作：
+  - `AGENTS.md` 新增 delivery-priority mode、dual-track rule、safe polish rule、mandatory doc sync、acceptance-facing mindset。
+  - `current.md` 前沿窗口切到 D1-UI-V0 / D1-UI-V1 / D1-DEMO-PATH。
+  - S3 技术闭环不取消；交差版本完成后，必须由 planning 重新读取真实状态并明确切回技术主线。

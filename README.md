@@ -184,15 +184,20 @@ AI_Hardware_Debug_Workspace/
 - S2 主闭环关键路径已打通：IssueCard intake -> 列表选中 -> InvestigationRecord 追记 -> closeout -> ArchiveDocument + ErrorEntry -> IssueCard archived 读回。
 - 关键实体读写与 closeout 工厂均走 zod schema 校验；S2-A4 Node 黑盒脚本覆盖最小 round-trip 与结构化失败路径。
 - 本轮文档收口已同步 README / roadmap / backlog / planning / handoff / `.agent-state`，避免 S1 旧口径继续滞留。
+- D1 交差优先模式已建立：技术闭环主线降级为后续，当前优先做中文产品壳、安全美化和演示友好化。
 
 ### 当前状态
-- S2 阶段关键业务前沿任务已清空，当前唯一执行中的原子任务为无。
+- 当前阶段：D1：交差优先中文产品壳。
+- 当前唯一执行中的原子任务为无，下一轮必须重新读取真实仓库状态后选择唯一原子任务。
 - 当前运行形态仍是浏览器 SPA + `window.localStorage`；Electron / fs / IPC 尚未接入。
-- 下一轮必须重新读取真实仓库状态后，再决定是否进入 S3 入口规划或先做 UI-V1 浏览器冒烟。
+- 当前 UI 仍偏工程验证壳：项目区/归档区仍是占位，问题卡区功能可用但英文文案和状态较多。
+- 当前优先链路是交差版本：中文化、视觉统一、空状态、演示路径清晰化。
+- 技术闭环深化没有取消，但已降级为后续主线。
 
 ### 前沿任务窗口（候选，不等于顺推队列）
-- S3-ENTRY-PLANNING：只做 S3 阶段入口评估和唯一下一原子任务选择，不直接写 S3 功能。
-- UI-V1：浏览器真实交互冒烟，手动点 Create / Refresh list / Select / Append / Refresh records / Close issue。
+- D1-UI-V0-CN-SHELL-POLISH：只做一轮安全中文壳优化，不碰 schema / store / Electron / fs / IPC。
+- D1-UI-V1-VISUAL-HIERARCHY：整理视觉层级、卡片/列表/表单密度和主工作台布局。
+- D1-DEMO-PATH-MIN-CN：补最小中文演示路径，不伪造真实文件写盘或仓库绑定能力。
 
 ## 9. Demo 演示建议（3 分钟内）
 1. 痛点说明（30s）：为什么碎片记录和仓库上下文必须绑定。
@@ -211,13 +216,14 @@ AI_Hardware_Debug_Workspace/
 - Electron 桌面外壳、preload / IPC 与真实文件系统写盘尚未接入；当前 ArchiveDocument / ErrorEntry 仍落在 localStorage。
 - 浏览器人工冒烟尚未执行；Node 黑盒验证覆盖数据链路，但不等价于真实 DOM 交互已点过。
 - `.debug_workspace/archive` 与 `.debug_workspace/error-table` 的真实文件双写、runtime log、repair task 机制尚未产品化。
+- UI 仍需要中文化和产品壳优化；项目区与归档区目前主要是演示占位。
 - 历史相似问题检索、统计视图和跨项目能力仍停留在后续增强阶段。
 
 ### 后续计划
-- 必须改：下一轮先重读仓库真实状态，选择唯一原子任务；推荐先做 S3-ENTRY-PLANNING 或 UI-V1，不直接进入 S3 功能开发。
-- 建议改：做一次浏览器真实交互冒烟，确认 S2-A4 新增 closeout 表单在 DOM 中没有交互偏差。
-- 可选优化：在 S3 评估后再决定 Electron/fs adapter、runtime log、repair task 与历史检索的进入顺序。
+- 必须改：下一轮先做 D1-UI-V0-CN-SHELL-POLISH，让页面中文、可演示、像产品壳。
+- 建议改：D1-V0 后继续做视觉层级和空状态优化，再做最小中文演示路径。
+- 可选优化：交差版本完成后，再切回 S3 技术闭环，评估 Electron/fs adapter、runtime log、repair task 与历史检索。
 
 ### 先不做复杂能力的原因
-- 当前目标已经完成“先跑通最小闭环”，下一步重点是验证可靠性与观测能力，而不是一次性扩功能面。
+- 当前目标已经从“继续深挖闭环”切到“先交差一个中文产品壳”；下一步重点是可理解、可演示、观感完整。
 - 复杂能力（多 MCP、复杂检索、自动化编排）会显著增加调试成本。

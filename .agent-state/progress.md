@@ -1,7 +1,7 @@
 # Progress
 
 ## 当前阶段
-- S2 阶段收口完成（主闭环关键路径已打通，README / roadmap / backlog / handoff / `.agent-state` 已同步）。采用"滚动前沿规划"范式推进。
+- D1：交差优先中文产品壳。当前模式为 `delivery_priority`，目标是先交付一个好看、中文、能用、像产品壳的 SPA 演示版本；技术闭环深化降级为后续主线。
 
 ## 已完成
 - [x] 建立 `docs/planning` 结构化规划区。
@@ -32,12 +32,14 @@
   - 验证：`npm run typecheck` EXIT=0；`verify-s2-a3.mts` 6 PASS；`verify-s1-a3` / `verify-s2-a1` / `verify-s2-a2` 无倒退；`npm run build` 49 modules ~210 kB 通过。
 - [x] S2-A4：结案 → ErrorEntry + ArchiveDocument 生成。新增 `apps/desktop/src/domain/closeout.ts` 纯函数工厂，输入选中 IssueCard + InvestigationRecord 时间线 + closeout 表单字段，输出 `ArchiveDocument`、`ErrorEntry`、`updatedIssueCard(status: archived)`；新增 `archive-document-store.ts` / `error-entry-store.ts` 两组 localStorage 独立前缀 store（`repo-debug:archive-document:` / `repo-debug:error-entry:`）与结构化 read-back 错误；`App.tsx` 在选中 IssueCard 后接入 `CloseoutForm`，成功后双写 archive/error 并回写 IssueCard；新增 `scripts/verify-s2-a4.mts` 覆盖 intake → 追记 → closeout → ArchiveDocument / ErrorEntry / IssueCard 读回、必填字段拒绝、坏 JSON / schema 不符结构化错误、跨前缀隔离。验证：`npm run typecheck` EXIT=0；S2-A4 5 PASS；S1-A3 / S2-A1 / S2-A2 / S2-A3 回归 PASS；`git diff --check` PASS。按用户偏好本轮未执行 `npm run build`。
 - [x] S2-CLOSEOUT-DOCS：同步阶段状态与收口文档。`README.md` 的最小可演示流程、当前进度、当前不足、后续计划已切到 S2 主闭环已打通；`roadmap.md` 标记 S1 已完成/Electron 延后、S2 主闭环关键路径已完成、S3 下一阶段候选未开始；`backlog.md` 拆分已完成项与未完成边界；`current.md` / `handoff.md` / `.agent-state/handoff.json` 前沿窗口切到 S3-ENTRY-PLANNING 与 UI-V1。
+- [x] D1-RULES-REALIGN：基于用户交差目标切换到 `delivery_priority`，把项目重整为链路 A（技术闭环后续主线）与链路 B（当前交差优先主线），同步 `AGENTS.md`、planning、handoff、`.agent-state` 与 README 口径。
 
 ## 当前唯一执行中
-- **无**。S2-CLOSEOUT-DOCS 已完成；下一轮必须重新读取真实仓库状态后再选择唯一原子任务。
+- **无**。D1-RULES-REALIGN 已完成；下一轮必须重新读取真实仓库状态后，从 D1 前沿窗口选择唯一原子任务。
 
 ## 下一步
-- **按 `docs/planning/current.md` 的「下一任务选择流程」重选唯一下一任务**（S2 主闭环与文档收口均已闭合）。
-- 依赖已就绪的候选：
-  - **S3-ENTRY-PLANNING**：只做 S3 阶段入口评估与唯一下一原子任务选择，不直接写 S3 功能。
-  - **UI-V1**：浏览器冒烟（可选），S2-A4 新增 closeout 表单后真实 DOM 仍未点过。
+- **按 `docs/planning/current.md` 的「下一任务选择流程」重选唯一下一任务**，先确认 `current_mode=delivery_priority`。
+- 当前优先候选：
+  - **D1-UI-V0-CN-SHELL-POLISH**：只做安全中文壳优化和演示友好化，不碰 schema / store / Electron / fs / IPC。
+  - **D1-UI-V1-VISUAL-HIERARCHY**：在 V0 后整理视觉层级、密度、空状态和主工作台布局。
+  - **D1-DEMO-PATH-MIN-CN**：在 V0/V1 后补最小中文演示路径，不伪造真实写盘能力。
