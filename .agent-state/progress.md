@@ -22,13 +22,16 @@
 - [x] D-007：S1 阶段 Electron 外壳延后决策落盘（`docs/planning/decisions.md` D-007）。S1 阶段完成定义最后一项以"延后决策"形式满足，S1 阶段关闭，阶段过渡到 S2。
 - [x] S2-A1：IssueCard intake 最小表单。`apps/desktop/src/domain/issue-intake.ts` 提供 `buildIssueCardFromIntake(input, opts)` 纯函数工厂（trim、空标题结构化拒绝、`IssueCardSchema.safeParse`），外加 `nowISO` / `generateIssueId` / `defaultIntakeOptions` 辅助；`App.tsx` 新增 `IssueIntakeForm` 受控表单并保留 sample `IssueStorageControls`；Stage footer 改为 `S2-A1 · IssueCard intake form + localStorage save`；新增 `scripts/verify-s2-a1.mts` 3 断言 PASS；`npm run build` 46 modules ~200 kB 通过；`verify-s1-a3.mts` 无倒退。
 - [x] S2-A2：IssueCard 列表视图。`apps/desktop/src/storage/issue-card-store.ts` 新增 `listIssueCards()` 前缀扫描 + 逐条 safeParse，返回 `{valid: IssueCardSummary[], invalid: IssueCardListInvalidEntry[]}`（valid 按 createdAt 倒序、invalid 按 id 字典序）；`App.tsx` 新增 `IssueCardListView`（Refresh 按钮 + valid / invalid 分区渲染）；`App.css` 追加 list-view / list-item 样式；stage footer 改为 `S2-A2 · IssueCard intake + list view`；`scripts/verify-s2-a2.mts` 5 断言 PASS（空存储 / 两条有效倒序 / 坏 JSON / schema 不符 / 外来前缀忽略）；`npm run build` 46 modules ~205 kB 通过；`verify-s1-a3` / `verify-s2-a1` 无倒退。
-- [x] M-1：typecheck 脚本修复。`apps/desktop/package.json` 第 11 行 `typecheck` 脚本由 `tsc -b --noEmit` 改为 `tsc --noEmit -p tsconfig.json`，绕开 TS6310（`tsc -b --noEmit` 与 composite referenced project 冲突）；`npm run build` 仍为 `tsc -b && vite build` 未受影响。用户手动在 `apps/desktop` 下执行 `npm run typecheck` 外部验证 EXIT=0（上一轮 harness Bash 分类器 503，本轮由用户代跑并通知 Claude 收束提交）。
+- [x] M-1：typecheck 脚本修复。`apps/desktop/package.json` 第 11 行 `typecheck` 脚本由 `tsc -b --noEmit` 改为 `tsc --noEmit -p tsconfig.json`，绕开 TS6310（`tsc -b --noEmit` 与 composite referenced project 冲突）；`npm run build` 仍为 `tsc -b && vite build` 未受影响。
+- [ ] S2-A3：InvestigationRecord 追加。工作区已有未提交实现与 verify 脚本，但本轮重新读取时没有发现 S2-A3 功能提交；当时最新功能前置提交仍是 `c98b040`（M-1）。按 completion gate，当前不得标完成；下一步只能重新验证、必要修正交接并提交 S2-A3。
+  - 相关工作区文件：`apps/desktop/src/domain/investigation-intake.ts`、`apps/desktop/src/storage/investigation-record-store.ts`、`apps/desktop/scripts/verify-s2-a3.mts`、`apps/desktop/src/App.tsx`、`apps/desktop/src/App.css` 以及规划/交接文件。
+  - 本轮未重新运行 `npm run typecheck` / verify / build，未提交 S2-A3 代码；原因是 planning 与实际脱节时只允许最小 planning 修正并 STOP。
 
 ## 当前唯一执行中
-- **无**。M-1 已完成并提交；本轮等待按 `docs/planning/current.md` 的「下一任务选择流程」重选唯一下一任务。
+- **S2-A3-CG**：InvestigationRecord 追加的 completion gate 修正。状态：blocked / incomplete，阻塞点为 S2-A3 相关文件仍未提交，不能选择下一任务。
 
 ## 下一步
-- **按 `docs/planning/current.md` 的「下一任务选择流程」重选唯一下一任务**（M-1 已闭合，不再挂起）。
+- **只允许先收束 S2-A3-CG**：重新验证现有 S2-A3 工作区改动，更新交接，严格 stage S2-A3 相关文件并做单任务 commit。
 - 依赖已就绪的候选：
-  - **S2-A3**：InvestigationRecord 追加（需要选中 IssueCard 的入口 + investigation-record-store + 表单 + Node verify）。
-  - **S2-A4（预）**：结案 → ErrorEntry + ArchiveDocument 生成；依赖 S2-A3，暂不拉入。
+  - **S2-A4**：依赖 S2-A3 commit，当前未就绪。
+  - **UI-V1**：被当前 completion gate 阻塞，当前不执行。
