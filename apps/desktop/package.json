@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "verify:handoff": "node --experimental-strip-types scripts/verify-handoff-json.mts"
   },
   "dependencies": {
     "react": "^18.3.1",
