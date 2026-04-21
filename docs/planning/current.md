@@ -31,11 +31,13 @@
 - 必要时补最小中文演示路径，但不动深层数据流。
 
 ## 当前唯一执行中的原子任务
-- **无**。本轮 **D1-ARCHIVE-PERSIST-INDEX** 已完成：右侧归档区在 mount 时从 `window.localStorage` 真实读回累计归档索引；改为展示“累计归档 N 条”徽标 + 最近一次归档摘要（文件名 / 错误表编号 / 来源问题 / 分类 / 归档时间），刷新后不再空掉；新增 [查看归档列表] 按钮，点击后打开右侧抽屉，倒序列出全部归档条目（文件名 / errorCode / 分类 / 来源问题 / 后续写盘位置 / 归档时间）；closeout 成功后自动刷新索引，计数和最近摘要立即更新。仅改 `App.tsx` / `App.css` / `archive-document-store.ts` / `error-entry-store.ts` 与 `scripts/verify-d1-archive-persist-index.mts`；未改 schema / closeout 工厂 / IssueCard 数据流 / 项目区 / Electron / fs / IPC / .debug_workspace 写盘。
+- **无**。本轮 **D1-LAYOUT-HEADER-ARCHIVE-ENTRY** 已完成：主页面从三栏（项目 / 问题卡 / 归档）收束为单栏主体；`app-header` 拆成上下两行——上行保留品牌 + 阶段标签与边界说明，新增下行 `app-header-toolbar` 左侧 `ProjectSelector`（演示工作区，点击展开 popover 显示原项目区 bullets + 标注"多项目切换后续接入"）、右侧 `ArchiveEntryButton`（显示累计归档数量 chip，count=0 时 disabled）；`main` 改为 `app-main` 单栏只渲染问题卡 `pane`，`FlowGuide` / `MainlineResultPanel` / `IssuePane` 完整保留；`ArchiveListDrawer` 签名新增 `archivePane` 参数，内部在 drawer header 之后嵌入 `ArchivePaneShell`（`onOpenList` 改为 optional，不传时不渲染重复按钮），随后渲染原"全部归档条目"列表；`data-testid="archive-open-list-button"` 搬到 header 按钮，`archive-count-chip` / `archive-panel` / `archive-drawer` / `archive-drawer-list` / `archive-drawer-close` 保留。仅改 `App.tsx` / `App.css`；未改 schema / closeout 工厂 / IssueCard 数据流 / store 契约 / Electron / fs / IPC / .debug_workspace 写盘 / verify 脚本。
 
 ## 当前前沿任务窗口（候选，不等于顺推队列）
-- D1-MAINLINE-BROWSER-SMOKE：在浏览器里真人走一遍 创建 → 自动选中 → 追记 → 结案 → 结果面板读回 → 刷新验证右侧累计归档数量与最近摘要仍在 → 点击 [查看归档列表] 看到全部条目；只验证、不改代码。
-- D1-ISSUE-LIST-HIDE-ARCHIVED：在中间问题卡列表里隐藏 `status=archived` 的卡（或折叠到“已归档”分组），让主列表只聚焦未结案问题；不改 store 契约。
+- D1-ISSUE-LIST-HIDE-ARCHIVED：在中间问题卡列表里隐藏 `status=archived` 的卡（或折叠到"已归档"分组），让主列表只聚焦未结案问题；不改 store 契约。
+- D1-BRAND-UNIFY-PROBEFLASH：清理 `apps/desktop/README.md` 与 `apps/desktop/index.html` 等非 src 层的 `RepoDebug Harness` 历史命名残留，统一到 ProbeFlash；不改 schema / store / 内部 `repo-debug:*` storage key。
+- D1-STEPPER-CLEANUP：把 IssuePane 里"1. 创建 / 2. 选择 / 3. 追记 / 4. 结案"四块大表单的视觉重心降权（或收成更轻量提示），但**必须保证最小演示路径仍可跑通**；DoD 需谨慎评估。
+- D1-MAINLINE-BROWSER-SMOKE：浏览器真人冒烟，重点覆盖新 header 入口、ProjectSelector popover、ArchiveEntryButton 计数徽标、drawer 内嵌 ArchivePaneShell + 全部列表。
 - S3-ENTRY-PLANNING：交差壳完成后切回链路 A，评估 Electron/fs adapter、runtime log、repair task 的入口任务；需 planning 明确切回技术主线。
 
 ## 下一任务选择流程

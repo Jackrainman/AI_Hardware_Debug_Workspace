@@ -46,9 +46,15 @@
   - `apps/desktop/src/App.css` 追加 `.archive-summary-row` / `.archive-count-chip` / `.archive-drawer-*` 样式。
   - 新增 `apps/desktop/scripts/verify-d1-archive-persist-index.mts`，6 断言 PASS（两端倒序、join 字段、坏 JSON 不污染 valid、坏 schema 不污染 valid、两前缀互不污染）。
   - 未改 schema / closeout 工厂 / IssueCard 数据流 / 项目区 / Electron / fs / IPC / .debug_workspace 写盘。
+- [x] D1-LAYOUT-HEADER-ARCHIVE-ENTRY：主页面信息架构从三栏收束为"顶部双入口 + 单栏问题卡主体"。
+  - `apps/desktop/src/App.tsx` 新增 `ProjectSelector`（`header-entry-slot-left` 里的 pill 按钮"📁 项目：演示工作区 ▾"，点击 toggle popover；popover absolute 定位，渲染 `StaticPaneShell(projectPane)` + 多项目选择后续接入的边界说明 + 关闭按钮）与 `ArchiveEntryButton`（`header-entry-slot-right` 里的 pill 按钮"📦 查看归档列表 [N]"，N=0 时 disabled 且 chip 走灰态；`data-testid="archive-open-list-button"` / `archive-count-chip` 搬到该按钮）。
+  - `App.tsx` 的 `main` 从 `app-grid` 三栏 map `PANES` 改为 `app-main` 单栏，只渲染问题卡 `pane`；`FlowGuide` / `DemoHint` / `MainlineResultPanel` / `IssuePane` 全部保持不动；`PANES` 定义保留以供 ProjectSelector / ArchiveListDrawer 取 pane。
+  - `ArchiveListDrawer` 签名新增 `archivePane: Pane`，drawer body 改为"drawer header → `<ArchivePaneShell pane={archivePane} archiveIndex={archiveIndex} />`（不传 `onOpenList`，避免重复按钮）→ `archive-drawer-section` 承载"全部归档条目"列表（仅当 items>0 渲染）→ 保留底部 `.debug_workspace` 写盘边界 note"。`ArchivePaneShell.onOpenList` 改为 optional。
+  - `App.css` 把 `.app-grid` 替换成 `.app-main`（flex column）；`.app-header` 改为 column 方向；新增 `.app-header-top` / `.app-header-toolbar`（二级 toolbar，带边框圆角与 soft shadow）/ `.header-entry-slot` / `.project-entry-button` / `.archive-entry-button`（pill，disabled 淡化）/ `.header-entry-icon` / `.header-entry-label` / `.project-entry-caret` / `.archive-entry-count`（带 `[data-total="0"]` 灰态）/ `.project-selector` / `.project-selector-popover`（absolute 280–360px 宽）/ `.project-selector-popover-header` / `.project-selector-note` / `.archive-drawer-section` / `.archive-drawer-section-label`。响应式 `@media (max-width: 980px)` 改为 `.app-header-top` 变 column；`@media (max-width: 560px)` 新增 `.app-header-toolbar` 垂直堆叠、入口按钮全宽、archive count 右对齐、popover 填满行宽；删除原 `pane[data-pane="project"] / [data-pane="archive"]` margin-top 规则（selector 已不匹配）。
+  - 未改 schema / closeout 工厂 / IssueCard 数据流 / store 契约 / verify 脚本 / Electron / fs / IPC / .debug_workspace 写盘 / 内部 `repo-debug:*` storage key。
 
 ## 当前唯一执行中
-- 无。D1-ARCHIVE-PERSIST-INDEX 已完成验证并进入提交收束。
+- 无。D1-LAYOUT-HEADER-ARCHIVE-ENTRY 已完成验证并进入提交收束。
 
 ## 下一步
-- **按 `docs/planning/current.md` 的「下一任务选择流程」重选唯一下一任务**，先确认 `current_mode=delivery_priority`。最推荐 D1-MAINLINE-BROWSER-SMOKE：真人走一遍 创建 → 自动选中 → 追记 → 结案 → 中心结果面板 + 右侧归档区结果面板读回 → 刷新验证累计归档与最近摘要仍在 → 点击 [查看归档列表] 看到全部条目；只验证、不改代码。
+- **按 `docs/planning/current.md` 的「下一任务选择流程」重选唯一下一任务**，先确认 `current_mode=delivery_priority`。候选：D1-ISSUE-LIST-HIDE-ARCHIVED（主列表隐藏/折叠 archived）、D1-BRAND-UNIFY-PROBEFLASH（非 src 层 RepoDebug Harness 残留清理）、D1-STEPPER-CLEANUP（四块大表单降权，必须保证演示路径仍跑通）、D1-MAINLINE-BROWSER-SMOKE（浏览器真人冒烟）、S3-ENTRY-PLANNING（切回链路 A 需用户明确切模式）。

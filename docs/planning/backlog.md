@@ -20,13 +20,16 @@
 - [x] D1-README-AGENTS-PACKAGING：重写 README 为 ProbeFlash 参赛门面，显式回应 Harness / Agent / Tool / Feedback Loop / 48 小时交付；同步 AGENTS 项目概览、应用可见标题与包元数据命名。保留 `repo-debug:*` 内部存储 key 以兼容既有 localStorage 数据。
 - [x] D1-ARCHIVE-PANEL-FIX：修通 closeout 结果到右侧归档区显示；归档区能区分尚无/已有归档结果，并展示最近一次归档文件名、错误表编号、来源问题、归档状态、分类和归档时间。未改 store / schema / Electron / fs / IPC / 项目区。
 - [x] D1-ARCHIVE-PERSIST-INDEX：右侧归档区在 mount 时从 localStorage 读回累计归档索引，展示累计数量徽标 + 最近一次摘要；新增 [查看归档列表] 抽屉，倒序列出全部归档条目（文件名 / errorCode / 分类 / 来源问题 / 后续写盘位置 / 归档时间）。closeout 成功后自动刷新索引。补 `listArchiveDocuments()` / `listErrorEntries()` 读回函数与 `verify-d1-archive-persist-index.mts`；未改 schema / closeout 工厂 / 项目区 / Electron / fs / IPC / .debug_workspace 写盘。
+- [x] D1-LAYOUT-HEADER-ARCHIVE-ENTRY：主页面从三栏（项目 / 问题卡 / 归档）收束为单栏问题卡主体；顶部新增 `app-header-toolbar`：左侧 `ProjectSelector`（演示工作区 pill 按钮 + popover 承载原项目区 bullets）、右侧 `ArchiveEntryButton`（带累计归档计数 chip，N=0 时 disabled）；`ArchiveListDrawer` 内部在 header 后嵌入 `ArchivePaneShell`（保留累计徽标 + 最近一次摘要 + invalid 提示）+ 新增 `archive-drawer-section` 承载"全部归档条目"列表。仅改 `App.tsx` / `App.css`；未改 schema / store / closeout 工厂 / verify 脚本 / Electron / fs / IPC / .debug_workspace 写盘。
 
 ## 当前阶段：D1 交差优先中文产品壳
 - 当前前沿候选任务见下文；下一轮必须重新读取真实状态后再选择唯一原子任务，不自动顺推。
 
 ## 后续候选（不等于顺推队列，D1 阶段内可继续）
-- [ ] D1-MAINLINE-BROWSER-SMOKE：在浏览器里真人走一遍 创建 → 自动选中 → 追记 → 结案 → 中心结果面板 + 右侧归档区结果面板读回 → 刷新验证归档区计数/摘要仍在 → 点击 [查看归档列表] 看到全部条目；只验证、不改代码。
 - [ ] D1-ISSUE-LIST-HIDE-ARCHIVED：问题卡主列表隐藏或折叠 `status=archived` 的卡，让演示时主列表只剩未结案问题；不改 store 契约。
+- [ ] D1-BRAND-UNIFY-PROBEFLASH：清理 `apps/desktop/README.md`、`apps/desktop/index.html` 等非 src 层的 `RepoDebug Harness` 历史命名残留，统一到 ProbeFlash；不改 schema / store / 内部 `repo-debug:*` storage key。
+- [ ] D1-STEPPER-CLEANUP：把 IssuePane 内"1. 创建 / 2. 选择 / 3. 追记 / 4. 结案"四块大表单的视觉重心降权（收成更轻量提示或折叠区），**必须保证最小演示路径仍可跑通**；DoD 需谨慎评估。
+- [ ] D1-MAINLINE-BROWSER-SMOKE：在浏览器里真人走一遍 header 双入口 → ProjectSelector popover → 创建 → 自动选中 → 追记 → 结案 → 右上角计数徽标变化 → 打开 Drawer 看最近摘要 + 全部列表 → 刷新页面验证 → 再创建一张看倒序列表；只验证、不改代码。
 
 ## 后续主线：链路 A 技术闭环深化
 - [ ] S3-ENTRY-PLANNING：交差壳完成后，重新读取真实状态并选择唯一技术主线入口任务。

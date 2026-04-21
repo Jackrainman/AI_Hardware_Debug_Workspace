@@ -992,31 +992,33 @@ export function ArchivePaneShell({
 }: {
   pane: Pane;
   archiveIndex: ArchiveIndex;
-  onOpenList: () => void;
+  onOpenList?: () => void;
 }) {
   const latest = archiveIndex.items[0] ?? null;
   const total = archiveIndex.items.length;
   return (
     <div className="archive-pane-stack" data-testid="archive-panel">
       <StaticPaneShell pane={pane} />
-      <div className="archive-summary-row" data-testid="archive-summary-row">
-        <span
-          className="archive-count-chip"
-          data-testid="archive-count-chip"
-          data-total={total}
-        >
-          累计归档 {total} 条
-        </span>
-        <button
-          type="button"
-          className="button-secondary"
-          onClick={onOpenList}
-          disabled={total === 0}
-          data-testid="archive-open-list-button"
-        >
-          查看归档列表
-        </button>
-      </div>
+      {onOpenList !== undefined && (
+        <div className="archive-summary-row" data-testid="archive-summary-row">
+          <span
+            className="archive-count-chip"
+            data-testid="archive-count-chip"
+            data-total={total}
+          >
+            累计归档 {total} 条
+          </span>
+          <button
+            type="button"
+            className="button-secondary"
+            onClick={onOpenList}
+            disabled={total === 0}
+            data-testid="archive-open-list-button"
+          >
+            查看归档列表
+          </button>
+        </div>
+      )}
       {archiveIndex.invalidCount > 0 && (
         <p className="storage-line" data-testid="archive-invalid-note">
           有 {archiveIndex.invalidCount} 条归档数据校验失败，已跳过。
@@ -1068,15 +1070,17 @@ export function ArchivePaneShell({
 
 export function ArchiveListDrawer({
   open,
+  archivePane,
   archiveIndex,
   onClose,
 }: {
   open: boolean;
+  archivePane: Pane;
   archiveIndex: ArchiveIndex;
   onClose: () => void;
 }) {
   if (!open) return null;
-  const { items, invalidCount } = archiveIndex;
+  const { items } = archiveIndex;
   return (
     <div
       className="archive-drawer-overlay"
@@ -1091,7 +1095,7 @@ export function ArchiveListDrawer({
       >
         <header className="archive-drawer-header">
           <div className="archive-drawer-title">
-            <h3>归档列表</h3>
+            <h3>归档区</h3>
             <span className="archive-drawer-count">共 {items.length} 条（按归档时间倒序）</span>
           </div>
           <button
@@ -1103,42 +1107,39 @@ export function ArchiveListDrawer({
             关闭
           </button>
         </header>
-        {invalidCount > 0 && (
-          <p className="storage-line">
-            有 {invalidCount} 条归档数据校验失败，已跳过。
-          </p>
-        )}
-        {items.length === 0 ? (
-          <p className="empty-state">尚无归档条目。完成结案后再打开此处查看。</p>
-        ) : (
-          <ul className="archive-drawer-list" data-testid="archive-drawer-list">
-            {items.map((item) => (
-              <li key={item.fileName} className="archive-drawer-item">
-                <div className="archive-drawer-item-row">
-                  <span className="archive-drawer-file">{item.fileName}</span>
-                  <span className="archive-drawer-time">{item.generatedAt}</span>
-                </div>
-                <dl className="archive-drawer-meta">
-                  <div>
-                    <dt>错误表编号</dt>
-                    <dd>{item.errorCode ?? "(未记录)"}</dd>
+        <ArchivePaneShell pane={archivePane} archiveIndex={archiveIndex} />
+        {items.length > 0 && (
+          <div className="archive-drawer-section">
+            <div className="archive-drawer-section-label">全部归档条目</div>
+            <ul className="archive-drawer-list" data-testid="archive-drawer-list">
+              {items.map((item) => (
+                <li key={item.fileName} className="archive-drawer-item">
+                  <div className="archive-drawer-item-row">
+                    <span className="archive-drawer-file">{item.fileName}</span>
+                    <span className="archive-drawer-time">{item.generatedAt}</span>
                   </div>
-                  <div>
-                    <dt>分类</dt>
-                    <dd>{item.category ?? "(未记录)"}</dd>
-                  </div>
-                  <div>
-                    <dt>来源问题</dt>
-                    <dd>{item.issueId}</dd>
-                  </div>
-                  <div>
-                    <dt>后续写盘位置</dt>
-                    <dd>{item.filePath}</dd>
-                  </div>
-                </dl>
-              </li>
-            ))}
-          </ul>
+                  <dl className="archive-drawer-meta">
+                    <div>
+                      <dt>错误表编号</dt>
+                      <dd>{item.errorCode ?? "(未记录)"}</dd>
+                    </div>
+                    <div>
+                      <dt>分类</dt>
+                      <dd>{item.category ?? "(未记录)"}</dd>
+                    </div>
+                    <div>
+                      <dt>来源问题</dt>
+                      <dd>{item.issueId}</dd>
+                    </div>
+                    <div>
+                      <dt>后续写盘位置</dt>
+                      <dd>{item.filePath}</dd>
+                    </div>
+                  </dl>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
         <p className="archive-drawer-note">
           当前归档仍在浏览器 localStorage，不是 .debug_workspace 文件写盘；接入 Electron / fs 后这里会切换到真实文件路径。
@@ -1148,12 +1149,97 @@ export function ArchiveListDrawer({
   );
 }
 
+function ProjectSelector({
+  pane,
+  open,
+  onToggle,
+  onClose,
+}: {
+  pane: Pane;
+  open: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="project-selector" data-testid="project-selector">
+      <button
+        type="button"
+        className="project-entry-button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls="project-selector-popover"
+        data-testid="project-selector-button"
+      >
+        <span className="header-entry-icon" aria-hidden="true">📁</span>
+        <span className="header-entry-label">项目：演示工作区</span>
+        <span className="project-entry-caret" aria-hidden="true">{open ? "▴" : "▾"}</span>
+      </button>
+      {open && (
+        <div
+          id="project-selector-popover"
+          className="project-selector-popover"
+          data-testid="project-selector-popover"
+          role="dialog"
+          aria-label="项目详情"
+        >
+          <div className="project-selector-popover-header">
+            <h3>{pane.title}</h3>
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={onClose}
+              aria-label="关闭项目详情"
+            >
+              关闭
+            </button>
+          </div>
+          <p className="pane-hint">{pane.hint}</p>
+          <StaticPaneShell pane={pane} />
+          <p className="project-selector-note">
+            当前仅演示工作区；多项目选择与仓库绑定能力后续接入。
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ArchiveEntryButton({
+  count,
+  onClick,
+}: {
+  count: number;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="archive-entry-button"
+      onClick={onClick}
+      disabled={count === 0}
+      data-testid="archive-open-list-button"
+      aria-label="查看归档列表"
+    >
+      <span className="header-entry-icon" aria-hidden="true">📦</span>
+      <span className="header-entry-label">查看归档列表</span>
+      <span
+        className="archive-entry-count"
+        data-testid="archive-count-chip"
+        data-total={count}
+      >
+        {count}
+      </span>
+    </button>
+  );
+}
+
 export default function App() {
   const [archiveIndex, setArchiveIndex] = useState<ArchiveIndex>({
     items: [],
     invalidCount: 0,
   });
   const [isArchiveListOpen, setIsArchiveListOpen] = useState<boolean>(false);
+  const [isProjectEntryOpen, setIsProjectEntryOpen] = useState<boolean>(false);
 
   const refreshArchiveIndex = () => {
     setArchiveIndex(loadArchiveIndex());
@@ -1167,52 +1253,64 @@ export default function App() {
     refreshArchiveIndex();
   };
 
+  const projectPane = PANES.find((p) => p.id === "project")!;
+  const issuePane = PANES.find((p) => p.id === "issue")!;
+  const archivePane = PANES.find((p) => p.id === "archive")!;
+  const archiveTotal = archiveIndex.items.length;
+
   return (
     <div className="app-root">
       <header className="app-header">
-        <div className="app-title-block">
-          <p className="app-eyebrow">嵌入式调试现场 · 问题闪记</p>
-          <h1>ProbeFlash</h1>
-          <p className="app-subtitle">
-            面向嵌入式调试现场的问题闪记与知识归档系统。当前是浏览器 SPA 演示版。
-          </p>
+        <div className="app-header-top">
+          <div className="app-title-block">
+            <p className="app-eyebrow">嵌入式调试现场 · 问题闪记</p>
+            <h1>ProbeFlash</h1>
+            <p className="app-subtitle">
+              面向嵌入式调试现场的问题闪记与知识归档系统。当前是浏览器 SPA 演示版。
+            </p>
+          </div>
+          <div className="header-status-stack">
+            <p className="stage-tag" data-testid="stage-tag">
+              D1：交差优先中文产品壳
+            </p>
+            <p className="header-boundary">SPA + localStorage，未接 Electron/fs</p>
+          </div>
         </div>
-        <div className="header-status-stack">
-          <p className="stage-tag" data-testid="stage-tag">
-            D1：交差优先中文产品壳
-          </p>
-          <p className="header-boundary">SPA + localStorage，未接 Electron/fs</p>
+        <div className="app-header-toolbar" data-testid="app-header-toolbar">
+          <div className="header-entry-slot header-entry-slot-left">
+            <ProjectSelector
+              pane={projectPane}
+              open={isProjectEntryOpen}
+              onToggle={() => setIsProjectEntryOpen((prev) => !prev)}
+              onClose={() => setIsProjectEntryOpen(false)}
+            />
+          </div>
+          <div className="header-entry-slot header-entry-slot-right">
+            <ArchiveEntryButton
+              count={archiveTotal}
+              onClick={() => setIsArchiveListOpen(true)}
+            />
+          </div>
         </div>
       </header>
-      <main className="app-grid">
-        {PANES.map((pane) => (
-          <section key={pane.id} className="pane" data-pane={pane.id}>
-            <div className="pane-heading">
-              <div className="pane-title-row">
-                <h2>{pane.title}</h2>
-                <span className="pane-badge">{pane.badge}</span>
-              </div>
-              <p className="pane-hint">{pane.hint}</p>
+      <main className="app-main">
+        <section className="pane" data-pane="issue">
+          <div className="pane-heading">
+            <div className="pane-title-row">
+              <h2>{issuePane.title}</h2>
+              <span className="pane-badge">{issuePane.badge}</span>
             </div>
-            {pane.id === "issue" ? (
-              <IssuePane onCloseoutResult={handleCloseoutResult} />
-            ) : pane.id === "archive" ? (
-              <ArchivePaneShell
-                pane={pane}
-                archiveIndex={archiveIndex}
-                onOpenList={() => setIsArchiveListOpen(true)}
-              />
-            ) : (
-              <StaticPaneShell pane={pane} />
-            )}
-          </section>
-        ))}
+            <p className="pane-hint">{issuePane.hint}</p>
+          </div>
+          <IssuePane onCloseoutResult={handleCloseoutResult} />
+        </section>
       </main>
       <footer className="app-footer">
         <span>当前边界：浏览器 SPA + localStorage；Electron / fs / IPC / .debug_workspace 文件写盘未接入。</span>
       </footer>
       <ArchiveListDrawer
         open={isArchiveListOpen}
+        archivePane={archivePane}
         archiveIndex={archiveIndex}
         onClose={() => setIsArchiveListOpen(false)}
       />

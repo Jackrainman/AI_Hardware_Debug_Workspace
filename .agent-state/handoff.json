@@ -14,7 +14,7 @@
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-04-21T22:30:00+08:00",
+  "timestamp": "2026-04-22T13:00:00+08:00",
   "current_mode": "delivery_priority",
   "current_stage": "D1",
   "current_stage_name": "交差优先中文产品壳",
@@ -29,7 +29,7 @@
     },
     "track_b_delivery_priority_shell": {
       "status": "active",
-      "summary": "优先做中文化、视觉统一、空状态、项目区/归档区演示壳、问题卡区视觉重心、最小中文演示路径、以及主操作区主线闭环的真实串联与结果反馈。",
+      "summary": "优先做中文化、视觉统一、空状态、项目区/归档区演示壳、问题卡区视觉重心、最小中文演示路径、主操作区主线闭环的真实串联与结果反馈、信息架构收束。",
       "hard_boundaries": [
         "不改 schema / store / Electron / fs / IPC",
         "不重做业务数据流",
@@ -40,16 +40,28 @@
   "current_atomic_task": "WAITING_FOR_PLANNING_SELECTION",
   "frontier_tasks": [
     {
-      "id": "D1-MAINLINE-BROWSER-SMOKE",
-      "track": "track_b_delivery_priority_shell",
-      "goal": "在浏览器里真人走一遍 创建 → 自动选中 → 追记 → 结案 → 中心结果面板 + 右侧归档区摘要 → 刷新验证累计归档与最近摘要仍在 → 点击 [查看归档列表] 看到全部条目，验证 D1 主流程真实交互行为；只验证不改代码。",
-      "depends_on": ["D1-MAINLINE-WIRE-CONNECT", "D1-ARCHIVE-PANEL-FIX", "D1-ARCHIVE-PERSIST-INDEX"]
-    },
-    {
       "id": "D1-ISSUE-LIST-HIDE-ARCHIVED",
       "track": "track_b_delivery_priority_shell",
       "goal": "中间问题卡主列表隐藏或折叠 status=archived 的卡，让演示时主列表只剩未结案问题；不改 store 契约。",
       "depends_on": []
+    },
+    {
+      "id": "D1-BRAND-UNIFY-PROBEFLASH",
+      "track": "track_b_delivery_priority_shell",
+      "goal": "清理 apps/desktop/README.md 与 apps/desktop/index.html 等非 src 层的 RepoDebug Harness 历史命名残留，统一到 ProbeFlash；不改 schema / store / 内部 repo-debug:* storage key。",
+      "depends_on": []
+    },
+    {
+      "id": "D1-STEPPER-CLEANUP",
+      "track": "track_b_delivery_priority_shell",
+      "goal": "把 IssuePane 内 1.创建 / 2.选择 / 3.追记 / 4.结案 四块大表单的视觉重心降权（收成更轻量提示或折叠区），但必须保证最小演示路径仍可跑通；DoD 需谨慎评估。",
+      "depends_on": []
+    },
+    {
+      "id": "D1-MAINLINE-BROWSER-SMOKE",
+      "track": "track_b_delivery_priority_shell",
+      "goal": "浏览器真人冒烟，重点覆盖新 header 双入口、ProjectSelector popover、ArchiveEntryButton 计数徽标、drawer 内嵌 ArchivePaneShell + 全部归档条目列表、刷新后计数稳定；只验证不改代码。",
+      "depends_on": ["D1-MAINLINE-WIRE-CONNECT", "D1-ARCHIVE-PANEL-FIX", "D1-ARCHIVE-PERSIST-INDEX", "D1-LAYOUT-HEADER-ARCHIVE-ENTRY"]
     },
     {
       "id": "S3-ENTRY-PLANNING",
@@ -86,7 +98,8 @@
     "D1-MAINLINE-WIRE-CONNECT",
     "D1-README-AGENTS-PACKAGING",
     "D1-ARCHIVE-PANEL-FIX",
-    "D1-ARCHIVE-PERSIST-INDEX"
+    "D1-ARCHIVE-PERSIST-INDEX",
+    "D1-LAYOUT-HEADER-ARCHIVE-ENTRY"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -108,6 +121,7 @@
       "是否服务 D1 交差验收",
       "主操作区主线闭环在页面上是否已经在真实跑通（D1-MAINLINE-WIRE-CONNECT 后：是）",
       "归档区是否跨刷新保留（D1-ARCHIVE-PERSIST-INDEX 后：是）",
+      "主页面信息架构是否已收束（D1-LAYOUT-HEADER-ARCHIVE-ENTRY 后：是，顶部双入口 + 单栏主体）",
       "中文是否更统一",
       "页面是否更像产品壳",
       "演示是否更顺",
@@ -115,13 +129,15 @@
       "是否避开 schema/store/Electron/fs/IPC 深改",
       "planning 与实际是否一致"
     ],
-    "recommended_next": "D1-MAINLINE-BROWSER-SMOKE",
+    "recommended_next": "D1-ISSUE-LIST-HIDE-ARCHIVED",
     "output_rule": "从 frontier_tasks 中选择唯一一个原子任务，写入 current_atomic_task，再进入 task-execution。"
   },
   "risks": [
-    "D1-ARCHIVE-PERSIST-INDEX 已接通跨刷新读回 + 累计索引 + [查看归档列表] 抽屉，但浏览器人工点击冒烟（含刷新 + 抽屉）尚未执行，需下一轮 D1-MAINLINE-BROWSER-SMOKE 覆盖。",
-    "ArchiveDocument / ErrorEntry 当前仍在 localStorage，不是 .debug_workspace 文件系统写盘；归档抽屉里已明确标注'后续写盘位置'，但真实文件写盘、独立归档浏览页、跨项目检索仍未接入。",
-    "Electron / fs / IPC 仍未接入，项目区与归档区只能展示真实边界，不能包装成已完成能力。"
+    "D1-LAYOUT-HEADER-ARCHIVE-ENTRY 已把主页面从三栏收束为顶部双入口 + 单栏主体；归档区 Drawer 内部内容沿用原 ArchivePaneShell + 新增 archive-drawer-section 列表；但浏览器人工点击冒烟（含 ProjectSelector popover 开合、ArchiveEntryButton disabled/enabled 切换、Drawer 内嵌视觉一致性、窄屏响应式）尚未执行，需下一轮 D1-MAINLINE-BROWSER-SMOKE 覆盖。",
+    "apps/desktop/README.md 与 apps/desktop/index.html 仍有 RepoDebug Harness 历史命名残留（非 src 层，本轮不在 allowed 核心范围），留给 D1-BRAND-UNIFY-PROBEFLASH 独立清理。",
+    "IssuePane 内四块大表单（1.创建 / 2.选择 / 3.追记 / 4.结案）仍是主要视觉重心；若要按用户收束要求降权，需谨慎设计以保证最小演示路径仍可跑通（D1-STEPPER-CLEANUP）。",
+    "ArchiveDocument / ErrorEntry 当前仍在 localStorage，不是 .debug_workspace 文件系统写盘；Drawer 底部 note 明确标注‘后续写盘位置’，但真实文件写盘、独立归档浏览页、跨项目检索仍未接入。",
+    "Electron / fs / IPC 仍未接入，ProjectSelector popover 与归档 Drawer 只能展示真实边界，不能包装成已完成能力。"
   ],
   "notes": [
     "链路 A 没有取消，只是降级为后续主线。",
@@ -133,6 +149,7 @@
     "D1-README-AGENTS-PACKAGING 已完成：README 已重写为 ProbeFlash 参赛门面，AGENTS 项目概览、App 主标题、package 元数据已统一到 ProbeFlash。验证通过：JSON parse、git diff --check、npm run typecheck、npm run build。为保持既有 localStorage 数据兼容，内部 storage key repo-debug:* 暂不改名。",
     "D1-ARCHIVE-PANEL-FIX 已完成：右侧归档区新增明确空状态和最近一次 closeout 结果面板；closeout 后可展示归档文件名、错误表编号、来源问题、归档状态、分类和归档时间。验证通过：npm run typecheck、npm run build、verify-s2-a4.mts、临时 Vite SSR 渲染断言、git diff --check、handoff.json JSON parse。",
     "D1-ARCHIVE-PERSIST-INDEX 已完成：归档区 mount 时从 localStorage 读回累计归档索引，刷新不再空；UI 显示'累计归档 N 条' + 最近一次摘要 + [查看归档列表] 抽屉；closeout 成功后自动刷新索引。补 listArchiveDocuments() / listErrorEntries() 读回函数（带 invalid 桶与倒序）与 verify-d1-archive-persist-index.mts。验证通过：npm run typecheck、npm run build（229.30 kB / gzip 67.90 kB）、6 个 verify 脚本全部 PASS、git diff --check、handoff.json JSON parse。SSR 断言因 Node 24 strip-types 不支持 JSX 未跑，Node 侧读回断言已覆盖同一语义。",
+    "D1-LAYOUT-HEADER-ARCHIVE-ENTRY 已完成：主页面信息架构从三栏（项目 / 问题卡 / 归档）收束为顶部双入口 + 单栏问题卡主体；新增 ProjectSelector（pill 按钮 + popover 承载 StaticPaneShell + 多项目切换后续接入边界）、ArchiveEntryButton（pill 按钮 + 计数 chip，N=0 时 disabled；data-testid=archive-open-list-button 与 archive-count-chip 搬到该按钮）；ArchiveListDrawer 签名新增 archivePane，内部 body 改为 drawer header → 嵌入 ArchivePaneShell（onOpenList 改 optional）→ 新增 archive-drawer-section 承载全部归档条目列表 → 底部 .debug_workspace 写盘边界 note；App.css 把 .app-grid 替换成 .app-main 单栏、新增 .app-header-top / .app-header-toolbar / .header-entry-slot / .project-entry-button / .archive-entry-button / .archive-entry-count / .project-selector / .project-selector-popover / .project-selector-note / .archive-drawer-section 等样式；响应式 @media 980/560px 同步调整；删除原 pane[data-pane=project|archive] margin-top 规则（selector 已不匹配）。仅改 App.tsx / App.css；未改 schema / closeout 工厂 / IssueCard 数据流 / store 契约 / verify 脚本 / Electron / fs / IPC / .debug_workspace 写盘 / 内部 repo-debug:* storage key / apps/desktop/README.md / apps/desktop/index.html 残留。验证通过：npm run typecheck、npm run build（231.32 kB / gzip 68.27 kB，较上轮 +2 kB 合理增量）、verify-s2-a4.mts 5 PASS、verify-d1-archive-persist-index.mts 6 PASS、git diff --check、handoff.json JSON parse。浏览器人工点击冒烟未执行，留给 D1-MAINLINE-BROWSER-SMOKE。",
     "用户已要求把 AGENTS.md 与 README 一起提交；AGENTS.md 中'除非明确要求，由 AI 自行编译'偏好纳入本轮提交范围。"
   ]
 }
