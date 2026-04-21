@@ -14,7 +14,7 @@
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-04-21T16:44:40+08:00",
+  "timestamp": "2026-04-21T16:55:11+08:00",
   "current_mode": "delivery_priority",
   "current_stage": "D1",
   "current_stage_name": "交差优先中文产品壳",
@@ -42,14 +42,8 @@
     {
       "id": "D1-MAINLINE-BROWSER-SMOKE",
       "track": "track_b_delivery_priority_shell",
-      "goal": "在浏览器里真人走一遍 创建 → 自动选中 → 追记 → 结案 → MainlineResultPanel 读回，验证 D1-MAINLINE-WIRE-CONNECT 的真实交互行为；只验证不改代码。",
-      "depends_on": ["D1-MAINLINE-WIRE-CONNECT"]
-    },
-    {
-      "id": "D1-ARCHIVE-PANE-MIN-RESULT",
-      "track": "track_b_delivery_priority_shell",
-      "goal": "归档区从纯占位升级为最小结果提示：当前浏览器本地有 N 条 ArchiveDocument + M 条 ErrorEntry 的计数读回；只读 localStorage，不改 store / schema / fs。",
-      "depends_on": ["D1-MAINLINE-WIRE-CONNECT"]
+      "goal": "在浏览器里真人走一遍 创建 → 自动选中 → 追记 → 结案 → 中心结果面板 + 右侧归档区结果面板读回，验证 D1 主流程真实交互行为；只验证不改代码。",
+      "depends_on": ["D1-MAINLINE-WIRE-CONNECT", "D1-ARCHIVE-PANEL-FIX"]
     },
     {
       "id": "S3-ENTRY-PLANNING",
@@ -84,7 +78,8 @@
     "D1-UI-V1-VISUAL-HIERARCHY",
     "D1-DEMO-PATH-MIN-CN",
     "D1-MAINLINE-WIRE-CONNECT",
-    "D1-README-AGENTS-PACKAGING"
+    "D1-README-AGENTS-PACKAGING",
+    "D1-ARCHIVE-PANEL-FIX"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -114,8 +109,8 @@
     "output_rule": "从 frontier_tasks 中选择唯一一个原子任务，写入 current_atomic_task，再进入 task-execution。"
   },
   "risks": [
-    "D1-MAINLINE-WIRE-CONNECT 已完成 UI 层串联与结果反馈，但浏览器人工冒烟尚未执行，真实 DOM 交互仍需下一轮覆盖。",
-    "ArchiveDocument / ErrorEntry 当前仍在 localStorage，不是 .debug_workspace 文件系统写盘；归档面板中明确标注了边界，但归档区仍是静态演示壳，未读取 localStorage 实时计数。",
+    "D1-MAINLINE-WIRE-CONNECT 已完成 UI 层串联与结果反馈，但浏览器人工冒烟尚未执行，真实 DOM 交互仍需后续覆盖。",
+    "ArchiveDocument / ErrorEntry 当前仍在 localStorage，不是 .debug_workspace 文件系统写盘；右侧归档区已接最小结果展示，但完整归档浏览页、文件写盘、跨刷新历史归档列表仍未接入。",
     "Electron / fs / IPC 仍未接入，项目区与归档区只能展示真实边界，不能包装成已完成能力。"
   ],
   "notes": [
@@ -126,6 +121,7 @@
     "D1-DEMO-PATH-MIN-CN 已完成：新增 DemoHint 组件展示最小演示路径，优化项目区/归档区提示文案，未改 schema / store / domain 工厂 / verify / 业务数据流。",
     "D1-MAINLINE-WIRE-CONNECT 已完成：创建后自动选中新卡、新增 MainlineResultPanel 集中展示当前卡与归档摘要、FlowGuide 反映当前步骤、CloseoutForm.onClosed 回传 summary；只改 App.tsx / App.css，未改 schema / store / domain 工厂 / verify 脚本 / 业务数据流。用户前反馈的'追加记录没用 / 结案无效'本质是 UI 串联缺口，本轮补齐。",
     "D1-README-AGENTS-PACKAGING 已完成：README 已重写为 ProbeFlash 参赛门面，AGENTS 项目概览、App 主标题、package 元数据已统一到 ProbeFlash。验证通过：JSON parse、git diff --check、npm run typecheck、npm run build。为保持既有 localStorage 数据兼容，内部 storage key repo-debug:* 暂不改名。",
+    "D1-ARCHIVE-PANEL-FIX 已完成：右侧归档区新增明确空状态和最近一次 closeout 结果面板；closeout 后可展示归档文件名、错误表编号、来源问题、归档状态、分类和归档时间。验证通过：npm run typecheck、npm run build、verify-s2-a4.mts、临时 Vite SSR 渲染断言、git diff --check、handoff.json JSON parse。",
     "用户已要求把 AGENTS.md 与 README 一起提交；AGENTS.md 中'除非明确要求，由 AI 自行编译'偏好纳入本轮提交范围。"
   ]
 }

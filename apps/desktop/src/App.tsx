@@ -750,7 +750,7 @@ function MainlineResultPanel({
   );
 }
 
-function IssuePane() {
+function IssuePane({ onCloseoutResult }: { onCloseoutResult: (summary: CloseoutSummary) => void }) {
   const [cardList, setCardList] = useState<IssueCardListResult | null>(null);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
   const [selectedCard, setSelectedCard] = useState<IssueCard | null>(null);
@@ -795,6 +795,7 @@ function IssuePane() {
 
   const handleIssueClosed = (summary: CloseoutSummary) => {
     setLastCloseout(summary);
+    onCloseoutResult(summary);
     refreshCardList();
     setRecordList(listInvestigationRecordsByIssueId(summary.issueId));
     reloadSelectedCard(summary.issueId);
@@ -936,7 +937,67 @@ function StaticPaneShell({ pane }: { pane: Pane }) {
   );
 }
 
+export function ArchivePaneShell({
+  pane,
+  latestCloseout,
+}: {
+  pane: Pane;
+  latestCloseout: CloseoutSummary | null;
+}) {
+  return (
+    <div className="archive-pane-stack" data-testid="archive-panel">
+      <StaticPaneShell pane={pane} />
+      {latestCloseout === null ? (
+        <p className="empty-state archive-empty-state" data-testid="archive-empty-state">
+          尚无归档结果。完成问题卡区第 4 步“结案并生成归档摘要”后，这里会显示最近一次归档摘要与错误表条目。
+        </p>
+      ) : (
+        <section className="archive-result-panel" data-testid="archive-result-panel">
+          <header className="archive-result-header">
+            <span className="archive-result-badge">已生成</span>
+            <h3>最近一次归档结果</h3>
+          </header>
+          <p className="archive-result-status" data-testid="archive-result-status">
+            已完成结案，已生成 ArchiveDocument 与 ErrorEntry，并写入浏览器本地存储。
+          </p>
+          <dl className="archive-result-fields">
+            <div>
+              <dt>归档摘要</dt>
+              <dd>{latestCloseout.archiveFileName}</dd>
+            </div>
+            <div>
+              <dt>错误表编号</dt>
+              <dd>{latestCloseout.errorCode}</dd>
+            </div>
+            <div>
+              <dt>来源问题</dt>
+              <dd>{latestCloseout.issueId}</dd>
+            </div>
+            <div>
+              <dt>归档状态</dt>
+              <dd>已生成 · localStorage</dd>
+            </div>
+            <div>
+              <dt>分类</dt>
+              <dd>{latestCloseout.category}</dd>
+            </div>
+            <div>
+              <dt>归档时间</dt>
+              <dd>{latestCloseout.archivedAt}</dd>
+            </div>
+          </dl>
+          <p className="archive-result-note">
+            后续文件写盘位置：{latestCloseout.archiveFilePath}。当前阶段不伪装为已接入 .debug_workspace。
+          </p>
+        </section>
+      )}
+    </div>
+  );
+}
+
 export default function App() {
+  const [latestCloseout, setLatestCloseout] = useState<CloseoutSummary | null>(null);
+
   return (
     <div className="app-root">
       <header className="app-header">
@@ -965,7 +1026,9 @@ export default function App() {
               <p className="pane-hint">{pane.hint}</p>
             </div>
             {pane.id === "issue" ? (
-              <IssuePane />
+              <IssuePane onCloseoutResult={setLatestCloseout} />
+            ) : pane.id === "archive" ? (
+              <ArchivePaneShell pane={pane} latestCloseout={latestCloseout} />
             ) : (
               <StaticPaneShell pane={pane} />
             )}

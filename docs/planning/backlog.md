@@ -18,13 +18,13 @@
 - [x] D1-DEMO-PATH-MIN-CN：补最小中文演示路径，让创建问题卡、追记、结案流程更适合演示；不伪造 Electron/fs 能力。
 - [x] D1-MAINLINE-WIRE-CONNECT：串联主操作区主线闭环——创建后自动选中新卡、新增 MainlineResultPanel 集中展示当前卡与归档摘要、FlowGuide 根据真实状态反映当前步骤、CloseoutForm.onClosed 回传 summary；只改 App.tsx / App.css，未改 schema / store / verify 脚本 / 业务数据流。
 - [x] D1-README-AGENTS-PACKAGING：重写 README 为 ProbeFlash 参赛门面，显式回应 Harness / Agent / Tool / Feedback Loop / 48 小时交付；同步 AGENTS 项目概览、应用可见标题与包元数据命名。保留 `repo-debug:*` 内部存储 key 以兼容既有 localStorage 数据。
+- [x] D1-ARCHIVE-PANEL-FIX：修通 closeout 结果到右侧归档区显示；归档区能区分尚无/已有归档结果，并展示最近一次归档文件名、错误表编号、来源问题、归档状态、分类和归档时间。未改 store / schema / Electron / fs / IPC / 项目区。
 
 ## 当前阶段：D1 交差优先中文产品壳
 - 当前前沿候选任务见下文；下一轮必须重新读取真实状态后再选择唯一原子任务，不自动顺推。
 
 ## 后续候选（不等于顺推队列，D1 阶段内可继续）
-- [ ] D1-MAINLINE-BROWSER-SMOKE：在浏览器里真人走一遍 创建 → 自动选中 → 追记 → 结案 → MainlineResultPanel 读回；只验证、不改代码。
-- [ ] D1-ARCHIVE-PANE-MIN-RESULT：归档区从纯占位升级为"当前浏览器本地有 N 条 ArchiveDocument + M 条 ErrorEntry"的最小结果提示（只读 localStorage，不改 store / schema / fs）。
+- [ ] D1-MAINLINE-BROWSER-SMOKE：在浏览器里真人走一遍 创建 → 自动选中 → 追记 → 结案 → 中心结果面板 + 右侧归档区结果面板读回；只验证、不改代码。
 
 ## 后续主线：链路 A 技术闭环深化
 - [ ] S3-ENTRY-PLANNING：交差壳完成后，重新读取真实状态并选择唯一技术主线入口任务。

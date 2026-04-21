@@ -5,13 +5,15 @@
 ## 当前真实状态
 - 当前阶段：D1：交差优先中文产品壳。
 - 当前模式：`delivery_priority`。
-- 当前唯一执行中的原子任务：无。本轮 **D1-README-AGENTS-PACKAGING** 已完成文件修改，进入验证与提交收束。
+- 当前唯一执行中的原子任务：无。本轮 **D1-ARCHIVE-PANEL-FIX** 已完成并进入提交收束。
 - 对外项目名已统一为 **ProbeFlash — 面向嵌入式调试现场的问题闪记与知识归档系统**：README 门面、AGENTS 项目概览、应用主标题与包元数据已同步。
 - S2 主闭环关键路径（domain + storage 层）早已打通：IssueCard intake → 列表选中 → InvestigationRecord 追记 → closeout → ArchiveDocument + ErrorEntry → IssueCard archived 读回。
 - D1-MAINLINE-WIRE-CONNECT 之前，UI 层的”串联 + 结果反馈”是有缺口的：创建后不自动选中（用户无从发现追记/结案表单已隐藏），结案只有一行 storage-line 提示；用户在页面上感受到”看起来交差但追记/结案好像没用”。本轮修掉这两个断点——创建后自动选中、`MainlineResultPanel` 集中展示当前卡摘要与最近一次归档，`FlowGuide` 根据真实状态高亮当前步骤，`CloseoutForm.onClosed` 回传 summary 给上层。
 - D1-README-AGENTS-PACKAGING 将仓库门面从旧对外口径切换到 ProbeFlash 参赛口径：明确痛点、Harness / Agent、Tool / CLI / Repo-aware、Feedback Loop、48 小时交付、架构图、流程图、限制与后续方向。
 - 当前运行形态仍是 SPA + `window.localStorage`；Electron / fs / IPC / `.debug_workspace` 文件系统双写未接入。归档摘要面板里显式标注”后续写盘位置”，不把 localStorage 包装成真实文件写盘。
 - 内部 localStorage key `repo-debug:*` 暂不改名，原因是保持既有浏览器数据和验证脚本兼容；这是内部存储标识，不作为对外品牌口径。
+- 本轮断点判断：closeout 工厂和 store 已生成并保存 ArchiveDocument / ErrorEntry，`CloseoutForm` 已向 `IssuePane` 回传 `CloseoutSummary`，中心区 `MainlineResultPanel` 能显示；右侧归档区仍使用 `StaticPaneShell` 静态壳，没有接收或渲染 closeout 结果。
+- D1-ARCHIVE-PANEL-FIX 修复结果：右侧归档区新增明确空状态；closeout 成功后，`IssuePane` 把最近一次 `CloseoutSummary` 同步到 `App`，`ArchivePaneShell` 渲染最小结果面板，展示归档摘要文件名、错误表编号、来源问题、归档状态、分类和归档时间。项目区仍保持演示壳，完整归档浏览页与真实文件写盘仍未接入。
 
 ## 为什么本轮做 README / AGENTS 包装
 - 用户明确要求“直接写入 README，并和 AGENTS.md 一起提交”，同时要求把旧对外名称统一为 ProbeFlash。
@@ -41,9 +43,8 @@
 
 ## 下一轮最推荐动作
 - 先重新读取真实状态。候选方向（仅推荐，不预先选定）：
-  1. **D1-MAINLINE-BROWSER-SMOKE**：在浏览器里真人走一遍 创建 → 自动选中 → 追记 → 结案 → MainlineResultPanel 读回；只验证、不改代码。（属链路 B 的验收动作。）
-  2. **D1-ARCHIVE-PANE-MIN-RESULT**：归档区从纯占位升级为”当前浏览器本地有 N 条 ArchiveDocument + M 条 ErrorEntry”的最小结果提示（只读取 localStorage，不改 store / schema / fs）。
-  3. **S3-ENTRY-PLANNING**：正式切回链路 A，评估 Electron/fs adapter、runtime log、repair task 的入口任务。
+  1. **D1-MAINLINE-BROWSER-SMOKE**：在浏览器里真人走一遍 创建 → 自动选中 → 追记 → 结案 → 中心结果面板 + 右侧归档区结果面板读回；只验证、不改代码。（属链路 B 的验收动作。）
+  2. **S3-ENTRY-PLANNING**：正式切回链路 A，评估 Electron/fs adapter、runtime log、repair task 的入口任务。
 - 选前必须确认 `current_mode` 是否仍是 `delivery_priority`；若用户切回 `technical_mainline`，优先推 S3-ENTRY-PLANNING。
 
 ## 下一轮开始前必须检查
@@ -63,6 +64,10 @@
 - 不把占位功能包装成已完成真实能力。
 
 ## 验证状态
+- PASS：D1-ARCHIVE-PANEL-FIX 已修通右侧归档区展示链路；`ArchivePaneShell` 的空状态与结果状态均通过临时 SSR 渲染断言。
+- PASS：`npm run typecheck` EXIT=0。
+- PASS：`npm run build` EXIT=0，54 modules，JS 225.02 kB / gzip 67.02 kB。
+- PASS：`verify-s2-a4.mts` 5 PASS，closeout 仍能生成 ArchiveDocument + ErrorEntry + archived IssueCard 并读回。
 - PASS：D1-README-AGENTS-PACKAGING 已完成 README/AGENTS/App 标题/package 元数据读回；目标文件中旧对外名称已清空，内部 `repo-debug:*` storage key 因兼容性保留。
 - PASS：`.agent-state/handoff.json`、`apps/desktop/package.json`、`apps/desktop/package-lock.json` 均可 `JSON.parse`。
 - PASS：`git diff --check` EXIT=0。

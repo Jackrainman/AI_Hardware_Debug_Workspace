@@ -31,11 +31,10 @@
 - 必要时补最小中文演示路径，但不动深层数据流。
 
 ## 当前唯一执行中的原子任务
-- **D1-README-AGENTS-PACKAGING**：已完成。按比赛提交门面要求重写 `README.md` 为 ProbeFlash 参赛 README，显式回应痛点、Harness / Agent、Tool / CLI / Repo-aware、Feedback Loop、48 小时交付、架构图和流程图；同步 `AGENTS.md` 项目概览、应用可见标题与包元数据命名为“ProbeFlash — 面向嵌入式调试现场的问题闪记与知识归档系统”。未改 schema / store / Electron / fs / IPC；为保持现有 localStorage 数据兼容，内部存储 key `repo-debug:*` 暂不改名。
+- **无**。本轮 **D1-ARCHIVE-PANEL-FIX** 已完成：closeout 成功后，最近一次 `CloseoutSummary` 会从问题卡区同步到右侧归档区；归档区能明确区分“尚无归档结果”和“已有归档结果”，并展示最近一次归档文件名、错误表编号、来源问题、归档状态、分类和归档时间。未改项目区真实仓库绑定，未接 Electron / fs / IPC，未改 `.debug_workspace` 文件写盘，未改 schema / store 契约，未扩展完整归档浏览页。
 
 ## 当前前沿任务窗口（候选，不等于顺推队列）
-- D1-MAINLINE-BROWSER-SMOKE：在浏览器里真人走一遍 创建 → 自动选中 → 追记 → 结案 → MainlineResultPanel 读回；只验证、不改代码。
-- D1-ARCHIVE-PANE-MIN-RESULT：归档区从纯占位升级为“当前浏览器本地有 N 条 ArchiveDocument + M 条 ErrorEntry”的最小结果提示（只读 localStorage，不改 store / schema / fs）。
+- D1-MAINLINE-BROWSER-SMOKE：在浏览器里真人走一遍 创建 → 自动选中 → 追记 → 结案 → 结果面板读回；只验证、不改代码。
 - S3-ENTRY-PLANNING：交差壳完成后切回链路 A，评估 Electron/fs adapter、runtime log、repair task 的入口任务；需 planning 明确切回技术主线。
 
 ## 下一任务选择流程
