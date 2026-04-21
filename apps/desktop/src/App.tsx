@@ -18,6 +18,12 @@ import {
   type InvestigationType,
 } from "./domain/investigation-intake";
 import {
+  buildCloseoutFromIssue,
+  defaultCloseoutOptions,
+  nowISO as nowISOCloseout,
+  type CloseoutInput,
+} from "./domain/closeout";
+import {
   listIssueCards,
   loadIssueCard,
   saveIssueCard,
@@ -29,6 +35,8 @@ import {
   saveInvestigationRecord,
   type InvestigationRecordListResult,
 } from "./storage/investigation-record-store";
+import { saveArchiveDocument } from "./storage/archive-document-store";
+import { saveErrorEntry } from "./storage/error-entry-store";
 
 const SAMPLE_ISSUE_ID = "sample-issue-0001";
 const SAMPLE_TIMESTAMP = "2026-04-21T02:30:00+08:00";
@@ -385,6 +393,139 @@ function InvestigationRecordListView({
   );
 }
 
+type CloseoutSubmitStatus =
+  | { state: "idle" }
+  | { state: "saved"; fileName: string; errorCode: string; at: string }
+  | { state: "error"; reason: string };
+
+function CloseoutForm({
+  issueId,
+  onClosed,
+}: {
+  issueId: string;
+  onClosed: () => void;
+}) {
+  const [category, setCategory] = useState<string>("");
+  const [rootCause, setRootCause] = useState<string>("");
+  const [resolution, setResolution] = useState<string>("");
+  const [prevention, setPrevention] = useState<string>("");
+  const [status, setStatus] = useState<CloseoutSubmitStatus>({ state: "idle" });
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const loaded = loadIssueCard(issueId);
+    if (!loaded.ok) {
+      setStatus({
+        state: "error",
+        reason: `failed to load issue: ${loaded.error.kind}`,
+      });
+      return;
+    }
+
+    const records = listInvestigationRecordsByIssueId(issueId);
+    if (records.invalid.length > 0) {
+      setStatus({
+        state: "error",
+        reason: `investigation record validation failed: ${records.invalid.length} invalid entr${
+          records.invalid.length === 1 ? "y" : "ies"
+        }`,
+      });
+      return;
+    }
+
+    const input: CloseoutInput = { category, rootCause, resolution, prevention };
+    const now = nowISOCloseout();
+    const result = buildCloseoutFromIssue(
+      loaded.card,
+      records.valid,
+      input,
+      defaultCloseoutOptions(now),
+    );
+    if (!result.ok) {
+      setStatus({ state: "error", reason: result.reason });
+      return;
+    }
+
+    saveArchiveDocument(result.archiveDocument);
+    saveErrorEntry(result.errorEntry);
+    saveIssueCard(result.updatedIssueCard);
+    setStatus({
+      state: "saved",
+      fileName: result.archiveDocument.fileName,
+      errorCode: result.errorEntry.errorCode,
+      at: result.archiveDocument.generatedAt,
+    });
+    setCategory("");
+    setRootCause("");
+    setResolution("");
+    setPrevention("");
+    onClosed();
+  };
+
+  return (
+    <form className="intake-form" onSubmit={handleSubmit} data-testid="closeout-form">
+      <p className="storage-line" data-testid="closeout-target">
+        close issue: {issueId}
+      </p>
+      <label className="intake-field">
+        <span>Category</span>
+        <input
+          type="text"
+          value={category}
+          onChange={(event) => setCategory(event.target.value)}
+          placeholder="e.g. boot, power, timing"
+        />
+      </label>
+      <label className="intake-field">
+        <span>Root cause</span>
+        <textarea
+          value={rootCause}
+          onChange={(event) => setRootCause(event.target.value)}
+          rows={3}
+          placeholder="What caused the issue..."
+          required
+        />
+      </label>
+      <label className="intake-field">
+        <span>Resolution</span>
+        <textarea
+          value={resolution}
+          onChange={(event) => setResolution(event.target.value)}
+          rows={3}
+          placeholder="What fixed or closed the issue..."
+          required
+        />
+      </label>
+      <label className="intake-field">
+        <span>Prevention</span>
+        <textarea
+          value={prevention}
+          onChange={(event) => setPrevention(event.target.value)}
+          rows={2}
+          placeholder="How to avoid recurrence..."
+        />
+      </label>
+      <div className="intake-actions">
+        <button type="submit">Close issue</button>
+      </div>
+      <p className="storage-line" data-testid="closeout-status">
+        closeout: {renderCloseoutStatus(status)}
+      </p>
+    </form>
+  );
+}
+
+function renderCloseoutStatus(status: CloseoutSubmitStatus): string {
+  switch (status.state) {
+    case "idle":
+      return "(not closed yet)";
+    case "saved":
+      return `OK — ${status.errorCode} → ${status.fileName} at ${status.at}`;
+    case "error":
+      return `ERROR — ${status.reason}`;
+  }
+}
+
 function IssuePane() {
   const [cardList, setCardList] = useState<IssueCardListResult | null>(null);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
@@ -415,6 +556,11 @@ function IssuePane() {
     refreshRecordList();
   };
 
+  const handleIssueClosed = () => {
+    refreshCardList();
+    refreshRecordList();
+  };
+
   return (
     <div className="issue-pane-stack">
       <IssueIntakeForm onCreated={handleCardCreated} />
@@ -434,6 +580,7 @@ function IssuePane() {
             result={recordList}
             onRefresh={refreshRecordList}
           />
+          <CloseoutForm issueId={selectedIssueId} onClosed={handleIssueClosed} />
         </>
       )}
       <IssueStorageControls />
@@ -471,7 +618,7 @@ const PANES: Pane[] = [
   {
     id: "issue",
     title: "问题卡区 (Issue / Debug)",
-    hint: "S2-A3：创建 IssueCard + 列表选中 + InvestigationRecord 追记",
+    hint: "S2-A4：创建 IssueCard + 追记 + 结案归档",
   },
   {
     id: "archive",
@@ -503,7 +650,7 @@ export default function App() {
         ))}
       </main>
       <footer className="app-footer">
-        <span>Stage: S2-A3 · IssueCard intake + list select + InvestigationRecord append</span>
+        <span>Stage: S2-A4 · IssueCard closeout + ErrorEntry + ArchiveDocument</span>
       </footer>
     </div>
   );

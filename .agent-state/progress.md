@@ -1,7 +1,7 @@
 # Progress
 
 ## 当前阶段
-- S2 调试闭环主流程（S1 已由 D-007 以"延后 Electron 外壳"形式关闭）。采用"滚动前沿规划"范式推进。
+- S2 调试闭环主流程（关键路径已打通，等待下一轮做阶段收口评估）。采用"滚动前沿规划"范式推进。
 
 ## 已完成
 - [x] 建立 `docs/planning` 结构化规划区。
@@ -30,12 +30,13 @@
   - `apps/desktop/src/App.css`：新增 `.list-item-select` 按钮样式 + `.list-item-selected` 高亮。
   - 新增 `apps/desktop/scripts/verify-s2-a3.mts`：6 断言 PASS——空存储、A 两条 + B 一条按 createdAt 升序过滤、空 note / 空 issueId 拒绝不落盘、坏 JSON 进 parse_error、schema 不符 + 外来前缀 + issue-card 前缀不污染、listIssueCards 与 investigation-record 双向隔离。
   - 验证：`npm run typecheck` EXIT=0；`verify-s2-a3.mts` 6 PASS；`verify-s1-a3` / `verify-s2-a1` / `verify-s2-a2` 无倒退；`npm run build` 49 modules ~210 kB 通过。
+- [x] S2-A4：结案 → ErrorEntry + ArchiveDocument 生成。新增 `apps/desktop/src/domain/closeout.ts` 纯函数工厂，输入选中 IssueCard + InvestigationRecord 时间线 + closeout 表单字段，输出 `ArchiveDocument`、`ErrorEntry`、`updatedIssueCard(status: archived)`；新增 `archive-document-store.ts` / `error-entry-store.ts` 两组 localStorage 独立前缀 store（`repo-debug:archive-document:` / `repo-debug:error-entry:`）与结构化 read-back 错误；`App.tsx` 在选中 IssueCard 后接入 `CloseoutForm`，成功后双写 archive/error 并回写 IssueCard；新增 `scripts/verify-s2-a4.mts` 覆盖 intake → 追记 → closeout → ArchiveDocument / ErrorEntry / IssueCard 读回、必填字段拒绝、坏 JSON / schema 不符结构化错误、跨前缀隔离。验证：`npm run typecheck` EXIT=0；S2-A4 5 PASS；S1-A3 / S2-A1 / S2-A2 / S2-A3 回归 PASS；`git diff --check` PASS。按用户偏好本轮未执行 `npm run build`。
 
 ## 当前唯一执行中
-- **无**。S2-A3 已完成并提交；本轮等待按 `docs/planning/current.md` 的「下一任务选择流程」重选唯一下一任务。
+- **无**。S2-A4 已完成并提交；S2 阶段关键业务前沿任务已清空，本轮按连续推进停止条件停止。
 
 ## 下一步
-- **按 `docs/planning/current.md` 的「下一任务选择流程」重选唯一下一任务**（S2-A3 已闭合）。
+- **按 `docs/planning/current.md` 的「下一任务选择流程」重选唯一下一任务**（S2-A4 已闭合）。
 - 依赖已就绪的候选：
-  - **S2-A4**：结案 → ErrorEntry + ArchiveDocument 生成。schema 已在 S1-A2 就绪；需要新写 archive-document / error-entry 独立前缀 store + closeout 工厂 + UI "Close Issue" + verify-s2-a4.mts。
-  - **UI-V1**：浏览器冒烟（可选），S2-A3 新 UI 路径已由 Node 黑盒验证覆盖，真实 DOM 尚未点过。
+  - **S2-CLOSEOUT-DOCS**：同步 README / roadmap / backlog 的阶段状态，并评估 S3 前沿窗口。
+  - **UI-V1**：浏览器冒烟（可选），S2-A4 新增 closeout 表单后真实 DOM 仍未点过。
