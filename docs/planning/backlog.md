@@ -7,7 +7,6 @@
 
 ## 后续候选（D1 阶段内，不等于顺推队列）
 - [ ] D1-ISSUE-LIST-HIDE-ARCHIVED：问题卡主列表隐藏或折叠 `status=archived` 的卡，让演示时主列表只剩未结案问题；不改 store 契约。
-- [ ] D1-BRAND-UNIFY-PROBEFLASH：清理 `apps/desktop/README.md`、`apps/desktop/index.html` 等非 src 层的 `RepoDebug Harness` 历史命名残留，统一到 ProbeFlash；不改 schema / store / 内部 `repo-debug:*` storage key。
 - [ ] D1-STEPPER-CLEANUP：把 IssuePane 内"1. 创建 / 2. 选择 / 3. 追记 / 4. 结案"四块大表单的视觉重心降权（收成更轻量提示或折叠区），**必须保证最小演示路径仍可跑通**；DoD 需谨慎评估。
 - [ ] D1-MAINLINE-BROWSER-SMOKE：在浏览器里真人走一遍 header 双入口 → ProjectSelector popover → 创建 → 自动选中 → 追记 → 结案 → 右上角计数徽标变化 → 打开 Drawer 看最近摘要 + 全部列表 → 刷新页面验证 → 再创建一张看倒序列表；只验证、不改代码。
 

@@ -31,11 +31,10 @@
 - 必要时补最小中文演示路径，但不动深层数据流。
 
 ## 当前唯一执行中的原子任务
-- **无**。上一轮 **D1-FLOW-GUIDE-REMOVE** 已完成（删除主页面"最小演示路径"下方的四个步骤框，仅改 `App.tsx` / `App.css`）；完整改动详情见 `.agent-state/handoff.json.notes` 与 `git log`，本文件不再重复。
+- **无**。上一轮 **D1-BRAND-UNIFY-PROBEFLASH** 已完成（重写 `apps/desktop/README.md`，清理 S1-A1 历史措辞与“3 个占位区块 / S1-Ax 接入 Electron”说法，改写为 D1 阶段目录结构 + 最小演示路径 + verify 入口 + 边界说明；不动 src、不改 schema / store / localStorage / Electron / fs / IPC）。完整改动详情见 `.agent-state/handoff.json.notes` 与 `git log`，本文件不再重复。
 
 ## 当前前沿任务窗口（候选，不等于顺推队列）
 - D1-ISSUE-LIST-HIDE-ARCHIVED：在中间问题卡列表里隐藏 `status=archived` 的卡（或折叠到"已归档"分组），让主列表只聚焦未结案问题；不改 store 契约。
-- D1-BRAND-UNIFY-PROBEFLASH：清理 `apps/desktop/README.md` 与 `apps/desktop/index.html` 等非 src 层的 `RepoDebug Harness` 历史命名残留，统一到 ProbeFlash；不改 schema / store / 内部 `repo-debug:*` storage key。
 - D1-STEPPER-CLEANUP-REMAINDER：如还要把"1. 创建 / 2. 选择 / 3. 追记 / 4. 结案"四块大表单的视觉重心降权（收折或轻量化），需独立评估 DoD（必须保证最小演示路径仍可跑通）。
 - D1-MAINLINE-BROWSER-SMOKE：浏览器真人冒烟，重点覆盖新 header 入口、ProjectSelector popover、ArchiveEntryButton 计数徽标、drawer 内嵌 ArchivePaneShell + 全部列表。
 - S3-ENTRY-PLANNING：交差壳完成后切回链路 A，评估 Electron/fs adapter、runtime log、repair task 的入口任务；需 planning 明确切回技术主线。

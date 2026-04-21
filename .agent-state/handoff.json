@@ -14,7 +14,7 @@
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 长期性约束与下一轮必须保留的关键说明（不复写任务完成明细，明细见 git log）"
   },
-  "timestamp": "2026-04-22T18:00:00+08:00",
+  "timestamp": "2026-04-22T23:30:00+08:00",
   "current_mode": "delivery_priority",
   "current_stage": "D1",
   "current_stage_name": "交差优先中文产品壳",
@@ -43,12 +43,6 @@
       "id": "D1-ISSUE-LIST-HIDE-ARCHIVED",
       "track": "track_b_delivery_priority_shell",
       "goal": "中间问题卡主列表隐藏或折叠 status=archived 的卡，让演示时主列表只剩未结案问题；不改 store 契约。",
-      "depends_on": []
-    },
-    {
-      "id": "D1-BRAND-UNIFY-PROBEFLASH",
-      "track": "track_b_delivery_priority_shell",
-      "goal": "清理 apps/desktop/README.md 与 apps/desktop/index.html 等非 src 层的 RepoDebug Harness 历史命名残留，统一到 ProbeFlash；不改 schema / store / 内部 repo-debug:* storage key。",
       "depends_on": []
     },
     {
@@ -101,7 +95,8 @@
     "D1-ARCHIVE-PERSIST-INDEX",
     "D1-LAYOUT-HEADER-ARCHIVE-ENTRY",
     "D1-FLOW-GUIDE-REMOVE",
-    "D1-DOCS-CONSOLIDATE"
+    "D1-DOCS-CONSOLIDATE",
+    "D1-BRAND-UNIFY-PROBEFLASH"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -137,7 +132,6 @@
   },
   "risks": [
     "浏览器人工点击冒烟（含 ProjectSelector popover 开合、ArchiveEntryButton disabled/enabled 切换、Drawer 内嵌视觉一致性、窄屏响应式）尚未执行，需下一轮 D1-MAINLINE-BROWSER-SMOKE 覆盖。",
-    "apps/desktop/README.md 与 apps/desktop/index.html 仍有 RepoDebug Harness 历史命名残留（非 src 层），留给 D1-BRAND-UNIFY-PROBEFLASH 独立清理。",
     "IssuePane 内四块大表单（1.创建 / 2.选择 / 3.追记 / 4.结案）仍是主要视觉重心；若要按用户收束要求降权，需谨慎设计以保证最小演示路径仍可跑通（D1-STEPPER-CLEANUP）。",
     "ArchiveDocument / ErrorEntry 当前仍在 localStorage，不是 .debug_workspace 文件系统写盘；真实文件写盘、独立归档浏览页、跨项目检索仍未接入。",
     "Electron / fs / IPC 仍未接入，ProjectSelector popover 与归档 Drawer 只能展示真实边界，不能包装成已完成能力。"
