@@ -461,12 +461,23 @@ type CloseoutSubmitStatus =
   | { state: "saved"; fileName: string; errorCode: string; at: string }
   | { state: "error"; reason: string };
 
+type CloseoutSummary = {
+  issueId: string;
+  archiveFileName: string;
+  archiveFilePath: string;
+  errorCode: string;
+  errorEntryId: string;
+  archivedAt: string;
+  category: string;
+  markdownPreview: string;
+};
+
 function CloseoutForm({
   issueId,
   onClosed,
 }: {
   issueId: string;
-  onClosed: () => void;
+  onClosed: (summary: CloseoutSummary) => void;
 }) {
   const [category, setCategory] = useState<string>("");
   const [rootCause, setRootCause] = useState<string>("");
@@ -520,7 +531,21 @@ function CloseoutForm({
     setRootCause("");
     setResolution("");
     setPrevention("");
-    onClosed();
+    const markdownContent = result.archiveDocument.markdownContent;
+    const markdownPreview =
+      markdownContent.length > 500
+        ? markdownContent.slice(0, 500) + "\n..."
+        : markdownContent;
+    onClosed({
+      issueId: result.updatedIssueCard.id,
+      archiveFileName: result.archiveDocument.fileName,
+      archiveFilePath: result.archiveDocument.filePath,
+      errorCode: result.errorEntry.errorCode,
+      errorEntryId: result.errorEntry.id,
+      archivedAt: result.archiveDocument.generatedAt,
+      category: result.errorEntry.category,
+      markdownPreview,
+    });
   };
 
   return (
@@ -591,13 +616,154 @@ function renderCloseoutStatus(status: CloseoutSubmitStatus): string {
   }
 }
 
+type MainlineStep = 1 | 2 | 3 | 4;
+
+const FLOW_STEPS: Array<{ num: string; label: string }> = [
+  { num: "01", label: "创建" },
+  { num: "02", label: "选择" },
+  { num: "03", label: "追记" },
+  { num: "04", label: "结案" },
+];
+
+function computeMainlineStep(
+  cardList: IssueCardListResult | null,
+  selectedIssueId: string | null,
+  selectedCard: IssueCard | null,
+  lastCloseout: CloseoutSummary | null,
+): MainlineStep {
+  const hasCards = cardList !== null && cardList.valid.length > 0;
+  if (!hasCards && selectedIssueId === null) return 1;
+  if (selectedIssueId === null) return 2;
+  if (selectedCard?.status === "archived" || lastCloseout !== null) return 4;
+  return 3;
+}
+
+function FlowGuide({ step }: { step: MainlineStep }) {
+  return (
+    <div className="flow-guide" aria-label="问题处理步骤" data-current-step={step}>
+      {FLOW_STEPS.map((entry, idx) => {
+        const n = (idx + 1) as MainlineStep;
+        const state = n < step ? "done" : n === step ? "active" : "pending";
+        return (
+          <span key={entry.num} data-step-state={state} data-step={n}>
+            <strong>{entry.num}</strong>
+            {entry.label}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+function MainlineResultPanel({
+  selectedCard,
+  recordCount,
+  lastCloseout,
+}: {
+  selectedCard: IssueCard | null;
+  recordCount: number;
+  lastCloseout: CloseoutSummary | null;
+}) {
+  if (selectedCard === null && lastCloseout === null) {
+    return null;
+  }
+  return (
+    <section className="mainline-panel" data-testid="mainline-panel">
+      <header className="mainline-panel-header">
+        <span className="mainline-panel-badge">主线状态</span>
+        <h3>当前闭环进度</h3>
+      </header>
+      {selectedCard !== null && (
+        <div className="mainline-panel-section" data-testid="mainline-current">
+          <div className="mainline-section-label">当前问题卡</div>
+          <div className="mainline-card-row">
+            <span className="mainline-card-title">
+              {selectedCard.title || "未命名问题"}
+            </span>
+            <span
+              className={`mainline-status-chip mainline-status-${selectedCard.status}`}
+              data-testid="mainline-status-chip"
+            >
+              {labelIssueStatus(selectedCard.status)}
+            </span>
+          </div>
+          <ul className="mainline-card-meta">
+            <li>
+              <span className="mainline-meta-label">编号</span>
+              <span className="mainline-meta-value">{selectedCard.id}</span>
+            </li>
+            <li>
+              <span className="mainline-meta-label">严重度</span>
+              <span className="mainline-meta-value">{labelSeverity(selectedCard.severity)}</span>
+            </li>
+            <li>
+              <span className="mainline-meta-label">追记</span>
+              <span className="mainline-meta-value" data-testid="mainline-record-count">
+                {recordCount} 条
+              </span>
+            </li>
+            <li>
+              <span className="mainline-meta-label">更新于</span>
+              <span className="mainline-meta-value">{selectedCard.updatedAt}</span>
+            </li>
+          </ul>
+        </div>
+      )}
+      {lastCloseout !== null && (
+        <div
+          className="mainline-panel-section mainline-closeout"
+          data-testid="mainline-closeout"
+        >
+          <div className="mainline-section-label">最近一次结案归档</div>
+          <dl className="mainline-closeout-fields">
+            <div>
+              <dt>归档文件</dt>
+              <dd>{lastCloseout.archiveFileName}</dd>
+            </div>
+            <div>
+              <dt>归档路径（后续写盘位置）</dt>
+              <dd>{lastCloseout.archiveFilePath}</dd>
+            </div>
+            <div>
+              <dt>错误表编号</dt>
+              <dd>{lastCloseout.errorCode}</dd>
+            </div>
+            <div>
+              <dt>归档时间</dt>
+              <dd>{lastCloseout.archivedAt}</dd>
+            </div>
+            <div>
+              <dt>分类</dt>
+              <dd>{lastCloseout.category}</dd>
+            </div>
+          </dl>
+          <details className="mainline-closeout-preview">
+            <summary>展开归档摘要预览</summary>
+            <pre>{lastCloseout.markdownPreview}</pre>
+          </details>
+          <p className="mainline-closeout-note">
+            归档文档与错误表条目已写入浏览器本地存储；后续接入 .debug_workspace 文件系统双写后将落到上面的路径。
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function IssuePane() {
   const [cardList, setCardList] = useState<IssueCardListResult | null>(null);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
+  const [selectedCard, setSelectedCard] = useState<IssueCard | null>(null);
   const [recordList, setRecordList] = useState<InvestigationRecordListResult | null>(null);
+  const [lastCloseout, setLastCloseout] = useState<CloseoutSummary | null>(null);
 
   const refreshCardList = () => {
     setCardList(listIssueCards());
+  };
+
+  const reloadSelectedCard = (id: string) => {
+    const loaded = loadIssueCard(id);
+    setSelectedCard(loaded.ok ? loaded.card : null);
   };
 
   const refreshRecordList = () => {
@@ -610,43 +776,37 @@ function IssuePane() {
 
   const handleSelect = (id: string) => {
     setSelectedIssueId(id);
+    reloadSelectedCard(id);
     setRecordList(listInvestigationRecordsByIssueId(id));
+    setLastCloseout(null);
   };
 
-  const handleCardCreated = (_id: string) => {
+  const handleCardCreated = (id: string) => {
     refreshCardList();
+    setSelectedIssueId(id);
+    reloadSelectedCard(id);
+    setRecordList(listInvestigationRecordsByIssueId(id));
+    setLastCloseout(null);
   };
 
   const handleRecordAppended = () => {
     refreshRecordList();
   };
 
-  const handleIssueClosed = () => {
+  const handleIssueClosed = (summary: CloseoutSummary) => {
+    setLastCloseout(summary);
     refreshCardList();
-    refreshRecordList();
+    setRecordList(listInvestigationRecordsByIssueId(summary.issueId));
+    reloadSelectedCard(summary.issueId);
   };
+
+  const step = computeMainlineStep(cardList, selectedIssueId, selectedCard, lastCloseout);
+  const recordCount = recordList?.valid.length ?? 0;
 
   return (
     <div className="issue-pane-stack">
       <DemoHint />
-      <div className="flow-guide" aria-label="问题处理步骤">
-        <span>
-          <strong>01</strong>
-          创建
-        </span>
-        <span>
-          <strong>02</strong>
-          选择
-        </span>
-        <span>
-          <strong>03</strong>
-          追记
-        </span>
-        <span>
-          <strong>04</strong>
-          结案
-        </span>
-      </div>
+      <FlowGuide step={step} />
       <IssueIntakeForm onCreated={handleCardCreated} />
       <IssueCardListView
         result={cardList}
@@ -654,9 +814,14 @@ function IssuePane() {
         onRefresh={refreshCardList}
         onSelect={handleSelect}
       />
+      <MainlineResultPanel
+        selectedCard={selectedCard}
+        recordCount={recordCount}
+        lastCloseout={lastCloseout}
+      />
       {selectedIssueId === null && (
         <p className="empty-state issue-next-step">
-          先创建或刷新问题卡列表；选中一张问题卡后，会展开排查追记和结案归档表单。
+          创建问题卡后会自动选中最新一张，随即展开排查追记和结案归档表单；也可以点「刷新列表」从已有卡中挑选继续处理。
         </p>
       )}
       {selectedIssueId !== null && (

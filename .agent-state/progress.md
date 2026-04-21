@@ -36,9 +36,10 @@
 - [x] D1-UI-V0-CN-SHELL-POLISH：完成第一轮中文产品壳优化。`App.tsx` 主页面标题、副标题、三栏说明、按钮、表单 label/placeholder、状态和空状态已中文化；项目区/归档区已改为可演示壳并保留 Electron/fs/.debug_workspace 未接入边界；`App.css` / `index.css` 统一了三栏布局、控件、空状态和配色变量；未改 schema / store / verify / 业务数据流。
 - [x] D1-UI-V1-VISUAL-HIERARCHY：完成第二轮视觉层级优化。`App.tsx` 增加展示性层级结构、三栏徽标、问题卡流程引导、未选中提示和辅助验证说明；`App.css` / `index.css` 优化页面最大宽度、三栏比例、问题卡视觉重心、表单/列表/状态/空状态和主次按钮一致性；未改 schema / store / domain 工厂 / verify 脚本 / 业务数据流。
 - [x] D1-DEMO-PATH-MIN-CN：完成最小中文演示路径。`App.tsx` 新增 `DemoHint` 组件展示"1️⃣ 填写上方表单 → 2️⃣ 点「刷新列表」选中 → 3️⃣ 追加排查记录 → 4️⃣ 填写结案归档"引导，优化项目区/归档区提示文案；`App.css` 新增 `.demo-hint` 样式；未改 schema / store / domain 工厂 / verify 脚本 / 业务数据流。
+- [x] D1-MAINLINE-WIRE-CONNECT：串联主操作区主线闭环。在 `App.tsx` 里让 `handleCardCreated(id)` 自动设置 `selectedIssueId`、加载完整卡对象并刷新 recordList；新增 `selectedCard` / `lastCloseout` 状态；新增 `MainlineResultPanel`（展示当前问题卡标题/编号/状态 chip/严重度/追记数/更新时间，以及最近一次结案归档的 fileName/filePath/errorCode/归档时间/分类/markdown 预览 + 可展开 details）；新增 `FlowGuide` 根据 `cardList` / `selectedIssueId` / `selectedCard.status` / `lastCloseout` 计算当前步骤并用 `data-step-state="done|active|pending"` 反映；`CloseoutForm.onClosed` 签名改为接收 `CloseoutSummary`，`handleSubmit` 成功分支把 archiveDocument/errorEntry 摘要 + markdownPreview 传回 IssuePane；`handleSelect` / `handleCardCreated` 也清理 `lastCloseout` 防止跨卡污染。`App.css` 追加 `.mainline-panel` / `.mainline-status-chip`（按 open/investigating/resolved/archived/needs_manual_review 分色）/ `.mainline-closeout-*`（fields dl 网格 + `<details>` markdown 预览样式）/ `.flow-guide span[data-step-state="*"]` 步骤态样式。未改 schema / domain 工厂 / store / verify 脚本 / 业务数据流；用户前现场感受到的"追加记录没用 / 结案无效"本质是 UI 串联与结果反馈缺口，本轮补齐。
 
 ## 当前唯一执行中
-- **D1-DEMO-PATH-MIN-CN**：在 V0/V1 后补最小中文演示路径，添加演示路径提示、空状态优化和更友好的状态说明。
+- 无。D1-MAINLINE-WIRE-CONNECT 已提交并通过全部回归。
 
 ## 下一步
-- **按 `docs/planning/current.md` 的「下一任务选择流程」重选唯一下一任务**，先确认 `current_mode=delivery_priority`。
+- **按 `docs/planning/current.md` 的「下一任务选择流程」重选唯一下一任务**，先确认 `current_mode=delivery_priority`。候选方向见 `docs/planning/backlog.md`（D1-MAINLINE-BROWSER-SMOKE / D1-ARCHIVE-PANE-MIN-RESULT / S3-ENTRY-PLANNING），不等于顺推队列。
