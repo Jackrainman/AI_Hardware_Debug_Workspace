@@ -31,12 +31,11 @@
 - 必要时补最小中文演示路径，但不动深层数据流。
 
 ## 当前唯一执行中的原子任务
-- **无**。D1-RULES-REALIGN 已完成规则与链路重整；下一轮必须重新读取真实状态后，从当前前沿任务窗口选择唯一原子任务。
+- **无**。D1-UI-V0-CN-SHELL-POLISH 已完成：主页面已完成第一轮中文产品壳优化，项目区/归档区已有可演示壳与真实边界说明，问题卡区主流程文案已中文化。
 
 ## 当前前沿任务窗口（候选，不等于顺推队列）
-1. D1-UI-V0-CN-SHELL-POLISH：只做一轮安全中文壳优化。范围：`App.tsx` / `App.css` / `index.css` 中的中文文案、空状态、状态标签、项目区/归档区演示壳；不碰 schema / store / Electron / fs / IPC。
-2. D1-UI-V1-VISUAL-HIERARCHY：在 V0 后整理视觉层级、卡片/列表/表单密度、主工作台布局和移动端可读性；不重写数据流。
-3. D1-DEMO-PATH-MIN-CN：在 V0/V1 后补最小中文演示路径，例如默认提示、示例说明、演示友好的成功/失败状态；不得伪造真实文件写盘或仓库绑定能力。
+1. D1-UI-V1-VISUAL-HIERARCHY：在 V0 后继续整理视觉层级、卡片/列表/表单密度、主工作台布局和移动端可读性；不重写数据流。
+2. D1-DEMO-PATH-MIN-CN：在 V0/V1 后补最小中文演示路径，例如默认提示、示例说明、演示友好的成功/失败状态；不得伪造真实文件写盘或仓库绑定能力。
 
 ## 下一任务选择流程
 1. 重新读取：`AGENTS.md`、`README.md`、本文件、`docs/planning/handoff.md`、`.agent-state/handoff.json`、`git status`、最近 commit、`apps/desktop/src/App.tsx`、`App.css`、`index.css`。

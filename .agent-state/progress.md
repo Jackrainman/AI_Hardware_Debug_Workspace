@@ -33,13 +33,13 @@
 - [x] S2-A4：结案 → ErrorEntry + ArchiveDocument 生成。新增 `apps/desktop/src/domain/closeout.ts` 纯函数工厂，输入选中 IssueCard + InvestigationRecord 时间线 + closeout 表单字段，输出 `ArchiveDocument`、`ErrorEntry`、`updatedIssueCard(status: archived)`；新增 `archive-document-store.ts` / `error-entry-store.ts` 两组 localStorage 独立前缀 store（`repo-debug:archive-document:` / `repo-debug:error-entry:`）与结构化 read-back 错误；`App.tsx` 在选中 IssueCard 后接入 `CloseoutForm`，成功后双写 archive/error 并回写 IssueCard；新增 `scripts/verify-s2-a4.mts` 覆盖 intake → 追记 → closeout → ArchiveDocument / ErrorEntry / IssueCard 读回、必填字段拒绝、坏 JSON / schema 不符结构化错误、跨前缀隔离。验证：`npm run typecheck` EXIT=0；S2-A4 5 PASS；S1-A3 / S2-A1 / S2-A2 / S2-A3 回归 PASS；`git diff --check` PASS。按用户偏好本轮未执行 `npm run build`。
 - [x] S2-CLOSEOUT-DOCS：同步阶段状态与收口文档。`README.md` 的最小可演示流程、当前进度、当前不足、后续计划已切到 S2 主闭环已打通；`roadmap.md` 标记 S1 已完成/Electron 延后、S2 主闭环关键路径已完成、S3 下一阶段候选未开始；`backlog.md` 拆分已完成项与未完成边界；`current.md` / `handoff.md` / `.agent-state/handoff.json` 前沿窗口切到 S3-ENTRY-PLANNING 与 UI-V1。
 - [x] D1-RULES-REALIGN：基于用户交差目标切换到 `delivery_priority`，把项目重整为链路 A（技术闭环后续主线）与链路 B（当前交差优先主线），同步 `AGENTS.md`、planning、handoff、`.agent-state` 与 README 口径。
+- [x] D1-UI-V0-CN-SHELL-POLISH：完成第一轮中文产品壳优化。`App.tsx` 主页面标题、副标题、三栏说明、按钮、表单 label/placeholder、状态和空状态已中文化；项目区/归档区已改为可演示壳并保留 Electron/fs/.debug_workspace 未接入边界；`App.css` / `index.css` 统一了三栏布局、控件、空状态和配色变量；未改 schema / store / verify / 业务数据流。
 
 ## 当前唯一执行中
-- **无**。D1-RULES-REALIGN 已完成；下一轮必须重新读取真实仓库状态后，从 D1 前沿窗口选择唯一原子任务。
+- **无**。D1-UI-V0-CN-SHELL-POLISH 已完成；下一轮必须重新读取真实仓库状态后，从 D1 前沿窗口选择唯一原子任务。
 
 ## 下一步
 - **按 `docs/planning/current.md` 的「下一任务选择流程」重选唯一下一任务**，先确认 `current_mode=delivery_priority`。
 - 当前优先候选：
-  - **D1-UI-V0-CN-SHELL-POLISH**：只做安全中文壳优化和演示友好化，不碰 schema / store / Electron / fs / IPC。
   - **D1-UI-V1-VISUAL-HIERARCHY**：在 V0 后整理视觉层级、密度、空状态和主工作台布局。
   - **D1-DEMO-PATH-MIN-CN**：在 V0/V1 后补最小中文演示路径，不伪造真实写盘能力。

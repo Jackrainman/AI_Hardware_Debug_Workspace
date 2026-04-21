@@ -185,17 +185,17 @@ AI_Hardware_Debug_Workspace/
 - 关键实体读写与 closeout 工厂均走 zod schema 校验；S2-A4 Node 黑盒脚本覆盖最小 round-trip 与结构化失败路径。
 - 本轮文档收口已同步 README / roadmap / backlog / planning / handoff / `.agent-state`，避免 S1 旧口径继续滞留。
 - D1 交差优先模式已建立：技术闭环主线降级为后续，当前优先做中文产品壳、安全美化和演示友好化。
+- D1-UI-V0-CN-SHELL-POLISH 已完成：主页面第一轮中文化、安全美化、项目区/归档区演示壳和问题卡区演示提示已落地，未改 schema / store / verify / 业务数据流。
 
 ### 当前状态
 - 当前阶段：D1：交差优先中文产品壳。
 - 当前唯一执行中的原子任务为无，下一轮必须重新读取真实仓库状态后选择唯一原子任务。
 - 当前运行形态仍是浏览器 SPA + `window.localStorage`；Electron / fs / IPC 尚未接入。
-- 当前 UI 仍偏工程验证壳：项目区/归档区仍是占位，问题卡区功能可用但英文文案和状态较多。
-- 当前优先链路是交差版本：中文化、视觉统一、空状态、演示路径清晰化。
+- 当前 UI 已完成第一轮中文产品壳优化：项目区/归档区不再是裸占位，问题卡区创建、选择、追记、结案主流程已中文化。
+- 当前优先链路仍是交差版本：继续优化视觉层级、空状态、移动端可读性和演示路径清晰化。
 - 技术闭环深化没有取消，但已降级为后续主线。
 
 ### 前沿任务窗口（候选，不等于顺推队列）
-- D1-UI-V0-CN-SHELL-POLISH：只做一轮安全中文壳优化，不碰 schema / store / Electron / fs / IPC。
 - D1-UI-V1-VISUAL-HIERARCHY：整理视觉层级、卡片/列表/表单密度和主工作台布局。
 - D1-DEMO-PATH-MIN-CN：补最小中文演示路径，不伪造真实文件写盘或仓库绑定能力。
 
@@ -216,12 +216,12 @@ AI_Hardware_Debug_Workspace/
 - Electron 桌面外壳、preload / IPC 与真实文件系统写盘尚未接入；当前 ArchiveDocument / ErrorEntry 仍落在 localStorage。
 - 浏览器人工冒烟尚未执行；Node 黑盒验证覆盖数据链路，但不等价于真实 DOM 交互已点过。
 - `.debug_workspace/archive` 与 `.debug_workspace/error-table` 的真实文件双写、runtime log、repair task 机制尚未产品化。
-- UI 仍需要中文化和产品壳优化；项目区与归档区目前主要是演示占位。
+- UI 已完成 V0 中文产品壳，但还需要继续打磨视觉层级、移动端可读性和最小演示路径。
 - 历史相似问题检索、统计视图和跨项目能力仍停留在后续增强阶段。
 
 ### 后续计划
-- 必须改：下一轮先做 D1-UI-V0-CN-SHELL-POLISH，让页面中文、可演示、像产品壳。
-- 建议改：D1-V0 后继续做视觉层级和空状态优化，再做最小中文演示路径。
+- 必须改：下一轮先重新读取真实状态，再从 D1 前沿窗口选择唯一任务；当前推荐 D1-UI-V1-VISUAL-HIERARCHY。
+- 建议改：继续做视觉层级、空状态和移动端可读性优化，再做最小中文演示路径。
 - 可选优化：交差版本完成后，再切回 S3 技术闭环，评估 Electron/fs adapter、runtime log、repair task 与历史检索。
 
 ### 先不做复杂能力的原因

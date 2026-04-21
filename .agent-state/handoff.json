@@ -14,7 +14,7 @@
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-04-21T14:30:58+08:00",
+  "timestamp": "2026-04-21T14:47:24+08:00",
   "current_mode": "delivery_priority",
   "current_stage": "D1",
   "current_stage_name": "交差优先中文产品壳",
@@ -40,28 +40,9 @@
   "current_atomic_task": "WAITING_FOR_PLANNING_SELECTION",
   "frontier_tasks": [
     {
-      "id": "D1-UI-V0-CN-SHELL-POLISH",
-      "track": "track_b_delivery_priority_shell",
-      "goal": "只做一轮安全中文壳优化，统一主页面中文文案、空状态、状态标签、项目区/归档区演示壳。",
-      "write_scope": [
-        "apps/desktop/src/App.tsx",
-        "apps/desktop/src/App.css",
-        "apps/desktop/src/index.css",
-        "必要的 planning / handoff / .agent-state 文档"
-      ],
-      "forbidden_scope": [
-        "schema",
-        "store",
-        "Electron",
-        "fs",
-        "IPC",
-        "S3 功能"
-      ]
-    },
-    {
       "id": "D1-UI-V1-VISUAL-HIERARCHY",
       "track": "track_b_delivery_priority_shell",
-      "goal": "在 V0 后整理视觉层级、卡片/列表/表单密度、主工作台布局和移动端可读性。",
+      "goal": "在 V0 后继续整理视觉层级、卡片/列表/表单密度、主工作台布局和移动端可读性。",
       "depends_on": [
         "D1-UI-V0-CN-SHELL-POLISH"
       ]
@@ -96,7 +77,8 @@
     "S2-A3_investigation_record_append",
     "S2-A4_closeout_error_entry_archive_document",
     "S2-CLOSEOUT-DOCS_sync_stage_status_docs",
-    "D1-RULES-REALIGN_delivery_priority_dual_track_docs"
+    "D1-RULES-REALIGN_delivery_priority_dual_track_docs",
+    "D1-UI-V0-CN-SHELL-POLISH"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -121,19 +103,19 @@
       "是否避开 schema/store/Electron/fs/IPC 深改",
       "planning 与实际是否一致"
     ],
-    "recommended_next": "D1-UI-V0-CN-SHELL-POLISH",
+    "recommended_next": "D1-UI-V1-VISUAL-HIERARCHY",
     "output_rule": "从 frontier_tasks 中选择唯一一个原子任务，写入 current_atomic_task，再进入 task-execution。"
   },
   "risks": [
-    "当前 UI 仍偏工程验证壳，大量英文文案和 sample/status 字段不利于中文演示。",
-    "项目区与归档区仍是占位；D1 可以做演示壳，但不能假装仓库绑定和文件写盘已完成。",
+    "D1 V0 已完成中文产品壳，但浏览器人工冒烟尚未执行，真实 DOM 交互仍需用户或后续任务验证。",
     "ArchiveDocument / ErrorEntry 当前仍在 localStorage，不是 .debug_workspace 文件系统写盘。",
-    "浏览器真实人工冒烟尚未执行；Node 黑盒验证不等价于真实 DOM 交互。"
+    "Electron / fs / IPC 仍未接入，项目区与归档区只能展示真实边界，不能包装成已完成能力。"
   ],
   "notes": [
     "链路 A 没有取消，只是降级为后续主线。",
     "链路 B 是当前阶段优先主线，后续 AI 不得把 S3 技术深化误判为最高优先级。",
-    "下一轮推荐先做 D1-UI-V0-CN-SHELL-POLISH：中文化和安全壳层优化，不碰深层数据流。",
+    "D1-UI-V0-CN-SHELL-POLISH 已完成：主页面中文化、项目区/归档区演示壳、安全美化和问题卡区演示提示已落地，未改 schema / store / verify / 业务数据流。",
+    "下一轮推荐先做 D1-UI-V1-VISUAL-HIERARCHY：继续整理视觉层级、密度和移动端可读性，不碰深层数据流。",
     "用户明确偏好：除非明确要求，不由 AI 自行编译；文档/UI 壳层任务以读回、JSON 解析、diff 检查和必要的静态检查为主。"
   ]
 }

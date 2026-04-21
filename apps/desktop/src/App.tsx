@@ -44,18 +44,18 @@ const SAMPLE_TIMESTAMP = "2026-04-21T02:30:00+08:00";
 const SAMPLE_CARD: IssueCard = {
   id: SAMPLE_ISSUE_ID,
   projectId: "sample-project-0001",
-  title: "Sample IssueCard for S1-A3 save/load verification",
-  rawInput: "Synthetic card used to exercise the localStorage round-trip.",
-  normalizedSummary: "Verify localStorage save/load with schema validation.",
-  symptomSummary: "n/a — fixture card.",
-  suspectedDirections: ["S1-A3 storage loop regression"],
+  title: "示例问题卡：启动日志停在握手阶段",
+  rawInput: "用于演示 localStorage 保存与读回的示例问题卡。",
+  normalizedSummary: "验证问题卡可以写入浏览器本地存储并通过结构校验读回。",
+  symptomSummary: "演示数据：启动流程卡在握手阶段，尚未绑定真实硬件日志。",
+  suspectedDirections: ["本地存储读写演示路径"],
   suggestedActions: [
-    "Click Save to write the sample card to localStorage.",
-    "Click Load to read it back and revalidate via IssueCardSchema.",
+    "点击“保存示例卡”写入浏览器 localStorage。",
+    "点击“读取示例卡”执行结构化读回。",
   ],
   status: "open",
   severity: "low",
-  tags: ["sample", "s1-a3"],
+  tags: ["示例", "本地存储"],
   repoSnapshot: {
     branch: "master",
     headCommitHash: "0000000000000000000000000000000000000000",
@@ -91,23 +91,30 @@ function IssueStorageControls() {
     <div className="storage-controls" data-testid="issue-storage-controls">
       <div className="storage-buttons">
         <button type="button" onClick={handleSave}>
-          Save sample IssueCard
+          保存示例卡
         </button>
         <button type="button" onClick={handleLoad}>
-          Load sample IssueCard
+          读取示例卡
         </button>
       </div>
       <p className="storage-line" data-testid="save-status">
-        save: {saveStatus.state === "idle" ? "(not saved yet)" : `saved at ${saveStatus.at}`}
+        保存状态：{saveStatus.state === "idle" ? "尚未保存" : `已保存 · ${saveStatus.at}`}
       </p>
       <p className="storage-line" data-testid="load-status">
-        load: {renderLoadStatus(loadResult)}
+        读取状态：{renderLoadStatus(loadResult)}
       </p>
     </div>
   );
 }
 
 const SEVERITIES: IntakeSeverity[] = ["low", "medium", "high", "critical"];
+
+const SEVERITY_LABELS: Record<IntakeSeverity, string> = {
+  low: "低",
+  medium: "中",
+  high: "高",
+  critical: "紧急",
+};
 
 type IntakeSubmitStatus =
   | { state: "idle" }
@@ -141,43 +148,47 @@ function IssueIntakeForm({ onCreated }: { onCreated: (id: string) => void }) {
 
   return (
     <form className="intake-form" onSubmit={handleSubmit} data-testid="issue-intake-form">
+      <div className="form-caption">
+        <h3>1. 创建问题卡</h3>
+        <p>先把现场现象记下来，系统会生成一张可追踪的问题卡。</p>
+      </div>
       <label className="intake-field">
-        <span>Title</span>
+        <span>问题标题</span>
         <input
           type="text"
           value={title}
           onChange={(event) => setTitle(event.target.value)}
-          placeholder="e.g. UART boot log stuck at 0x40"
+          placeholder="例如：UART 启动日志停在 0x40"
           required
         />
       </label>
       <label className="intake-field">
-        <span>Description</span>
+        <span>现场描述</span>
         <textarea
           value={description}
           onChange={(event) => setDescription(event.target.value)}
           rows={3}
-          placeholder="Raw context / symptoms / what you just saw..."
+          placeholder="记录原始现象、触发条件、刚看到的日志或操作背景"
         />
       </label>
       <label className="intake-field">
-        <span>Severity</span>
+        <span>严重程度</span>
         <select
           value={severity}
           onChange={(event) => setSeverity(event.target.value as IntakeSeverity)}
         >
           {SEVERITIES.map((value) => (
             <option key={value} value={value}>
-              {value}
+              {SEVERITY_LABELS[value]}
             </option>
           ))}
         </select>
       </label>
       <div className="intake-actions">
-        <button type="submit">Create IssueCard</button>
+        <button type="submit">创建问题卡</button>
       </div>
       <p className="storage-line" data-testid="intake-status">
-        intake: {renderIntakeStatus(status)}
+        创建状态：{renderIntakeStatus(status)}
       </p>
     </form>
   );
@@ -186,11 +197,11 @@ function IssueIntakeForm({ onCreated }: { onCreated: (id: string) => void }) {
 function renderIntakeStatus(status: IntakeSubmitStatus): string {
   switch (status.state) {
     case "idle":
-      return "(not submitted yet)";
+      return "待填写后创建";
     case "saved":
-      return `OK — saved id=${status.id} at ${status.at}`;
+      return `已创建 · ${status.id} · ${status.at}`;
     case "error":
-      return `ERROR — ${status.reason}`;
+      return `创建失败：${status.reason}`;
   }
 }
 
@@ -207,16 +218,23 @@ function IssueCardListView({
 }) {
   return (
     <div className="list-view" data-testid="issue-card-list">
+      <div className="form-caption">
+        <h3>2. 选择问题卡</h3>
+        <p>刷新后选择一张问题卡，再继续追加排查记录或结案。</p>
+      </div>
       <div className="list-header">
         <button type="button" onClick={onRefresh}>
-          Refresh list
+          刷新列表
         </button>
         <span className="storage-line" data-testid="list-summary">
           {result === null
-            ? "(not refreshed yet)"
-            : `valid: ${result.valid.length} · invalid: ${result.invalid.length}`}
+            ? "尚未刷新"
+            : `有效 ${result.valid.length} 条 · 异常 ${result.invalid.length} 条`}
         </span>
       </div>
+      {result && result.valid.length === 0 && result.invalid.length === 0 && (
+        <p className="empty-state">还没有问题卡。先在上方填写标题并创建一张卡。</p>
+      )}
       {result && result.valid.length > 0 && (
         <ul className="list-items" data-testid="list-valid">
           {result.valid.map((summary) => {
@@ -233,11 +251,12 @@ function IssueCardListView({
                   onClick={() => onSelect(summary.id)}
                   aria-pressed={isSelected}
                 >
-                  <span className="list-item-title">{summary.title || "(untitled)"}</span>
+                  <span className="list-item-title">{summary.title || "未命名问题"}</span>
                   <span className="list-item-meta">
-                    {summary.severity} · {summary.status} · {summary.createdAt}
+                    {labelSeverity(summary.severity)} · {labelIssueStatus(summary.status)} ·{" "}
+                    {summary.createdAt}
                   </span>
-                  <span className="list-item-id">id: {summary.id}</span>
+                  <span className="list-item-id">编号：{summary.id}</span>
                 </button>
               </li>
             );
@@ -248,8 +267,11 @@ function IssueCardListView({
         <ul className="list-invalid" data-testid="list-invalid">
           {result.invalid.map((entry) => (
             <li key={entry.key} className="storage-line">
-              invalid · {entry.kind} · key={entry.key}
-              {entry.kind === "parse_error" ? ` · ${entry.message}` : ` · ${entry.issues.length} issue(s)`}
+              异常数据 · {entry.kind === "parse_error" ? "JSON 解析失败" : "结构校验失败"} ·
+              key={entry.key}
+              {entry.kind === "parse_error"
+                ? ` · ${entry.message}`
+                : ` · ${entry.issues.length} 个字段问题`}
             </li>
           ))}
         </ul>
@@ -266,6 +288,15 @@ const INVESTIGATION_TYPES: InvestigationType[] = [
   "conclusion",
   "note",
 ];
+
+const INVESTIGATION_TYPE_LABELS: Record<InvestigationType, string> = {
+  observation: "观察",
+  hypothesis: "假设",
+  action: "动作",
+  result: "结果",
+  conclusion: "结论",
+  note: "备注",
+};
 
 type InvestigationSubmitStatus =
   | { state: "idle" }
@@ -303,36 +334,40 @@ function InvestigationAppendForm({
 
   return (
     <form className="intake-form" onSubmit={handleSubmit} data-testid="investigation-append-form">
+      <div className="form-caption">
+        <h3>3. 追加排查记录</h3>
+        <p>把观察、假设、动作和结果按时间线沉淀下来。</p>
+      </div>
       <p className="storage-line" data-testid="investigation-target">
-        target issue: {issueId}
+        当前问题：{issueId}
       </p>
       <label className="intake-field">
-        <span>Type</span>
+        <span>记录类型</span>
         <select
           value={type}
           onChange={(event) => setType(event.target.value as InvestigationType)}
         >
           {INVESTIGATION_TYPES.map((value) => (
             <option key={value} value={value}>
-              {value}
+              {INVESTIGATION_TYPE_LABELS[value]}
             </option>
           ))}
         </select>
       </label>
       <label className="intake-field">
-        <span>Note</span>
+        <span>排查记录</span>
         <textarea
           value={note}
           onChange={(event) => setNote(event.target.value)}
           rows={3}
-          placeholder="What you observed / what you tried / what to do next..."
+          placeholder="写下刚看到的现象、尝试过的动作或下一步判断"
         />
       </label>
       <div className="intake-actions">
-        <button type="submit">Append record</button>
+        <button type="submit">追加记录</button>
       </div>
       <p className="storage-line" data-testid="investigation-status">
-        append: {renderInvestigationStatus(status)}
+        追记状态：{renderInvestigationStatus(status)}
       </p>
     </form>
   );
@@ -341,11 +376,11 @@ function InvestigationAppendForm({
 function renderInvestigationStatus(status: InvestigationSubmitStatus): string {
   switch (status.state) {
     case "idle":
-      return "(not appended yet)";
+      return "待选择类型并填写记录";
     case "saved":
-      return `OK — saved id=${status.id} at ${status.at}`;
+      return `已追加 · ${status.id} · ${status.at}`;
     case "error":
-      return `ERROR — ${status.reason}`;
+      return `追加失败：${status.reason}`;
   }
 }
 
@@ -360,21 +395,26 @@ function InvestigationRecordListView({
     <div className="list-view" data-testid="investigation-record-list">
       <div className="list-header">
         <button type="button" onClick={onRefresh}>
-          Refresh records
+          刷新记录
         </button>
         <span className="storage-line" data-testid="record-list-summary">
           {result === null
-            ? "(select an issue first)"
-            : `records: ${result.valid.length} · invalid: ${result.invalid.length}`}
+            ? "先选中一个问题卡"
+            : `记录 ${result.valid.length} 条 · 异常 ${result.invalid.length} 条`}
         </span>
       </div>
+      {result && result.valid.length === 0 && result.invalid.length === 0 && (
+        <p className="empty-state">还没有排查记录。选中问题后，在上方追加第一条记录。</p>
+      )}
       {result && result.valid.length > 0 && (
         <ul className="list-items" data-testid="record-list-valid">
           {result.valid.map((record) => (
             <li key={record.id} className="list-item">
-              <span className="list-item-title">[{record.type}] {record.polishedText}</span>
+              <span className="list-item-title">
+                [{labelInvestigationType(record.type)}] {record.polishedText}
+              </span>
               <span className="list-item-meta">{record.createdAt}</span>
-              <span className="list-item-id">id: {record.id}</span>
+              <span className="list-item-id">编号：{record.id}</span>
             </li>
           ))}
         </ul>
@@ -383,8 +423,11 @@ function InvestigationRecordListView({
         <ul className="list-invalid" data-testid="record-list-invalid">
           {result.invalid.map((entry) => (
             <li key={entry.key} className="storage-line">
-              invalid · {entry.kind} · key={entry.key}
-              {entry.kind === "parse_error" ? ` · ${entry.message}` : ` · ${entry.issues.length} issue(s)`}
+              异常数据 · {entry.kind === "parse_error" ? "JSON 解析失败" : "结构校验失败"} ·
+              key={entry.key}
+              {entry.kind === "parse_error"
+                ? ` · ${entry.message}`
+                : ` · ${entry.issues.length} 个字段问题`}
             </li>
           ))}
         </ul>
@@ -417,7 +460,7 @@ function CloseoutForm({
     if (!loaded.ok) {
       setStatus({
         state: "error",
-        reason: `failed to load issue: ${loaded.error.kind}`,
+        reason: `读取问题卡失败：${loaded.error.kind}`,
       });
       return;
     }
@@ -426,9 +469,7 @@ function CloseoutForm({
     if (records.invalid.length > 0) {
       setStatus({
         state: "error",
-        reason: `investigation record validation failed: ${records.invalid.length} invalid entr${
-          records.invalid.length === 1 ? "y" : "ies"
-        }`,
+        reason: `排查记录校验失败：有 ${records.invalid.length} 条异常记录`,
       });
       return;
     }
@@ -464,52 +505,56 @@ function CloseoutForm({
 
   return (
     <form className="intake-form" onSubmit={handleSubmit} data-testid="closeout-form">
+      <div className="form-caption">
+        <h3>4. 结案归档</h3>
+        <p>填写根因和处理结论，生成本地归档摘要与错误表条目。</p>
+      </div>
       <p className="storage-line" data-testid="closeout-target">
-        close issue: {issueId}
+        结案对象：{issueId}
       </p>
       <label className="intake-field">
-        <span>Category</span>
+        <span>归档分类</span>
         <input
           type="text"
           value={category}
           onChange={(event) => setCategory(event.target.value)}
-          placeholder="e.g. boot, power, timing"
+          placeholder="例如：启动、电源、时序"
         />
       </label>
       <label className="intake-field">
-        <span>Root cause</span>
+        <span>根因</span>
         <textarea
           value={rootCause}
           onChange={(event) => setRootCause(event.target.value)}
           rows={3}
-          placeholder="What caused the issue..."
+          placeholder="说明已经确认或当前最可信的根因"
           required
         />
       </label>
       <label className="intake-field">
-        <span>Resolution</span>
+        <span>修复/结论</span>
         <textarea
           value={resolution}
           onChange={(event) => setResolution(event.target.value)}
           rows={3}
-          placeholder="What fixed or closed the issue..."
+          placeholder="说明修复动作、绕过方案或结案依据"
           required
         />
       </label>
       <label className="intake-field">
-        <span>Prevention</span>
+        <span>预防建议</span>
         <textarea
           value={prevention}
           onChange={(event) => setPrevention(event.target.value)}
           rows={2}
-          placeholder="How to avoid recurrence..."
+          placeholder="后续如何避免复发，可留空"
         />
       </label>
       <div className="intake-actions">
-        <button type="submit">Close issue</button>
+        <button type="submit">结案并生成归档摘要</button>
       </div>
       <p className="storage-line" data-testid="closeout-status">
-        closeout: {renderCloseoutStatus(status)}
+        结案状态：{renderCloseoutStatus(status)}
       </p>
     </form>
   );
@@ -518,11 +563,11 @@ function CloseoutForm({
 function renderCloseoutStatus(status: CloseoutSubmitStatus): string {
   switch (status.state) {
     case "idle":
-      return "(not closed yet)";
+      return "待填写根因和修复结论";
     case "saved":
-      return `OK — ${status.errorCode} → ${status.fileName} at ${status.at}`;
+      return `已结案 · ${status.errorCode} · ${status.fileName} · ${status.at}`;
     case "error":
-      return `ERROR — ${status.reason}`;
+      return `结案失败：${status.reason}`;
   }
 }
 
@@ -563,6 +608,12 @@ function IssuePane() {
 
   return (
     <div className="issue-pane-stack">
+      <div className="flow-guide" aria-label="问题处理步骤">
+        <span>创建</span>
+        <span>选择</span>
+        <span>追记</span>
+        <span>结案</span>
+      </div>
       <IssueIntakeForm onCreated={handleCardCreated} />
       <IssueCardListView
         result={cardList}
@@ -589,17 +640,17 @@ function IssuePane() {
 }
 
 function renderLoadStatus(result: LoadIssueCardResult | null): string {
-  if (result === null) return "(not loaded yet)";
+  if (result === null) return "尚未读取";
   if (result.ok) {
-    return `OK — id=${result.card.id}, title="${result.card.title}", status=${result.card.status}`;
+    return `读取成功 · ${result.card.id} · ${result.card.title} · ${labelIssueStatus(result.card.status)}`;
   }
   switch (result.error.kind) {
     case "not_found":
-      return `ERROR not_found (id=${result.error.id})`;
+      return `未找到示例卡（${result.error.id}）`;
     case "parse_error":
-      return `ERROR parse_error (id=${result.error.id}): ${result.error.message}`;
+      return `JSON 解析失败（${result.error.id}）：${result.error.message}`;
     case "validation_error":
-      return `ERROR validation_error (id=${result.error.id}, ${result.error.issues.length} issue(s))`;
+      return `结构校验失败（${result.error.id}，${result.error.issues.length} 个字段问题）`;
   }
 }
 
@@ -607,50 +658,105 @@ type Pane = {
   id: "project" | "issue" | "archive";
   title: string;
   hint: string;
+  status: string;
+  bullets: string[];
 };
 
 const PANES: Pane[] = [
   {
     id: "project",
-    title: "项目区 (Project)",
-    hint: "绑定仓库、展示快照、切换活跃项目（占位）",
+    title: "项目区",
+    hint: "展示当前调试项目的上下文边界。真实仓库选择、Electron/fs 仍是后续能力。",
+    status: "演示状态：浏览器 SPA + localStorage",
+    bullets: [
+      "当前项目：演示工作区",
+      "仓库快照：后续接入 Git 读回",
+      "文件写盘：后续接入 .debug_workspace",
+    ],
   },
   {
     id: "issue",
-    title: "问题卡区 (Issue / Debug)",
-    hint: "S2-A4：创建 IssueCard + 追记 + 结案归档",
+    title: "问题卡区",
+    hint: "创建问题卡、追加排查记录、结案生成本地归档摘要。",
+    status: "当前可用：问题卡、排查记录、结案归档的浏览器本地链路",
+    bullets: [],
   },
   {
     id: "archive",
-    title: "归档区 (Archive)",
-    hint: "ArchiveDocument 与 error-table 浏览（占位）",
+    title: "归档区",
+    hint: "展示结案后会沉淀的归档资产。当前归档仍保存在浏览器 localStorage。",
+    status: "边界说明：尚未写入真实文件系统",
+    bullets: [
+      "归档文档：结案摘要",
+      "错误表条目：复发检索入口",
+      "后续：.debug_workspace 文件双写",
+    ],
   },
 ];
+
+function labelSeverity(severity: IssueCard["severity"] | IntakeSeverity): string {
+  return SEVERITY_LABELS[severity];
+}
+
+function labelIssueStatus(status: IssueCard["status"]): string {
+  const labels: Record<IssueCard["status"], string> = {
+    open: "处理中",
+    investigating: "排查中",
+    resolved: "已解决",
+    archived: "已归档",
+    needs_manual_review: "需人工复核",
+  };
+  return labels[status];
+}
+
+function labelInvestigationType(type: InvestigationType): string {
+  return INVESTIGATION_TYPE_LABELS[type];
+}
+
+function StaticPaneShell({ pane }: { pane: Pane }) {
+  return (
+    <div className="demo-shell">
+      <p className="pane-status">{pane.status}</p>
+      <ul className="demo-list">
+        {pane.bullets.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export default function App() {
   return (
     <div className="app-root">
       <header className="app-header">
-        <h1>RepoDebug Harness</h1>
+        <div>
+          <h1>RepoDebug 调试闭环工作台</h1>
+          <p className="app-subtitle">
+            把硬件调试现场记录收束为问题卡、排查记录和归档摘要。当前是浏览器 SPA 演示版。
+          </p>
+        </div>
         <p className="stage-tag" data-testid="stage-tag">
-          Desktop shell initialized
+          D1：交差优先中文产品壳
         </p>
       </header>
       <main className="app-grid">
         {PANES.map((pane) => (
           <section key={pane.id} className="pane" data-pane={pane.id}>
-            <h2>{pane.title}</h2>
-            <p className="pane-hint">{pane.hint}</p>
+            <div className="pane-heading">
+              <h2>{pane.title}</h2>
+              <p className="pane-hint">{pane.hint}</p>
+            </div>
             {pane.id === "issue" ? (
               <IssuePane />
             ) : (
-              <p className="pane-status">status: placeholder</p>
+              <StaticPaneShell pane={pane} />
             )}
           </section>
         ))}
       </main>
       <footer className="app-footer">
-        <span>Stage: S2-A4 · IssueCard closeout + ErrorEntry + ArchiveDocument</span>
+        <span>当前边界：浏览器 SPA + localStorage；Electron / fs / IPC / .debug_workspace 文件写盘未接入。</span>
       </footer>
     </div>
   );

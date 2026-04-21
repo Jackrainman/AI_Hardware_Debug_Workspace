@@ -13,9 +13,9 @@
 - [x] S2-A4：closeout 生成 ArchiveDocument + ErrorEntry，并回写 IssueCard archived。
 - [x] S2-CLOSEOUT-DOCS：同步 S2 收口状态。
 - [x] D1-RULES-REALIGN：切换到交差优先模式，重整双链路规则、planning、handoff 与 state。
+- [x] D1-UI-V0-CN-SHELL-POLISH：中文化主壳文案、按钮、表单标签、状态、空状态，并把项目区/归档区改为可演示壳；未改业务数据流。
 
 ## 当前阶段：D1 交差优先中文产品壳
-- [ ] D1-UI-V0-CN-SHELL-POLISH：中文化主壳文案、按钮、表单标签、状态、空状态；不改业务数据流。
 - [ ] D1-UI-V1-VISUAL-HIERARCHY：优化页面视觉层级、卡片/表单/列表密度、项目区/归档区演示壳；不引入深层功能。
 - [ ] D1-DEMO-PATH-MIN-CN：补最小中文演示路径，让创建问题卡、追记、结案流程更适合演示；不伪造 Electron/fs 能力。
 
