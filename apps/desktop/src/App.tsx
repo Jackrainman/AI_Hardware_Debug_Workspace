@@ -622,45 +622,6 @@ function renderCloseoutStatus(status: CloseoutSubmitStatus): string {
   }
 }
 
-type MainlineStep = 1 | 2 | 3 | 4;
-
-const FLOW_STEPS: Array<{ num: string; label: string }> = [
-  { num: "01", label: "创建" },
-  { num: "02", label: "选择" },
-  { num: "03", label: "追记" },
-  { num: "04", label: "结案" },
-];
-
-function computeMainlineStep(
-  cardList: IssueCardListResult | null,
-  selectedIssueId: string | null,
-  selectedCard: IssueCard | null,
-  lastCloseout: CloseoutSummary | null,
-): MainlineStep {
-  const hasCards = cardList !== null && cardList.valid.length > 0;
-  if (!hasCards && selectedIssueId === null) return 1;
-  if (selectedIssueId === null) return 2;
-  if (selectedCard?.status === "archived" || lastCloseout !== null) return 4;
-  return 3;
-}
-
-function FlowGuide({ step }: { step: MainlineStep }) {
-  return (
-    <div className="flow-guide" aria-label="问题处理步骤" data-current-step={step}>
-      {FLOW_STEPS.map((entry, idx) => {
-        const n = (idx + 1) as MainlineStep;
-        const state = n < step ? "done" : n === step ? "active" : "pending";
-        return (
-          <span key={entry.num} data-step-state={state} data-step={n}>
-            <strong>{entry.num}</strong>
-            {entry.label}
-          </span>
-        );
-      })}
-    </div>
-  );
-}
-
 function MainlineResultPanel({
   selectedCard,
   recordCount,
@@ -807,13 +768,11 @@ function IssuePane({ onCloseoutResult }: { onCloseoutResult: (summary: CloseoutS
     reloadSelectedCard(summary.issueId);
   };
 
-  const step = computeMainlineStep(cardList, selectedIssueId, selectedCard, lastCloseout);
   const recordCount = recordList?.valid.length ?? 0;
 
   return (
     <div className="issue-pane-stack">
       <DemoHint />
-      <FlowGuide step={step} />
       <IssueIntakeForm onCreated={handleCardCreated} />
       <IssueCardListView
         result={cardList}

@@ -31,13 +31,13 @@
 - 必要时补最小中文演示路径，但不动深层数据流。
 
 ## 当前唯一执行中的原子任务
-- **无**。本轮 **D1-LAYOUT-HEADER-ARCHIVE-ENTRY** 已完成：主页面从三栏（项目 / 问题卡 / 归档）收束为单栏主体；`app-header` 拆成上下两行——上行保留品牌 + 阶段标签与边界说明，新增下行 `app-header-toolbar` 左侧 `ProjectSelector`（演示工作区，点击展开 popover 显示原项目区 bullets + 标注"多项目切换后续接入"）、右侧 `ArchiveEntryButton`（显示累计归档数量 chip，count=0 时 disabled）；`main` 改为 `app-main` 单栏只渲染问题卡 `pane`，`FlowGuide` / `MainlineResultPanel` / `IssuePane` 完整保留；`ArchiveListDrawer` 签名新增 `archivePane` 参数，内部在 drawer header 之后嵌入 `ArchivePaneShell`（`onOpenList` 改为 optional，不传时不渲染重复按钮），随后渲染原"全部归档条目"列表；`data-testid="archive-open-list-button"` 搬到 header 按钮，`archive-count-chip` / `archive-panel` / `archive-drawer` / `archive-drawer-list` / `archive-drawer-close` 保留。仅改 `App.tsx` / `App.css`；未改 schema / closeout 工厂 / IssueCard 数据流 / store 契约 / Electron / fs / IPC / .debug_workspace 写盘 / verify 脚本。
+- **无**。本轮 **D1-FLOW-GUIDE-REMOVE** 已完成：删除主页面"最小演示路径"下面的四个步骤框（01 创建 / 02 选择 / 03 追记 / 04 结案）——`App.tsx` 移除 `MainlineStep` / `FLOW_STEPS` / `computeMainlineStep` / `FlowGuide` 四个定义以及 `IssuePane` 里 `const step = ...` 与 `<FlowGuide step={step} />` 渲染；`App.css` 移除 `.flow-guide` 主块 + active/done/pending 状态样式 + `.flow-guide strong` + 响应式 `@media (max-width: 560px)` 下 `.flow-guide` 两列栅格规则。保留 `DemoHint`（"🎯 最小演示路径 + 1️⃣→2️⃣→3️⃣→4️⃣ 文字说明"）作为演示路径说明。仅改 `App.tsx` / `App.css`；未改 schema / closeout 工厂 / IssueCard 数据流 / store 契约 / verify 脚本 / 项目区 / 归档区 / 问题卡表单与列表 / Electron / fs / IPC / .debug_workspace 写盘。
 
 ## 当前前沿任务窗口（候选，不等于顺推队列）
 - D1-ISSUE-LIST-HIDE-ARCHIVED：在中间问题卡列表里隐藏 `status=archived` 的卡（或折叠到"已归档"分组），让主列表只聚焦未结案问题；不改 store 契约。
 - D1-BRAND-UNIFY-PROBEFLASH：清理 `apps/desktop/README.md` 与 `apps/desktop/index.html` 等非 src 层的 `RepoDebug Harness` 历史命名残留，统一到 ProbeFlash；不改 schema / store / 内部 `repo-debug:*` storage key。
-- D1-STEPPER-CLEANUP：把 IssuePane 里"1. 创建 / 2. 选择 / 3. 追记 / 4. 结案"四块大表单的视觉重心降权（或收成更轻量提示），但**必须保证最小演示路径仍可跑通**；DoD 需谨慎评估。
-- D1-MAINLINE-BROWSER-SMOKE：浏览器真人冒烟，重点覆盖新 header 入口、ProjectSelector popover、ArchiveEntryButton 计数徽标、drawer 内嵌 ArchivePaneShell + 全部列表。
+- D1-STEPPER-CLEANUP-REMAINDER：本轮已删四个步骤框；如还要把"1. 创建 / 2. 选择 / 3. 追记 / 4. 结案"四块大表单的视觉重心降权（收折或轻量化），仍需独立评估 DoD（必须保证最小演示路径仍可跑通）。
+- D1-MAINLINE-BROWSER-SMOKE：浏览器真人冒烟，重点覆盖新 header 入口、ProjectSelector popover、ArchiveEntryButton 计数徽标、drawer 内嵌 ArchivePaneShell + 全部列表，确认"最小演示路径"下方不再出现四个步骤框。
 - S3-ENTRY-PLANNING：交差壳完成后切回链路 A，评估 Electron/fs adapter、runtime log、repair task 的入口任务；需 planning 明确切回技术主线。
 
 ## 下一任务选择流程

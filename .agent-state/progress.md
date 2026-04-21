@@ -52,9 +52,14 @@
   - `ArchiveListDrawer` 签名新增 `archivePane: Pane`，drawer body 改为"drawer header → `<ArchivePaneShell pane={archivePane} archiveIndex={archiveIndex} />`（不传 `onOpenList`，避免重复按钮）→ `archive-drawer-section` 承载"全部归档条目"列表（仅当 items>0 渲染）→ 保留底部 `.debug_workspace` 写盘边界 note"。`ArchivePaneShell.onOpenList` 改为 optional。
   - `App.css` 把 `.app-grid` 替换成 `.app-main`（flex column）；`.app-header` 改为 column 方向；新增 `.app-header-top` / `.app-header-toolbar`（二级 toolbar，带边框圆角与 soft shadow）/ `.header-entry-slot` / `.project-entry-button` / `.archive-entry-button`（pill，disabled 淡化）/ `.header-entry-icon` / `.header-entry-label` / `.project-entry-caret` / `.archive-entry-count`（带 `[data-total="0"]` 灰态）/ `.project-selector` / `.project-selector-popover`（absolute 280–360px 宽）/ `.project-selector-popover-header` / `.project-selector-note` / `.archive-drawer-section` / `.archive-drawer-section-label`。响应式 `@media (max-width: 980px)` 改为 `.app-header-top` 变 column；`@media (max-width: 560px)` 新增 `.app-header-toolbar` 垂直堆叠、入口按钮全宽、archive count 右对齐、popover 填满行宽；删除原 `pane[data-pane="project"] / [data-pane="archive"]` margin-top 规则（selector 已不匹配）。
   - 未改 schema / closeout 工厂 / IssueCard 数据流 / store 契约 / verify 脚本 / Electron / fs / IPC / .debug_workspace 写盘 / 内部 `repo-debug:*` storage key。
+- [x] D1-FLOW-GUIDE-REMOVE：删除主页面"最小演示路径"下方的四个步骤框（01 创建 / 02 选择 / 03 追记 / 04 结案）。
+  - `apps/desktop/src/App.tsx` 移除 `MainlineStep` type、`FLOW_STEPS` 常量、`computeMainlineStep()` 函数、`FlowGuide` 组件；`IssuePane` 内部删除 `const step = computeMainlineStep(...)` 与 `<FlowGuide step={step} />` 渲染。`selectedCard` / `lastCloseout` / `recordCount` 等 state 仍被 `MainlineResultPanel` 使用，保持不动。
+  - `apps/desktop/src/App.css` 移除 `.flow-guide` 主块 + `span[data-step-state="active|done|pending"]` 状态样式 + `.flow-guide strong` + 响应式 `@media (max-width: 560px)` 下 `.flow-guide` 两列栅格规则。
+  - 保留 `DemoHint`（"🎯 最小演示路径 + 1️⃣→2️⃣→3️⃣→4️⃣ 文字说明"）作为演示路径提示；`MainlineResultPanel` 完整保留；`IssueIntakeForm` / `IssueCardListView` / `InvestigationAppendForm` / `InvestigationRecordListView` / `CloseoutForm` / `IssueStorageControls` 全部保留；顶部 `app-header-toolbar` 与 `ArchiveListDrawer` 完整保留。
+  - 未改 schema / closeout 工厂 / IssueCard 数据流 / store 契约 / verify 脚本 / 项目区 / 归档区 / 问题卡表单与列表 / Electron / fs / IPC / .debug_workspace 写盘 / 内部 `repo-debug:*` storage key。
 
 ## 当前唯一执行中
-- 无。D1-LAYOUT-HEADER-ARCHIVE-ENTRY 已完成验证并进入提交收束。
+- 无。D1-FLOW-GUIDE-REMOVE 已完成验证并进入提交收束。
 
 ## 下一步
-- **按 `docs/planning/current.md` 的「下一任务选择流程」重选唯一下一任务**，先确认 `current_mode=delivery_priority`。候选：D1-ISSUE-LIST-HIDE-ARCHIVED（主列表隐藏/折叠 archived）、D1-BRAND-UNIFY-PROBEFLASH（非 src 层 RepoDebug Harness 残留清理）、D1-STEPPER-CLEANUP（四块大表单降权，必须保证演示路径仍跑通）、D1-MAINLINE-BROWSER-SMOKE（浏览器真人冒烟）、S3-ENTRY-PLANNING（切回链路 A 需用户明确切模式）。
+- **按 `docs/planning/current.md` 的「下一任务选择流程」重选唯一下一任务**，先确认 `current_mode=delivery_priority`。候选：D1-ISSUE-LIST-HIDE-ARCHIVED（主列表隐藏/折叠 archived）、D1-BRAND-UNIFY-PROBEFLASH（非 src 层 RepoDebug Harness 残留清理）、D1-STEPPER-CLEANUP-REMAINDER（本轮已删四个视觉步骤框；若还要把四块大表单视觉重心降权，需单独评估 DoD）、D1-MAINLINE-BROWSER-SMOKE（浏览器真人冒烟）、S3-ENTRY-PLANNING（切回链路 A 需用户明确切模式）。

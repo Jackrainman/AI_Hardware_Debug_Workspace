@@ -14,7 +14,7 @@
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-04-22T13:00:00+08:00",
+  "timestamp": "2026-04-22T14:30:00+08:00",
   "current_mode": "delivery_priority",
   "current_stage": "D1",
   "current_stage_name": "交差优先中文产品壳",
@@ -52,16 +52,16 @@
       "depends_on": []
     },
     {
-      "id": "D1-STEPPER-CLEANUP",
+      "id": "D1-STEPPER-CLEANUP-REMAINDER",
       "track": "track_b_delivery_priority_shell",
-      "goal": "把 IssuePane 内 1.创建 / 2.选择 / 3.追记 / 4.结案 四块大表单的视觉重心降权（收成更轻量提示或折叠区），但必须保证最小演示路径仍可跑通；DoD 需谨慎评估。",
-      "depends_on": []
+      "goal": "本轮 D1-FLOW-GUIDE-REMOVE 已删除四个视觉步骤框；如还要把 IssuePane 内 1.创建 / 2.选择 / 3.追记 / 4.结案 四块大表单的视觉重心降权（收折或轻量化），需独立评估 DoD（必须保证最小演示路径仍可跑通）。",
+      "depends_on": ["D1-FLOW-GUIDE-REMOVE"]
     },
     {
       "id": "D1-MAINLINE-BROWSER-SMOKE",
       "track": "track_b_delivery_priority_shell",
-      "goal": "浏览器真人冒烟，重点覆盖新 header 双入口、ProjectSelector popover、ArchiveEntryButton 计数徽标、drawer 内嵌 ArchivePaneShell + 全部归档条目列表、刷新后计数稳定；只验证不改代码。",
-      "depends_on": ["D1-MAINLINE-WIRE-CONNECT", "D1-ARCHIVE-PANEL-FIX", "D1-ARCHIVE-PERSIST-INDEX", "D1-LAYOUT-HEADER-ARCHIVE-ENTRY"]
+      "goal": "浏览器真人冒烟，重点覆盖新 header 双入口、ProjectSelector popover、ArchiveEntryButton 计数徽标、drawer 内嵌 ArchivePaneShell + 全部归档条目列表、刷新后计数稳定、'最小演示路径'下方不再有步骤框；只验证不改代码。",
+      "depends_on": ["D1-MAINLINE-WIRE-CONNECT", "D1-ARCHIVE-PANEL-FIX", "D1-ARCHIVE-PERSIST-INDEX", "D1-LAYOUT-HEADER-ARCHIVE-ENTRY", "D1-FLOW-GUIDE-REMOVE"]
     },
     {
       "id": "S3-ENTRY-PLANNING",
@@ -99,7 +99,8 @@
     "D1-README-AGENTS-PACKAGING",
     "D1-ARCHIVE-PANEL-FIX",
     "D1-ARCHIVE-PERSIST-INDEX",
-    "D1-LAYOUT-HEADER-ARCHIVE-ENTRY"
+    "D1-LAYOUT-HEADER-ARCHIVE-ENTRY",
+    "D1-FLOW-GUIDE-REMOVE"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -150,6 +151,7 @@
     "D1-ARCHIVE-PANEL-FIX 已完成：右侧归档区新增明确空状态和最近一次 closeout 结果面板；closeout 后可展示归档文件名、错误表编号、来源问题、归档状态、分类和归档时间。验证通过：npm run typecheck、npm run build、verify-s2-a4.mts、临时 Vite SSR 渲染断言、git diff --check、handoff.json JSON parse。",
     "D1-ARCHIVE-PERSIST-INDEX 已完成：归档区 mount 时从 localStorage 读回累计归档索引，刷新不再空；UI 显示'累计归档 N 条' + 最近一次摘要 + [查看归档列表] 抽屉；closeout 成功后自动刷新索引。补 listArchiveDocuments() / listErrorEntries() 读回函数（带 invalid 桶与倒序）与 verify-d1-archive-persist-index.mts。验证通过：npm run typecheck、npm run build（229.30 kB / gzip 67.90 kB）、6 个 verify 脚本全部 PASS、git diff --check、handoff.json JSON parse。SSR 断言因 Node 24 strip-types 不支持 JSX 未跑，Node 侧读回断言已覆盖同一语义。",
     "D1-LAYOUT-HEADER-ARCHIVE-ENTRY 已完成：主页面信息架构从三栏（项目 / 问题卡 / 归档）收束为顶部双入口 + 单栏问题卡主体；新增 ProjectSelector（pill 按钮 + popover 承载 StaticPaneShell + 多项目切换后续接入边界）、ArchiveEntryButton（pill 按钮 + 计数 chip，N=0 时 disabled；data-testid=archive-open-list-button 与 archive-count-chip 搬到该按钮）；ArchiveListDrawer 签名新增 archivePane，内部 body 改为 drawer header → 嵌入 ArchivePaneShell（onOpenList 改 optional）→ 新增 archive-drawer-section 承载全部归档条目列表 → 底部 .debug_workspace 写盘边界 note；App.css 把 .app-grid 替换成 .app-main 单栏、新增 .app-header-top / .app-header-toolbar / .header-entry-slot / .project-entry-button / .archive-entry-button / .archive-entry-count / .project-selector / .project-selector-popover / .project-selector-note / .archive-drawer-section 等样式；响应式 @media 980/560px 同步调整；删除原 pane[data-pane=project|archive] margin-top 规则（selector 已不匹配）。仅改 App.tsx / App.css；未改 schema / closeout 工厂 / IssueCard 数据流 / store 契约 / verify 脚本 / Electron / fs / IPC / .debug_workspace 写盘 / 内部 repo-debug:* storage key / apps/desktop/README.md / apps/desktop/index.html 残留。验证通过：npm run typecheck、npm run build（231.32 kB / gzip 68.27 kB，较上轮 +2 kB 合理增量）、verify-s2-a4.mts 5 PASS、verify-d1-archive-persist-index.mts 6 PASS、git diff --check、handoff.json JSON parse。浏览器人工点击冒烟未执行，留给 D1-MAINLINE-BROWSER-SMOKE。",
+    "D1-FLOW-GUIDE-REMOVE 已完成：删除主页面'最小演示路径'下方的四个视觉步骤框（01 创建 / 02 选择 / 03 追记 / 04 结案）。App.tsx 移除 MainlineStep type、FLOW_STEPS 常量、computeMainlineStep() 函数、FlowGuide 组件；IssuePane 内删除 const step = ... 与 <FlowGuide /> 渲染；selectedCard / lastCloseout / recordCount 仍由 MainlineResultPanel 使用保留。App.css 移除 .flow-guide 主块 + span[data-step-state=active|done|pending] 三态样式 + .flow-guide strong + 响应式 @media (max-width: 560px) 下 .flow-guide 两列栅格规则。保留 DemoHint（🎯 最小演示路径 + 1️⃣→2️⃣→3️⃣→4️⃣ 文字说明）作为演示路径提示；MainlineResultPanel / IssueIntakeForm / IssueCardListView / InvestigationAppendForm / InvestigationRecordListView / CloseoutForm / IssueStorageControls / 顶部 app-header-toolbar / ArchiveListDrawer 全部保留。仅改 App.tsx / App.css；未改 schema / closeout 工厂 / IssueCard 数据流 / store 契约 / verify 脚本 / 项目区 / 归档区 / 问题卡表单与列表 / Electron / fs / IPC / .debug_workspace 写盘 / 内部 repo-debug:* storage key。验证通过：npm run typecheck、npm run build（230.75 kB / gzip 68.03 kB，较上轮 -0.57 kB 合理减量）、git diff --check、handoff.json JSON parse、全仓 grep FlowGuide/FLOW_STEPS/computeMainlineStep/MainlineStep/flow-guide 无匹配。",
     "用户已要求把 AGENTS.md 与 README 一起提交；AGENTS.md 中'除非明确要求，由 AI 自行编译'偏好纳入本轮提交范围。"
   ]
 }

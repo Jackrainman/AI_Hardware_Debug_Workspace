@@ -5,7 +5,7 @@
 ## 当前真实状态
 - 当前阶段：D1：交差优先中文产品壳。
 - 当前模式：`delivery_priority`。
-- 当前唯一执行中的原子任务：无。本轮 **D1-LAYOUT-HEADER-ARCHIVE-ENTRY** 已完成并进入提交收束。
+- 当前唯一执行中的原子任务：无。上一轮 D1-LAYOUT-HEADER-ARCHIVE-ENTRY 已完成。本轮 **D1-FLOW-GUIDE-REMOVE** 已完成并进入提交收束：删除主页面"最小演示路径"下方的四个步骤框（01 创建 / 02 选择 / 03 追记 / 04 结案）；`App.tsx` 移除 `MainlineStep` type、`FLOW_STEPS` 常量、`computeMainlineStep()` 函数、`FlowGuide` 组件，以及 `IssuePane` 里 `const step = computeMainlineStep(...)` 和 `<FlowGuide step={step} />` 的渲染；`App.css` 移除 `.flow-guide` 主块、`.flow-guide span[data-step-state="active|done|pending"]` 状态样式、`.flow-guide strong` 样式、以及 `@media (max-width: 560px)` 响应式下 `.flow-guide` 两列栅格规则。保留 `DemoHint`（"🎯 最小演示路径 + 1️⃣→2️⃣→3️⃣→4️⃣ 文字说明"）作为演示路径提示。仅改 `App.tsx` / `App.css`；未改 schema / closeout 工厂 / IssueCard 数据流 / store 契约 / verify 脚本 / 项目区 popover / 归档 Drawer / 问题卡表单与列表 / Electron / fs / IPC。
 - 对外项目名已统一为 **ProbeFlash — 面向嵌入式调试现场的问题闪记与知识归档系统**：README 门面、AGENTS 项目概览、应用主标题与包元数据已同步。`apps/desktop/README.md` 与 `apps/desktop/index.html` 仍有 `RepoDebug Harness` 历史命名残留（非 src 层），本轮拆到 D1-BRAND-UNIFY-PROBEFLASH 独立处理。
 - S2 主闭环关键路径（domain + storage 层）早已打通：IssueCard intake → 列表选中 → InvestigationRecord 追记 → closeout → ArchiveDocument + ErrorEntry → IssueCard archived 读回。
 - 上一轮 D1-ARCHIVE-PERSIST-INDEX 修通归档区跨刷新读回 + 累计索引 + 历史抽屉；当时的信息架构仍是"项目区（左） · 问题卡（中） · 归档区（右）"三栏平铺。本轮 **D1-LAYOUT-HEADER-ARCHIVE-ENTRY** 把信息架构收束为"顶部双入口 + 单栏问题卡主体"：
@@ -41,7 +41,8 @@
 - 主操作区主线闭环串联与结果反馈（D1-MAINLINE-WIRE-CONNECT 已完成）。
 - 项目区 / 归档区改成"可演示壳"，但必须清楚标注真实功能边界（已完成）。
 - 归档区持久化读回 + 累计索引 + 历史抽屉（D1-ARCHIVE-PERSIST-INDEX 已完成）。
-- 信息架构收束：三栏 → 顶部双入口 + 单栏主体（本轮 D1-LAYOUT-HEADER-ARCHIVE-ENTRY 已完成）。
+- 信息架构收束：三栏 → 顶部双入口 + 单栏主体（D1-LAYOUT-HEADER-ARCHIVE-ENTRY 已完成）。
+- 删除"最小演示路径"下方的四个重复步骤框（本轮 D1-FLOW-GUIDE-REMOVE 已完成）。
 - 尽量不动核心数据流，只做安全美化和演示友好化。
 
 ## 下一轮最推荐动作
@@ -75,12 +76,13 @@
 - 不把占位功能包装成已完成真实能力。
 
 ## 验证状态
-- PASS：D1-LAYOUT-HEADER-ARCHIVE-ENTRY 未新增 verify 脚本（本轮仅动展示层），回归跑 `verify-s2-a4.mts`（5 PASS）与 `verify-d1-archive-persist-index.mts`（6 PASS），两项均无倒退。
+- PASS：D1-FLOW-GUIDE-REMOVE 未新增 verify 脚本（本轮仅删展示层代码）。
 - PASS：`npm run typecheck` EXIT=0。
-- PASS：`npm run build` EXIT=0，54 modules，JS 231.32 kB / gzip 68.27 kB（较上轮 229.30 kB / 67.90 kB 增约 +2 kB，对应 ProjectSelector / ArchiveEntryButton 组件与 header toolbar / popover / entry / drawer-section 样式的合理增量）。
+- PASS：`npm run build` EXIT=0，54 modules，JS 230.75 kB / gzip 68.03 kB（较上轮 231.32 kB / 68.27 kB 略降约 -0.57 kB 合理，对应 FlowGuide 组件 + 四类样式删除）。
 - PASS：`git diff --check` EXIT=0。
 - PASS：`.agent-state/handoff.json` 通过 Node `JSON.parse`，且 `current_mode=delivery_priority`。
-- 未执行：浏览器真实 DOM 点击冒烟——下一轮 D1-MAINLINE-BROWSER-SMOKE 应覆盖，重点检查顶部左右双入口、ProjectSelector popover、ArchiveEntryButton 计数徽标、Drawer 内嵌 ArchivePaneShell + 全部列表是否都按预期渲染与响应。
+- PASS：全仓 `FlowGuide` / `FLOW_STEPS` / `computeMainlineStep` / `MainlineStep` / `flow-guide` grep 无匹配。
+- 未执行：浏览器真实 DOM 点击冒烟——下一轮 D1-MAINLINE-BROWSER-SMOKE 应覆盖，重点额外确认"最小演示路径"下方不再有四个步骤框。
 
 ## 人工浏览器验证说明（下一轮 D1-MAINLINE-BROWSER-SMOKE 用）
 本轮改动在真实浏览器里应满足以下可重复步骤：
@@ -88,7 +90,7 @@
 2. 清空 localStorage（DevTools → Application → Local Storage → Clear）。刷新页面。
 3. 确认主页面不再是三栏平铺；顶部出现 `app-header-toolbar`：左侧"📁 项目：演示工作区 ▾"按钮、右侧"📦 查看归档列表 0"按钮（count chip 为 0 时按钮 disabled）。
 4. 点击左侧"项目：演示工作区"按钮，popover 弹出，内容显示原项目区 bullets（当前项目 / 仓库快照后续接入 / 文件写盘后续接入），底部标注"多项目选择与仓库绑定能力后续接入"，点"关闭"或再次点击按钮关闭 popover。
-5. 确认主体只有问题卡主线（DemoHint / FlowGuide / 创建 / 列表 / MainlineResultPanel / 追记 / 时间线 / 结案 / 辅助验证），不再出现左右两栏。
+5. 确认主体只有问题卡主线（DemoHint / 创建 / 列表 / MainlineResultPanel / 追记 / 时间线 / 结案 / 辅助验证），不再出现左右两栏，且 DemoHint 下方不再有四个步骤框。
 6. 在问题卡区填写标题与描述 → 点「创建问题卡」→ 自动选中新卡 → 在"排查记录"里追加一条 → 在"结案归档"里填写根因 + 修复结论 → 点「结案并生成归档摘要」。
 7. 观察右上角的 `ArchiveEntryButton`：计数 chip 从 0 变成 1 且变为 accent 绿色；按钮变为 enabled。
 8. 点击「查看归档列表」，Drawer 打开：header 显示"归档区 · 共 1 条"；body 第一块是 `ArchivePaneShell`（"当前演示：localStorage，后续接文件系统"状态 + bullets + "最近一次归档摘要"）；第二块 `archive-drawer-section` 显示"全部归档条目"列表（1 条）；底部 note 标注 `.debug_workspace` 写盘边界。
