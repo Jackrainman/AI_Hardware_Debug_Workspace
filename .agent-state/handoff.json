@@ -9,14 +9,13 @@
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 需要在下一轮继续保留的关键说明"
   },
-  "timestamp": "2026-04-21T13:30:00+08:00",
+  "timestamp": "2026-04-21T14:00:00+08:00",
   "current_stage": "S2",
-  "current_stage_goal": "调试闭环主流程：intake 表单（S2-A1）、列表视图（S2-A2）、typecheck 脚本 M-1 修复已就绪；S2-A3 InvestigationRecord 追加已有未提交工作区改动，但本轮重新读取时没有发现 S2-A3 功能提交，completion gate 未过。下一轮只能先收束 S2-A3-CG，localStorage + SPA 继续承载，fs / Electron 推迟（D-007）。",
-  "current_atomic_task": "S2-A3_investigation_record_append__COMPLETION_GATE_BLOCKED_uncommitted",
+  "current_stage_goal": "调试闭环主流程：intake 表单（S2-A1）、列表视图（S2-A2）、typecheck 脚本 M-1 修复、InvestigationRecord 追加（S2-A3）均已就绪，S2 完成定义第 2 项打勾。下一轮按下一任务选择流程从 S2-A4 结案归档 + UI-V1 候选窗口里重选唯一下一任务。localStorage + SPA 继续承载，fs / Electron 推迟（D-007）。",
+  "current_atomic_task": "WAITING_FOR_PLANNING_SELECTION",
   "frontier_tasks": [
-    "S2-A3_completion_gate_repair",
-    "S2-A4_closeout_error_entry_archive_document__blocked_until_s2_a3_commit",
-    "UI-V1_browser_interaction_smoke_optional__blocked_until_completion_gate"
+    "S2-A4_closeout_error_entry_archive_document",
+    "UI-V1_browser_interaction_smoke_optional"
   ],
   "completed_atomic_tasks": [
     "A1_setup_planning_and_handoff_workspace",
@@ -35,7 +34,8 @@
     "D-007_defer_electron_shell_close_s1",
     "S2-A1_issue_card_intake_minimal_form",
     "S2-A2_issue_card_list_view",
-    "M-1_fix_typecheck_script"
+    "M-1_fix_typecheck_script",
+    "S2-A3_investigation_record_append"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -56,32 +56,31 @@
     "output_rule": "从前沿窗口中选择唯一一个下一原子任务，写入 current_atomic_task，再执行。"
   },
   "risks": [
-    "planning 与实际发生脱节：交接文件曾声称 S2-A3 已完成并提交，但重新读取时没有发现 S2-A3 功能提交，且 S2-A3 相关代码 / verify / 交接文件仍未提交。按 completion gate，S2-A3 未完成，不得选择 S2-A4 或 UI-V1。",
-    "浏览器侧人工交互验证仍未做；S2-A3 工作区新增的点击选中 + 受控 ListView + aria-pressed / 切换 issue 即刷新 recordList 的 UX 需要在 S2-A3-CG 完成后再评估。",
-    "S2-A4（结案归档）需要新写两组独立前缀 store（archive-document / error-entry），以及 closeout 工厂 + UI 'Close Issue' 按钮 + IssueCard.status 的回写路径；但当前依赖 S2-A3 commit，暂不执行。",
+    "浏览器侧人工交互验证仍未做；Node 侧黑盒验证累计已到 S1-A3 3 + S2-A1 3 + S2-A2 5 + S2-A3 6 = 17 PASS 断言，但 S2-A3 新增的点击选中 + 受控 ListView + aria-pressed / 切换 issue 即刷新 recordList 的 UX 仅在真实 DOM 可确认。下一轮条件允许时建议 dev server 点一遍（UI-V1）。",
+    "S2-A4（结案归档）需要新写两组独立前缀 store（archive-document / error-entry），以及 closeout 工厂 + UI 'Close Issue' 按钮 + IssueCard.status 的回写路径（最简直接用 saveIssueCard(updatedCard) 覆盖同 id）；若需写盘到 .debug_workspace/ 可能触发 Electron 外壳重评估。",
     "Electron 外壳已由 D-007 延后；S2-A4 若出现'必须写磁盘'硬约束，评估是否把外壳或 fs 适配层拉回前沿。",
     "localStorage 同域下跨应用共用，id 冲突时仍有污染可能；当前 list 只做前缀过滤 + safeParse，不做 defensive 删除。S2-A3 / S2-A4 继续遵守独立前缀约定。",
-    "【历史 / 已缓解】Round 4 auto mode Bash 安全分类器 503 导致 M-1 无法在 harness 内跑 `npm run typecheck`；Round 5 由用户代跑 EXIT=0 后收束提交。S2-A3 当前需重新验证，不能沿用未提交记录里的完成判断。"
+    "【历史 / 已缓解】Round 4 auto mode Bash 安全分类器 503 导致 M-1 无法在 harness 内跑 `npm run typecheck`；Round 5 由用户代跑 EXIT=0 后收束提交。Round 8（S2-A3-CG）本轮 Bash 通道正常，未触发该问题。"
   ],
   "notes": [
-    "【S2-A3 completion gate 阻塞】工作区已有 InvestigationRecord 追加相关实现，但没有 S2-A3 功能提交；下一轮只能重新验证并提交 S2-A3，不得进入 S2-A4。",
-    "S2-A3 工作区文件路径：apps/desktop/src/domain/investigation-intake.ts（工厂）、apps/desktop/src/storage/investigation-record-store.ts（store）、apps/desktop/scripts/verify-s2-a3.mts（Node 黑盒）、apps/desktop/src/App.tsx、apps/desktop/src/App.css。",
+    "【S2-A3 已完成并提交】中等粒度：ListView 受控化（点击选中、aria-pressed、高亮）+ IssuePane 容器抬升三项 state（cardList / selectedIssueId / recordList）+ 追记工厂 + 独立前缀 store + 追记表单 + 追记列表 + verify-s2-a3.mts 6 PASS 一轮落地。refresh 靠表单回调 onCreated / onAppended 显式触发，不是 effect 订阅。",
+    "S2-A3 文件路径：apps/desktop/src/domain/investigation-intake.ts（工厂）、apps/desktop/src/storage/investigation-record-store.ts（store）、apps/desktop/scripts/verify-s2-a3.mts（Node 黑盒）、apps/desktop/src/App.tsx、apps/desktop/src/App.css。",
     "listInvestigationRecordsByIssueId 排序契约：valid 按 createdAt 升序（与 listIssueCards 倒序相反——时间线读法）；invalid 未强制排序（维持入桶顺序）。过滤契约：前缀 `repo-debug:investigation-record:` + safeParse 后再 filter(record.issueId === queryId)；外键不匹配既不进 valid 也不进 invalid。",
-    "saveInvestigationRecord 不更新 IssueCard.updatedAt——这是当前工作区设计假设，需在 S2-A3-CG 验证/提交后才可作为后续前提。",
-    "S2-A3 工作区 IssuePane 状态层级：cardList / selectedIssueId / recordList 都在 IssuePane 持有；切换选中卡时同步读 listInvestigationRecordsByIssueId。需在 S2-A3-CG 完成后再用于 S2-A4 设计。",
+    "saveInvestigationRecord 不更新 IssueCard.updatedAt——设计如此，更新卡时间戳是 S2-A4 结案阶段的职责（或后续专门的 touch API）。",
+    "S2-A3 IssuePane 状态层级：cardList / selectedIssueId / recordList 都在 IssuePane 持有；切换选中卡时同步读 listInvestigationRecordsByIssueId；没选中时追记区隐藏。S2-A4 若加 'Close Issue' 按钮，建议同样挂在 IssuePane，不在 ListView 子组件里自管。",
     "S2-A2 排序契约未变：valid 按 createdAt 倒序（最新在前）；invalid 按 id 字典序。filter 契约：只扫描前缀 `repo-debug:issue-card:`。",
     "S2-A1 buildIssueCardFromIntake 契约保持：trim → 空标题 fail with reason 'title is required' + path ['title'] → safeParse → 失败把 `error.issues[0].path + message` 作 reason。S2-A3 buildInvestigationRecordFromIntake 复用了同一模式（空 issueId / 空 note 同样结构化拒绝）。",
     "D-007：S1 阶段 Electron 外壳延后，S1 已关闭，阶段过渡到 S2。S2-A4 结案归档若需要直接写磁盘，可重新评估。",
-    "D-006：IssueCard 本地持久化用 window.localStorage，键前缀 repo-debug:issue-card:<id>；读盘必走 safeParse 并返回结构化错误。S2-A3 工作区的 InvestigationRecord 存储应继续使用独立前缀 repo-debug:investigation-record:<recordId>。",
+    "D-006：IssueCard 本地持久化用 window.localStorage，键前缀 repo-debug:issue-card:<id>；读盘必走 safeParse 并返回结构化错误。S2-A3 的 InvestigationRecord 存储沿用同思路，独立前缀 repo-debug:investigation-record:<recordId>。",
     "Node 24 strip-types 不补相对 TS 扩展名：所有跨模块相对 import 必须带 `.ts` 后缀（S2-A3 的 investigation-intake.ts / investigation-record-store.ts / verify-s2-a3.mts 已遵守）。",
-    "S1-A2 五个 schema 文件（repo-snapshot / issue-card / investigation-record / error-entry / archive-document）已落地；S2-A3 工作区应直接复用 investigation-record.ts，不能手写 guard。",
+    "S1-A2 五个 schema 文件（repo-snapshot / issue-card / investigation-record / error-entry / archive-document）已落地；S2-A3 直接复用 investigation-record.ts，未扩写；S2-A4 直接复用 error-entry.ts / archive-document.ts，预期不再新写 schema。",
     "S1-A2 round 为让 node/npm 可在 sandbox 下运行，`.claude/settings.local.json` 的 sandbox.filesystem.allowRead 追加了 ~/.nvm/ 与 ~/.npm/，allowWrite 追加了 ~/.npm/；该文件至今未纳入任何 commit，留在工作区由用户处理。",
     "D-005：schema 运行时校验统一使用 zod（v3.x，^3.23.8）；读盘与 AI 产出统一用 safeParse。",
-    "下一轮只允许做 S2-A3-CG：重新运行 cd apps/desktop && npm run typecheck、node --experimental-strip-types scripts/verify-s2-a3.mts、verify-s1-a3 / verify-s2-a1 / verify-s2-a2、npm run build；全部通过后严格 stage S2-A3 相关文件并提交。",
+    "下一轮若选 S2-A4，推荐做法：1) 新建 apps/desktop/src/storage/archive-document-store.ts + error-entry-store.ts，独立前缀 repo-debug:archive-document:<docId> / repo-debug:error-entry:<entryId>，list 走前缀扫 + safeParse + invalid 桶（与 S2-A3 同构）；2) 新建 apps/desktop/src/domain/closeout.ts 纯工厂 buildCloseout({issueId, resolution, ...}, {now, archiveId, errorEntryId, issueCard, records}) → safeParse → 返回 {archive, errorEntry, updatedIssueCard}；3) UI 在 IssuePane 选中卡块下方加 'Close Issue' 表单，成功后 saveIssueCard(updatedCard) 覆盖同 id（status→closed），再 saveArchiveDocument / saveErrorEntry；4) 新建 scripts/verify-s2-a4.mts ≥3 断言。",
     "W-L3：WSL 运行基线已通过（node v24.14.0 / npm 11.9.0 / Linux 6.6.87.2-microsoft-standard-WSL2）。",
     "根 .gitignore 仅忽略 .codex。",
     "下一轮必须按 current.md 的下一任务选择流程重新判断，不得机械顺推。",
-    "apps/desktop 技术栈：Vite 5 + React 18 + TypeScript 5 + zod 3.23.8；工作区 Stage footer 已被 S2-A3 改动更新，但该改动未提交。",
+    "apps/desktop 技术栈：Vite 5 + React 18 + TypeScript 5 + zod 3.23.8；Stage footer 现为 'S2-A3 · IssueCard intake + list select + InvestigationRecord append'。",
     "apps/desktop/.gitignore 已排除 node_modules/dist/*.tsbuildinfo/vite.config.{d.ts,js}。"
   ]
 }

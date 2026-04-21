@@ -7,10 +7,10 @@
 - 阶段目标：打通"绑定仓库 → intake → 追记 → 结案归档"闭环，以 `apps/desktop` SPA + localStorage（D-006）承载前半段；fs / Electron 侧接入推迟到本阶段主闭环验证通过后再评估（D-007）。
 - 阶段完成定义：
   - 用户可在 UI 中新建一条结构正确的 IssueCard（不依赖硬编码样例）。**[S2-A1 已完成 ✓]**
-  - 可至少追加一条 InvestigationRecord，与对应 IssueCard 关联。**[S2-A3 工作区已有未提交实现；completion gate 未过，不能标完成]**
+  - 可至少追加一条 InvestigationRecord，与对应 IssueCard 关联。**[S2-A3 已完成 ✓]**
   - 可对 IssueCard 执行结案动作，生成 ErrorEntry + ArchiveDocument 并落盘（阶段内落盘介质仍以 localStorage 为准，后续再评估 fs）。
-  - 关键实体入库前全部走 zod schema 校验（D-005），失败不静默降级。**[listIssueCards 已覆盖；S2-A3 的 listInvestigationRecordsByIssueId 覆盖待重新验证并提交后计入]**
-  - 至少存在一个 Node 侧黑盒验证脚本覆盖 intake → 追记 → 结案 链路的最小 round-trip。**[S2-A1 + S2-A2 已覆盖 intake + 列表；S2-A3 verify 脚本在工作区未提交，结案段待后续]**
+  - 关键实体入库前全部走 zod schema 校验（D-005），失败不静默降级。**[listIssueCards / listInvestigationRecordsByIssueId 均已覆盖：坏 JSON / schema 不符一律进结构化 invalid 桶]**
+  - 至少存在一个 Node 侧黑盒验证脚本覆盖 intake → 追记 → 结案 链路的最小 round-trip。**[S2-A1 + S2-A2 + S2-A3 已覆盖 intake + 列表 + 追记；结案段待 S2-A4]**
 
 ## S1 收尾说明
 - S1 阶段完成定义最后一项"具备 Electron 外壳（或明确延后决策）"已由 D-007 以"延后"形式满足，S1 阶段关闭。
@@ -18,14 +18,18 @@
 - S1 遗留候选 M-1（typecheck 脚本 TS6310 修复）已完成：`apps/desktop/package.json` 第 11 行 `typecheck` 脚本由 `tsc -b --noEmit` 改为 `tsc --noEmit -p tsconfig.json`；`npm run build` 未受影响。
 
 ## 当前唯一执行中的原子任务
-- **S2-A3（completion gate 修正 / 未完成）**。planning 曾把 S2-A3 写成“已完成并提交”，但本轮重新读取时没有发现 S2-A3 功能提交；当时最新提交仍是 `c98b040 fix(desktop): repair typecheck script to bypass TS6310 (M-1)`，且 S2-A3 相关代码、verify 脚本与交接文件仍在未提交工作区。按 AGENTS §5，S2-A3 功能 commit 缺失 = 任务未完成；不得选择或执行 S2-A4 / UI-V1，下一步只能收束 S2-A3 completion gate。
+- **无**。S2-A3-CG 已完成验证与提交收束，本轮等待按下一任务选择流程重新选定唯一下一原子任务（不得机械顺推）。
 
 ## 当前前沿任务窗口（候选，不等于顺推队列）
-1. S2-A3-CG：收束 InvestigationRecord 追加的 completion gate。依赖已满足，工作区已有相关实现，但需要重新验证、更新交接并完成单任务 commit 后才可标完成。只允许处理 S2-A3 相关文件；不得引入 ErrorEntry / ArchiveDocument / Electron / fs。
-2. S2-A4：结案 → ErrorEntry + ArchiveDocument 生成。技术依赖应由 S2-A3 提供，但**当前因 S2-A3 commit 缺失而未就绪**；S2-A3-CG 完成前不得执行。
-3. UI-V1（非必需原子任务）：浏览器冒烟。技术上可做，但**当前被 completion gate 阻塞**；S2-A3-CG 完成前不得执行。
+1. S2-A4：结案 → ErrorEntry + ArchiveDocument 生成。S2 主闭环后半段，依赖 S2-A3 已满足。实现提示：
+   - 复用 `apps/desktop/src/domain/schemas/error-entry.ts` 与 `apps/desktop/src/domain/schemas/archive-document.ts`。
+   - 新增独立 store 时继续保持键前缀隔离，例如 `repo-debug:archive-document:<docId>` 与 `repo-debug:error-entry:<entryId>`。
+   - 新增 closeout 工厂时继续走 zod `safeParse`，失败不落盘。
+   - UI 接入只放在选中 IssueCard 后的 closeout 表单，不顺手做 Electron / fs。
+2. UI-V1（非必需原子任务）：`cd apps/desktop && npm run dev`，在浏览器中真实点一次 Create / Refresh list / 选中 / Append record / Refresh records，确认 Node polyfill 之外的真实 DOM 交互无惊喜。
+3. S2-A3b（已合并到 S2-A3）：原本拆分的"列表点击选中 + state 抬升"已随 S2-A3 一并落地，不再单独执行。
 
-> 本轮发现 planning 与实际脱节，已只做最小 planning 修正。下一轮必须先收束 S2-A3-CG，不得机械顺推到 S2-A4。
+> 以上只是候选。完成本轮后，必须先按「下一任务选择流程」重新判断，再选定唯一下一任务。通常建议先 S2-A4（闭环收尾）；UI-V1 可作为备选。
 
 ## 下一任务选择流程（完成当前任务后执行）
 1. 重新读取：`AGENTS.md`、本文件、`docs/planning/handoff.md`、`.agent-state/handoff.json`、`git status`、最近 commit、与任务相关目录/文件。

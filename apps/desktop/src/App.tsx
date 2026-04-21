@@ -10,12 +10,25 @@ import {
   type IntakeSeverity,
 } from "./domain/issue-intake";
 import {
+  buildInvestigationRecordFromIntake,
+  defaultInvestigationIntakeOptions,
+  nowISO as nowISOInvestigation,
+  type InvestigationIntakeInput,
+  type InvestigationIntakeResult,
+  type InvestigationType,
+} from "./domain/investigation-intake";
+import {
   listIssueCards,
   loadIssueCard,
   saveIssueCard,
   type IssueCardListResult,
   type LoadIssueCardResult,
 } from "./storage/issue-card-store";
+import {
+  listInvestigationRecordsByIssueId,
+  saveInvestigationRecord,
+  type InvestigationRecordListResult,
+} from "./storage/investigation-record-store";
 
 const SAMPLE_ISSUE_ID = "sample-issue-0001";
 const SAMPLE_TIMESTAMP = "2026-04-21T02:30:00+08:00";
@@ -93,7 +106,7 @@ type IntakeSubmitStatus =
   | { state: "saved"; id: string; at: string }
   | { state: "error"; reason: string };
 
-function IssueIntakeForm() {
+function IssueIntakeForm({ onCreated }: { onCreated: (id: string) => void }) {
   const [title, setTitle] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [severity, setSeverity] = useState<IntakeSeverity>("medium");
@@ -115,6 +128,7 @@ function IssueIntakeForm() {
     setTitle("");
     setDescription("");
     setSeverity("medium");
+    onCreated(result.card.id);
   };
 
   return (
@@ -172,17 +186,21 @@ function renderIntakeStatus(status: IntakeSubmitStatus): string {
   }
 }
 
-function IssueCardListView() {
-  const [result, setResult] = useState<IssueCardListResult | null>(null);
-
-  const handleRefresh = () => {
-    setResult(listIssueCards());
-  };
-
+function IssueCardListView({
+  result,
+  selectedIssueId,
+  onRefresh,
+  onSelect,
+}: {
+  result: IssueCardListResult | null;
+  selectedIssueId: string | null;
+  onRefresh: () => void;
+  onSelect: (id: string) => void;
+}) {
   return (
     <div className="list-view" data-testid="issue-card-list">
       <div className="list-header">
-        <button type="button" onClick={handleRefresh}>
+        <button type="button" onClick={onRefresh}>
           Refresh list
         </button>
         <span className="storage-line" data-testid="list-summary">
@@ -193,15 +211,29 @@ function IssueCardListView() {
       </div>
       {result && result.valid.length > 0 && (
         <ul className="list-items" data-testid="list-valid">
-          {result.valid.map((summary) => (
-            <li key={summary.id} className="list-item">
-              <span className="list-item-title">{summary.title || "(untitled)"}</span>
-              <span className="list-item-meta">
-                {summary.severity} · {summary.status} · {summary.createdAt}
-              </span>
-              <span className="list-item-id">id: {summary.id}</span>
-            </li>
-          ))}
+          {result.valid.map((summary) => {
+            const isSelected = summary.id === selectedIssueId;
+            return (
+              <li
+                key={summary.id}
+                className={`list-item${isSelected ? " list-item-selected" : ""}`}
+                data-selected={isSelected ? "true" : "false"}
+              >
+                <button
+                  type="button"
+                  className="list-item-select"
+                  onClick={() => onSelect(summary.id)}
+                  aria-pressed={isSelected}
+                >
+                  <span className="list-item-title">{summary.title || "(untitled)"}</span>
+                  <span className="list-item-meta">
+                    {summary.severity} · {summary.status} · {summary.createdAt}
+                  </span>
+                  <span className="list-item-id">id: {summary.id}</span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
       {result && result.invalid.length > 0 && (
@@ -214,6 +246,197 @@ function IssueCardListView() {
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+const INVESTIGATION_TYPES: InvestigationType[] = [
+  "observation",
+  "hypothesis",
+  "action",
+  "result",
+  "conclusion",
+  "note",
+];
+
+type InvestigationSubmitStatus =
+  | { state: "idle" }
+  | { state: "saved"; id: string; at: string }
+  | { state: "error"; reason: string };
+
+function InvestigationAppendForm({
+  issueId,
+  onAppended,
+}: {
+  issueId: string;
+  onAppended: () => void;
+}) {
+  const [type, setType] = useState<InvestigationType>("observation");
+  const [note, setNote] = useState<string>("");
+  const [status, setStatus] = useState<InvestigationSubmitStatus>({ state: "idle" });
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const input: InvestigationIntakeInput = { issueId, type, note };
+    const result: InvestigationIntakeResult = buildInvestigationRecordFromIntake(
+      input,
+      defaultInvestigationIntakeOptions(nowISOInvestigation()),
+    );
+    if (!result.ok) {
+      setStatus({ state: "error", reason: result.reason });
+      return;
+    }
+    saveInvestigationRecord(result.record);
+    setStatus({ state: "saved", id: result.record.id, at: result.record.createdAt });
+    setNote("");
+    setType("observation");
+    onAppended();
+  };
+
+  return (
+    <form className="intake-form" onSubmit={handleSubmit} data-testid="investigation-append-form">
+      <p className="storage-line" data-testid="investigation-target">
+        target issue: {issueId}
+      </p>
+      <label className="intake-field">
+        <span>Type</span>
+        <select
+          value={type}
+          onChange={(event) => setType(event.target.value as InvestigationType)}
+        >
+          {INVESTIGATION_TYPES.map((value) => (
+            <option key={value} value={value}>
+              {value}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="intake-field">
+        <span>Note</span>
+        <textarea
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
+          rows={3}
+          placeholder="What you observed / what you tried / what to do next..."
+        />
+      </label>
+      <div className="intake-actions">
+        <button type="submit">Append record</button>
+      </div>
+      <p className="storage-line" data-testid="investigation-status">
+        append: {renderInvestigationStatus(status)}
+      </p>
+    </form>
+  );
+}
+
+function renderInvestigationStatus(status: InvestigationSubmitStatus): string {
+  switch (status.state) {
+    case "idle":
+      return "(not appended yet)";
+    case "saved":
+      return `OK — saved id=${status.id} at ${status.at}`;
+    case "error":
+      return `ERROR — ${status.reason}`;
+  }
+}
+
+function InvestigationRecordListView({
+  result,
+  onRefresh,
+}: {
+  result: InvestigationRecordListResult | null;
+  onRefresh: () => void;
+}) {
+  return (
+    <div className="list-view" data-testid="investigation-record-list">
+      <div className="list-header">
+        <button type="button" onClick={onRefresh}>
+          Refresh records
+        </button>
+        <span className="storage-line" data-testid="record-list-summary">
+          {result === null
+            ? "(select an issue first)"
+            : `records: ${result.valid.length} · invalid: ${result.invalid.length}`}
+        </span>
+      </div>
+      {result && result.valid.length > 0 && (
+        <ul className="list-items" data-testid="record-list-valid">
+          {result.valid.map((record) => (
+            <li key={record.id} className="list-item">
+              <span className="list-item-title">[{record.type}] {record.polishedText}</span>
+              <span className="list-item-meta">{record.createdAt}</span>
+              <span className="list-item-id">id: {record.id}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {result && result.invalid.length > 0 && (
+        <ul className="list-invalid" data-testid="record-list-invalid">
+          {result.invalid.map((entry) => (
+            <li key={entry.key} className="storage-line">
+              invalid · {entry.kind} · key={entry.key}
+              {entry.kind === "parse_error" ? ` · ${entry.message}` : ` · ${entry.issues.length} issue(s)`}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function IssuePane() {
+  const [cardList, setCardList] = useState<IssueCardListResult | null>(null);
+  const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
+  const [recordList, setRecordList] = useState<InvestigationRecordListResult | null>(null);
+
+  const refreshCardList = () => {
+    setCardList(listIssueCards());
+  };
+
+  const refreshRecordList = () => {
+    if (selectedIssueId === null) {
+      setRecordList(null);
+      return;
+    }
+    setRecordList(listInvestigationRecordsByIssueId(selectedIssueId));
+  };
+
+  const handleSelect = (id: string) => {
+    setSelectedIssueId(id);
+    setRecordList(listInvestigationRecordsByIssueId(id));
+  };
+
+  const handleCardCreated = (_id: string) => {
+    refreshCardList();
+  };
+
+  const handleRecordAppended = () => {
+    refreshRecordList();
+  };
+
+  return (
+    <div className="issue-pane-stack">
+      <IssueIntakeForm onCreated={handleCardCreated} />
+      <IssueCardListView
+        result={cardList}
+        selectedIssueId={selectedIssueId}
+        onRefresh={refreshCardList}
+        onSelect={handleSelect}
+      />
+      {selectedIssueId !== null && (
+        <>
+          <InvestigationAppendForm
+            issueId={selectedIssueId}
+            onAppended={handleRecordAppended}
+          />
+          <InvestigationRecordListView
+            result={recordList}
+            onRefresh={refreshRecordList}
+          />
+        </>
+      )}
+      <IssueStorageControls />
     </div>
   );
 }
@@ -248,7 +471,7 @@ const PANES: Pane[] = [
   {
     id: "issue",
     title: "问题卡区 (Issue / Debug)",
-    hint: "S2-A2：创建 IssueCard + 列表视图（localStorage scan）",
+    hint: "S2-A3：创建 IssueCard + 列表选中 + InvestigationRecord 追记",
   },
   {
     id: "archive",
@@ -272,11 +495,7 @@ export default function App() {
             <h2>{pane.title}</h2>
             <p className="pane-hint">{pane.hint}</p>
             {pane.id === "issue" ? (
-              <div className="issue-pane-stack">
-                <IssueIntakeForm />
-                <IssueCardListView />
-                <IssueStorageControls />
-              </div>
+              <IssuePane />
             ) : (
               <p className="pane-status">status: placeholder</p>
             )}
@@ -284,7 +503,7 @@ export default function App() {
         ))}
       </main>
       <footer className="app-footer">
-        <span>Stage: S2-A2 · IssueCard intake + list view</span>
+        <span>Stage: S2-A3 · IssueCard intake + list select + InvestigationRecord append</span>
       </footer>
     </div>
   );

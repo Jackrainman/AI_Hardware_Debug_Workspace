@@ -209,9 +209,36 @@
   flex-direction: column;
   gap: 2px;
   font-size: 12px;
-  padding: 4px 6px;
+  padding: 0;
   border-radius: 4px;
   background: rgba(127, 127, 127, 0.08);
+}
+
+.list-item-select {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  padding: 4px 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.list-item-select:hover {
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.list-item-selected {
+  background: rgba(37, 99, 235, 0.18);
+}
+
+.list-item-selected .list-item-select {
+  border-color: rgba(37, 99, 235, 0.6);
 }
 
 .list-item-title {
