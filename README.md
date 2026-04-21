@@ -14,10 +14,6 @@
 ![Desktop](https://img.shields.io/badge/platform-Desktop%20App-green)
 ![Stack](https://img.shields.io/badge/stack-React%20%2B%20TypeScript%20%2B%20Electron-lightgrey)
 
-<br />
-
-[Demo GIF 占位] · [产品截图占位] · [比赛演示视频占位]
-
 </div>
 
 ---
