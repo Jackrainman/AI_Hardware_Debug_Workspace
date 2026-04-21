@@ -1,229 +1,486 @@
-# RepoDebug Harness（仓库绑定式调试闭环系统）
+<div align="center">
 
-一句话定义：把“调试现场碎片记录”变成“可追踪、可验证、可归档”的项目内工程资产。
+# ⚡ ProbeFlash
 
-## 1. 痛点与问题背景
-- 硬件/嵌入式调试现场输入碎片化，后续难复盘。
-- 普通聊天和普通笔记工具缺少“仓库上下文”和“结案归档闭环”。
-- 问题、排查过程、Git 变更长期脱节，导致同类错误反复出现。
-- 因此需要做成 Harness + Agent 系统：让规则、流程、验证与交接可自动执行。
+### 面向嵌入式调试现场的问题闪记与知识归档系统
 
-## 2. 解决方案概述
-- 产品做什么：
-  - 绑定本地仓库，围绕 IssueCard 管理调试全流程。
-  - 用 Skills 做结构化生成、排查更新、结案归档。
-  - 用 schema 校验 + 读回验证形成反馈闭环。
-- 主流程：
-  - 项目绑定 -> 快闪记录 -> 问题卡 -> 持续排查 -> 结案总结 -> 错误表归档。
-- 产品不是什么：
-  - 不是通用笔记工具。
-  - 不是自动改代码平台。
-  - 不是一开始就追求复杂 MCP 编排的平台。
+**把“串口又乱了 / CAN 又抽风了 / 自动跑点方向不对”这种现场碎片，<br />
+整理成可追踪、可复盘、可归档的调试知识资产。**
 
-## 3. 核心功能（按状态）
+<br />
 
-### 3.1 项目绑定
-- 已实现：`repo-onboard` 规则文档（skill 级规范）。
-- 当前边界：S2 主闭环使用 schema 中的 RepoSnapshot 字段承载仓库上下文，真实仓库选择与快照采集 UI 尚未产品化。
-- 规划中：多项目快速切换与健康检查面板。
+![Status](https://img.shields.io/badge/status-48h%20prototype-blue)
+![AI Native](https://img.shields.io/badge/AI--Native-Agent%20Harness-purple)
+![Desktop](https://img.shields.io/badge/platform-Desktop%20App-green)
+![Stack](https://img.shields.io/badge/stack-React%20%2B%20TypeScript%20%2B%20Electron-lightgrey)
 
-### 3.2 快闪记录
-- 已实现：流程定义与数据模型文档。
-- 当前边界：S2 先使用 Issue 区表单承载 intake，尚未做独立桌面快闪输入窗。
-- 规划中：全局快捷键和语音输入。
+<br />
 
-### 3.3 问题卡
-- 已实现：IssueCard 结构定义、`debug-intake` 规则文档、intake 表单、localStorage 保存/读回与列表选中。
-- MVP 已打通：问题卡创建、持久化、刷新列表、选中。
-- 规划中：相似问题自动关联。
+[Demo GIF 占位] · [产品截图占位] · [比赛演示视频占位]
 
-### 3.4 持续排查
-- 已实现：InvestigationRecord 结构定义、`debug-session-update` 规则文档、按 IssueCard 关联的追记追加与列表读回。
-- MVP 已打通：时间线追加、类型标注、按 createdAt 升序读回。
-- 规划中：排查看板与阶段汇总。
+</div>
 
-### 3.5 结案总结
-- 已实现：`debug-closeout` 归档规则文档、closeout 工厂、Closeout 表单、ArchiveDocument + ErrorEntry 生成与 IssueCard archived 回写。
-- MVP 已打通：SPA + localStorage 路径的结案摘要生成与读回验证。
-- 规划中：修复建议模板与复发统计。
+---
 
-### 3.6 错误表归档
-- 已实现：`.debug_workspace/error-table` 与归档目录骨架、ErrorEntry schema、localStorage ErrorEntry store 与结构化读回错误。
-- 当前边界：`errors.json` + markdown 文件系统双写尚未接入。
-- 规划中：跨项目检索与聚类。
+## 一句话介绍
 
-## 4. Harness 设计说明
+**ProbeFlash** 是一个面向嵌入式、硬件、机器人和自动化调试现场的 AI 原生调试工作台。
 
-### 4.1 滚动前沿规划（Rolling Frontier Planning）
-- 长期目标稳定存在，但不一次性把所有未来任务拆成大计划表照单执行。
-- 规划区只维护三件事：长期目标、当前阶段目标、当前前沿任务窗口（1~3 个候选原子任务）。
-- 每轮只执行一个原子任务。完成后不自动顺推，而是：
-  1. 重新读取 `AGENTS.md`、`docs/planning/current.md`、`docs/planning/handoff.md`、`.agent-state/handoff.json` 与 `git status`。
-  2. 基于“仓库真实状态 + 依赖是否满足 + MVP 优先级 + planning 与实际是否脱节”重新选择**唯一一个**下一原子任务。
-  3. 如前沿任务已不再是最优解，先更新 `current.md`，再执行。
-- 目的：让 Agent 在长周期开发中保持“对齐当前仓库”，而不是对齐“几天前写下的计划”。
+它围绕真实调试流程组织信息：
 
-### 4.2 上下文管理 / 外置记忆
-- 规则入口：
-  - `AGENTS.md`：全局协作、规划、验证、提交、交接规则。
-  - `.agents/skills/*/SKILL.md`：各 skill 的输入、步骤、输出、约束。
-- 为什么不能依赖长聊天上下文：
-  - 成本高、输出不稳定、长周期协作中会漂移。
-  - 聊天历史一旦重置或压缩，信息就丢失。
-- 为什么要用 `AGENTS.md` + `docs/planning/*` + `.agent-state/*` 作为外置记忆：
-  - 它们是“受控重置”后唯一可信的续航来源。
-  - `docs/planning/current.md` + `docs/planning/handoff.md` + `.agent-state/handoff.json` 共同构成“下一轮任务选择基础”。
-  - 任何仅存在于对话历史中的约定，若未沉淀到这些文件，都会在下一轮丢失。
+> 问题闪记 → AI 结构化 → AI 猜测方向 → 过程追记 → 结案归档 → 个人知识库积累
 
-### 4.3 外部工具调用 / Tool / MCP
-- 当前真实数据来源：
-  - Git CLI（分支、提交、工作区状态）。
-  - 本地文件系统（规划文档、归档文件、错误表）。
-  - 本地归档目录（`.debug_workspace`）。
-- 当前策略：MVP 优先本地 CLI + 本地存储，先把闭环跑通。
+当前版本是 48 小时交付导向的产品原型：主流程已在浏览器 SPA + `window.localStorage` 中跑通；Electron / fs / IPC / `.debug_workspace` 文件写盘仍作为后续工程化方向，不伪装为已完成能力。
 
-### 4.4 验证与反馈循环（FeedbackLoop）
-- AI 输出先过 schema 校验，不通过不入库。
-- 工具调用必须检查 exit code。
-- 写盘后做读回验证（文件存在、条目存在、必填字段非空）。
-- 完成门（completion gate）：最小验证 + 交接更新 + commit 三件事齐全才允许选择下一任务。
-- 连续失败触发重试上限与人工确认，不允许静默“伪成功”。
+---
 
-## 5. 项目架构（文字版）
+## 痛点来源：真实调试现场的问题
 
-### 5.1 协作四层（滚动前沿视角）
-- 规划层（Planning）：`docs/planning/` —— 决定当前阶段目标、前沿任务窗口、唯一执行中的原子任务。
-- 执行层（Execution）：`apps/`、`packages/`（按需）、`scripts/`（按需）—— 一次只做一个原子任务，不混入其它改动。
-- 验证层（Verification）：`AGENTS.md` + `.agents/skills/*/SKILL.md` —— 定义 schema 校验、exit code、读回验证、完成门放行规则。
-- 交接层（Handoff）：`.agent-state/` —— 沉淀 progress / session-log / handoff.json，作为上下文重置后的续航依据。
+这个项目来自我在日常学习、开发和嵌入式调试中的真实痛点。
 
-### 5.2 产品分层
-- UI 层：`apps/desktop`（计划承载快闪窗、问题卡页、错误表页）。
-- 仓库上下文层：采集 Git 快照与关联文件信息。
-- AI/Skill 层：按 skill 契约执行 intake/update/closeout。
-- 归档层：`.debug_workspace` 存 active/archive/error-table/attachments。
+硬件调试现场的问题通常不是完整、安静、可以慢慢整理的。更多时候，它们会突然出现：
 
-## 6. 项目结构
-```text
-AI_Hardware_Debug_Workspace/
-├── AGENTS.md
-├── README.md
-├── docs/
-│   ├── product/
-│   │   └── 产品介绍.md
-│   └── planning/
-│       ├── roadmap.md
-│       ├── backlog.md
-│       ├── current.md
-│       ├── decisions.md
-│       ├── handoff.md
-│       └── architecture.md
-├── .agents/
-│   └── skills/
-│       ├── planning/
-│       ├── task-execution/
-│       ├── task-verification/
-│       ├── repo-onboard/
-│       ├── debug-intake/
-│       ├── debug-closeout/
-│       ├── debug-hypothesis/
-│       └── debug-session-update/
-├── .agent-state/
-│   ├── progress.md
-│   ├── session-log.md
-│   └── handoff.json
-├── .debug_workspace/
-│   ├── active/
-│   ├── archive/
-│   ├── error-table/
-│   └── attachments/
-└── apps/
-    └── desktop/
+- “串口又乱码了，但刚才好像还正常。”
+- “CAN 总线偶发丢帧，复现条件不稳定。”
+- “自动跑点方向不对，像是坐标系反了。”
+- “换了一个参数后电机抖了一下，但日志没来得及截。”
+- “这个问题以前好像遇到过，但我找不到当时怎么解决的。”
+
+调试人员当下往往在救火：看波形、接串口、改参数、重启设备、对比代码、和队友同步现象。结果是：
+
+| 现场问题 | 直接后果 |
+|---|---|
+| 问题记录很碎 | 事后无法复盘 |
+| 排查过程丢失 | 不知道当时为什么这么判断 |
+| 历史经验分散 | 同类 bug 反复踩坑 |
+| 描述口语化 | 难以沉淀成团队知识 |
+| 解决后不归档 | 经验不能复用 |
+
+**ProbeFlash 想解决的，就是“调试知识从现场碎片到可复用资产”的最后一公里。**
+
+---
+
+## 我做了什么
+
+ProbeFlash 以“调试现场的最短输入路径”为核心，做了一套面向问题闭环的工作流：
+
+| 能力 | 说明 | 当前状态 |
+|---|---|---|
+| ⚡ 闪电启动 | 快速打开输入入口，适合现场随手记录 | 产品原型已预留入口形态 |
+| 🧩 问题闪记 | 输入口语化、残缺的问题描述 | 已有 IssueCard 创建表单 |
+| 🧠 AI 补全与表达优化 | 将碎片描述整理为结构化问题卡 | Harness / Skill 规则已固化，模型接入可扩展 |
+| 🔍 AI 猜 bug | 基于问题、仓库上下文、历史记录给出怀疑方向 | 设计已落在 `debug-hypothesis` Skill |
+| 📝 追加记录 | 排查过程中持续补充新现象、新判断、新结论 | 已支持 InvestigationRecord 追记 |
+| 📦 归档整理 | 结案后生成错误表与 Markdown 归档 | 已支持 ArchiveDocument + ErrorEntry 生成 |
+| 🗂 知识库积累 | 让调试记录从临时救火变成可复用资产 | 当前为本地原型，后续接入真实文件写盘与检索 |
+
+---
+
+## 核心功能
+
+| 模块 | 功能 | 价值 |
+|---|---|---|
+| Flash Intake | 快速输入现场问题 | 降低记录成本 |
+| IssueCard | 结构化问题卡 | 让问题可追踪 |
+| Investigation Timeline | 排查记录时间线 | 保留判断变化 |
+| Hypothesis Agent | 生成可能原因和验证动作 | 辅助定位 bug |
+| Closeout Archive | 结案生成错误表与归档文档 | 形成经验资产 |
+| Repo-aware Context | 挂载仓库、分支、提交、相关文件 | 让 AI 不脱离工程上下文 |
+| Verification Gate | schema 校验、读回验证、完成门 | 避免“看似完成”的伪闭环 |
+
+---
+
+## 典型使用流程
+
+```mermaid
+flowchart TD
+    A[调试现场出现异常] --> B[快速输入碎片描述]
+    B --> C[AI 整理为 IssueCard]
+    C --> D[挂载仓库与历史上下文]
+    D --> E[AI 生成可能原因与排查建议]
+    E --> F[用户继续现场验证]
+    F --> G{是否有新现象?}
+    G -->|是| H[追加 InvestigationRecord]
+    H --> E
+    G -->|否| I{问题是否解决?}
+    I -->|未解决| F
+    I -->|已解决| J[生成 ErrorEntry]
+    J --> K[生成 Markdown 归档]
+    K --> L[沉淀到个人知识库]
 ```
-- `docs/product`：需求来源和产品定义。
-- `docs/planning`：规划、任务窗口、决策、交接。
-- `.agent-state`：上下文重置后继续执行的结构化状态。
-- `.debug_workspace`：产品运行过程中的调试数据。
 
-## 7. 快速开始
+---
 
-### 7.1 环境要求
-- 当前目标开发环境：Ubuntu / WSL / Linux，文档中的命令默认使用 bash。
-- Git >= 2.40
-- Node.js >= 20（后续桌面端开发）
+## Harness / Agent 设计
 
-### 7.2 如何运行
-- 桌面壳（S1-A1 起可用，最小 SPA 版本）：
-  ```bash
-  cd apps/desktop
-  npm install
-  npm run dev     # 默认 http://localhost:5173
-  ```
-  打开后可看到 Project / Issue / Debug / Archive 区块；Issue 区已支持 IssueCard intake、列表选中、InvestigationRecord 追记与 closeout。
-- Electron 桌面外壳尚未接入，当前仅以浏览器 SPA 形式运行。
+比赛要求中的 Harness / Agent 能力，是 ProbeFlash 的重点。
 
-### 7.3 最小可演示流程（当前可演示）
-1. 启动 `apps/desktop` SPA，在 Issue 区创建一条 IssueCard。
-2. 刷新 IssueCard 列表并选中该问题卡，追加一条 InvestigationRecord。
-3. 填写 closeout 字段后结案，生成 ArchiveDocument + ErrorEntry，并把 IssueCard 回写为 `archived` 状态。
-4. 使用 Node 侧黑盒验证脚本复核数据链路：`verify-s2-a4.mts` 覆盖 intake -> 追记 -> closeout -> ArchiveDocument / ErrorEntry / IssueCard 读回。
-5. 使用 `docs/planning/handoff.md` 与 `.agent-state/handoff.json` 完成交接，为下一轮受控重启做准备。
+ProbeFlash 不是“把用户输入丢给大模型聊天”，而是把 AI 放进一个受约束、有上下文、有验证、有反馈的调试闭环中。
 
-## 8. 当前进度
+### 1. 上下文管理 / Agent Skill
 
-> 工作流说明：当前采用“滚动前沿规划”。下方“正在做”只列当前唯一执行中的原子任务；完成后会重新读取仓库状态，再选择下一原子任务，而不是按固定表顺推。
+ProbeFlash 将调试任务拆成多个明确阶段，每个阶段都有固定输入、输出和约束。
 
-### 已完成
-- 规范化目录基础已建立（`docs/planning`、`.agent-state`、`.debug_workspace`）。
-- 产品定义文档已归位到 `docs/product/产品介绍.md`。
-- AGENTS 全局规则已升级为“滚动前沿 + 下一任务自动选择 + 受控上下文重置”范式。
-- 关键 skills 骨架已统一（含 `planning`、`task-execution`、`task-verification`）。
-- `apps/desktop` 最小壳已落地（Vite + React + TypeScript），`npm run build` 通过。
-- WSL/Linux 迁移基础卫生已完成：LF 策略、权限规范、Linux 优先的字体后备和 README 环境口径已收敛。
-- S1 已关闭：Electron 外壳按 D-007 明确延后，S1 完成定义以 SPA + localStorage 路径收束。
-- S2 主闭环关键路径已打通：IssueCard intake -> 列表选中 -> InvestigationRecord 追记 -> closeout -> ArchiveDocument + ErrorEntry -> IssueCard archived 读回。
-- 关键实体读写与 closeout 工厂均走 zod schema 校验；S2-A4 Node 黑盒脚本覆盖最小 round-trip 与结构化失败路径。
-- 本轮文档收口已同步 README / roadmap / backlog / planning / handoff / `.agent-state`，避免 S1 旧口径继续滞留。
-- D1 交差优先模式已建立：技术闭环主线降级为后续，当前优先做中文产品壳、安全美化和演示友好化。
-- D1-UI-V0-CN-SHELL-POLISH 已完成：主页面第一轮中文化、安全美化、项目区/归档区演示壳和问题卡区演示提示已落地，未改 schema / store / verify / 业务数据流。
-- D1-UI-V1-VISUAL-HIERARCHY 已完成：页面主标题、阶段标签、三栏标题、问题卡区视觉重心、表单/列表/状态/空状态和留白已完成第二轮展示层优化，未改业务逻辑。
+| 阶段 | 输入 | 输出 | 约束 |
+|---|---|---|---|
+| Debug Intake | 用户碎片描述 | IssueCard | 必须结构化，不直接下最终结论 |
+| Debug Hypothesis | IssueCard + 仓库上下文 | 怀疑方向列表 | 每条猜测必须包含依据和验证动作 |
+| Session Update | 新现象 / 新日志 / 新判断 | InvestigationRecord | 必须保留时间线 |
+| Debug Closeout | 根因与解决方式 | ErrorEntry + ArchiveDocument | 必须能读回、能复用 |
+| Task Verification | 产物 + 工具结果 | completion gate 判断 | 最小验证、交接更新、commit 缺一不可 |
 
-### 当前状态
-- 当前阶段：D1：交差优先中文产品壳。
-- 当前唯一执行中的原子任务为无，下一轮必须重新读取真实仓库状态后选择唯一原子任务。
-- 当前运行形态仍是浏览器 SPA + `window.localStorage`；Electron / fs / IPC 尚未接入。
-- 当前 UI 已完成第二轮中文产品壳优化：项目区/归档区不再是裸占位，问题卡区创建、选择、追记、结案主流程已中文化，视觉层级和控件一致性已更接近产品原型。
-- 当前优先链路仍是交差版本：继续优化最小中文演示路径、空状态细节和移动端可读性。
-- 技术闭环深化没有取消，但已降级为后续主线。
+仓库中对应的规则入口：
 
-### 前沿任务窗口（候选，不等于顺推队列）
-- D1-DEMO-PATH-MIN-CN：补最小中文演示路径，不伪造真实文件写盘或仓库绑定能力。
+```text
+.agents/skills/
+  debug-intake/
+  debug-hypothesis/
+  debug-session-update/
+  debug-closeout/
+  repo-onboard/
+  task-verification/
+```
 
-## 9. Demo 演示建议（3 分钟内）
-1. 痛点说明（30s）：为什么碎片记录和仓库上下文必须绑定。
-2. Harness 设计（60s）：AGENTS + skills + feedback loop 的分工。
-3. 产品运行展示（75s）：在 SPA 中演示 IssueCard 创建、列表选中、追记、结案，以及 localStorage 读回状态。
-4. 收尾（15s）：说明当前闭环已打通，但 Electron/fs 与浏览器人工冒烟仍是后续边界。
+这些 Skill 文件让 AI 的行为有明确边界：输入是什么、输出什么结构、哪些字段不能缺、什么时候允许结案、什么时候必须继续追记。
 
-## 10. 项目亮点与不足
+### 2. Tool / CLI / Repo-aware 能力
 
-### 优点
-- 先把流程规则与验证闭环固化，避免“功能先行、治理缺位”。
-- 规划区与交接区分离，支持上下文重置后的持续推进。
-- 提交粒度按原子任务切分，便于追踪与回滚。
+嵌入式问题通常离不开代码仓库和历史改动。ProbeFlash 的设计目标是让 Agent 能结合本地工程上下文，而不是只依赖用户口述。
 
-### 当前不足
-- Electron 桌面外壳、preload / IPC 与真实文件系统写盘尚未接入；当前 ArchiveDocument / ErrorEntry 仍落在 localStorage。
-- 浏览器人工冒烟尚未执行；Node 黑盒验证覆盖数据链路，但不等价于真实 DOM 交互已点过。
-- `.debug_workspace/archive` 与 `.debug_workspace/error-table` 的真实文件双写、runtime log、repair task 机制尚未产品化。
-- UI 已完成 V1 视觉层级优化，但浏览器人工冒烟、移动端细看和最小演示路径仍需后续验证与补强。
-- 历史相似问题检索、统计视图和跨项目能力仍停留在后续增强阶段。
+可挂载的上下文包括：
 
-### 后续计划
-- 必须改：下一轮先重新读取真实状态，再从 D1 前沿窗口选择唯一任务；当前推荐 D1-DEMO-PATH-MIN-CN。
-- 建议改：补最小中文演示路径和演示友好的成功/失败状态，再做移动端细看。
-- 可选优化：交差版本完成后，再切回 S3 技术闭环，评估 Electron/fs adapter、runtime log、repair task 与历史检索。
+- 当前仓库路径、分支和 HEAD commit
+- 最近 commit 与工作区改动
+- 相关源码文件
+- 历史 IssueCard / InvestigationRecord
+- 历史 ErrorEntry / ArchiveDocument
+- 用户追加的新现象和验证结论
 
-### 先不做复杂能力的原因
-- 当前目标已经从“继续深挖闭环”切到“先交差一个中文产品壳”；下一步重点是可理解、可演示、观感完整。
-- 复杂能力（多 MCP、复杂检索、自动化编排）会显著增加调试成本。
+本地工具示例：
+
+```bash
+git status --short
+git log --oneline -5
+git diff --stat
+```
+
+这些信息可以帮助 Agent 判断：最近是否改过串口、CAN、运动控制或传感器相关代码；异常更像配置问题、时序问题、初始化顺序问题，还是历史上出现过的同类问题。
+
+### 3. Feedback Loop：验证与反馈循环
+
+调试不是一次问答，而是持续修正判断的过程。
+
+```mermaid
+flowchart LR
+    A[AI 初始猜测] --> B[用户现场验证]
+    B --> C[追加新现象]
+    C --> D[更新 InvestigationRecord]
+    D --> E[修正怀疑方向]
+    E --> F[确认根因]
+    F --> G[归档 ErrorEntry]
+    G --> H[沉淀历史知识]
+    H --> I[影响下一次判断]
+    I --> A
+```
+
+例如：AI 初始怀疑是波特率问题；用户追加记录发现换线后仍复现；系统记录这个验证结果；后续判断就会降低“线材问题”的优先级，转向初始化顺序、DMA 配置或总线负载。
+
+---
+
+## 系统架构
+
+```mermaid
+flowchart TB
+    subgraph UI[Desktop UI Layer]
+        A[Flash Input<br/>问题闪记入口]
+        B[Issue Board<br/>问题卡工作区]
+        C[Investigation Timeline<br/>排查记录时间线]
+        D[Archive View<br/>归档与知识库]
+    end
+
+    subgraph Harness[Agent Harness Layer]
+        E[Debug Intake Skill]
+        F[Hypothesis Skill]
+        G[Session Update Skill]
+        H[Closeout Skill]
+        I[Verification Gate]
+    end
+
+    subgraph Context[Context Layer]
+        J[IssueCard]
+        K[InvestigationRecord]
+        L[ErrorEntry]
+        M[ArchiveDocument]
+        N[Repo Snapshot]
+    end
+
+    subgraph Tools[Tool / CLI / Local Data]
+        O[Git Status]
+        P[Recent Commits]
+        Q[Related Files]
+        R[LocalStorage Prototype]
+        S[Future: Electron FS / IPC]
+    end
+
+    A --> E
+    E --> J
+    J --> B
+    B --> F
+    F --> C
+    C --> G
+    G --> K
+    K --> H
+    H --> L
+    H --> M
+    L --> D
+    M --> D
+
+    F --> N
+    N --> O
+    N --> P
+    N --> Q
+
+    J --> I
+    K --> I
+    L --> I
+    M --> I
+
+    R --> UI
+    S -. 后续接入 .-> Tools
+```
+
+---
+
+## 为什么它比普通记录工具更强
+
+普通记录工具解决的是“写下来”。ProbeFlash 解决的是：
+
+> 写得快、写得准、能追踪、能结案、能复用。
+
+| 对比项 | 普通笔记 | ProbeFlash |
+|---|---|---|
+| 输入方式 | 手动整理 | 碎片输入即可 |
+| 问题结构 | 靠用户自觉 | IssueCard 结构化约束 |
+| 排查过程 | 容易散落 | InvestigationRecord 持续追记 |
+| 历史复用 | 靠全文搜索 | 错误表 + 归档文档 |
+| AI 能力 | 可选辅助 | 嵌入调试闭环 |
+| 工程上下文 | 通常没有 | 可挂载仓库和 Git 信息 |
+| 结案能力 | 手动总结 | 自动形成经验资产 |
+
+---
+
+## 为什么它不是普通聊天机器人
+
+### AI 被流程约束
+
+AI 不能随便回答，而是必须在指定阶段输出指定结构：
+
+- Intake 阶段输出 IssueCard
+- Hypothesis 阶段输出“可能原因 + 依据 + 验证动作”
+- Session Update 阶段输出 InvestigationRecord
+- Closeout 阶段输出 ErrorEntry 和 ArchiveDocument
+
+### AI 能读取工程上下文
+
+ProbeFlash 的设计目标是让 AI 结合仓库状态、最近代码改动、历史记录和用户追记，而不是只根据当前一句话猜测。
+
+### AI 的判断会被反馈修正
+
+ProbeFlash 的循环是：
+
+```text
+猜测 → 验证 → 追加记录 → 修正判断 → 结案 → 进入知识库
+```
+
+最终归档会反过来影响下一次类似问题的判断。
+
+---
+
+## 比赛要求对应说明
+
+| 比赛关注点 | ProbeFlash 的回应 |
+|---|---|
+| 痛点发现 | 来自真实嵌入式调试现场：问题碎片化、排查过程易丢失、经验难复用 |
+| AI 原生 | AI 参与 IssueCard、Hypothesis、Record、Archive 全流程，而不是只润色文本 |
+| Harness 设计 | 通过 Agent Skill、结构化模板、阶段约束、schema 校验和完成门管理 AI 行为 |
+| Tool / CLI 能力 | 设计支持读取 Git 状态、最近提交、相关文件、本地历史记录等上下文 |
+| Feedback Loop | 通过追加记录、用户确认、结案归档反向修正 AI 判断 |
+| 48 小时交付 | 聚焦完整产品闭环：输入、整理、猜测、追记、归档、展示 |
+| Demo 友好 | 可以用一个现场问题讲完整闭环，不依赖复杂配置 |
+| 真实可信 | 当前明确标注 SPA + localStorage 边界，Electron / fs / IPC 为后续方向 |
+
+---
+
+## 技术栈
+
+| 层级 | 技术 |
+|---|---|
+| 前端 | React / TypeScript / Vite |
+| 桌面方向 | Electron |
+| 原型存储 | `window.localStorage` |
+| 结构校验 | zod schema |
+| Agent Harness | Skill / Prompt Template / Structured Output |
+| 工程上下文 | Git / Repo Snapshot / Local CLI |
+| 归档形态 | ErrorEntry / ArchiveDocument / Markdown |
+| 后续扩展 | Electron IPC / 文件系统写盘 / 本地知识库检索 |
+
+---
+
+## 快速开始
+
+```bash
+git clone [你的仓库地址占位]
+cd ProbeFlash
+```
+
+当前可运行的产品壳位于 `apps/desktop`：
+
+```bash
+cd apps/desktop
+npm install
+npm run dev
+```
+
+默认本地访问地址：
+
+```text
+http://localhost:5173
+```
+
+可选验证命令：
+
+```bash
+npm run typecheck
+npm run build
+```
+
+---
+
+## Demo 展示建议
+
+建议用一个嵌入式现场问题来演示完整闭环。
+
+示例输入：
+
+```text
+今天调车的时候 CAN 又抽风了，电机偶发不响应。
+重启以后短时间正常，跑一会又出现。
+最近好像改过心跳和自动跑点逻辑。
+```
+
+演示路径：
+
+1. 在问题闪记入口输入这段碎片描述。
+2. 生成结构化 IssueCard。
+3. 给出可能方向：CAN 心跳超时、状态机异常、自动跑点时序问题、总线负载问题。
+4. 追加新现象：更换电源仍复现、降低发送频率后明显好转。
+5. 修正判断方向。
+6. 结案生成 ErrorEntry 与 ArchiveDocument。
+
+[首页截图占位]
+
+[IssueCard 截图占位]
+
+[归档结果截图占位]
+
+---
+
+## 项目亮点
+
+### 1. 面向调试现场，而不是泛泛记录
+
+ProbeFlash 允许用户先写碎片，再通过结构化流程整理成问题卡。
+
+### 2. AI 被放进调试闭环
+
+AI 不只负责润色文字，而是参与问题识别、怀疑方向、过程追踪和结案归档。
+
+### 3. Harness 设计清晰
+
+Skill、模板、schema 校验和完成门让 AI 行为可控、可追踪、可复用。
+
+### 4. 适合个人知识库积累
+
+每个解决过的问题都可以沉淀成下一次排查时的参考资产。
+
+### 5. 48 小时内形成完整产品原型
+
+项目优先完成可展示闭环，而不是停留在单点功能或纯概念说明。
+
+---
+
+## 核心创新
+
+| 创新点 | 说明 |
+|---|---|
+| 问题闪记 | 适合调试现场的低成本输入 |
+| 结构化 IssueCard | 将口语化描述转成可追踪问题 |
+| Repo-aware AI | 让 AI 结合工程上下文判断 |
+| Investigation Timeline | 保留排查过程中的判断变化 |
+| Closeout Archive | 把解决结果变成知识资产 |
+| Feedback Loop | 让最终归档反向增强后续判断 |
+
+---
+
+## 当前限制
+
+必须如实说明的边界：
+
+- 当前重点是浏览器 SPA / 桌面应用原型展示。
+- 本地数据主要依赖 `window.localStorage`。
+- Electron 文件系统写盘能力尚未接入。
+- Git / CLI / Repo-aware 能力已有 Harness 设计，完整产品化仍需后续接入。
+- 历史问题检索目前以结构化归档设计为主，完整向量检索属于后续方向。
+- AI 输出需要用户确认，不能替代真实硬件验证。
+
+---
+
+## 后续迭代方向
+
+### 必须改
+
+- 接入 Electron IPC 与本地文件系统写盘。
+- 将 IssueCard / InvestigationRecord / ErrorEntry / ArchiveDocument 持久化到 `.debug_workspace`。
+- 增加归档读回验证，避免“看似归档但文件未落盘”。
+- 完善 Git 仓库快照读取能力。
+
+### 建议改
+
+- 增加历史问题相似度检索。
+- 增加调试记录搜索和标签系统。
+- 支持按模块分类，例如串口、CAN、电机、传感器、自动控制。
+- 增加 Demo 数据一键导入。
+
+### 可选优化
+
+- 支持团队共享知识库。
+- 支持导出 PDF / HTML 报告。
+- 接入 MCP 工具链。
+- 增加日志、截图、波形片段附件管理。
+- 增加多项目工作区。
+
+---
+
+## 项目定位总结
+
+ProbeFlash 不是一个万能 AI 助手。
+
+它更像是一个为嵌入式调试现场定制的 AI 调试记录员：
+
+- 当问题突然出现时，它帮你快速记下来。
+- 当描述很乱时，它帮你整理清楚。
+- 当你不知道从哪里查时，它给出怀疑方向。
+- 当排查过程变长时，它帮你保留时间线。
+- 当问题解决后，它帮你沉淀成知识资产。
+
+> 让每一次调试现场的临时救火，都成为下一次更快解决问题的经验积累。
+
+---
+
+<div align="center">
+
+**ProbeFlash — 面向嵌入式调试现场的问题闪记与知识归档系统**
+
+AI Native Debugging · Agent Harness · 48h Prototype
+
+</div>

@@ -941,10 +941,10 @@ export default function App() {
     <div className="app-root">
       <header className="app-header">
         <div className="app-title-block">
-          <p className="app-eyebrow">本地硬件调试闭环</p>
-          <h1>RepoDebug 调试闭环工作台</h1>
+          <p className="app-eyebrow">嵌入式调试现场 · 问题闪记</p>
+          <h1>ProbeFlash</h1>
           <p className="app-subtitle">
-            把硬件调试现场记录收束为问题卡、排查记录和归档摘要。当前是浏览器 SPA 演示版。
+            面向嵌入式调试现场的问题闪记与知识归档系统。当前是浏览器 SPA 演示版。
           </p>
         </div>
         <div className="header-status-stack">

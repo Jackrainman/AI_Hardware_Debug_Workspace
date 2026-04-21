@@ -1,8 +1,8 @@
 # AGENTS Rules
 
 ## 1. Project Overview
-- 本项目是“绑定 Git 仓库的硬件调试闭环工作区”。
-- 核心模块：项目绑定与仓库快照、IssueCard intake、InvestigationRecord 追记、debug closeout、ArchiveDocument / ErrorEntry 归档。
+- 本项目是 **ProbeFlash — 面向嵌入式调试现场的问题闪记与知识归档系统**。
+- 核心模块：项目绑定与仓库快照、问题闪记 / IssueCard intake、InvestigationRecord 追记、debug closeout、ArchiveDocument / ErrorEntry 归档。
 - 当前运行形态：`apps/desktop` 浏览器 SPA + `window.localStorage`；Electron / fs / IPC 尚未接入。
 
 ## 2. Workspace Rules
@@ -77,4 +77,4 @@
 - 每完成一个离散任务提交一次 commit；一个 commit 只对应一个明确任务结果。
 - 当前任务未提交前，不得进入下一任务。
 - 文档/规划重构的最小验证：路径存在、内容可读、引用一致、JSON 可解析、`git diff --check` 通过、提交范围聚焦。
-- 用户当前偏好：除非明确要求，不由 AI 自行编译；若任务需要编译作为完成定义，必须明确说明并等待用户执行或授权。
+- 用户当前偏好：除非明确要求，由 AI 自行编译。

@@ -5,12 +5,20 @@
 ## 当前真实状态
 - 当前阶段：D1：交差优先中文产品壳。
 - 当前模式：`delivery_priority`。
-- 当前唯一执行中的原子任务：无。上一轮 **D1-MAINLINE-WIRE-CONNECT** 已完成并提交。
+- 当前唯一执行中的原子任务：无。本轮 **D1-README-AGENTS-PACKAGING** 已完成文件修改，进入验证与提交收束。
+- 对外项目名已统一为 **ProbeFlash — 面向嵌入式调试现场的问题闪记与知识归档系统**：README 门面、AGENTS 项目概览、应用主标题与包元数据已同步。
 - S2 主闭环关键路径（domain + storage 层）早已打通：IssueCard intake → 列表选中 → InvestigationRecord 追记 → closeout → ArchiveDocument + ErrorEntry → IssueCard archived 读回。
 - D1-MAINLINE-WIRE-CONNECT 之前，UI 层的”串联 + 结果反馈”是有缺口的：创建后不自动选中（用户无从发现追记/结案表单已隐藏），结案只有一行 storage-line 提示；用户在页面上感受到”看起来交差但追记/结案好像没用”。本轮修掉这两个断点——创建后自动选中、`MainlineResultPanel` 集中展示当前卡摘要与最近一次归档，`FlowGuide` 根据真实状态高亮当前步骤，`CloseoutForm.onClosed` 回传 summary 给上层。
+- D1-README-AGENTS-PACKAGING 将仓库门面从旧对外口径切换到 ProbeFlash 参赛口径：明确痛点、Harness / Agent、Tool / CLI / Repo-aware、Feedback Loop、48 小时交付、架构图、流程图、限制与后续方向。
 - 当前运行形态仍是 SPA + `window.localStorage`；Electron / fs / IPC / `.debug_workspace` 文件系统双写未接入。归档摘要面板里显式标注”后续写盘位置”，不把 localStorage 包装成真实文件写盘。
+- 内部 localStorage key `repo-debug:*` 暂不改名，原因是保持既有浏览器数据和验证脚本兼容；这是内部存储标识，不作为对外品牌口径。
 
-## 为什么本轮做主线串联
+## 为什么本轮做 README / AGENTS 包装
+- 用户明确要求“直接写入 README，并和 AGENTS.md 一起提交”，同时要求把旧对外名称统一为 ProbeFlash。
+- 当前比赛交付需要一个更像产品门面的仓库首页：README 必须显式回应痛点、Harness / Agent 能力和 48 小时交付导向，而不是只像工程进度说明。
+- 命名统一属于低风险展示层 / 元数据改动；不需要改 schema / store / Electron / fs / IPC，也不能为了改名破坏已跑通的数据链路。
+
+## 为什么上一轮做主线串联
 - 用户现场试用反馈”追加记录没用 / 结案无效”，本质不是 domain/storage 层坏了，而是 UI 层漏了两个关键串联点。S2-A4 Node 黑盒验证早就证明数据层 5 PASS，任何把”追记/结案实际不工作”当真写进 planning 都属于伪描述。
 - 在 D1 交差优先阶段下，主操作区主线闭环在页面上真的能跑通，比继续美化其他区域更利于验收演示。
 
@@ -43,7 +51,8 @@
 2. 读 `docs/planning/current.md`、本文件、`.agent-state/handoff.json`。
 3. 跑 `git status --short` 与 `git log --oneline -5`。
 4. 读 `apps/desktop/src/App.tsx`、`App.css`；确认 `MainlineResultPanel` / `FlowGuide` / `handleCardCreated` 的自动选中逻辑仍在位，不要回退。
-5. 若发现 planning 与实际脱节，先修 planning，不直接写功能。
+5. 读 `README.md` 与 `AGENTS.md`，确认对外项目口径仍为 ProbeFlash，且未把 Electron/fs/IPC 说成已完成。
+6. 若发现 planning 与实际脱节，先修 planning，不直接写功能。
 
 ## 当前先不做
 - 不继续 S3-ENTRY-PLANNING。
@@ -54,6 +63,11 @@
 - 不把占位功能包装成已完成真实能力。
 
 ## 验证状态
+- PASS：D1-README-AGENTS-PACKAGING 已完成 README/AGENTS/App 标题/package 元数据读回；目标文件中旧对外名称已清空，内部 `repo-debug:*` storage key 因兼容性保留。
+- PASS：`.agent-state/handoff.json`、`apps/desktop/package.json`、`apps/desktop/package-lock.json` 均可 `JSON.parse`。
+- PASS：`git diff --check` EXIT=0。
+- PASS：`npm run typecheck` EXIT=0。
+- PASS：`npm run build` EXIT=0，54 modules，JS 223.43 kB / gzip 66.66 kB。
 - PASS：D1-MAINLINE-WIRE-CONNECT 只改 `App.tsx` / `App.css`，未改 schema / domain 工厂 / store / verify 脚本。
 - PASS：`npm run typecheck` EXIT=0。
 - PASS：`npm run build` EXIT=0，54 modules，JS 223.43 kB / gzip 66.64 kB（较上一轮增 ~13 kB，属 MainlineResultPanel + FlowGuide 新增组件合理增量）。

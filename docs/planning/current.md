@@ -31,10 +31,12 @@
 - 必要时补最小中文演示路径，但不动深层数据流。
 
 ## 当前唯一执行中的原子任务
-- **D1-MAINLINE-WIRE-CONNECT**：已完成。串联主操作区主线闭环——创建后自动选中新卡；新增 `MainlineResultPanel` 集中展示当前问题卡（标题/编号/状态/严重度/追记数/更新时间）与最近一次归档摘要（fileName/filePath/errorCode/归档时间/分类/markdown 预览）；`FlowGuide` 根据真实状态高亮当前步骤；`CloseoutForm.onClosed` 回传 summary。未改 schema / store / verify 脚本 / 业务数据流。
+- **D1-README-AGENTS-PACKAGING**：已完成。按比赛提交门面要求重写 `README.md` 为 ProbeFlash 参赛 README，显式回应痛点、Harness / Agent、Tool / CLI / Repo-aware、Feedback Loop、48 小时交付、架构图和流程图；同步 `AGENTS.md` 项目概览、应用可见标题与包元数据命名为“ProbeFlash — 面向嵌入式调试现场的问题闪记与知识归档系统”。未改 schema / store / Electron / fs / IPC；为保持现有 localStorage 数据兼容，内部存储 key `repo-debug:*` 暂不改名。
 
 ## 当前前沿任务窗口（候选，不等于顺推队列）
-- 当前无前沿候选任务。D1 交差优先链路下，主线闭环已从"看起来像"升级到"在页面上真的跑得通"。下一轮需要重新读取真实状态后决定方向（候选方向见 backlog：浏览器人工冒烟、归档区最小结果提示、或切回技术主线）。
+- D1-MAINLINE-BROWSER-SMOKE：在浏览器里真人走一遍 创建 → 自动选中 → 追记 → 结案 → MainlineResultPanel 读回；只验证、不改代码。
+- D1-ARCHIVE-PANE-MIN-RESULT：归档区从纯占位升级为“当前浏览器本地有 N 条 ArchiveDocument + M 条 ErrorEntry”的最小结果提示（只读 localStorage，不改 store / schema / fs）。
+- S3-ENTRY-PLANNING：交差壳完成后切回链路 A，评估 Electron/fs adapter、runtime log、repair task 的入口任务；需 planning 明确切回技术主线。
 
 ## 下一任务选择流程
 1. 重新读取：`AGENTS.md`、`README.md`、本文件、`docs/planning/handoff.md`、`.agent-state/handoff.json`、`git status`、最近 commit、`apps/desktop/src/App.tsx`、`App.css`、`index.css`。

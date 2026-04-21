@@ -17,9 +17,10 @@
 - [x] D1-UI-V1-VISUAL-HIERARCHY：优化主标题/阶段标签/三栏标题层级、问题卡区视觉重心、卡片/表单/列表密度、状态/说明区分和页面留白；仅改展示层与交接文档。
 - [x] D1-DEMO-PATH-MIN-CN：补最小中文演示路径，让创建问题卡、追记、结案流程更适合演示；不伪造 Electron/fs 能力。
 - [x] D1-MAINLINE-WIRE-CONNECT：串联主操作区主线闭环——创建后自动选中新卡、新增 MainlineResultPanel 集中展示当前卡与归档摘要、FlowGuide 根据真实状态反映当前步骤、CloseoutForm.onClosed 回传 summary；只改 App.tsx / App.css，未改 schema / store / verify 脚本 / 业务数据流。
+- [x] D1-README-AGENTS-PACKAGING：重写 README 为 ProbeFlash 参赛门面，显式回应 Harness / Agent / Tool / Feedback Loop / 48 小时交付；同步 AGENTS 项目概览、应用可见标题与包元数据命名。保留 `repo-debug:*` 内部存储 key 以兼容既有 localStorage 数据。
 
 ## 当前阶段：D1 交差优先中文产品壳
-- 当前无前沿候选任务。主操作区主线闭环串联已落地；下一轮重新读取真实状态后按下文"后续候选"重新选择。
+- 当前前沿候选任务见下文；下一轮必须重新读取真实状态后再选择唯一原子任务，不自动顺推。
 
 ## 后续候选（不等于顺推队列，D1 阶段内可继续）
 - [ ] D1-MAINLINE-BROWSER-SMOKE：在浏览器里真人走一遍 创建 → 自动选中 → 追记 → 结案 → MainlineResultPanel 读回；只验证、不改代码。

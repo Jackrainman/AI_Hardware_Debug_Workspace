@@ -1,8 +1,8 @@
 {
-  "name": "@repo-debug/desktop",
+  "name": "@probeflash/desktop",
   "private": true,
   "version": "0.0.1",
-  "description": "RepoDebug Harness desktop shell (minimal Vite + React + TypeScript scaffold).",
+  "description": "ProbeFlash desktop shell for embedded debugging flash notes and knowledge archiving.",
   "type": "module",
   "scripts": {
     "dev": "vite",
