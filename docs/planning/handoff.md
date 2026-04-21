@@ -14,38 +14,42 @@
   - D-007：S1 阶段 Electron 外壳延后，S1 关闭。
   - S2-A1：IssueCard intake 最小表单（`issue-intake.ts` 工厂 + App 表单 + Node verify 3 PASS）。
   - S2-A2：IssueCard 列表视图。`apps/desktop/src/storage/issue-card-store.ts` 新增 `listIssueCards(): IssueCardListResult`，前缀扫描 + 逐条 safeParse，返回 `{valid: IssueCardSummary[], invalid: IssueCardListInvalidEntry[]}`（valid 按 createdAt 倒序、invalid 按 id 字典序）；同文件导出 `IssueCardSummary` / `IssueCardListInvalidEntry` / `IssueCardListResult` 类型；`App.tsx` 新增 `IssueCardListView` 组件（Refresh 按钮 + valid / invalid 分区渲染），stage footer 改为 `S2-A2 · IssueCard intake + list view`；`App.css` 增加 list-view / list-item 样式。`apps/desktop/scripts/verify-s2-a2.mts` 覆盖 5 条路径：空存储 → 两条合法（倒序）→ 坏 JSON 进 invalid[parse_error] → schema 不符进 invalid[validation_error] → 外来前缀忽略。`npm run build` 46 modules ~205 kB 通过；全三条 verify 脚本无倒退。
-- 当前唯一执行中的原子任务：无。等待下一轮从 S2 前沿窗口选择。
-- 桌面壳当前形态：SPA。"Issue" 区块三层堆叠：上=IntakeForm（创建）/ 中=ListView（列出所有）/ 下=StorageControls（sample 冒烟）。footer：`S2-A2 · IssueCard intake + list view`。
+  - M-1：typecheck 脚本修复。`apps/desktop/package.json` 第 11 行 `typecheck` 脚本由 `tsc -b --noEmit` 改为 `tsc --noEmit -p tsconfig.json`，绕开 `tsc -b --noEmit` 与 composite referenced project（`tsconfig.node.json`）冲突的 TS6310；`npm run build`（`tsc -b && vite build`）不受影响。用户手动在 `apps/desktop` 下执行 `npm run typecheck` 外部验证 EXIT=0（harness Bash 分类器前一轮 503，改由用户代跑；本轮提交完成门因此满足）。
+- 当前唯一执行中的原子任务：**无**。M-1 已完成并进入本轮单次 commit；下一轮按下一任务选择流程重选唯一下一原子任务。
+- 桌面壳当前形态：SPA。"Issue" 区块三层堆叠：上=IntakeForm（创建）/ 中=ListView（列出所有）/ 下=StorageControls（sample 冒烟）。footer：`S2-A2 · IssueCard intake + list view`（S2-A2 已完成的状态未变）。
 
 ## planning 与实际一致性检查
-- `current.md` 已按 S2-A2 完成后的前沿窗口改写：阶段完成定义 schema 校验与 Node verify 两项新增标 ✓；前沿窗口改为 [S2-A3 追记, S2-A4 预规划, M-1]。
-- `.agent-state/handoff.json` 本轮同步更新：`completed_atomic_tasks` 追加 `S2-A2_issue_card_list_view`；`frontier_tasks` 替换为 [S2-A3, S2-A4(预), M-1]；risks / notes 对齐。
-- `AGENTS.md`、`README.md`、`architecture.md`、`roadmap.md`、`backlog.md` 与当前阶段无结构性冲突；README"当前进度"段仍停在 S1 描述，拟在 S2 主闭环整体完成后（S2-A4 后）统一更新，本轮不动。
-- 无"已完成但未提交"的脱节项（以本轮 S2-A2 commit 为准）。
-- 未承诺但需要记住：`.claude/settings.local.json` sandbox 漂移 + 多个本地工具未跟踪文件（.bashrc / .zshrc / .idea / .vscode 等）仍在工作区，本轮 commit 同样未纳入。
+- `current.md` 已按 M-1 完成后的状态改写：S1 收尾说明里 M-1 标为"已完成 + EXIT=0 外部验证"；"当前唯一执行中的原子任务"置为无（等待下一任务选择）；前沿窗口保留 [S2-A3 追记, S2-A4 预规划, UI-V1 候选]。
+- `.agent-state/handoff.json` 本轮同步：`current_atomic_task` 由 `M-1_fix_typecheck_script__BLOCKED_on_bash_classifier` 改为 `WAITING_FOR_PLANNING_SELECTION`；`completed_atomic_tasks` 追加 `M-1_fix_typecheck_script`；`frontier_tasks` 移除 M-1；`current_atomic_task_state` 字段整体删除；risks 移除"Bash 分类器 503"条、降级为 notes 里的历史说明；`current_stage_goal` 回到 S2 主线语气。
+- `AGENTS.md`、`README.md`、`architecture.md`、`roadmap.md`、`backlog.md` 与当前阶段无结构性冲突；README"当前进度"段仍停在 S1 描述，拟在 S2 主闭环整体完成后（S2-A4 后）统一更新。
+- 本轮 commit 范围仅包含：`apps/desktop/package.json`（M-1 代码改动）+ `docs/planning/current.md` + `docs/planning/handoff.md` + `.agent-state/progress.md` + `.agent-state/handoff.json` + `.agent-state/session-log.md`（全部是 M-1 的交接同步）。
+- 本轮 commit 明确排除的工作区 untracked / 其它漂移：
+  - `.claude/settings.local.json` sandbox 漂移：S1-A2 轮遗留，不属 M-1 范围。
+  - `.claude/scheduled_tasks.lock` / `.claude/settings.json` / `.claude/agents` / `.claude/commands` / `.claude/skills`：本地 Claude Code harness 痕迹。
+  - shell rc（`.bash_profile` / `.bashrc` / `.profile` / `.zprofile` / `.zshrc`）、user VCS (`.gitconfig` / `.gitmodules`)、IDE (`.idea` / `.vscode`)、`.mcp.json`、`.ripgreprc`：用户本地环境文件，与当前原子任务无关。
 
 ## 依赖是否满足
 - S2-A3（InvestigationRecord 追加）：schema 已在 S1-A2 落地（`investigation-record.ts`）。依赖当前 UI 的"选中 IssueCard"入口——S2-A2 的 ListView 目前只显示，不维持"当前选中"state；S2-A3 落地时应先在 ListView 上加 onClick 选中 + 抬升 state 到 App 级。或者干脆在 S2-A3 里把"选中"和"追记"一起做（仍属一个原子任务，只要 commit message 聚焦即可，但更保险的原子划分是：S2-A2b 选中语义 + S2-A3 追记）。下一轮评估时请重新判断粒度。
 - S2-A4（结案 → ErrorEntry + ArchiveDocument）：依赖 S2-A3 的追记能跑通。还需要 error-entry / archive-document 的 store（目前只有 schema）。属于 S2 后半段，暂不拉入前沿。
-- M-1（typecheck 脚本修复）：独立一行改动，无阻塞，任意轮次可插入。
+- M-1（typecheck 脚本修复）：已完成。
 
 ## 下一轮开始前必须先检查什么
 1. 读 `AGENTS.md` 第 3/4/5 章（滚动前沿 / 下一任务选择 / 完成门）。
-2. 读 `docs/planning/current.md` 的"当前唯一执行中的原子任务"与"前沿任务窗口"。
+2. 读 `docs/planning/current.md` 的"当前唯一执行中的原子任务"与"前沿任务窗口"。**当前执行中的原子任务为"无"，M-1 已闭合并提交；下一轮第一件事是按「下一任务选择流程」重选唯一下一任务。**
 3. 读 `.agent-state/handoff.json` 的 `current_stage` / `current_atomic_task` / `frontier_tasks` / `next_task_selection_basis`。
-4. 跑 `git status` 与 `git log -5`，确认仓库与记录一致。
+4. 跑 `git status` 与 `git log -5`，确认仓库与记录一致；期望最新一条 commit 是聚焦 M-1 的 `fix(desktop): ...typecheck script...`。
 5. 如 planning 与实际脱节（例如窗口里的任务已实际完成），**先更新 planning，再开始执行**。
 
 ## 下一步最推荐动作（候选，不是指令）
-- 推荐：**S2-A3 InvestigationRecord 追加**。是 S2 完成定义第 2 项（追记），依赖 schema 已就绪；推进后解锁 S2-A4 结案归档。实现提示（两种粒度，下一轮可自行裁定）：
+- **下一轮直接按「下一任务选择流程」重选唯一下一原子任务**（M-1 已闭合，不再挂起）。
+- 推荐首选：**S2-A3 InvestigationRecord 追加**。是 S2 完成定义第 2 项（追记），依赖 schema 已就绪；推进后解锁 S2-A4 结案归档。实现提示（两种粒度，下一轮可自行裁定）：
   - 小原子粒度：先做 "S2-A2b 列表点击选中 + 抬升 currentIssueId"（仅 UI + state，小改动），再做 "S2-A3 追记" 单独一轮；
   - 中等粒度：一轮同时做选中 + 追记，但 commit 聚焦在"追记功能接入"（理由：选中是追记的前提，强拆反而割裂语义）。
   - storage 建议：`apps/desktop/src/storage/investigation-record-store.ts`，key 形如 `repo-debug:investigation-record:<recordId>`，每条记录里带 `issueId` 字段作外键；listByIssueId 时遍历前缀 + safeParse + filter(record.issueId === x) + 按 timestamp 排序。
   - 验证：新建 `scripts/verify-s2-a3.mts`，把"给 IssueCard A 追加两条、给 IssueCard B 追加一条、list(A) 返回两条按时间升序"跑一遍。
-- 备选：**M-1**（一行改动）。若下一轮想要一个极低成本的插入式任务来消噪，这是最合适的窗口。
 - 不推荐下一轮就直接做 S2-A4：闭环归档需要先有追记数据支撑。
 
-> 上述只是建议。下一轮必须按 `current.md` 的"下一任务选择流程"重新判断后再选定唯一一个。
+> 上述只是建议。下一轮在 M-1 闭合之后，必须按 `current.md` 的"下一任务选择流程"重新判断后再选定唯一一个。
 
 ## 现在不要做的事情
 - 不要把 `backlog.md` 整体搬进 `current.md`。
@@ -65,7 +69,7 @@
 - **S1-A3 存储选型已由 D-006 锁定**：`window.localStorage`，键名 `repo-debug:issue-card:<id>`。S2-A3 新建的 investigation-record 存储建议独立前缀（例如 `repo-debug:investigation-record:`）以便 `listIssueCards` 与 `listInvestigationRecords` 互不污染。
 - **Electron 外壳已由 D-007 明确延后**：不在当前阶段前沿窗口。
 - **Node 24 `--experimental-strip-types` 对相对 TS import 不自动补扩展名**：S2-A2 在 issue-card-store.ts 里继续用 `.ts` 后缀；verify-s2-a2.mts 的动态 import 同样。S2-A3 新写脚本 / 新模块跨模块相对 import 一律保持这个习惯。
-- **`npm run typecheck` 脚本当前报错 TS6310**：`tsc -b --noEmit` 与 composite referenced project 冲突。临时替代：`npx tsc --noEmit -p tsconfig.json`。修复在候选 M-1。
+- **`npm run typecheck` 脚本 M-1 修复已完成**：`apps/desktop/package.json` 第 11 行从 `tsc -b --noEmit` 改为 `tsc --noEmit -p tsconfig.json`（绕开 TS6310：`tsc -b --noEmit` 与 composite referenced project 冲突）。`npm run build` 仍为 `tsc -b && vite build` 不变。本轮由用户在 `apps/desktop` 下手动执行 `npm run typecheck` 外部确认 EXIT=0（harness Bash 分类器前一轮 503 / 不可用，由用户代跑后通知 Claude 收束提交）。
 - **sandbox 权限扩展（S1-A2 round 引入）**：`.claude/settings.local.json` 的 `sandbox.filesystem.allowRead` 增加了 `~/.nvm/` / `~/.npm/`，`allowWrite` 增加了 `~/.npm/`。本轮 S2-A2 commit 未包含此文件。
 - `listIssueCards` 的排序契约：**valid 按 createdAt 倒序（最新在前）、invalid 按 id 字典序升序**。这是显式决策，S2-A3 的 list UI 若要展示时间线建议遵循一致的"倒序展示最新"。
 - `listIssueCards` 的过滤契约：**只扫描以 `repo-debug:issue-card:` 开头的 key**。外来前缀（例如 sample 按钮无关的 localStorage 项）不会被触碰。S2-A3 的 investigation-record list 要遵循同样的前缀隔离原则。

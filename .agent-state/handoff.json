@@ -9,14 +9,14 @@
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 需要在下一轮继续保留的关键说明"
   },
-  "timestamp": "2026-04-21T04:20:00+08:00",
+  "timestamp": "2026-04-21T11:00:00+08:00",
   "current_stage": "S2",
-  "current_stage_goal": "调试闭环主流程：intake 表单（S2-A1）与列表视图（S2-A2）已就绪；前沿聚焦 InvestigationRecord 追加（S2-A3）。localStorage + SPA 继续承载，fs / Electron 推迟（D-007）。",
+  "current_stage_goal": "调试闭环主流程：intake 表单（S2-A1）、列表视图（S2-A2）、typecheck 脚本 M-1 修复均已就绪；下一轮按下一任务选择流程从 S2-A3 追记与候选窗口里重选唯一下一任务。localStorage + SPA 继续承载，fs / Electron 推迟（D-007）。",
   "current_atomic_task": "WAITING_FOR_PLANNING_SELECTION",
   "frontier_tasks": [
     "S2-A3_investigation_record_append",
     "S2-A4_closeout_error_entry_archive_document_pre_plan_only",
-    "M-1_fix_typecheck_script"
+    "UI-V1_browser_interaction_smoke_optional"
   ],
   "completed_atomic_tasks": [
     "A1_setup_planning_and_handoff_workspace",
@@ -34,7 +34,8 @@
     "S1-A3_local_storage_min_loop_with_localstorage",
     "D-007_defer_electron_shell_close_s1",
     "S2-A1_issue_card_intake_minimal_form",
-    "S2-A2_issue_card_list_view"
+    "S2-A2_issue_card_list_view",
+    "M-1_fix_typecheck_script"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -58,10 +59,11 @@
     "浏览器侧人工交互验证（Create / Refresh / Save / Load 按钮）仍未做；Node 侧黑盒验证覆盖已累计到 S1-A3 3 + S2-A1 3 + S2-A2 5 = 11 PASS 断言，但不能替代浏览器渲染/交互级确认。下一轮条件允许时建议真开一次 dev server 点一遍。",
     "S2-A3 追记需要'选中当前 IssueCard'的 UI 入口；S2-A2 的 ListView 目前只渲染不持 state。下一轮要决定粒度：先独立做'选中 + state 抬升'小任务，还是把选中和追记合成一个原子任务。",
     "Electron 外壳已由 D-007 延后；若 S2-A4（结案归档）需要直接写磁盘 `.debug_workspace/`，需要重新评估是否把 Electron 外壳或 fs 适配层拉回前沿。",
-    "`npm run typecheck` 脚本当前报 TS6310；临时替代 `npx tsc --noEmit -p tsconfig.json` 可用；修复在候选 M-1。",
-    "listIssueCards 对外来前缀 key 忽略；但浏览器的 localStorage 在同域下所有应用共用，极端情况下 id 冲突时会污染同前缀桶；当前不做 defensive 处理，交给用户 / 后续 fs 迁移时收敛。"
+    "listIssueCards 对外来前缀 key 忽略；但浏览器的 localStorage 在同域下所有应用共用，极端情况下 id 冲突时会污染同前缀桶；当前不做 defensive 处理，交给用户 / 后续 fs 迁移时收敛。",
+    "【历史 / 已缓解】上一轮 Claude auto mode Bash 安全分类器 503 导致 M-1 无法在 harness 内跑 `npm run typecheck`；本轮由用户手动代跑 EXIT=0 后收束提交。后续若再次触发同类阻塞，复用相同协议（用户代跑 → 文本反馈 → Claude 收束）。"
   ],
   "notes": [
+    "【M-1 已完成并提交】`apps/desktop/package.json` 第 11 行 typecheck 脚本由 `tsc -b --noEmit` 改为 `tsc --noEmit -p tsconfig.json`，绕开 TS6310（`tsc -b --noEmit` 与 composite referenced project 冲突）；`npm run build`（`tsc -b && vite build`）不受影响。用户在 `apps/desktop` 下手动执行 `npm run typecheck` 外部验证 EXIT=0（harness Bash 分类器前一轮 503，由用户代跑并通知 Claude）。本轮提交范围仅含 `apps/desktop/package.json` + `docs/planning/current.md` + `docs/planning/handoff.md` + `.agent-state/progress.md` + `.agent-state/handoff.json` + `.agent-state/session-log.md`；`.claude/settings.local.json` / 其它 untracked 本地环境文件不入 commit。",
     "S2-A2 代码路径：apps/desktop/src/storage/issue-card-store.ts 新增 listIssueCards / IssueCardSummary / IssueCardListInvalidEntry / IssueCardListResult；apps/desktop/src/App.tsx 新增 IssueCardListView；apps/desktop/scripts/verify-s2-a2.mts 做 Node 侧 5 断言黑盒验证。",
     "S2-A2 验证：`npm run build`（tsc -b && vite build）46 modules ~205 kB 通过；`node --experimental-strip-types scripts/verify-s2-a2.mts` 5 PASS；`verify-s1-a3` 与 `verify-s2-a1` 无倒退。",
     "listIssueCards 排序契约：valid 按 createdAt 倒序（最新在前）；invalid 按 id 字典序。filter 契约：只扫描前缀 `repo-debug:issue-card:`。S2-A3 新实体遵循同样的前缀隔离原则。",
