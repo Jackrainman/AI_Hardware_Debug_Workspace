@@ -14,11 +14,11 @@
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 长期性约束与下一轮必须保留的关键说明（不复写任务完成明细，明细见 git log）"
   },
-  "timestamp": "2026-04-22T13:22:05+08:00",
+  "timestamp": "2026-04-22T14:27:48+08:00",
   "current_mode": "delivery_priority",
   "current_stage": "D1",
   "current_stage_name": "交差优先中文产品壳",
-  "current_stage_goal": "先交付一个好看、中文、能用、像产品壳的 SPA 演示版本；主操作区的创建→选中→追记→结案→结果反馈必须在当前页面上真的跑通，不止是看起来跑通；.debug_workspace 文件写盘等技术深化降级为后续主线。",
+  "current_stage_goal": "先交付一个好看、中文、能用、像产品壳的 SPA 演示版本；主操作区的创建→选中→追记→结案→结果反馈必须在当前页面上真的跑通；本轮严格串行完成任务 A 后进入任务 B，不切回 S3 / technical_mainline。",
   "primary_track": "track_b_delivery_priority_shell",
   "deferred_track": "track_a_technical_close_loop_mainline",
   "dual_tracks": {
@@ -37,29 +37,28 @@
       ]
     }
   },
-  "current_atomic_task": "D1-MAINLINE-BROWSER-SMOKE",
+  "current_atomic_task": "D1-IA-ISSUE-RAIL-CREATE-ACTION",
   "frontier_tasks": [
     {
-      "id": "D1-MAINLINE-BROWSER-SMOKE",
+      "id": "D1-IA-ISSUE-RAIL-CREATE-ACTION",
       "track": "track_b_delivery_priority_shell",
-      "goal": "在浏览器里按新 IA 真人冒烟，确认默认创建态、左侧选择区、主动创建入口、追记、结案、归档列表与刷新后状态都能真实跑通。",
+      "goal": "已选中问题卡时，主区域聚焦主线内容；把“创建新问题卡”从主区域大块常驻表单改为问题卡区 header 右侧显式按钮入口。",
       "scope": [
-        "只验证不改代码",
-        "覆盖第一次启动/无选中态",
-        "覆盖创建后选中、左侧选择切换、追加记录、结案入口与归档列表并列",
-        "覆盖刷新后 localStorage 状态"
+        "未选中问题卡时默认创建态仍正常",
+        "已选中问题卡时主区域不再常驻完整创建表单",
+        "问题卡区 header 右侧提供“创建新问题卡”入口",
+        "保留追加排查记录、排查时间线、结案表单"
       ],
       "non_goals": [
-        "不修 UI",
-        "不改业务代码",
-        "不补 schema / store / Electron / fs / IPC"
+        "不改 schema / store / localStorage key",
+        "不改 closeout / archive / error-entry 数据流",
+        "不做大规模组件拆分",
+        "不切回 S3 / technical_mainline"
       ],
-      "depends_on": [],
-      "blocked_by": [
-        "当前环境 Chromium 启动失败：缺少 libnspr4.so",
-        "当前用户无免密 sudo，无法安装浏览器系统依赖"
+      "depends_on": [
+        "D1-ISSUE-RAIL-INITIAL-AUTO-LOAD"
       ],
-      "status": "blocked_pending_manual_browser_smoke"
+      "status": "ready_after_task_a_commit"
     }
   ],
   "completed_atomic_tasks": [
@@ -98,7 +97,8 @@
     "D1-IA-PLANNING-SYNC",
     "D1-IA-LEFT-ISSUE-RAIL",
     "D1-IA-CREATE-ENTRY-MODES",
-    "D1-IA-CLOSEOUT-HEADER-ACTION"
+    "D1-IA-CLOSEOUT-HEADER-ACTION",
+    "D1-ISSUE-RAIL-INITIAL-AUTO-LOAD"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -112,40 +112,31 @@
       "git log -5",
       "apps/desktop/src/App.tsx",
       "apps/desktop/src/App.css",
-      "apps/desktop/src/index.css",
-      "apps/desktop/src/storage/archive-document-store.ts",
-      "apps/desktop/src/storage/error-entry-store.ts"
+      "apps/desktop/src/index.css"
     ],
     "criteria": [
       "current_mode 是否仍为 delivery_priority",
       "是否服务 D1 交差验收",
-      "主操作区主线闭环在页面上是否已经在真实跑通",
-      "归档区是否跨刷新保留",
-      "主页面信息架构是否已收束（左侧稳定选择区 + 主区默认创建态 + 主动创建入口 + 结案/归档并列入口）",
-      "中文是否更统一",
-      "页面是否更像产品壳",
-      "演示是否更顺",
-      "是否保持核心数据流不变",
-      "是否避开 schema/store/Electron/fs/IPC 深改",
+      "是否保持未选中默认创建态",
+      "是否让已选中问题卡状态聚焦主线闭环",
+      "是否避开 schema/store/localStorage key/Electron/fs/IPC 深改",
       "planning 与实际是否一致"
     ],
-    "recommended_next": "D1-MAINLINE-BROWSER-SMOKE_MANUAL_BROWSER_SMOKE",
-    "output_rule": "不要继续技术主线；先人工浏览器冒烟，或补齐 Chromium 系统依赖后重跑自动化。冒烟未真实完成前不得标记 D1-MAINLINE-BROWSER-SMOKE 通过。"
+    "recommended_next": "D1-IA-ISSUE-RAIL-CREATE-ACTION",
+    "output_rule": "任务 B 是本轮唯一下一原子任务；完成前不得推进浏览器冒烟或技术主线。"
   },
   "risks": [
-    "D1-MAINLINE-BROWSER-SMOKE 未完成：本环境 Chromium 缺 libnspr4.so 且无法免密 sudo 安装依赖，必须人工浏览器冒烟或补齐依赖后重跑。",
-    "D1 IA 三项已落地，但尚未完成真实浏览器主流程冒烟；不能把未验证路径说成已通过。",
+    "D1-MAINLINE-BROWSER-SMOKE 仍未完成：本环境 Chromium 缺 libnspr4.so 且无法免密 sudo 安装依赖，必须人工浏览器冒烟或补齐依赖后重跑。",
+    "任务 B 仍需验证：需确认未选中默认创建态、已选中主线聚焦、header 创建入口、追加/时间线/结案流程均未破坏。",
     "ArchiveDocument / ErrorEntry 当前仍在 localStorage，不是 .debug_workspace 文件系统写盘；真实文件写盘、独立归档浏览页、跨项目检索仍未接入。",
     "Electron / fs / IPC 仍未接入，ProjectSelector popover 与归档 Drawer 只能展示真实边界，不能包装成已完成能力。"
   ],
   "notes": [
     "链路 A 没有取消，只是降级为后续主线；链路 B 为当前阶段唯一优先主线。",
-    "D1 最新页面 IA：左侧固定问题卡选择区、创建入口模式、选中后结案与查看归档列表并列入口均已落地；下一步只做真实浏览器主流程冒烟。",
-    "D1-MAINLINE-BROWSER-SMOKE：自动化尝试未通过环境门槛；npx playwright 与 Chromium 下载成功，但 Chromium 启动缺 libnspr4.so，sudo -n 需要密码；当前状态为待人工冒烟。",
-    "current_atomic_task 为 D1-MAINLINE-BROWSER-SMOKE；该任务阻塞在真实浏览器环境，未完成前不得选择下一技术主线任务。",
+    "D1-ISSUE-RAIL-INITIAL-AUTO-LOAD 已完成：IssuePane 挂载时会同步 listIssueCards()，只刷新列表，不自动选中第一张问题卡。",
+    "本轮任务顺序固定：A 已完成后进入 D1-IA-ISSUE-RAIL-CREATE-ACTION；B 完成前不得切回 S3 / technical_mainline。",
     "内部 localStorage key repo-debug:* 暂不改名，原因是保持既有浏览器数据和验证脚本兼容；对外品牌口径已统一为 ProbeFlash。",
     "用户当前偏好：除非明确要求，由 AI 自行编译（typecheck + build + 必要 verify）。",
-    "D1-DOCS-CONSOLIDATE 已完成文档职责收束：核心 5 份（AGENTS / current / backlog / decisions / handoff.json）；弱化 5 份（docs/planning/handoff / roadmap / architecture，.agent-state/progress / session-log）。弱化文档不再默认逐轮同步，见 AGENTS.md §13 / §14。",
-    "任务完成明细（含改动文件、验证状态等历史描述）不再写入本字段；以 git log + 对应 commit 为准。"
+    "核心事实源为 AGENTS / current / backlog / decisions / handoff.json；弱化文档不再默认逐轮同步，见 AGENTS.md §13 / §14。"
   ]
 }

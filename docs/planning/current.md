@@ -6,11 +6,11 @@
 - 阶段：D1：交差优先中文产品壳。
 - 当前模式：`delivery_priority`。
 - 阶段目标：先交付一个”好看、中文、能用、像产品壳”的 SPA 演示版本，让用户能看懂产品价值、当前能力和未完成边界；主操作区的”创建 → 选中 → 追记 → 结案 → 结果反馈”必须在当前页面上真的跑通，不止是看起来跑通。
-- 切换原因：S2 技术主闭环关键路径已在 localStorage 路径打通；继续直接推进 S3 / Electron / fs 会让交差版本仍停留在工程验证壳，不利于验收演示。
+- 当前边界：不切回 S3 / technical_mainline；不改 schema / store 契约 / localStorage key / Electron / fs / IPC；不新增 `task.md` / `tasks/` 目录；不做大规模组件拆分。
 - 阶段完成定义：
   - 主页面中文文案统一，标题、副标题、按钮、状态、表单、空状态不再混杂英文工程壳。
   - 项目区、问题卡区、归档区看起来像一个可演示的产品工作台，而不是裸占位。
-  - 问题卡创建、追记、结案的最小演示路径清晰可理解，**并且在当前页面上能看到每一步的真实结果反馈**。
+  - 问题卡创建、追记、结案的最小演示路径清晰可理解，并且在当前页面上能看到每一步的真实结果反馈。
   - UI 不伪造未完成能力；Electron / fs / `.debug_workspace` 文件写盘仍如实标注为后续。
   - 不改 schema / store / Electron / fs / IPC，不重做业务数据流。
 
@@ -31,36 +31,31 @@
 - 必要时补最小中文演示路径，但不动深层数据流。
 
 ## 当前唯一执行中的原子任务
-- **D1-MAINLINE-BROWSER-SMOKE（阻塞 / 待人工冒烟）**。
-  - 已尝试在本机用临时 `npx playwright` + Chromium 做真实浏览器自动化冒烟。
-  - 阻塞原因：Chromium 启动失败，缺少系统库 `libnspr4.so`；当前用户无免密 sudo，无法安装浏览器系统依赖。
-  - 当前状态：不能可靠完成真实浏览器验证，禁止标记通过；需人工浏览器冒烟或先补齐本机 Chromium 依赖后重跑。
+- **D1-IA-ISSUE-RAIL-CREATE-ACTION（待执行）**。
+  - 目标：已选中问题卡时，主区域聚焦主线内容；把“创建新问题卡”从主区域大块常驻表单改为问题卡区 header 右侧的显式按钮入口。
+  - 前置状态：D1-ISSUE-RAIL-INITIAL-AUTO-LOAD 已完成代码修复与验证；左侧问题卡列表进入/刷新页面会自动同步加载一次，且不会自动选中第一张卡。
+  - 范围：主要改 `apps/desktop/src/App.tsx` 条件渲染与轻量状态切换，必要时改 `App.css`；保持默认未选中创建态。
+  - 非目标：不改 schema / store / localStorage key / closeout / archive / error-entry 数据流；不做大规模组件拆分。
 
 ## 当前前沿任务窗口（候选，不等于顺推队列）
-> D1 信息架构三项已落地；当前只保留 1 个浏览器冒烟候选。仍不切回 S3 / 技术主线。
+> 本轮用户指定固定顺序：任务 A 已完成后，只允许进入任务 B；D1-MAINLINE-BROWSER-SMOKE 继续留在 backlog，待 B 完成并提交后再重新判断。
 
-- D1-MAINLINE-BROWSER-SMOKE
-  - 目标：在浏览器里按新 IA 真人冒烟，确认默认创建态、左侧选择区、主动创建入口、追记、结案、归档列表与刷新后状态都能真实跑通。
-  - 范围：只验证不改代码；覆盖第一次启动/无选中态、创建后选中、左侧选择切换、追加记录、结案入口与归档列表并列、刷新后 localStorage 状态。
-  - 非目标：不修 UI；不改业务代码；不补 schema/store/Electron/fs/IPC。
-  - 依赖关系：D1-IA-LEFT-ISSUE-RAIL、D1-IA-CREATE-ENTRY-MODES、D1-IA-CLOSEOUT-HEADER-ACTION 已完成，依赖满足。
-  - 当前阻塞：本环境不能启动 Chromium（缺 `libnspr4.so`），状态为**待人工冒烟**。
+- D1-IA-ISSUE-RAIL-CREATE-ACTION
+  - 目标：选中问题卡时隐藏主区域常驻创建大表单，改由问题卡区 header 右侧“创建新问题卡”按钮进入创建态。
+  - 范围：App.tsx 条件渲染 / 轻量状态；App.css header action 布局收口。
+  - 验收：未选中问题卡时默认创建态正常；已选中时主区域只保留当前问题卡与闭环状态、追加记录、时间线、结案表单；点击 header 按钮后可进入创建态。
+  - 依赖关系：D1-ISSUE-RAIL-INITIAL-AUTO-LOAD 已完成。
 
 ## 下一任务选择流程
 1. 重新读取：`AGENTS.md`、`README.md`、本文件、`docs/planning/backlog.md`、`docs/planning/decisions.md`、`.agent-state/handoff.json`、`git status`、最近 commit、`apps/desktop/src/App.tsx`、`App.css`、`index.css`。
-2. 先确认 `current_mode` 是否仍为 `delivery_priority`；若是，优先链路 B。
-3. 评估依据：
-   - 是否最利于交差演示。
-   - 是否提升中文一致性、产品感、演示顺畅度。
-   - 是否保持核心数据流、接口、时序和行为兼容。
-   - 是否避开 schema / store / Electron / fs / IPC 深改。
-   - planning 与实际是否脱节；脱节时先更新 planning。
-4. 从窗口中选择**唯一一个**下一原子任务，写入 `.agent-state/handoff.json.current_atomic_task`，再进入 `task-execution`；若仍未选择，保持“无 / WAITING_FOR_PLANNING_SELECTION”状态。
+2. 先确认 `current_mode` 是否仍为 `delivery_priority`；若是，优先链路 B，不切回 S3 / technical_mainline。
+3. 本轮任务顺序固定：D1-IA-ISSUE-RAIL-CREATE-ACTION 是唯一下一原子任务。
+4. 任务 B 完成前不得推进浏览器冒烟或技术主线；任务 B 完成后必须再次执行验证、compact planning sync、单独 commit。
 
 ## 原子任务完成标准（DoD）
 - 文件修改已落盘。
-- 跑 AGENTS §16 验证矩阵中的必跑项（typecheck / build / `git diff --check` / `handoff.json` JSON.parse）；未跑的必跑项必须在交接中如实标注原因。
-- 本文件 `current.md`、`docs/planning/backlog.md`、`.agent-state/handoff.json` 已更新（见 AGENTS §14）。
+- 跑 AGENTS §16 验证矩阵中的必跑项：`npm run typecheck`、`npm run build`、`git diff --check`、`.agent-state/handoff.json` JSON.parse。
+- 本文件 `current.md`、`.agent-state/handoff.json` 必须 compact 覆盖同步；`docs/planning/backlog.md` 仅在前沿窗口变化时更新。
 - 若阶段或对外口径受影响，`README.md` / `docs/planning/decisions.md` 同步。
 - 弱化文档（`handoff.md` / `roadmap.md` / `architecture.md` / `progress.md` / `session-log.md`）仅在其自身职责命中变化时才动，不默认同步。
 - 已完成独立 commit，且 message 对应单一任务结果。

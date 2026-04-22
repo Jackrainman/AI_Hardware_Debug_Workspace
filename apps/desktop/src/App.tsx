@@ -765,6 +765,10 @@ function IssuePane({
     setCardList(listIssueCards());
   };
 
+  useEffect(() => {
+    setCardList(listIssueCards());
+  }, []);
+
   const reloadSelectedCard = (id: string) => {
     const loaded = loadIssueCard(id);
     setSelectedCard(loaded.ok ? loaded.card : null);
