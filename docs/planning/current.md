@@ -8,7 +8,7 @@
 - 阶段切换理由：D1 中文产品壳与浏览器 smoke 已完成；继续停留在 localStorage 演示版无法支撑战队局域网共享和长期保存，下一阶段必须先解决“数据在哪里、服务怎么访问、能否多设备共享”的工程基础。
 - 阶段目标：把当前 `apps/desktop` 浏览器 SPA + `window.localStorage` 演示版，迁移为同一 WiFi 下可访问、服务器端长期存储的版本。
 - 交付形态：同一 WiFi 下通过类似 `http://hurricane-server.local:<port>/` 的入口访问；服务端负责长期持久化，前端不再把 localStorage 当作唯一事实源。
-- 当前真实边界：已引入默认共用工作区基础（`workspace-26-r1` / `26年 R1`）、`local-storage-adapter`、最小 HTTP API 契约草案和 SQLite schema 草案；未写后端代码，未创建数据库文件，未 SSH 服务器，当前应用仍是浏览器 SPA + `window.localStorage`。
+- 当前真实边界：五个 S3-PREP 仓库内准备任务已完成：默认工作区基础、`local-storage-adapter`、HTTP API 契约草案、SQLite schema 草案、服务器不可达策略；未写后端代码，未创建数据库文件，未 SSH 服务器，当前应用仍是浏览器 SPA + `window.localStorage`。
 
 ## S3 范围与边界
 
@@ -44,23 +44,31 @@
 详细原子任务拆分见 `docs/planning/backlog.md`。
 
 ## 当前唯一执行中的原子任务
-- **S3-PREP-SERVER-UNREACHABLE-HANDLING-A1A2A3（待下一轮执行）**。
-  - 目标：明确服务器不可达时前端应如何提示、阻断或回退，避免把未保存成功显示成成功。
-  - 范围：区分 health 失败、读失败、写失败、超时、网络不可达和 localStorage fallback 边界；仅落策略文档。
-  - 非目标：不接 UI 逻辑；不做离线队列、冲突合并、后台同步或复杂容灾。
-  - 当前状态：默认 workspace、storage adapter、API 契约与 SQLite schema 草案已完成；不可达策略需对齐 API error envelope 与未来 server adapter。
+- **S3-SERVER-INVENTORY-A1（待服务器摸底，不在今晚执行）**。
+  - 目标：确认目标服务器 OS / CPU 架构 / Node 与 npm 版本 / 可安装依赖方式。
+  - 范围：明天在允许接触服务器时收集环境事实，作为后端 scaffold 的输入。
+  - 非目标：今晚不 SSH、不部署、不写后端；未拿到服务器事实前不伪造环境结论。
+  - 当前状态：仓库内准备任务已完成；下一步需要真实服务器信息。
 
 ## 当前前沿任务窗口（候选，不等于顺推队列）
-- S3-PREP-SERVER-UNREACHABLE-HANDLING
-  - 依赖关系：API contract 与 localStorage adapter 已完成；可先落策略，不硬接 UI。
-  - 选择理由：明确 health / 读 / 写失败时不能把未保存成功显示为成功，为后续 server adapter 留出可预测错误状态。
-  - 完成输出：服务器不可达策略文档，区分报错、阻断和 localStorage fallback 边界。
+- S3-SERVER-INVENTORY-A1
+  - 依赖关系：五个 S3-PREP 准备任务已完成；需要真实服务器访问或用户提供环境信息。
+  - 选择理由：后端脚手架、SQLite 路径、端口和 LAN 入口都依赖服务器事实。
+  - 完成输出：OS / CPU 架构 / Node 与 npm 版本 / 依赖安装方式记录。
+- S3-SERVER-INVENTORY-A2
+  - 依赖关系：A1 后继续。
+  - 选择理由：确认 `hurricane-server.local`、mDNS / IP 回退和预期端口范围，避免后端启动参数返工。
+  - 完成输出：局域网入口方式与端口策略。
+- S3-SERVER-INVENTORY-A3
+  - 依赖关系：A1 / A2 后继续。
+  - 选择理由：确认防火墙、端口开放、启动用户、工作目录、数据目录、备份目录和日志目录权限。
+  - 完成输出：后端 scaffold / SQLite storage 的运行权限和路径输入。
 
 ## 下一任务选择流程
 1. 重新读取：`AGENTS.md`、`README.md`、`docs/product/产品介绍.md`、本文件、`docs/planning/backlog.md`、`docs/planning/decisions.md`、`.agent-state/handoff.json`、`git status`、最近 commit、相关代码目录。
-2. 确认 `current_mode = server_storage_migration`，且当前唯一入口为 `S3-PREP-SERVER-UNREACHABLE-HANDLING-A1A2A3`。
-3. 先完成服务不可达策略；今晚仍不写后端、不接 SQLite、不 SSH 服务器。
-4. 本轮准备任务期间不 SSH 服务器、不安装依赖、不写完整后端、不接 SQLite；若需要目标服务器信息，记录待确认项，不得伪造成已确认。
+2. 确认 `current_mode = server_storage_migration`，且当前唯一入口为 `S3-SERVER-INVENTORY-A1`。
+3. 只有在允许服务器摸底或用户提供环境信息后，才执行 S3-SERVER-INVENTORY；否则停下并汇报“等待服务器信息”。
+4. 未完成服务器摸底前，不写完整后端、不接 SQLite、不做部署；若需要目标服务器信息，记录待确认项，不得伪造成已确认。
 
 ## 原子任务完成标准（DoD）
 - 文件修改已落盘，且只服务于当前唯一原子任务。
