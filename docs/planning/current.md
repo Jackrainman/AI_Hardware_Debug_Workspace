@@ -8,7 +8,7 @@
 - 阶段切换理由：D1 中文产品壳与浏览器 smoke 已完成；继续停留在 localStorage 演示版无法支撑战队局域网共享和长期保存，下一阶段必须先解决“数据在哪里、服务怎么访问、能否多设备共享”的工程基础。
 - 阶段目标：把当前 `apps/desktop` 浏览器 SPA + `window.localStorage` 演示版，迁移为同一 WiFi 下可访问、服务器端长期存储的版本。
 - 交付形态：同一 WiFi 下通过类似 `http://hurricane-server.local:<port>/` 的入口访问；服务端负责长期持久化，前端不再把 localStorage 当作唯一事实源。
-- 当前真实边界：已引入默认共用工作区基础（`workspace-26-r1` / `26年 R1`）、`local-storage-adapter` 和最小 HTTP API 契约草案；未写后端代码，未接 SQLite，未 SSH 服务器，当前应用仍是浏览器 SPA + `window.localStorage`。
+- 当前真实边界：已引入默认共用工作区基础（`workspace-26-r1` / `26年 R1`）、`local-storage-adapter`、最小 HTTP API 契约草案和 SQLite schema 草案；未写后端代码，未创建数据库文件，未 SSH 服务器，当前应用仍是浏览器 SPA + `window.localStorage`。
 
 ## S3 范围与边界
 
@@ -44,26 +44,22 @@
 详细原子任务拆分见 `docs/planning/backlog.md`。
 
 ## 当前唯一执行中的原子任务
-- **S3-PREP-SQLITE-SCHEMA-DRAFT-A1A2A3A4（待下一轮执行）**。
-  - 目标：定义最小 SQLite schema 草案，覆盖 workspaces / issues / records / archives / error_entries。
-  - 范围：明确表、主键、workspace 外键、核心字段 / JSON payload 边界、时间字段、schema version 与基础索引；仅落文档草案。
-  - 非目标：不创建数据库文件；不写迁移脚本；不实现 CRUD；不接真实后端。
-  - 当前状态：默认 workspace、localStorage adapter 与 API 契约已完成；SQLite schema 草案需与 `docs/planning/s3-api-contract.md` 对齐。
+- **S3-PREP-SERVER-UNREACHABLE-HANDLING-A1A2A3（待下一轮执行）**。
+  - 目标：明确服务器不可达时前端应如何提示、阻断或回退，避免把未保存成功显示成成功。
+  - 范围：区分 health 失败、读失败、写失败、超时、网络不可达和 localStorage fallback 边界；仅落策略文档。
+  - 非目标：不接 UI 逻辑；不做离线队列、冲突合并、后台同步或复杂容灾。
+  - 当前状态：默认 workspace、storage adapter、API 契约与 SQLite schema 草案已完成；不可达策略需对齐 API error envelope 与未来 server adapter。
 
 ## 当前前沿任务窗口（候选，不等于顺推队列）
-- S3-PREP-SQLITE-SCHEMA-DRAFT
-  - 依赖关系：默认 workspace id / name 已确认；`docs/planning/s3-api-contract.md` 已落草案。
-  - 选择理由：先定义表、外键和 JSON payload 边界，后续 SQLite 实现不临场发散。
-  - 完成输出：最小 SQLite schema 草案，不创建数据库文件，不写迁移脚本。
 - S3-PREP-SERVER-UNREACHABLE-HANDLING
-  - 依赖关系：建议依赖 API contract；可先落策略，不硬接 UI。
+  - 依赖关系：API contract 与 localStorage adapter 已完成；可先落策略，不硬接 UI。
   - 选择理由：明确 health / 读 / 写失败时不能把未保存成功显示为成功，为后续 server adapter 留出可预测错误状态。
   - 完成输出：服务器不可达策略文档，区分报错、阻断和 localStorage fallback 边界。
 
 ## 下一任务选择流程
 1. 重新读取：`AGENTS.md`、`README.md`、`docs/product/产品介绍.md`、本文件、`docs/planning/backlog.md`、`docs/planning/decisions.md`、`.agent-state/handoff.json`、`git status`、最近 commit、相关代码目录。
-2. 确认 `current_mode = server_storage_migration`，且当前唯一入口为 `S3-PREP-SQLITE-SCHEMA-DRAFT-A1A2A3A4`。
-3. 先完成 SQLite schema 草案，再进入服务不可达策略；今晚仍不写后端、不接 SQLite。
+2. 确认 `current_mode = server_storage_migration`，且当前唯一入口为 `S3-PREP-SERVER-UNREACHABLE-HANDLING-A1A2A3`。
+3. 先完成服务不可达策略；今晚仍不写后端、不接 SQLite、不 SSH 服务器。
 4. 本轮准备任务期间不 SSH 服务器、不安装依赖、不写完整后端、不接 SQLite；若需要目标服务器信息，记录待确认项，不得伪造成已确认。
 
 ## 原子任务完成标准（DoD）

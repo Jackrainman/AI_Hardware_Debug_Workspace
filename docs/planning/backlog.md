@@ -6,23 +6,17 @@
 - S3：存储迁移与服务器化。
 - 大目标：把 D1 的浏览器 SPA + `window.localStorage` 演示版，迁移为战队局域网可访问、服务器端长期存储版。
 - 交付目标：同一 WiFi 下通过类似 `http://hurricane-server.local:<port>/` 的地址访问；服务端持久化数据，支持多设备共享与重启后读回。
-- 当前唯一前沿入口：`S3-PREP-SQLITE-SCHEMA-DRAFT-A1A2A3A4`，见 `docs/planning/current.md`。
+- 当前唯一前沿入口：`S3-PREP-SERVER-UNREACHABLE-HANDLING-A1A2A3`，见 `docs/planning/current.md`。
 
 ## S3 仓库内准备任务池
 
 > 这些任务用于在不上服务器、不写完整后端、不接 SQLite 的前提下，先把 workspace / storage / API / schema / 不可达策略的工程边界对齐。
 
-### S3-PREP-SQLITE-SCHEMA-DRAFT（当前前沿）
-- [ ] 目标：定义最小 SQLite schema 草案，覆盖 issues / records / archives / error_entries / workspaces。
-- [ ] DoD：schema 草案明确表、主键、workspace 关联、核心字段 / JSON payload 边界、时间字段、schema version 与基础索引。
-- [ ] 边界：先出 schema 设计，不创建数据库文件，不写迁移脚本，不实现 CRUD。
-- [ ] 依赖：默认 workspace id / name 已确认；`docs/planning/s3-api-contract.md` 已落草案。
-
-### S3-PREP-SERVER-UNREACHABLE-HANDLING
+### S3-PREP-SERVER-UNREACHABLE-HANDLING（当前前沿）
 - [ ] 目标：明确服务器不可达时，前端应如何提示、阻断或回退。
 - [ ] DoD：策略说明清楚区分 health 失败、读失败、写失败、超时和 localStorage fallback 边界；不得把未保存成功显示成成功。
 - [ ] 边界：当前不做复杂容灾；不做离线队列、冲突合并、后台同步或多端实时协作。
-- [ ] 依赖：建议依赖 `S3-PREP-API-CONTRACT-DRAFT` 和 `S3-PREP-STORAGE-ADAPTER-ABSTRACTION`，以便错误格式与前端 adapter 行为一致。
+- [ ] 依赖：`docs/planning/s3-api-contract.md` 与 `docs/planning/s3-sqlite-schema-draft.md` 已落草案，localStorage adapter 边界已抽出。
 
 ## S3 小任务与原子任务拆分
 
