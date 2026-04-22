@@ -1,66 +1,73 @@
 {
   "_schema": {
-    "current_mode": "string - 当前推进模式，例如 delivery_priority 或 technical_mainline",
+    "current_mode": "string - 当前推进模式，例如 delivery_priority / technical_mainline / server_storage_migration",
     "current_stage": "string - 当前阶段代号",
     "current_stage_name": "string - 当前阶段中文名",
     "current_stage_goal": "string - 当前阶段目标",
     "primary_track": "string - 当前优先链路",
     "deferred_track": "string - 当前降级但保留的链路",
-    "dual_tracks": "object - 链路 A / 链路 B 的边界",
     "current_atomic_task": "string - 当前唯一执行中的原子任务",
     "frontier_tasks": "object[] - 当前前沿任务窗口",
     "completed_atomic_tasks": "string[] - 已完成原子任务 ID 列表，按时间顺序",
+    "s3_task_breakdown": "object - S3 小任务拆分摘要",
     "next_task_selection_basis": "object - 下一任务选择依据",
     "risks": "string[] - 当前已知风险",
-    "notes": "string[] - 长期性约束与下一轮必须保留的关键说明（不复写任务完成明细，明细见 git log）"
+    "notes": "string[] - 长期性约束与下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-04-22T15:26:16+08:00",
-  "current_mode": "technical_mainline",
+  "timestamp": "2026-04-22T16:10:08+08:00",
+  "current_mode": "server_storage_migration",
   "current_stage": "S3",
-  "current_stage_name": "技术闭环深化入口",
-  "current_stage_goal": "D1 中文产品壳已完成 Playwright/Chromium 主流程浏览器 smoke；下一轮重新接回链路 A，先执行 S3-ENTRY-PLANNING 选择技术闭环深化的唯一原子切入点，再进入具体实现。",
-  "primary_track": "track_a_technical_close_loop_mainline",
-  "deferred_track": "track_b_delivery_priority_shell_maintenance",
-  "dual_tracks": {
-    "track_a_technical_close_loop_mainline": {
-      "status": "active",
-      "summary": "继续加固 IssueCard / InvestigationRecord / Closeout / ArchiveDocument / ErrorEntry 主闭环，推进 .debug_workspace 文件写盘、Electron/fs/IPC、runtime log、repair task、恢复机制与历史检索。",
-      "entry_condition": "先执行 S3-ENTRY-PLANNING，基于真实仓库状态选择一个最小技术入口任务。"
-    },
-    "track_b_delivery_priority_shell": {
-      "status": "maintenance",
-      "summary": "D1 中文化、视觉统一、主流程 IA、归档入口与浏览器主流程 smoke 已完成；后续只做低风险修补。",
-      "hard_boundaries": [
-        "不把 localStorage 包装成文件系统写盘",
-        "不把占位能力包装成已完成",
-        "不为视觉修补重做业务数据流"
-      ]
-    }
+  "current_stage_name": "存储迁移与服务器化",
+  "current_stage_goal": "把 D1 的浏览器 SPA + window.localStorage 演示版迁移为同一 WiFi 下可访问、服务器端长期存储的版本，预期入口类似 http://hurricane-server.local:<port>/。",
+  "primary_track": "s3_storage_serverization",
+  "deferred_track": "ai_rag_electron_advanced_features",
+  "current_atomic_task": "S3-SERVER-INVENTORY",
+  "storage_strategy": {
+    "current_truth": "apps/desktop 仍使用 window.localStorage；本轮未写后端代码，未改前端业务逻辑。",
+    "s3_target": "服务端 SQLite / 数据目录作为长期事实源，前端通过 HTTP storage adapter 访问。"
   },
-  "current_atomic_task": "S3-ENTRY-PLANNING",
+  "access_strategy": {
+    "target_lan_entry": "http://hurricane-server.local:<port>/",
+    "fallback": "服务器局域网 IP + 端口",
+    "must_confirm_next": [
+      "服务器 OS / Node / npm 环境",
+      "端口范围与防火墙",
+      "hurricane-server.local 或 mDNS/DNS 可用性",
+      "运行用户、工作目录、数据目录、备份目录权限",
+      "持久运行方式"
+    ]
+  },
   "frontier_tasks": [
     {
-      "id": "S3-ENTRY-PLANNING",
-      "track": "track_a_technical_close_loop_mainline",
-      "goal": "交差壳 smoke 通过后，重新读取真实状态并选择唯一技术主线入口任务。",
+      "id": "S3-SERVER-INVENTORY",
+      "track": "s3_storage_serverization",
+      "goal": "写后端前先确认服务器环境、端口、域名/入口方式、权限和部署条件。",
       "scope": [
-        "读取 AGENTS / README / current / backlog / decisions / handoff.json / git status / 最近 commit",
-        "确认 D1-MAINLINE-BROWSER-SMOKE 已完成且无 planning 漂移",
-        "在 .debug_workspace 文件写盘、Electron/fs adapter、验证脚本、恢复机制等候选中只选择一个最小入口",
-        "compact 更新 current.md 与 handoff.json，必要时更新 backlog.md"
+        "盘点 OS / Node / npm / 依赖安装方式",
+        "确认 hostname/mDNS/IP 与端口策略",
+        "确认防火墙、启动用户、工作目录、数据目录、备份目录和日志目录权限",
+        "输出 S3-BACKEND-SCAFFOLD 的输入约束"
       ],
       "non_goals": [
-        "不直接实现 Electron / fs / IPC",
-        "不一次性展开多个 S3 任务",
-        "不重做 D1 UI",
-        "不跳过验证与单任务 commit"
+        "不写后端代码",
+        "不改前端业务逻辑",
+        "不接 AI/RAG/权限系统/Electron",
+        "不改 localStorage key"
       ],
       "depends_on": [
-        "D1-MAINLINE-BROWSER-SMOKE"
+        "S3-ENTRY-PLANNING"
       ],
       "status": "pending_next_round"
     }
   ],
+  "s3_task_breakdown": {
+    "S3-SERVER-INVENTORY": "服务器环境、端口、LAN 入口、权限、数据路径、部署条件盘点。",
+    "S3-BACKEND-SCAFFOLD": "最小 Node 后端、/health、配置入口、静态资源服务策略。",
+    "S3-SQLITE-STORAGE": "SQLite schema、初始化、CRUD、读回验证。",
+    "S3-FRONTEND-STORAGE-ADAPTER": "前端从 localStorage 主事实源切到 HTTP storage adapter。",
+    "S3-LAN-DEPLOY": "局域网启动、端口开放、hostname/IP 访问、持久运行与备份说明。",
+    "S3-MULTI-DEVICE-SMOKE": "两台设备跨端读写、归档和服务器重启读回 smoke。"
+  },
   "completed_atomic_tasks": [
     "A1_setup_planning_and_handoff_workspace",
     "A2_rewrite_agents_md",
@@ -102,41 +109,42 @@
     "D1-IA-ISSUE-RAIL-CREATE-ACTION",
     "TEST-TOOLING-ADD-PLAYWRIGHT",
     "D1-MAINLINE-BROWSER-SMOKE",
-    "REPO-HYGIENE-IGNORE-PERSONAL-AI-TRACES"
+    "REPO-HYGIENE-IGNORE-PERSONAL-AI-TRACES",
+    "S3-ENTRY-PLANNING"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
       "AGENTS.md",
       "README.md",
+      "docs/product/产品介绍.md",
       "docs/planning/current.md",
       "docs/planning/backlog.md",
       "docs/planning/decisions.md",
       ".agent-state/handoff.json",
       "git status",
       "git log -5",
-      "task-relevant code paths selected by S3-ENTRY-PLANNING"
+      "目标服务器环境信息（若本地无法获取则记录待确认项）"
     ],
     "criteria": [
-      "current_mode 是否仍为 technical_mainline",
-      "D1-MAINLINE-BROWSER-SMOKE 是否已完成且无 planning 漂移",
-      "是否只选择一个链路 A 技术入口任务",
-      "是否避免在入口规划轮直接实现 Electron / fs / IPC 或大规模重构",
-      "是否保留 localStorage / 未接 fs 的真实边界表达"
+      "current_mode 是否为 server_storage_migration",
+      "是否坚持局域网共享 + 服务器长期存储目标",
+      "是否先完成 S3-SERVER-INVENTORY 再写后端",
+      "是否避免 AI/RAG/权限/Electron/大 UI 重构进入当前主线",
+      "是否如实保留 localStorage 仍是当前实现的边界"
     ],
-    "recommended_next": "S3-ENTRY-PLANNING",
-    "output_rule": "下一轮先做 S3 入口规划并提交；不要在同一轮直接跳入多个技术实现任务。"
+    "recommended_next": "S3-SERVER-INVENTORY",
+    "output_rule": "下一轮只做服务器环境与部署条件盘点；不要在同一轮直接实现后端。"
   },
   "risks": [
-    "D1-MAINLINE-BROWSER-SMOKE 使用 headless Chromium 自动化通过，未额外执行人工 headed 浏览器视觉验收。",
-    "ArchiveDocument / ErrorEntry 当前仍在 localStorage，不是 .debug_workspace 文件系统写盘；真实文件写盘、独立归档浏览页、跨项目检索仍未接入。",
-    "Electron / fs / IPC 仍未接入；S3 入口任务需要先选择一个最小技术切入点，避免直接扩大成多任务重构。"
+    "当前应用仍是 localStorage 演示存储，不支持跨设备共享；S3 未完成前不得宣称服务器化完成。",
+    "hurricane-server.local 是否可解析、端口是否可开放、服务器运行权限和数据目录权限均待 S3-SERVER-INVENTORY 确认。",
+    "后端方案、SQLite 文件路径和 LAN 部署方式尚未落定；未盘点前直接实现会增加返工。"
   ],
   "notes": [
-    "D1-MAINLINE-BROWSER-SMOKE 已通过：一次性 Playwright 脚本覆盖默认创建态、创建后选中、左侧刷新/切换、header 创建入口、追加记录、时间线、header 结案入口、归档抽屉、刷新后 localStorage 读回。",
-    "本次 smoke 未修改业务代码；只进行 planning sync。",
-    "内部 localStorage key repo-debug:* 暂不改名，保持既有浏览器数据和验证脚本兼容；对外品牌口径为 ProbeFlash。",
-    "用户当前偏好：除非明确要求，由 AI 自行编译（typecheck + build + 必要 verify）。",
-    "核心事实源为 AGENTS / current / backlog / decisions / handoff.json；弱化文档不再默认逐轮同步，见 AGENTS.md §13 / §14。",
-    "REPO-HYGIENE-IGNORE-PERSONAL-AI-TRACES 已完成：.claude/**、.codex、.mcp.json、.vscode、.idea 作为个人 AI/assistant/IDE 工具痕迹保持忽略/取消跟踪；.agents/skills/** 与 .agent-state/** 继续作为项目共享资产/交接事实源保留。"
+    "D1 产品壳与浏览器 smoke 已完成，当前转入 S3 存储迁移与服务器化。",
+    "S3 当前不优先做 AI、RAG、权限系统、Electron、fs/IPC、大 UI 重构或复杂统计。",
+    "交付目标是同一 WiFi 下局域网访问 + 服务器长期存储，不是静态演示版。",
+    "S3-ENTRY-PLANNING 为纯文档/规划切换，未改前端/后端代码；本轮按用户要求不跑 npm run typecheck / npm run build，仅跑文档类验证。",
+    "核心事实源为 AGENTS / current / backlog / decisions / handoff.json；弱化文档不默认逐轮同步，除非职责命中。"
   ]
 }

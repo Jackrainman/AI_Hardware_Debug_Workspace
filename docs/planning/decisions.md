@@ -99,3 +99,22 @@
   - `AGENTS.md` 新增 delivery-priority mode、dual-track rule、safe polish rule、mandatory doc sync、acceptance-facing mindset。
   - `current.md` 前沿窗口切到 D1-UI-V0 / D1-UI-V1 / D1-DEMO-PATH。
   - S3 技术闭环不取消；交差版本完成后，必须由 planning 重新读取真实状态并明确切回技术主线。
+
+
+## D-009：S3 切换为存储迁移与服务器化
+- 日期：2026-04-22
+- 背景：D1 产品壳与浏览器主流程 smoke 已完成，当前最大缺口不再是页面演示，而是 `window.localStorage` 演示存储无法支撑战队局域网共享、服务器长期保存和多设备协同查看。
+- 决策：S3 阶段切换为“存储迁移与服务器化”。当前优先目标是把前端从 localStorage 演示版升级为同一 WiFi 下可访问、服务器端长期存储的版本；预期入口类似 `http://hurricane-server.local:<port>/`。
+- 本阶段不做：AI、RAG、权限系统、Electron、fs/IPC、大 UI 重构、复杂统计、云同步或公网多租户。
+- 原因：
+  - 局域网共享与服务器长期存储是从“静态演示版”走向战队可用版本的最短工程路径。
+  - 后端脚手架、SQLite schema、前端 storage adapter、部署方式都依赖服务器环境与端口/域名/权限条件，必须先盘点再实现。
+  - 继续优先做 AI 或 Electron 会扩大风险面，且不能解决多设备共享和数据长期保存的核心阻塞。
+- 放弃方案：
+  - 继续用 localStorage 强行演示团队共享：数据无法跨设备共享，容易误导验收。
+  - 立刻写后端：缺少服务器环境、端口、hostname、权限、数据路径和部署条件，会导致返工。
+  - 转向 AI/RAG：与当前阶段“服务器长期存储”目标不匹配。
+- 影响与后续动作：
+  - `current_mode` 更新为 `server_storage_migration`。
+  - 当前唯一入口任务为 `S3-SERVER-INVENTORY`。
+  - S3 后续候选拆分为 `S3-BACKEND-SCAFFOLD`、`S3-SQLITE-STORAGE`、`S3-FRONTEND-STORAGE-ADAPTER`、`S3-LAN-DEPLOY`、`S3-MULTI-DEVICE-SMOKE`。
