@@ -31,26 +31,26 @@
 - 必要时补最小中文演示路径，但不动深层数据流。
 
 ## 当前唯一执行中的原子任务
-- **D1-MAINLINE-BROWSER-SMOKE（阻塞 / 待人工冒烟）**。
-  - 当前状态：D1-ISSUE-RAIL-INITIAL-AUTO-LOAD 与 D1-IA-ISSUE-RAIL-CREATE-ACTION 均已完成代码修改、验证、planning sync 与单独提交；现在需要真实浏览器冒烟确认交互。
+- **D1-MAINLINE-BROWSER-SMOKE（待浏览器冒烟 / Playwright 可用）**。
+  - 当前状态：D1-ISSUE-RAIL-INITIAL-AUTO-LOAD 与 D1-IA-ISSUE-RAIL-CREATE-ACTION 均已完成代码修改、验证、planning sync 与单独提交；TEST-TOOLING-ADD-PLAYWRIGHT 已独立接回 `@playwright/test` 与 Chromium，后续可以用 Playwright 或人工浏览器冒烟确认交互。
   - 冒烟目标：确认默认创建态、左侧问题卡列表刷新后自动加载、左侧“创建新问题卡”入口、创建后选中、追加记录、排查时间线、结案入口、归档列表与刷新后 localStorage 状态都能真实跑通。
-  - 当前阻塞：本环境此前启动 Chromium 失败，缺少系统库 `libnspr4.so`，且当前用户无免密 sudo，无法安装浏览器系统依赖。
-  - 当前边界：未完成人工浏览器冒烟前，不得标记 D1-MAINLINE-BROWSER-SMOKE 通过；仍不切回 S3 / technical_mainline。
+  - 当前环境：`@playwright/test` 已作为 devDependency 接入，`npx playwright install chromium` 已成功，Chromium headless 最小启动通过。
+  - 当前边界：未完成完整 D1 主流程浏览器冒烟前，不得标记 D1-MAINLINE-BROWSER-SMOKE 通过；仍不切回 S3 / technical_mainline。
 
 ## 当前前沿任务窗口（候选，不等于顺推队列）
-> 本轮用户指定的 A / B 两个原子任务均已完成；当前 D1 前沿只保留 1 个浏览器冒烟候选。链路 A 技术主线继续留在 backlog。
+> 本轮用户指定的 A / B 两个原子任务均已完成；TEST-TOOLING-ADD-PLAYWRIGHT 已独立完成测试工具接入；当前 D1 前沿只保留 1 个浏览器冒烟候选。链路 A 技术主线继续留在 backlog。
 
 - D1-MAINLINE-BROWSER-SMOKE
   - 目标：在浏览器里按最新 IA 真人冒烟，确认默认创建态、左侧选择区、header 创建入口、追记、结案、归档列表与刷新后状态都能真实跑通。
-  - 范围：只验证不改代码；覆盖第一次启动/无选中态、创建后选中、左侧选择切换、主动创建入口、追加记录、结案入口与归档列表并列、刷新后 localStorage 状态。
+  - 范围：只验证不改业务代码；可使用 Playwright/Chromium 自动化或人工浏览器；覆盖第一次启动/无选中态、创建后选中、左侧选择切换、主动创建入口、追加记录、结案入口与归档列表并列、刷新后 localStorage 状态。
   - 非目标：不修 UI；不改业务代码；不补 schema / store / Electron / fs / IPC。
   - 依赖关系：D1-ISSUE-RAIL-INITIAL-AUTO-LOAD、D1-IA-ISSUE-RAIL-CREATE-ACTION 已完成。
-  - 当前阻塞：本环境不能启动 Chromium（缺 `libnspr4.so`），状态为待人工浏览器冒烟或先补齐依赖后重跑。
+  - 当前状态：Playwright / Chromium 最小 headless 可用；完整 D1 主流程 smoke 仍待执行。
 
 ## 下一任务选择流程
 1. 重新读取：`AGENTS.md`、`README.md`、本文件、`docs/planning/backlog.md`、`docs/planning/decisions.md`、`.agent-state/handoff.json`、`git status`、最近 commit、`apps/desktop/src/App.tsx`、`App.css`、`index.css`。
 2. 先确认 `current_mode` 是否仍为 `delivery_priority`；若是，优先链路 B，不切回 S3 / technical_mainline。
-3. 当前唯一推荐下一动作是完成 `D1-MAINLINE-BROWSER-SMOKE`：人工浏览器冒烟，或先补齐 Chromium 系统依赖后重跑自动化。
+3. 当前唯一推荐下一动作是完成 `D1-MAINLINE-BROWSER-SMOKE`：优先用已接入的 Playwright / Chromium 跑最小自动化 smoke；必要时再补人工浏览器冒烟。
 4. 冒烟未真实完成前，不得标记 D1 交互路径通过；不得用 typecheck/build 代替人工浏览器冒烟。
 
 ## 原子任务完成标准（DoD）

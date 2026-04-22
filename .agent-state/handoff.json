@@ -14,11 +14,11 @@
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 长期性约束与下一轮必须保留的关键说明（不复写任务完成明细，明细见 git log）"
   },
-  "timestamp": "2026-04-22T14:32:02+08:00",
+  "timestamp": "2026-04-22T15:10:10+08:00",
   "current_mode": "delivery_priority",
   "current_stage": "D1",
   "current_stage_name": "交差优先中文产品壳",
-  "current_stage_goal": "先交付一个好看、中文、能用、像产品壳的 SPA 演示版本；主操作区的创建→选中→追记→结案→结果反馈必须在当前页面上真的跑通；A/B 两个用户指定原子任务已完成，当前回到 D1 浏览器冒烟验证，不切回 S3 / technical_mainline。",
+  "current_stage_goal": "先交付一个好看、中文、能用、像产品壳的 SPA 演示版本；主操作区的创建→选中→追记→结案→结果反馈必须在当前页面上真的跑通；TEST-TOOLING-ADD-PLAYWRIGHT 已独立完成测试工具接入，当前回到 D1 浏览器冒烟验证，不切回 S3 / technical_mainline。",
   "primary_track": "track_b_delivery_priority_shell",
   "deferred_track": "track_a_technical_close_loop_mainline",
   "dual_tracks": {
@@ -42,9 +42,10 @@
     {
       "id": "D1-MAINLINE-BROWSER-SMOKE",
       "track": "track_b_delivery_priority_shell",
-      "goal": "在浏览器里按最新 IA 真人冒烟，确认默认创建态、左侧选择区、header 创建入口、追记、结案、归档列表与刷新后状态都能真实跑通。",
+      "goal": "在浏览器里按最新 IA 完成 smoke，确认默认创建态、左侧选择区、header 创建入口、追记、结案、归档列表与刷新后状态都能真实跑通。",
       "scope": [
-        "只验证不改代码",
+        "只验证不改业务代码",
+        "优先使用已接入的 Playwright / Chromium 自动化，必要时补人工浏览器冒烟",
         "覆盖第一次启动/无选中态",
         "覆盖左侧问题卡列表进入/刷新页面自动加载",
         "覆盖创建后选中、左侧选择切换、header 创建新问题卡入口",
@@ -59,13 +60,15 @@
       ],
       "depends_on": [
         "D1-ISSUE-RAIL-INITIAL-AUTO-LOAD",
-        "D1-IA-ISSUE-RAIL-CREATE-ACTION"
+        "D1-IA-ISSUE-RAIL-CREATE-ACTION",
+        "TEST-TOOLING-ADD-PLAYWRIGHT"
       ],
-      "blocked_by": [
-        "当前环境 Chromium 启动失败：缺少 libnspr4.so",
-        "当前用户无免密 sudo，无法安装浏览器系统依赖"
-      ],
-      "status": "blocked_pending_manual_browser_smoke"
+      "status": "pending_playwright_or_manual_browser_smoke",
+      "tooling_ready": [
+        "@playwright/test 已作为 devDependency 接入 apps/desktop",
+        "npx playwright install chromium 已成功",
+        "Chromium headless 最小启动验证已通过"
+      ]
     }
   ],
   "completed_atomic_tasks": [
@@ -106,7 +109,8 @@
     "D1-IA-CREATE-ENTRY-MODES",
     "D1-IA-CLOSEOUT-HEADER-ACTION",
     "D1-ISSUE-RAIL-INITIAL-AUTO-LOAD",
-    "D1-IA-ISSUE-RAIL-CREATE-ACTION"
+    "D1-IA-ISSUE-RAIL-CREATE-ACTION",
+    "TEST-TOOLING-ADD-PLAYWRIGHT"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -118,6 +122,7 @@
       ".agent-state/handoff.json",
       "git status",
       "git log -5",
+      "apps/desktop/package.json",
       "apps/desktop/src/App.tsx",
       "apps/desktop/src/App.css",
       "apps/desktop/src/index.css"
@@ -132,20 +137,20 @@
       "是否避开 schema/store/localStorage key/Electron/fs/IPC 深改",
       "planning 与实际是否一致"
     ],
-    "recommended_next": "D1-MAINLINE-BROWSER-SMOKE_MANUAL_BROWSER_SMOKE",
-    "output_rule": "不要继续技术主线；先人工浏览器冒烟，或补齐 Chromium 系统依赖后重跑自动化。冒烟未真实完成前不得标记 D1-MAINLINE-BROWSER-SMOKE 通过。"
+    "recommended_next": "D1-MAINLINE-BROWSER-SMOKE_WITH_PLAYWRIGHT_OR_MANUAL_BROWSER_SMOKE",
+    "output_rule": "不要继续技术主线；先用 Playwright/Chromium 跑最小自动化 smoke，必要时补人工浏览器冒烟。冒烟未真实完成前不得标记 D1-MAINLINE-BROWSER-SMOKE 通过。"
   },
   "risks": [
-    "D1-MAINLINE-BROWSER-SMOKE 未完成：本环境 Chromium 缺 libnspr4.so 且无法免密 sudo 安装依赖，必须人工浏览器冒烟或补齐依赖后重跑。",
-    "A/B 已通过 typecheck/build，但未做真实浏览器人工冒烟；不能把交互路径说成已人工验证通过。",
+    "D1-MAINLINE-BROWSER-SMOKE 未完成：Playwright / Chromium 最小 headless 已可用，但尚未跑完整 D1 主流程 smoke；不能把交互路径说成已验证通过。",
     "ArchiveDocument / ErrorEntry 当前仍在 localStorage，不是 .debug_workspace 文件系统写盘；真实文件写盘、独立归档浏览页、跨项目检索仍未接入。",
     "Electron / fs / IPC 仍未接入，ProjectSelector popover 与归档 Drawer 只能展示真实边界，不能包装成已完成能力。"
   ],
   "notes": [
     "链路 A 没有取消，只是降级为后续主线；链路 B 为当前阶段唯一优先主线。",
+    "TEST-TOOLING-ADD-PLAYWRIGHT 已独立完成：apps/desktop 只新增 Playwright 相关 devDependency 与 lock 依赖；未改业务代码；未运行 npm audit fix。",
     "D1-ISSUE-RAIL-INITIAL-AUTO-LOAD 已完成：IssuePane 挂载时会同步 listIssueCards()，只刷新列表，不自动选中第一张问题卡。",
     "D1-IA-ISSUE-RAIL-CREATE-ACTION 已完成：未选中时保留默认创建态；已选中时主区域隐藏创建大表单、演示提示和辅助验证区，问题卡选择区 header 右侧提供“创建新问题卡”入口。",
-    "当前下一动作是 D1-MAINLINE-BROWSER-SMOKE；由于本机 Chromium 依赖缺失，优先人工浏览器冒烟或补齐依赖后再跑自动化。",
+    "当前下一动作是 D1-MAINLINE-BROWSER-SMOKE；优先使用已接入的 Playwright / Chromium 跑最小自动化 smoke，必要时补人工浏览器冒烟。",
     "内部 localStorage key repo-debug:* 暂不改名，原因是保持既有浏览器数据和验证脚本兼容；对外品牌口径已统一为 ProbeFlash。",
     "用户当前偏好：除非明确要求，由 AI 自行编译（typecheck + build + 必要 verify）。",
     "核心事实源为 AGENTS / current / backlog / decisions / handoff.json；弱化文档不再默认逐轮同步，见 AGENTS.md §13 / §14。"
