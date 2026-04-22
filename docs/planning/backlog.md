@@ -6,9 +6,26 @@
 - D1：交差优先中文产品壳。当前前沿候选任务见下文；下一轮必须重新读取真实状态后再选择唯一原子任务，不自动顺推。
 
 ## 后续候选（D1 阶段内，不等于顺推队列）
-- [ ] D1-ISSUE-LIST-HIDE-ARCHIVED：问题卡主列表隐藏或折叠 `status=archived` 的卡，让演示时主列表只剩未结案问题；不改 store 契约。
-- [ ] D1-STEPPER-CLEANUP：把 IssuePane 内"1. 创建 / 2. 选择 / 3. 追记 / 4. 结案"四块大表单的视觉重心降权（收成更轻量提示或折叠区），**必须保证最小演示路径仍可跑通**；DoD 需谨慎评估。
-- [ ] D1-MAINLINE-BROWSER-SMOKE：在浏览器里真人走一遍 header 双入口 → ProjectSelector popover → 创建 → 自动选中 → 追记 → 结案 → 右上角计数徽标变化 → 打开 Drawer 看最近摘要 + 全部列表 → 刷新页面验证 → 再创建一张看倒序列表；只验证、不改代码。
+- [ ] D1-IA-LEFT-ISSUE-RAIL
+  - 目标：把“选择问题卡”放到页面左侧，作为长期稳定选择区。
+  - 范围：页面布局、选择区文案、空状态、刷新/选择入口位置；复用现有 IssueCard 列表与选中状态。
+  - 非目标：不改 schema / store / localStorage key / Electron / fs / IPC；不新增路由或全局状态模型。
+  - 依赖关系：无。
+- [ ] D1-IA-CREATE-ENTRY-MODES
+  - 目标：无选中/第一次启动默认显示“创建问题卡”；平时页面中心靠上保留主动创建入口。
+  - 范围：创建入口默认态、主动入口、创建成功反馈与选中衔接；保持现有创建数据流。
+  - 非目标：不新增 AI intake 能力；不改 IssueCard 字段、校验、存储键；不伪造真实项目数据。
+  - 依赖关系：依赖 D1-IA-LEFT-ISSUE-RAIL。
+- [ ] D1-IA-CLOSEOUT-HEADER-ACTION
+  - 目标：选中问题卡后，把“结案”放到“查看归档列表”旁边。
+  - 范围：选中态操作区层级、结案入口位置、与归档列表入口的并列关系；保持现有 closeout 与 localStorage 归档链路。
+  - 非目标：不改 ArchiveDocument / ErrorEntry schema；不改归档 store；不接 Electron / fs / IPC。
+  - 依赖关系：依赖 D1-IA-LEFT-ISSUE-RAIL。
+- [ ] D1-MAINLINE-BROWSER-SMOKE
+  - 目标：按新 IA 在浏览器真人冒烟，确认默认创建态、左侧选择区、主动创建、追记、结案、归档列表与刷新后状态都能真实跑通。
+  - 范围：只验证不改代码；覆盖第一次启动/无选中态、创建后选中、左侧切换、追加记录、结案入口与归档列表并列、刷新后 localStorage 状态。
+  - 非目标：不修 UI；不改业务代码；不补 schema / store / Electron / fs / IPC。
+  - 依赖关系：依赖 D1-IA-LEFT-ISSUE-RAIL、D1-IA-CREATE-ENTRY-MODES、D1-IA-CLOSEOUT-HEADER-ACTION。
 
 ## 后续主线：链路 A 技术闭环深化
 - [ ] S3-ENTRY-PLANNING：交差壳完成后，重新读取真实状态并选择唯一技术主线入口任务。

@@ -8,13 +8,13 @@
     "deferred_track": "string - 当前降级但保留的链路",
     "dual_tracks": "object - 链路 A / 链路 B 的边界",
     "current_atomic_task": "string - 当前唯一执行中的原子任务",
-    "frontier_tasks": "object[] - 当前前沿任务窗口，1~3 个候选",
+    "frontier_tasks": "object[] - 当前前沿任务窗口",
     "completed_atomic_tasks": "string[] - 已完成原子任务 ID 列表，按时间顺序",
     "next_task_selection_basis": "object - 下一任务选择依据",
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 长期性约束与下一轮必须保留的关键说明（不复写任务完成明细，明细见 git log）"
   },
-  "timestamp": "2026-04-22T23:30:00+08:00",
+  "timestamp": "2026-04-22T12:38:13+08:00",
   "current_mode": "delivery_priority",
   "current_stage": "D1",
   "current_stage_name": "交差优先中文产品壳",
@@ -40,28 +40,78 @@
   "current_atomic_task": "WAITING_FOR_PLANNING_SELECTION",
   "frontier_tasks": [
     {
-      "id": "D1-ISSUE-LIST-HIDE-ARCHIVED",
+      "id": "D1-IA-LEFT-ISSUE-RAIL",
       "track": "track_b_delivery_priority_shell",
-      "goal": "中间问题卡主列表隐藏或折叠 status=archived 的卡，让演示时主列表只剩未结案问题；不改 store 契约。",
+      "goal": "把“选择问题卡”放到页面左侧，形成长期稳定的问题卡选择区。",
+      "scope": [
+        "页面布局",
+        "选择区中文文案",
+        "空状态",
+        "刷新/选择入口的视觉位置",
+        "复用现有 IssueCard 列表与选中状态"
+      ],
+      "non_goals": [
+        "不改 schema / store / localStorage key / Electron / fs / IPC",
+        "不引入路由或新的全局状态模型",
+        "不把归档文件写盘包装成已完成"
+      ],
       "depends_on": []
     },
     {
-      "id": "D1-STEPPER-CLEANUP-REMAINDER",
+      "id": "D1-IA-CREATE-ENTRY-MODES",
       "track": "track_b_delivery_priority_shell",
-      "goal": "把 IssuePane 内 1.创建 / 2.选择 / 3.追记 / 4.结案 四块大表单的视觉重心降权（收折或轻量化），需独立评估 DoD（必须保证最小演示路径仍可跑通）。",
-      "depends_on": ["D1-FLOW-GUIDE-REMOVE"]
+      "goal": "没选中任何问题卡 / 第一次启动时，主界面默认显示“创建问题卡”；平时页面中心靠上保留主动“创建问题卡”入口。",
+      "scope": [
+        "创建入口默认态",
+        "主动创建入口位置",
+        "创建成功后的结果反馈与选中衔接",
+        "保持现有创建数据流"
+      ],
+      "non_goals": [
+        "不新增 AI intake 能力",
+        "不改 IssueCard 字段、校验、存储键",
+        "不新增演示数据伪装真实项目"
+      ],
+      "depends_on": ["D1-IA-LEFT-ISSUE-RAIL"]
+    },
+    {
+      "id": "D1-IA-CLOSEOUT-HEADER-ACTION",
+      "track": "track_b_delivery_priority_shell",
+      "goal": "选中问题卡后，把“结案”放到“查看归档列表”旁边，形成同一层级的主操作入口。",
+      "scope": [
+        "选中态主区域/顶部操作区的信息层级",
+        "结案入口位置",
+        "与归档列表入口的并列关系",
+        "保持现有 closeout 生成与 localStorage 归档链路"
+      ],
+      "non_goals": [
+        "不改 ArchiveDocument / ErrorEntry schema",
+        "不改归档 store",
+        "不接 Electron / fs / IPC",
+        "不把 Drawer 或归档页重做成独立系统"
+      ],
+      "depends_on": ["D1-IA-LEFT-ISSUE-RAIL"]
     },
     {
       "id": "D1-MAINLINE-BROWSER-SMOKE",
       "track": "track_b_delivery_priority_shell",
-      "goal": "浏览器真人冒烟，重点覆盖新 header 双入口、ProjectSelector popover、ArchiveEntryButton 计数徽标、drawer 内嵌 ArchivePaneShell + 全部归档条目列表、刷新后计数稳定、'最小演示路径'下方不再有步骤框；只验证不改代码。",
-      "depends_on": ["D1-MAINLINE-WIRE-CONNECT", "D1-ARCHIVE-PANEL-FIX", "D1-ARCHIVE-PERSIST-INDEX", "D1-LAYOUT-HEADER-ARCHIVE-ENTRY", "D1-FLOW-GUIDE-REMOVE"]
-    },
-    {
-      "id": "S3-ENTRY-PLANNING",
-      "track": "track_a_technical_close_loop_mainline",
-      "goal": "正式切回链路 A，评估 Electron/fs adapter、runtime log、repair task 的入口任务。需用户明确把 current_mode 切回 technical_mainline。",
-      "depends_on": []
+      "goal": "在浏览器里按新 IA 真人冒烟，确认默认创建态、左侧选择区、主动创建入口、追记、结案、归档列表与刷新后状态都能真实跑通。",
+      "scope": [
+        "只验证不改代码",
+        "覆盖第一次启动/无选中态",
+        "覆盖创建后选中、左侧选择切换、追加记录、结案入口与归档列表并列",
+        "覆盖刷新后 localStorage 状态"
+      ],
+      "non_goals": [
+        "不修 UI",
+        "不改业务代码",
+        "不补 schema / store / Electron / fs / IPC"
+      ],
+      "depends_on": [
+        "D1-IA-LEFT-ISSUE-RAIL",
+        "D1-IA-CREATE-ENTRY-MODES",
+        "D1-IA-CLOSEOUT-HEADER-ACTION"
+      ]
     }
   ],
   "completed_atomic_tasks": [
@@ -96,7 +146,8 @@
     "D1-LAYOUT-HEADER-ARCHIVE-ENTRY",
     "D1-FLOW-GUIDE-REMOVE",
     "D1-DOCS-CONSOLIDATE",
-    "D1-BRAND-UNIFY-PROBEFLASH"
+    "D1-BRAND-UNIFY-PROBEFLASH",
+    "D1-IA-PLANNING-SYNC"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -119,7 +170,7 @@
       "是否服务 D1 交差验收",
       "主操作区主线闭环在页面上是否已经在真实跑通",
       "归档区是否跨刷新保留",
-      "主页面信息架构是否已收束（顶部双入口 + 单栏主体）",
+      "主页面信息架构是否已收束（左侧稳定选择区 + 主区默认创建态 + 主动创建入口 + 结案/归档并列入口）",
       "中文是否更统一",
       "页面是否更像产品壳",
       "演示是否更顺",
@@ -127,17 +178,19 @@
       "是否避开 schema/store/Electron/fs/IPC 深改",
       "planning 与实际是否一致"
     ],
-    "recommended_next": "D1-ISSUE-LIST-HIDE-ARCHIVED",
+    "recommended_next": "D1-IA-LEFT-ISSUE-RAIL",
     "output_rule": "从 frontier_tasks 中选择唯一一个原子任务，写入 current_atomic_task，再进入 task-execution。"
   },
   "risks": [
-    "浏览器人工点击冒烟（含 ProjectSelector popover 开合、ArchiveEntryButton disabled/enabled 切换、Drawer 内嵌视觉一致性、窄屏响应式）尚未执行，需下一轮 D1-MAINLINE-BROWSER-SMOKE 覆盖。",
-    "IssuePane 内四块大表单（1.创建 / 2.选择 / 3.追记 / 4.结案）仍是主要视觉重心；若要按用户收束要求降权，需谨慎设计以保证最小演示路径仍可跑通（D1-STEPPER-CLEANUP）。",
+    "最新页面 IA 尚未落地：选择问题卡应位于左侧稳定选择区，无选中/首次启动默认显示创建问题卡，平时主区中心靠上保留主动创建入口，选中后结案应与查看归档列表并列。",
+    "浏览器人工点击冒烟需等 D1 IA 三项落地后执行，覆盖第一次启动、创建、左侧选择、追记、结案、归档列表与刷新后状态。",
     "ArchiveDocument / ErrorEntry 当前仍在 localStorage，不是 .debug_workspace 文件系统写盘；真实文件写盘、独立归档浏览页、跨项目检索仍未接入。",
     "Electron / fs / IPC 仍未接入，ProjectSelector popover 与归档 Drawer 只能展示真实边界，不能包装成已完成能力。"
   ],
   "notes": [
     "链路 A 没有取消，只是降级为后续主线；链路 B 为当前阶段唯一优先主线。",
+    "D1 最新页面 IA：左侧固定问题卡选择区；无选中/首次启动默认创建问题卡；主区中心靠上保留主动创建入口；选中后结案与查看归档列表并列。",
+    "current_atomic_task 保持 WAITING_FOR_PLANNING_SELECTION；下一轮仍需重新读取真实状态后再选择唯一原子任务。",
     "内部 localStorage key repo-debug:* 暂不改名，原因是保持既有浏览器数据和验证脚本兼容；对外品牌口径已统一为 ProbeFlash。",
     "用户当前偏好：除非明确要求，由 AI 自行编译（typecheck + build + 必要 verify）。",
     "D1-DOCS-CONSOLIDATE 已完成文档职责收束：核心 5 份（AGENTS / current / backlog / decisions / handoff.json）；弱化 5 份（docs/planning/handoff / roadmap / architecture，.agent-state/progress / session-log）。弱化文档不再默认逐轮同步，见 AGENTS.md §13 / §14。",
