@@ -1,2 +1,13 @@
-# 工具痕迹（Codex CLI 等），非项目内容
+# Personal AI assistant / agent tool traces (local-only, not project assets)
+.claude/
 .codex
+.codex/
+.cursor/
+.continue/
+.aider*
+.mcp.json
+
+# Local IDE workspace state. If shared project editor settings are needed,
+# commit an explicit template/rules file instead of local workspace state.
+.vscode
+.idea

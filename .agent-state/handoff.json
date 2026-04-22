@@ -14,7 +14,7 @@
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 长期性约束与下一轮必须保留的关键说明（不复写任务完成明细，明细见 git log）"
   },
-  "timestamp": "2026-04-22T15:16:40+08:00",
+  "timestamp": "2026-04-22T15:26:16+08:00",
   "current_mode": "technical_mainline",
   "current_stage": "S3",
   "current_stage_name": "技术闭环深化入口",
@@ -101,7 +101,8 @@
     "D1-ISSUE-RAIL-INITIAL-AUTO-LOAD",
     "D1-IA-ISSUE-RAIL-CREATE-ACTION",
     "TEST-TOOLING-ADD-PLAYWRIGHT",
-    "D1-MAINLINE-BROWSER-SMOKE"
+    "D1-MAINLINE-BROWSER-SMOKE",
+    "REPO-HYGIENE-IGNORE-PERSONAL-AI-TRACES"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -135,6 +136,7 @@
     "本次 smoke 未修改业务代码；只进行 planning sync。",
     "内部 localStorage key repo-debug:* 暂不改名，保持既有浏览器数据和验证脚本兼容；对外品牌口径为 ProbeFlash。",
     "用户当前偏好：除非明确要求，由 AI 自行编译（typecheck + build + 必要 verify）。",
-    "核心事实源为 AGENTS / current / backlog / decisions / handoff.json；弱化文档不再默认逐轮同步，见 AGENTS.md §13 / §14。"
+    "核心事实源为 AGENTS / current / backlog / decisions / handoff.json；弱化文档不再默认逐轮同步，见 AGENTS.md §13 / §14。",
+    "REPO-HYGIENE-IGNORE-PERSONAL-AI-TRACES 已完成：.claude/**、.codex、.mcp.json、.vscode、.idea 作为个人 AI/assistant/IDE 工具痕迹保持忽略/取消跟踪；.agents/skills/** 与 .agent-state/** 继续作为项目共享资产/交接事实源保留。"
   ]
 }

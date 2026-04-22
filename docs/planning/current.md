@@ -7,6 +7,7 @@
 - 当前模式：`technical_mainline`。
 - 阶段目标：D1 中文产品壳已完成 Playwright/Chromium 主流程浏览器 smoke；下一轮重新接回链路 A，先用一个规划入口任务确认技术闭环深化的唯一原子切入点，再执行具体代码任务。
 - 当前边界：当前仍是浏览器 SPA + `window.localStorage`；Electron / fs / IPC / `.debug_workspace` 文件写盘仍未接入。S3 入口任务只做真实状态复核与唯一技术任务选择，不直接大改业务代码。
+- 仓库卫生边界：个人 AI/assistant/IDE 工具痕迹保持未跟踪；`.agents/skills/**` 与 `.agent-state/**` 仍按项目共享技能与交接事实源保留。
 - D1 已验事实：`D1-MAINLINE-BROWSER-SMOKE` 已用 headless Chromium 覆盖默认创建态、问题卡创建/选中、左侧刷新/切换、header 创建入口、追加记录、结案、归档抽屉、刷新后 localStorage 读回；这是浏览器自动化 smoke，不等同于人工视觉验收。
 
 ## 两条链路
