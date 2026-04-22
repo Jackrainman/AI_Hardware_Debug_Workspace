@@ -14,7 +14,7 @@
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 长期性约束与下一轮必须保留的关键说明（不复写任务完成明细，明细见 git log）"
   },
-  "timestamp": "2026-04-22T13:12:30+08:00",
+  "timestamp": "2026-04-22T13:15:02+08:00",
   "current_mode": "delivery_priority",
   "current_stage": "D1",
   "current_stage_name": "交差优先中文产品壳",
@@ -40,24 +40,6 @@
   "current_atomic_task": "WAITING_FOR_PLANNING_SELECTION",
   "frontier_tasks": [
     {
-      "id": "D1-IA-CLOSEOUT-HEADER-ACTION",
-      "track": "track_b_delivery_priority_shell",
-      "goal": "选中问题卡后，把“结案”放到“查看归档列表”旁边，形成同一层级的主操作入口。",
-      "scope": [
-        "选中态主区域/顶部操作区的信息层级",
-        "结案入口位置",
-        "与归档列表入口的并列关系",
-        "保持现有 closeout 生成与 localStorage 归档链路"
-      ],
-      "non_goals": [
-        "不改 ArchiveDocument / ErrorEntry schema",
-        "不改归档 store",
-        "不接 Electron / fs / IPC",
-        "不把 Drawer 或归档页重做成独立系统"
-      ],
-      "depends_on": []
-    },
-    {
       "id": "D1-MAINLINE-BROWSER-SMOKE",
       "track": "track_b_delivery_priority_shell",
       "goal": "在浏览器里按新 IA 真人冒烟，确认默认创建态、左侧选择区、主动创建入口、追记、结案、归档列表与刷新后状态都能真实跑通。",
@@ -72,9 +54,7 @@
         "不改业务代码",
         "不补 schema / store / Electron / fs / IPC"
       ],
-      "depends_on": [
-        "D1-IA-CLOSEOUT-HEADER-ACTION"
-      ]
+      "depends_on": []
     }
   ],
   "completed_atomic_tasks": [
@@ -112,7 +92,8 @@
     "D1-BRAND-UNIFY-PROBEFLASH",
     "D1-IA-PLANNING-SYNC",
     "D1-IA-LEFT-ISSUE-RAIL",
-    "D1-IA-CREATE-ENTRY-MODES"
+    "D1-IA-CREATE-ENTRY-MODES",
+    "D1-IA-CLOSEOUT-HEADER-ACTION"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -143,18 +124,17 @@
       "是否避开 schema/store/Electron/fs/IPC 深改",
       "planning 与实际是否一致"
     ],
-    "recommended_next": "D1-IA-CLOSEOUT-HEADER-ACTION",
-    "output_rule": "从 frontier_tasks 中选择唯一一个原子任务，写入 current_atomic_task，再进入 task-execution。"
+    "recommended_next": "D1-MAINLINE-BROWSER-SMOKE",
+    "output_rule": "从 frontier_tasks 中选择唯一一个原子任务，写入 current_atomic_task，再进入 task-execution；浏览器冒烟必须真实执行，不能执行则标记待人工冒烟。"
   },
   "risks": [
-    "剩余页面 IA 尚未全部落地：选中后结案应与查看归档列表并列。",
-    "浏览器人工点击冒烟需等 D1 IA 最后一项落地后执行，覆盖第一次启动、创建、左侧选择、追记、结案、归档列表与刷新后状态。",
+    "D1 IA 三项已落地，但尚未完成真实浏览器主流程冒烟；不能把未验证路径说成已通过。",
     "ArchiveDocument / ErrorEntry 当前仍在 localStorage，不是 .debug_workspace 文件系统写盘；真实文件写盘、独立归档浏览页、跨项目检索仍未接入。",
     "Electron / fs / IPC 仍未接入，ProjectSelector popover 与归档 Drawer 只能展示真实边界，不能包装成已完成能力。"
   ],
   "notes": [
     "链路 A 没有取消，只是降级为后续主线；链路 B 为当前阶段唯一优先主线。",
-    "D1 最新页面 IA：左侧固定问题卡选择区与创建入口模式已落地；选中后结案与查看归档列表并列仍需继续收束。",
+    "D1 最新页面 IA：左侧固定问题卡选择区、创建入口模式、选中后结案与查看归档列表并列入口均已落地；下一步只做真实浏览器主流程冒烟。",
     "current_atomic_task 保持 WAITING_FOR_PLANNING_SELECTION；下一轮仍需重新读取真实状态后再选择唯一原子任务。",
     "内部 localStorage key repo-debug:* 暂不改名，原因是保持既有浏览器数据和验证脚本兼容；对外品牌口径已统一为 ProbeFlash。",
     "用户当前偏好：除非明确要求，由 AI 自行编译（typecheck + build + 必要 verify）。",

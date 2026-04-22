@@ -46,6 +46,7 @@ import {
 
 const SAMPLE_ISSUE_ID = "sample-issue-0001";
 const SAMPLE_TIMESTAMP = "2026-04-21T02:30:00+08:00";
+const CLOSEOUT_FORM_ID = "closeout-form";
 
 const SAMPLE_CARD: IssueCard = {
   id: SAMPLE_ISSUE_ID,
@@ -580,7 +581,12 @@ function CloseoutForm({
   };
 
   return (
-    <form className="intake-form" onSubmit={handleSubmit} data-testid="closeout-form">
+    <form
+      id={CLOSEOUT_FORM_ID}
+      className="intake-form"
+      onSubmit={handleSubmit}
+      data-testid="closeout-form"
+    >
       <div className="form-caption">
         <h3>4. 结案归档</h3>
         <p>填写根因和处理结论，生成浏览器本地归档摘要与错误表条目。</p>
@@ -742,7 +748,13 @@ function MainlineResultPanel({
   );
 }
 
-function IssuePane({ onCloseoutResult }: { onCloseoutResult: (summary: CloseoutSummary) => void }) {
+function IssuePane({
+  onCloseoutResult,
+  onSelectedIssueChange,
+}: {
+  onCloseoutResult: (summary: CloseoutSummary) => void;
+  onSelectedIssueChange: (id: string | null) => void;
+}) {
   const [cardList, setCardList] = useState<IssueCardListResult | null>(null);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
   const [selectedCard, setSelectedCard] = useState<IssueCard | null>(null);
@@ -768,6 +780,7 @@ function IssuePane({ onCloseoutResult }: { onCloseoutResult: (summary: CloseoutS
 
   const handleSelect = (id: string) => {
     setSelectedIssueId(id);
+    onSelectedIssueChange(id);
     reloadSelectedCard(id);
     setRecordList(listInvestigationRecordsByIssueId(id));
     setLastCloseout(null);
@@ -776,6 +789,7 @@ function IssuePane({ onCloseoutResult }: { onCloseoutResult: (summary: CloseoutS
   const handleCardCreated = (id: string) => {
     refreshCardList();
     setSelectedIssueId(id);
+    onSelectedIssueChange(id);
     reloadSelectedCard(id);
     setRecordList(listInvestigationRecordsByIssueId(id));
     setLastCloseout(null);
@@ -1226,6 +1240,30 @@ function ArchiveEntryButton({
   );
 }
 
+function CloseoutEntryButton({ issueId }: { issueId: string | null }) {
+  if (issueId === null) return null;
+
+  const handleClick = () => {
+    document.getElementById(CLOSEOUT_FORM_ID)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
+
+  return (
+    <button
+      type="button"
+      className="closeout-entry-button"
+      onClick={handleClick}
+      data-testid="closeout-header-action"
+      aria-label={`结案当前问题 ${issueId}`}
+    >
+      <span className="header-entry-icon" aria-hidden="true">✅</span>
+      <span className="header-entry-label">结案</span>
+    </button>
+  );
+}
+
 export default function App() {
   const [archiveIndex, setArchiveIndex] = useState<ArchiveIndex>({
     items: [],
@@ -1233,6 +1271,7 @@ export default function App() {
   });
   const [isArchiveListOpen, setIsArchiveListOpen] = useState<boolean>(false);
   const [isProjectEntryOpen, setIsProjectEntryOpen] = useState<boolean>(false);
+  const [activeIssueId, setActiveIssueId] = useState<string | null>(null);
 
   const refreshArchiveIndex = () => {
     setArchiveIndex(loadArchiveIndex());
@@ -1279,10 +1318,13 @@ export default function App() {
             />
           </div>
           <div className="header-entry-slot header-entry-slot-right">
-            <ArchiveEntryButton
-              count={archiveTotal}
-              onClick={() => setIsArchiveListOpen(true)}
-            />
+            <div className="header-entry-actions">
+              <CloseoutEntryButton issueId={activeIssueId} />
+              <ArchiveEntryButton
+                count={archiveTotal}
+                onClick={() => setIsArchiveListOpen(true)}
+              />
+            </div>
           </div>
         </div>
       </header>
@@ -1295,7 +1337,10 @@ export default function App() {
             </div>
             <p className="pane-hint">{issuePane.hint}</p>
           </div>
-          <IssuePane onCloseoutResult={handleCloseoutResult} />
+          <IssuePane
+            onCloseoutResult={handleCloseoutResult}
+            onSelectedIssueChange={setActiveIssueId}
+          />
         </section>
       </main>
       <footer className="app-footer">
