@@ -143,7 +143,13 @@ type IntakeSubmitStatus =
   | { state: "saved"; id: string; at: string }
   | { state: "error"; reason: string };
 
-function IssueIntakeForm({ onCreated }: { onCreated: (id: string) => void }) {
+function IssueIntakeForm({
+  isDefaultMode,
+  onCreated,
+}: {
+  isDefaultMode: boolean;
+  onCreated: (id: string) => void;
+}) {
   const [title, setTitle] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [severity, setSeverity] = useState<IntakeSeverity>("medium");
@@ -169,10 +175,26 @@ function IssueIntakeForm({ onCreated }: { onCreated: (id: string) => void }) {
   };
 
   return (
-    <form className="intake-form" onSubmit={handleSubmit} data-testid="issue-intake-form">
-      <div className="form-caption">
-        <h3>1. 创建问题卡</h3>
-        <p>先把现场现象记下来，系统会生成一张可追踪的问题卡。</p>
+    <form
+      className={`intake-form create-issue-entry${
+        isDefaultMode ? " create-issue-entry-default" : ""
+      }`}
+      onSubmit={handleSubmit}
+      data-testid="issue-intake-form"
+      data-mode={isDefaultMode ? "default" : "active-entry"}
+    >
+      <div className="form-caption create-entry-caption">
+        <div className="create-entry-title-row">
+          <span className="create-entry-badge">
+            {isDefaultMode ? "默认主界面" : "主动入口"}
+          </span>
+          <h3>{isDefaultMode ? "创建问题卡" : "创建新问题卡"}</h3>
+        </div>
+        <p>
+          {isDefaultMode
+            ? "首次进入或未选中问题时，先从这里记录现场现象。"
+            : "处理中也可以随时另开一张问题卡，创建后会自动切换到新卡。"}
+        </p>
       </div>
       <label className="intake-field">
         <span>问题标题</span>
@@ -785,8 +807,11 @@ function IssuePane({ onCloseoutResult }: { onCloseoutResult: (summary: CloseoutS
           />
         </aside>
         <section className="issue-workspace" aria-label="问题处理区">
+          <IssueIntakeForm
+            isDefaultMode={selectedIssueId === null}
+            onCreated={handleCardCreated}
+          />
           <DemoHint />
-          <IssueIntakeForm onCreated={handleCardCreated} />
           <MainlineResultPanel
             selectedCard={selectedCard}
             recordCount={recordCount}
