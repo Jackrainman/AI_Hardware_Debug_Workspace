@@ -31,7 +31,10 @@
 - 必要时补最小中文演示路径，但不动深层数据流。
 
 ## 当前唯一执行中的原子任务
-- **无**。上一原子任务 **D1-IA-CLOSEOUT-HEADER-ACTION** 已完成；下一轮仍需重新读取真实状态后，从前沿窗口选择唯一原子任务，推荐继续 **D1-MAINLINE-BROWSER-SMOKE**。
+- **D1-MAINLINE-BROWSER-SMOKE（阻塞 / 待人工冒烟）**。
+  - 已尝试在本机用临时 `npx playwright` + Chromium 做真实浏览器自动化冒烟。
+  - 阻塞原因：Chromium 启动失败，缺少系统库 `libnspr4.so`；当前用户无免密 sudo，无法安装浏览器系统依赖。
+  - 当前状态：不能可靠完成真实浏览器验证，禁止标记通过；需人工浏览器冒烟或先补齐本机 Chromium 依赖后重跑。
 
 ## 当前前沿任务窗口（候选，不等于顺推队列）
 > D1 信息架构三项已落地；当前只保留 1 个浏览器冒烟候选。仍不切回 S3 / 技术主线。
@@ -41,6 +44,7 @@
   - 范围：只验证不改代码；覆盖第一次启动/无选中态、创建后选中、左侧选择切换、追加记录、结案入口与归档列表并列、刷新后 localStorage 状态。
   - 非目标：不修 UI；不改业务代码；不补 schema/store/Electron/fs/IPC。
   - 依赖关系：D1-IA-LEFT-ISSUE-RAIL、D1-IA-CREATE-ENTRY-MODES、D1-IA-CLOSEOUT-HEADER-ACTION 已完成，依赖满足。
+  - 当前阻塞：本环境不能启动 Chromium（缺 `libnspr4.so`），状态为**待人工冒烟**。
 
 ## 下一任务选择流程
 1. 重新读取：`AGENTS.md`、`README.md`、本文件、`docs/planning/backlog.md`、`docs/planning/decisions.md`、`.agent-state/handoff.json`、`git status`、最近 commit、`apps/desktop/src/App.tsx`、`App.css`、`index.css`。

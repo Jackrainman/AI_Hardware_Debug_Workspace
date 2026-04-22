@@ -11,6 +11,7 @@
   - 范围：只验证不改代码；覆盖第一次启动/无选中态、创建后选中、左侧切换、追加记录、结案入口与归档列表并列、刷新后 localStorage 状态。
   - 非目标：不修 UI；不改业务代码；不补 schema / store / Electron / fs / IPC。
   - 依赖关系：D1-IA-LEFT-ISSUE-RAIL、D1-IA-CREATE-ENTRY-MODES、D1-IA-CLOSEOUT-HEADER-ACTION 已完成，依赖满足。
+  - 当前阻塞：本机 Chromium 缺 `libnspr4.so` 且无免密 sudo；本项待人工浏览器冒烟或补齐依赖后重跑自动化。
 
 ## 后续主线：链路 A 技术闭环深化
 - [ ] S3-ENTRY-PLANNING：交差壳完成后，重新读取真实状态并选择唯一技术主线入口任务。

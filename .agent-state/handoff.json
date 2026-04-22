@@ -14,7 +14,7 @@
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 长期性约束与下一轮必须保留的关键说明（不复写任务完成明细，明细见 git log）"
   },
-  "timestamp": "2026-04-22T13:15:02+08:00",
+  "timestamp": "2026-04-22T13:22:05+08:00",
   "current_mode": "delivery_priority",
   "current_stage": "D1",
   "current_stage_name": "交差优先中文产品壳",
@@ -37,7 +37,7 @@
       ]
     }
   },
-  "current_atomic_task": "WAITING_FOR_PLANNING_SELECTION",
+  "current_atomic_task": "D1-MAINLINE-BROWSER-SMOKE",
   "frontier_tasks": [
     {
       "id": "D1-MAINLINE-BROWSER-SMOKE",
@@ -54,7 +54,12 @@
         "不改业务代码",
         "不补 schema / store / Electron / fs / IPC"
       ],
-      "depends_on": []
+      "depends_on": [],
+      "blocked_by": [
+        "当前环境 Chromium 启动失败：缺少 libnspr4.so",
+        "当前用户无免密 sudo，无法安装浏览器系统依赖"
+      ],
+      "status": "blocked_pending_manual_browser_smoke"
     }
   ],
   "completed_atomic_tasks": [
@@ -124,10 +129,11 @@
       "是否避开 schema/store/Electron/fs/IPC 深改",
       "planning 与实际是否一致"
     ],
-    "recommended_next": "D1-MAINLINE-BROWSER-SMOKE",
-    "output_rule": "从 frontier_tasks 中选择唯一一个原子任务，写入 current_atomic_task，再进入 task-execution；浏览器冒烟必须真实执行，不能执行则标记待人工冒烟。"
+    "recommended_next": "D1-MAINLINE-BROWSER-SMOKE_MANUAL_BROWSER_SMOKE",
+    "output_rule": "不要继续技术主线；先人工浏览器冒烟，或补齐 Chromium 系统依赖后重跑自动化。冒烟未真实完成前不得标记 D1-MAINLINE-BROWSER-SMOKE 通过。"
   },
   "risks": [
+    "D1-MAINLINE-BROWSER-SMOKE 未完成：本环境 Chromium 缺 libnspr4.so 且无法免密 sudo 安装依赖，必须人工浏览器冒烟或补齐依赖后重跑。",
     "D1 IA 三项已落地，但尚未完成真实浏览器主流程冒烟；不能把未验证路径说成已通过。",
     "ArchiveDocument / ErrorEntry 当前仍在 localStorage，不是 .debug_workspace 文件系统写盘；真实文件写盘、独立归档浏览页、跨项目检索仍未接入。",
     "Electron / fs / IPC 仍未接入，ProjectSelector popover 与归档 Drawer 只能展示真实边界，不能包装成已完成能力。"
@@ -135,7 +141,8 @@
   "notes": [
     "链路 A 没有取消，只是降级为后续主线；链路 B 为当前阶段唯一优先主线。",
     "D1 最新页面 IA：左侧固定问题卡选择区、创建入口模式、选中后结案与查看归档列表并列入口均已落地；下一步只做真实浏览器主流程冒烟。",
-    "current_atomic_task 保持 WAITING_FOR_PLANNING_SELECTION；下一轮仍需重新读取真实状态后再选择唯一原子任务。",
+    "D1-MAINLINE-BROWSER-SMOKE：自动化尝试未通过环境门槛；npx playwright 与 Chromium 下载成功，但 Chromium 启动缺 libnspr4.so，sudo -n 需要密码；当前状态为待人工冒烟。",
+    "current_atomic_task 为 D1-MAINLINE-BROWSER-SMOKE；该任务阻塞在真实浏览器环境，未完成前不得选择下一技术主线任务。",
     "内部 localStorage key repo-debug:* 暂不改名，原因是保持既有浏览器数据和验证脚本兼容；对外品牌口径已统一为 ProbeFlash。",
     "用户当前偏好：除非明确要求，由 AI 自行编译（typecheck + build + 必要 verify）。",
     "D1-DOCS-CONSOLIDATE 已完成文档职责收束：核心 5 份（AGENTS / current / backlog / decisions / handoff.json）；弱化 5 份（docs/planning/handoff / roadmap / architecture，.agent-state/progress / session-log）。弱化文档不再默认逐轮同步，见 AGENTS.md §13 / §14。",
