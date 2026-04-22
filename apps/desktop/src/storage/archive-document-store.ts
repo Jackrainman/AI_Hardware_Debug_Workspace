@@ -7,6 +7,7 @@ import {
   ArchiveDocumentSchema,
   type ArchiveDocument,
 } from "../domain/schemas/archive-document.ts";
+import { localStorageAdapter } from "./local-storage-adapter.ts";
 
 const KEY_PREFIX = "repo-debug:archive-document:";
 
@@ -37,11 +38,11 @@ function fileNameFromKey(key: string): string {
 }
 
 export function saveArchiveDocument(document: ArchiveDocument): void {
-  window.localStorage.setItem(storageKey(document.fileName), JSON.stringify(document));
+  localStorageAdapter.setItem(storageKey(document.fileName), JSON.stringify(document));
 }
 
 export function loadArchiveDocument(fileName: string): LoadArchiveDocumentResult {
-  const raw = window.localStorage.getItem(storageKey(fileName));
+  const raw = localStorageAdapter.getItem(storageKey(fileName));
   if (raw === null) {
     return { ok: false, error: { kind: "not_found", fileName } };
   }
@@ -69,21 +70,13 @@ export function loadArchiveDocument(fileName: string): LoadArchiveDocumentResult
 }
 
 export function listArchiveDocuments(): ArchiveDocumentListResult {
-  const storage = window.localStorage;
   const valid: ArchiveDocument[] = [];
   const invalid: ArchiveDocumentListInvalidEntry[] = [];
-
-  const keys: string[] = [];
-  for (let i = 0; i < storage.length; i += 1) {
-    const key = storage.key(i);
-    if (key !== null && key.startsWith(KEY_PREFIX)) {
-      keys.push(key);
-    }
-  }
+  const keys = localStorageAdapter.listKeys(KEY_PREFIX);
 
   for (const key of keys) {
     const fileName = fileNameFromKey(key);
-    const raw = storage.getItem(key);
+    const raw = localStorageAdapter.getItem(key);
     if (raw === null) continue;
     let parsed: unknown;
     try {

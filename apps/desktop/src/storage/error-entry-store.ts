@@ -4,6 +4,7 @@
 
 import type { ZodIssue } from "zod";
 import { ErrorEntrySchema, type ErrorEntry } from "../domain/schemas/error-entry.ts";
+import { localStorageAdapter } from "./local-storage-adapter.ts";
 
 const KEY_PREFIX = "repo-debug:error-entry:";
 
@@ -34,11 +35,11 @@ function idFromKey(key: string): string {
 }
 
 export function saveErrorEntry(entry: ErrorEntry): void {
-  window.localStorage.setItem(storageKey(entry.id), JSON.stringify(entry));
+  localStorageAdapter.setItem(storageKey(entry.id), JSON.stringify(entry));
 }
 
 export function loadErrorEntry(id: string): LoadErrorEntryResult {
-  const raw = window.localStorage.getItem(storageKey(id));
+  const raw = localStorageAdapter.getItem(storageKey(id));
   if (raw === null) {
     return { ok: false, error: { kind: "not_found", id } };
   }
@@ -66,21 +67,13 @@ export function loadErrorEntry(id: string): LoadErrorEntryResult {
 }
 
 export function listErrorEntries(): ErrorEntryListResult {
-  const storage = window.localStorage;
   const valid: ErrorEntry[] = [];
   const invalid: ErrorEntryListInvalidEntry[] = [];
-
-  const keys: string[] = [];
-  for (let i = 0; i < storage.length; i += 1) {
-    const key = storage.key(i);
-    if (key !== null && key.startsWith(KEY_PREFIX)) {
-      keys.push(key);
-    }
-  }
+  const keys = localStorageAdapter.listKeys(KEY_PREFIX);
 
   for (const key of keys) {
     const id = idFromKey(key);
-    const raw = storage.getItem(key);
+    const raw = localStorageAdapter.getItem(key);
     if (raw === null) continue;
     let parsed: unknown;
     try {

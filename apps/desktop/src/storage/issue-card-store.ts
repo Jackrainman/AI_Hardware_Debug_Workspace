@@ -5,6 +5,7 @@ import {
   IssueStatus,
   type IssueCard,
 } from "../domain/schemas/issue-card.ts";
+import { localStorageAdapter } from "./local-storage-adapter.ts";
 
 const KEY_PREFIX = "repo-debug:issue-card:";
 
@@ -55,11 +56,11 @@ function toSummary(card: IssueCard): IssueCardSummary {
 }
 
 export function saveIssueCard(card: IssueCard): void {
-  window.localStorage.setItem(storageKey(card.id), JSON.stringify(card));
+  localStorageAdapter.setItem(storageKey(card.id), JSON.stringify(card));
 }
 
 export function loadIssueCard(id: string): LoadIssueCardResult {
-  const raw = window.localStorage.getItem(storageKey(id));
+  const raw = localStorageAdapter.getItem(storageKey(id));
   if (raw === null) {
     return { ok: false, error: { kind: "not_found", id } };
   }
@@ -87,21 +88,13 @@ export function loadIssueCard(id: string): LoadIssueCardResult {
 }
 
 export function listIssueCards(): IssueCardListResult {
-  const storage = window.localStorage;
   const valid: IssueCardSummary[] = [];
   const invalid: IssueCardListInvalidEntry[] = [];
-
-  const keys: string[] = [];
-  for (let i = 0; i < storage.length; i += 1) {
-    const key = storage.key(i);
-    if (key !== null && key.startsWith(KEY_PREFIX)) {
-      keys.push(key);
-    }
-  }
+  const keys = localStorageAdapter.listKeys(KEY_PREFIX);
 
   for (const key of keys) {
     const id = idFromKey(key);
-    const raw = storage.getItem(key);
+    const raw = localStorageAdapter.getItem(key);
     if (raw === null) continue;
     let parsed: unknown;
     try {

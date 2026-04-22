@@ -8,6 +8,7 @@ import {
   InvestigationRecordSchema,
   type InvestigationRecord,
 } from "../domain/schemas/investigation-record.ts";
+import { localStorageAdapter } from "./local-storage-adapter.ts";
 
 const KEY_PREFIX = "repo-debug:investigation-record:";
 
@@ -29,27 +30,19 @@ function idFromKey(key: string): string {
 }
 
 export function saveInvestigationRecord(record: InvestigationRecord): void {
-  window.localStorage.setItem(storageKey(record.id), JSON.stringify(record));
+  localStorageAdapter.setItem(storageKey(record.id), JSON.stringify(record));
 }
 
 export function listInvestigationRecordsByIssueId(
   issueId: string,
 ): InvestigationRecordListResult {
-  const storage = window.localStorage;
   const valid: InvestigationRecord[] = [];
   const invalid: InvestigationRecordListInvalidEntry[] = [];
-
-  const keys: string[] = [];
-  for (let i = 0; i < storage.length; i += 1) {
-    const key = storage.key(i);
-    if (key !== null && key.startsWith(KEY_PREFIX)) {
-      keys.push(key);
-    }
-  }
+  const keys = localStorageAdapter.listKeys(KEY_PREFIX);
 
   for (const key of keys) {
     const id = idFromKey(key);
-    const raw = storage.getItem(key);
+    const raw = localStorageAdapter.getItem(key);
     if (raw === null) continue;
     let parsed: unknown;
     try {

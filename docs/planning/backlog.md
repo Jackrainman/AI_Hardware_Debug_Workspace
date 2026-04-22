@@ -6,23 +6,17 @@
 - S3：存储迁移与服务器化。
 - 大目标：把 D1 的浏览器 SPA + `window.localStorage` 演示版，迁移为战队局域网可访问、服务器端长期存储版。
 - 交付目标：同一 WiFi 下通过类似 `http://hurricane-server.local:<port>/` 的地址访问；服务端持久化数据，支持多设备共享与重启后读回。
-- 当前唯一前沿入口：`S3-PREP-STORAGE-ADAPTER-ABSTRACTION-A2A3A4`，见 `docs/planning/current.md`。
+- 当前唯一前沿入口：`S3-PREP-API-CONTRACT-DRAFT-A1A2`，见 `docs/planning/current.md`。
 
 ## S3 仓库内准备任务池
 
 > 这些任务用于在不上服务器、不写完整后端、不接 SQLite 的前提下，先把 workspace / storage / API / schema / 不可达策略的工程边界对齐。
 
-### S3-PREP-STORAGE-ADAPTER-ABSTRACTION（当前前沿）
-- [ ] 目标：把当前 localStorage 读写调用点抽成统一存储适配层，为后续 server adapter 做准备。
-- [ ] DoD：`apps/desktop/src/storage/*` 通过统一 adapter 边界读写，localStorage adapter 保留且现有保存 / 读取 / 列表 / 归档行为兼容。
-- [ ] 边界：先不接服务器；不改成 HTTP 主事实源；不重做业务数据流；不改变既有 schema 语义。
-- [ ] 依赖：`S3-PREP-WORKSPACE-FOUNDATION-A1` 已完成；server adapter 部分等待 API contract 与后端任务。
-
-### S3-PREP-API-CONTRACT-DRAFT
+### S3-PREP-API-CONTRACT-DRAFT（当前前沿）
 - [ ] 目标：定义最小 HTTP API 契约，供后续后端实现。
 - [ ] DoD：契约覆盖 health、workspaces、issues、records、archives、error_entries 的最小读写 / 列表 / 读回语义，以及统一错误返回和 workspace 参数传递方式。
 - [ ] 边界：只写契约，不实现真实后端；不引入权限、实时协作、AI 或复杂查询。
-- [ ] 依赖：默认 workspace id / name 已确认。
+- [ ] 依赖：默认 workspace id / name 已确认；localStorage adapter 边界已抽出。
 
 ### S3-PREP-SQLITE-SCHEMA-DRAFT
 - [ ] 目标：定义最小 SQLite schema 草案，覆盖 issues / records / archives / error_entries / workspaces。
