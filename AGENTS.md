@@ -37,9 +37,12 @@
 - 如果 `current.md` 前沿窗口不再匹配真实阶段，先更新 `current.md` / `handoff.json`，再执行任务。
 - 禁止凭旧计划机械顺推；禁止同时推进两个原子任务。
 
-## 7. Completion Gate And Mandatory Doc Sync
-- 当前原子任务未完成"最小验证 + 交接更新 + 单任务 commit"前，不得选择或执行下一任务。
-- 每次完成一个原子任务后，交接更新按 §14 文档更新触发执行；默认只同步核心文档（`current.md` / `backlog.md` / `.agent-state/handoff.json`）。
+## 7. Completion Gate And Post-Task Planning Sync
+- 当前原子任务未完成"最小验证 + planning sync + 单任务 commit"前，不得选择或执行下一任务。
+- 每次完成一个原子任务后，必须执行 post-task planning sync；planning sync 是 completion gate 的必要条件，不是可选交接备注。
+- planning sync 的最小必更文件为：`docs/planning/current.md` 与 `.agent-state/handoff.json`。
+- `docs/planning/backlog.md` 仅在以下情况更新：当前前沿任务窗口变化；候选任务被移除 / 新增 / 改名 / 重排优先级；当前任务完成后需要显式切换下一前沿任务。
+- planning sync 采用"覆盖当前状态"而非"追加流水账"；目标是让下一轮 AI 能正确接着干，不是把本轮全过程写成纪实文学。
 - 弱化文档（`handoff.md` / `roadmap.md` / `architecture.md` / `progress.md` / `session-log.md`）不再默认逐轮同步；只有其自身职责命中变化时才动（见 §13 / §14）。
 - 阶段或产品口径变化明显时，还必须同步 `README.md` / `docs/planning/decisions.md`。
 - 不允许"代码已经变了，但 `current.md` / `handoff.json` 还停留在旧阶段"。
@@ -51,7 +54,7 @@
 
 ## 9. Mandatory Skill Usage
 - `planning`：读取真实状态、判断阶段与前沿任务窗口、生成唯一下一原子任务。
-- `task-execution`：只做当前原子任务的落地改动、最小验证、交接更新、单任务 commit。
+- `task-execution`：只做当前原子任务的落地改动、最小验证、planning sync、单任务 commit。
 - `task-verification`：完成定义检查、读回验证、completion gate 放行判断。
 - `repo-onboard`：首次进入仓库的路径校验与快照采集。
 - `debug-intake`：碎片输入生成 IssueCard。
@@ -71,39 +74,41 @@
 ## 12. Commit And Verification
 - 每完成一个离散任务提交一次 commit；一个 commit 只对应一个明确任务结果。
 - 当前任务未提交前，不得进入下一任务。
-- 文档/规划重构的最小验证：路径存在、内容可读、引用一致、JSON 可解析、`git diff --check` 通过、提交范围聚焦。
+- 文档/规划重构的最小验证：路径存在、内容可读、引用一致、JSON 可解析、planning sync 边界符合 §7 / §14、`git diff --check` 通过、提交范围聚焦。
 - 用户当前偏好：除非明确要求，由 AI 自行编译。
 
 ## 13. Documentation Responsibilities（文档职责与唯一事实源）
 - **核心文档**（人读优先只看这五份）：
   - `AGENTS.md`：长期规则、工作流、DoD、夜跑边界、禁改区、文档职责。
-  - `docs/planning/current.md`：唯一当前战况。阶段目标、前沿任务窗口（1~3 候选）、唯一执行中的原子任务、下一任务选择流程、DoD。
+  - `docs/planning/current.md`：唯一当前战况。阶段目标、前沿任务窗口（1~3 候选）、唯一执行中的原子任务、下一任务选择流程、DoD；不保留长篇历史实现细节，不重复 `git log`，不复制 `handoff.json.notes`。
   - `docs/planning/backlog.md`：唯一候选池。只留未开做候选；不再维护"已完成"区。
   - `docs/planning/decisions.md`：关键拍板与长期约束。仅在出现新的长期性决定时追加，不是轮次日志。
-  - `.agent-state/handoff.json`：唯一机读状态。只保存下一轮选择所必需的结构化字段。
+  - `.agent-state/handoff.json`：唯一机读状态。只保存下一轮选择所必需的结构化字段，不承载长篇 prose。
 - **弱化/低频文档**（不再和核心文档重复状态；如需要，仅保留历史痕迹或薄重定向）：
   - `docs/planning/handoff.md`：以 `current.md` + `handoff.json` 为准，本文件不再逐轮追加。
   - `docs/planning/roadmap.md`：阶段代号索引，不再重复 backlog/decisions 细节。
   - `docs/planning/architecture.md`：详细规则见本文件 §2 / §6；仅保留分层示意。
   - `.agent-state/progress.md`：完成项明细见 `handoff.json.completed_atomic_tasks` 与 `git log`。
   - `.agent-state/session-log.md`：低频维护的历史时间线；非事实源，不强制追加。
+- **已完成任务历史**：以 `git log` 与 `.agent-state/handoff.json.completed_atomic_tasks` 为主，不在 `current.md` / `backlog.md` 重复维护长已完成列表。
 - **禁止**：在多个文档里并行维护"当前战况 / 已完成列表 / 上一轮详述"；核心文档与弱化文档之间出现冲突时，以核心文档为准。
 
 ## 14. Documentation Update Triggers（何时更新哪份文档）
-- 每轮原子任务完成后，**必须**按需更新：
-  - `docs/planning/current.md`：阶段目标、前沿窗口、当前任务、DoD 命中状态发生变化时。
-  - `docs/planning/backlog.md`：新增候选 / 候选被选中 / 候选被放弃 时。
-  - `.agent-state/handoff.json`：`current_stage` / `current_mode` / `current_atomic_task` / `frontier_tasks` / `completed_atomic_tasks` / `risks` 任一变化时。
+- 每轮原子任务完成后，**必须执行 planning sync**：
+  - `docs/planning/current.md`：必更。只覆盖当前阶段、前沿窗口、当前唯一执行中的原子任务、下一任务选择流程、DoD 当前态；"当前唯一执行中的原子任务"只保留当前态，不保留多轮旧任务正文。
+  - `.agent-state/handoff.json`：必更。只写机读状态与下一轮必须保留的结构化字段；`notes` 只保留长期约束或关键边界，不复写任务完成明细。
+  - `docs/planning/backlog.md`：条件更新。仅当前前沿任务窗口变化、候选任务被移除 / 新增 / 改名 / 重排优先级、或当前任务完成后需要显式切换下一前沿任务时修改。
 - **按需**更新：
   - `AGENTS.md`：长期规则、工作流、文档职责、夜跑边界发生变化时。
   - `docs/planning/decisions.md`：产生了新的长期性决定（D-xxx 级别）时。
   - `README.md`：产品对外口径、阶段口径、演示说明发生变化时。
 - **不要默认同时更新**：`handoff.md` / `roadmap.md` / `architecture.md` / `progress.md` / `session-log.md`。只有这些弱化文档自身职责命中变化时才动。
+- **防膨胀约束**：单轮 planning sync 优先修改已有段落，不新增同义新段；若某段描述只是在重复 `backlog.md` / `decisions.md` / `git log` / `handoff.json`，必须删减或改为引用；非长期规则不得写入 `AGENTS.md`；非长期决策不得写入 `decisions.md`。
 
 ## 15. Overnight / Unattended Boundaries（夜跑 / 无人值守边界）
 - 允许方向：文档对齐、`.agent-state/handoff.json` 对齐、verify 脚本补齐、低风险异味扫描、单个原子 UI 低风险小改（仍受 §5 安全美化限制）。
 - 禁止方向（D1 阶段内全部禁止）：AI runtime 接入、Electron / preload / IPC、Node fs / `.debug_workspace` 写盘、MCP 接入、大规模 UI 重构、schema / store / closeout 工厂 / localStorage key 变更、多任务并行推进。
-- 每轮仍遵守 §6 / §7：只一个原子任务在执行、完成前必须跑最小验证 + 交接更新 + 单任务 commit；夜跑不允许跳过。
+- 每轮仍遵守 §6 / §7：只一个原子任务在执行、完成前必须跑最小验证 + planning sync + 单任务 commit；夜跑不允许跳过。
 
 ## 16. Verification Matrix（验证矩阵）
 - **必跑**（每轮都要跑，除非用户明确免除）：
@@ -114,5 +119,5 @@
 - **按需**（任务相关时跑）：
   - `apps/desktop/scripts/verify-*.mts` 中与本轮改动语义相关的脚本。
   - 浏览器人工冒烟（涉及 UI 行为变化时；不改代码时可仅标注未执行）。
-- **文档/规划类任务专用最小验证**：路径存在、内容可读、引用一致、`JSON.parse` 通过、`git diff --check` 通过；typecheck 与 build 仍建议跑以避免误伤。
+- **文档/规划类任务专用最小验证**：路径存在、内容可读、引用一致、planning sync 边界符合 §7 / §14、`JSON.parse` 通过、`git diff --check` 通过；typecheck 与 build 仍建议跑以避免误伤。
 - 未跑的必跑项必须在 commit message 或 handoff 中如实标注原因，不得静默跳过。
