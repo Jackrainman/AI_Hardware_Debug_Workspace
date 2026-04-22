@@ -12,55 +12,98 @@
     "s3_task_breakdown": "object - S3 小任务拆分摘要",
     "next_task_selection_basis": "object - 下一任务选择依据",
     "risks": "string[] - 当前已知风险",
-    "notes": "string[] - 长期性约束与下一轮必须保留的关键说明"
+    "notes": "string[] - 长期性约束与下一轮必须保留的关键说明",
+    "s3_prep_task_pool": "object - S3 仓库内准备任务池、推荐顺序与依赖摘要"
   },
-  "timestamp": "2026-04-22T16:10:08+08:00",
+  "timestamp": "2026-04-23T01:01:05+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "S3",
   "current_stage_name": "存储迁移与服务器化",
-  "current_stage_goal": "把 D1 的浏览器 SPA + window.localStorage 演示版迁移为同一 WiFi 下可访问、服务器端长期存储的版本，预期入口类似 http://hurricane-server.local:<port>/。",
+  "current_stage_goal": "把 D1 的浏览器 SPA + window.localStorage 演示版迁移为同一 WiFi 下可访问、服务器端长期存储的版本；当前先补齐默认工作区、存储适配、API 契约、SQLite schema 与服务不可达策略等仓库内准备任务。",
   "primary_track": "s3_storage_serverization",
   "deferred_track": "ai_rag_electron_advanced_features",
-  "current_atomic_task": "S3-SERVER-INVENTORY",
+  "current_atomic_task": "S3-PREP-WORKSPACE-FOUNDATION",
   "storage_strategy": {
-    "current_truth": "apps/desktop 仍使用 window.localStorage；本轮未写后端代码，未改前端业务逻辑。",
+    "current_truth": "apps/desktop 仍使用 window.localStorage；本轮仅更新 planning/state，未写后端代码，未改前端业务逻辑。",
+    "prep_direction": "先建立默认 workspace 边界，再抽象 localStorage adapter；server adapter 等待 API contract 与后端任务。",
     "s3_target": "服务端 SQLite / 数据目录作为长期事实源，前端通过 HTTP storage adapter 访问。"
   },
   "access_strategy": {
     "target_lan_entry": "http://hurricane-server.local:<port>/",
     "fallback": "服务器局域网 IP + 端口",
     "must_confirm_next": [
-      "服务器 OS / Node / npm 环境",
-      "端口范围与防火墙",
-      "hurricane-server.local 或 mDNS/DNS 可用性",
-      "运行用户、工作目录、数据目录、备份目录权限",
-      "持久运行方式"
+      "默认共用工作区 id / name / 归属规则",
+      "storage adapter 接口是否需要 workspaceId",
+      "最小 HTTP API 契约与错误返回格式",
+      "SQLite schema 的 workspaces 关联方式",
+      "服务器 OS / Node / npm 环境、端口、防火墙和数据目录权限（后续 S3-SERVER-INVENTORY）"
     ]
   },
   "frontier_tasks": [
     {
-      "id": "S3-SERVER-INVENTORY",
-      "track": "s3_storage_serverization",
-      "goal": "写后端前先确认服务器环境、端口、域名/入口方式、权限和部署条件。",
+      "id": "S3-PREP-WORKSPACE-FOUNDATION",
+      "track": "s3_storage_serverization_prep",
+      "goal": "引入默认共用工作区（例如“26年 R1”）基础逻辑，为 storage / API / SQLite 统一提供数据归属边界。",
       "scope": [
-        "盘点 OS / Node / npm / 依赖安装方式",
-        "确认 hostname/mDNS/IP 与端口策略",
-        "确认防火墙、启动用户、工作目录、数据目录、备份目录和日志目录权限",
-        "输出 S3-BACKEND-SCAFFOLD 的输入约束"
+        "明确默认 workspace id / name / 归属规则",
+        "预留后续可增加工作区的扩展路径",
+        "保持现有 localStorage 行为兼容"
       ],
       "non_goals": [
-        "不写后端代码",
-        "不改前端业务逻辑",
-        "不接 AI/RAG/权限系统/Electron",
-        "不改 localStorage key"
+        "不做完整工作区管理系统",
+        "不做复杂切换 UI",
+        "不做权限隔离",
+        "不写后端或接 SQLite"
       ],
       "depends_on": [
-        "S3-ENTRY-PLANNING"
+        "S3-PREP-FRONTIER-EXPANSION"
       ],
       "status": "pending_next_round"
+    },
+    {
+      "id": "S3-PREP-STORAGE-ADAPTER-ABSTRACTION",
+      "track": "s3_storage_serverization_prep",
+      "goal": "把当前 localStorage 读写调用点抽成统一存储适配层，先保留 localStorage adapter。",
+      "scope": [
+        "统一 apps/desktop/src/storage/* 的 adapter 边界",
+        "保留保存 / 读取 / 列表 / 归档行为兼容",
+        "为后续 server adapter 降低改动面"
+      ],
+      "non_goals": [
+        "不接服务器",
+        "不把 HTTP API 作为主事实源",
+        "不重做业务数据流或 schema"
+      ],
+      "depends_on": [
+        "S3-PREP-WORKSPACE-FOUNDATION"
+      ],
+      "status": "candidate_after_workspace"
+    },
+    {
+      "id": "S3-PREP-API-CONTRACT-DRAFT",
+      "track": "s3_storage_serverization_prep",
+      "goal": "定义最小 HTTP API 契约，供后续后端和 server adapter 实现。",
+      "scope": [
+        "覆盖 health / workspaces / issues / records / archives / error_entries",
+        "定义 workspace 参数传递、读回语义和统一错误返回",
+        "保持契约文档化，不实现后端"
+      ],
+      "non_goals": [
+        "不写真实后端",
+        "不引入权限、实时协作、AI 或复杂查询"
+      ],
+      "depends_on": [
+        "S3-PREP-WORKSPACE-FOUNDATION"
+      ],
+      "status": "candidate_after_workspace"
     }
   ],
   "s3_task_breakdown": {
+    "S3-PREP-WORKSPACE-FOUNDATION": "默认共用工作区基础与扩展边界。",
+    "S3-PREP-STORAGE-ADAPTER-ABSTRACTION": "统一 storage adapter 边界，localStorage adapter 保留。",
+    "S3-PREP-API-CONTRACT-DRAFT": "最小 HTTP API 契约，不实现后端。",
+    "S3-PREP-SQLITE-SCHEMA-DRAFT": "最小 SQLite schema 草案，不落库。",
+    "S3-PREP-SERVER-UNREACHABLE-HANDLING": "服务不可达提示、阻断、回退策略。",
     "S3-SERVER-INVENTORY": "服务器环境、端口、LAN 入口、权限、数据路径、部署条件盘点。",
     "S3-BACKEND-SCAFFOLD": "最小 Node 后端、/health、配置入口、静态资源服务策略。",
     "S3-SQLITE-STORAGE": "SQLite schema、初始化、CRUD、读回验证。",
@@ -110,7 +153,8 @@
     "TEST-TOOLING-ADD-PLAYWRIGHT",
     "D1-MAINLINE-BROWSER-SMOKE",
     "REPO-HYGIENE-IGNORE-PERSONAL-AI-TRACES",
-    "S3-ENTRY-PLANNING"
+    "S3-ENTRY-PLANNING",
+    "S3-PREP-FRONTIER-EXPANSION"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -123,28 +167,98 @@
       ".agent-state/handoff.json",
       "git status",
       "git log -5",
-      "目标服务器环境信息（若本地无法获取则记录待确认项）"
+      "apps/desktop/src/storage/* 与必要的 App 调用点"
     ],
     "criteria": [
       "current_mode 是否为 server_storage_migration",
-      "是否坚持局域网共享 + 服务器长期存储目标",
-      "是否先完成 S3-SERVER-INVENTORY 再写后端",
+      "是否仍坚持局域网共享 + 服务器长期存储目标",
+      "是否先建立默认 workspace 边界，再抽 storage adapter，避免接口与 key 二次返工",
+      "是否不 SSH、不安装依赖、不写完整后端、不接 SQLite",
       "是否避免 AI/RAG/权限/Electron/大 UI 重构进入当前主线",
       "是否如实保留 localStorage 仍是当前实现的边界"
     ],
-    "recommended_next": "S3-SERVER-INVENTORY",
-    "output_rule": "下一轮只做服务器环境与部署条件盘点；不要在同一轮直接实现后端。"
+    "recommended_next": "S3-PREP-WORKSPACE-FOUNDATION",
+    "output_rule": "下一轮只做默认共用工作区基础；完成后重新读取 planning，再判断进入 storage adapter 抽象还是 API contract draft。"
   },
   "risks": [
     "当前应用仍是 localStorage 演示存储，不支持跨设备共享；S3 未完成前不得宣称服务器化完成。",
-    "hurricane-server.local 是否可解析、端口是否可开放、服务器运行权限和数据目录权限均待 S3-SERVER-INVENTORY 确认。",
-    "后端方案、SQLite 文件路径和 LAN 部署方式尚未落定；未盘点前直接实现会增加返工。"
+    "尚未建立默认 workspace 边界；若直接抽 storage adapter，后续补 workspaceId 可能导致接口、key 和数据迁移返工。",
+    "最小 HTTP API 契约、SQLite schema 草案和服务不可达策略尚未落盘；后端实现前必须补齐。",
+    "hurricane-server.local 是否可解析、端口是否可开放、服务器运行权限和数据目录权限仍待 S3-SERVER-INVENTORY 确认。"
   ],
   "notes": [
-    "D1 产品壳与浏览器 smoke 已完成，当前转入 S3 存储迁移与服务器化。",
+    "D1 产品壳与浏览器 smoke 已完成，当前处于 S3 存储迁移与服务器化。",
     "S3 当前不优先做 AI、RAG、权限系统、Electron、fs/IPC、大 UI 重构或复杂统计。",
     "交付目标是同一 WiFi 下局域网访问 + 服务器长期存储，不是静态演示版。",
-    "S3-ENTRY-PLANNING 为纯文档/规划切换，未改前端/后端代码；本轮按用户要求不跑 npm run typecheck / npm run build，仅跑文档类验证。",
+    "S3-PREP-FRONTIER-EXPANSION 为纯 planning/state 任务，只纳入五个仓库内准备任务；未改业务代码、未写后端、未接 SQLite、未 SSH 服务器。",
     "核心事实源为 AGENTS / current / backlog / decisions / handoff.json；弱化文档不默认逐轮同步，除非职责命中。"
-  ]
+  ],
+  "s3_prep_task_pool": {
+    "recommended_order": [
+      "S3-PREP-WORKSPACE-FOUNDATION",
+      "S3-PREP-STORAGE-ADAPTER-ABSTRACTION",
+      "S3-PREP-API-CONTRACT-DRAFT",
+      "S3-PREP-SQLITE-SCHEMA-DRAFT",
+      "S3-PREP-SERVER-UNREACHABLE-HANDLING"
+    ],
+    "ordering_note": "S3-PREP-WORKSPACE-FOUNDATION 建议先于 storage adapter：workspaceId 会影响 localStorage key、adapter 接口、API 路由/参数与 SQLite 外键；否则后续容易二次改接口。",
+    "tasks": {
+      "S3-PREP-WORKSPACE-FOUNDATION": {
+        "goal": "引入默认共用工作区基础逻辑，并预留后续增加工作区路径。",
+        "non_goals": [
+          "不做完整工作区管理系统",
+          "不做复杂切换 UI",
+          "不做权限隔离"
+        ],
+        "depends_on": [
+          "S3-PREP-FRONTIER-EXPANSION"
+        ]
+      },
+      "S3-PREP-STORAGE-ADAPTER-ABSTRACTION": {
+        "goal": "把 localStorage 读写调用点抽成统一存储适配层，保留 localStorage adapter。",
+        "non_goals": [
+          "不接服务器",
+          "不改 HTTP 主事实源",
+          "不重做业务数据流"
+        ],
+        "depends_on": [
+          "S3-PREP-WORKSPACE-FOUNDATION"
+        ]
+      },
+      "S3-PREP-API-CONTRACT-DRAFT": {
+        "goal": "定义最小 HTTP API 契约，供后续后端实现。",
+        "non_goals": [
+          "不实现真实后端",
+          "不引入权限/实时协作/AI/复杂查询"
+        ],
+        "depends_on": [
+          "S3-PREP-WORKSPACE-FOUNDATION"
+        ]
+      },
+      "S3-PREP-SQLITE-SCHEMA-DRAFT": {
+        "goal": "定义覆盖 issues / records / archives / error_entries / workspaces 的最小 SQLite schema 草案。",
+        "non_goals": [
+          "不创建数据库文件",
+          "不写迁移脚本",
+          "不实现 CRUD"
+        ],
+        "depends_on": [
+          "S3-PREP-WORKSPACE-FOUNDATION",
+          "S3-PREP-API-CONTRACT-DRAFT"
+        ]
+      },
+      "S3-PREP-SERVER-UNREACHABLE-HANDLING": {
+        "goal": "明确服务器不可达时前端提示、阻断或回退策略。",
+        "non_goals": [
+          "不做复杂容灾",
+          "不做离线队列",
+          "不做冲突合并或后台同步"
+        ],
+        "depends_on": [
+          "S3-PREP-API-CONTRACT-DRAFT",
+          "S3-PREP-STORAGE-ADAPTER-ABSTRACTION"
+        ]
+      }
+    }
+  }
 }
