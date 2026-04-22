@@ -86,7 +86,7 @@ function DemoHint() {
     <div className="demo-hint" data-testid="demo-hint">
       <div className="demo-hint-title">🎯 最小演示路径</div>
       <div className="demo-hint-steps">
-        <span>1️⃣ 填写上方表单 → 2️⃣ 点「刷新列表」选中 → 3️⃣ 追加排查记录 → 4️⃣ 填写结案归档</span>
+        <span>1️⃣ 填写上方表单 → 2️⃣ 创建后自动选中 / 左侧选择已有卡 → 3️⃣ 追加排查记录 → 4️⃣ 填写结案归档</span>
       </div>
       <p className="demo-hint-note">以上步骤全部在浏览器本地执行，无需真实硬件或 Git 仓库。</p>
     </div>
@@ -253,11 +253,13 @@ function renderIntakeStatus(status: IntakeSubmitStatus): string {
 function IssueCardListView({
   result,
   selectedIssueId,
+  onCreateNew,
   onRefresh,
   onSelect,
 }: {
   result: IssueCardListResult | null;
   selectedIssueId: string | null;
+  onCreateNew: () => void;
   onRefresh: () => void;
   onSelect: (id: string) => void;
 }) {
@@ -266,9 +268,21 @@ function IssueCardListView({
     : [];
   return (
     <div className="list-view" data-testid="issue-card-list">
-      <div className="form-caption">
-        <h3>问题卡选择区</h3>
-        <p>默认只显示未归档问题卡；选中后在右侧继续追记或结案。</p>
+      <div className="issue-rail-header">
+        <div className="form-caption">
+          <h3>问题卡选择区</h3>
+          <p>默认只显示未归档问题卡；选中后在右侧继续追记或结案。</p>
+        </div>
+        {selectedIssueId !== null && (
+          <button
+            type="button"
+            className="button-secondary issue-rail-create-button"
+            onClick={onCreateNew}
+            data-testid="issue-create-entry-button"
+          >
+            创建新问题卡
+          </button>
+        )}
       </div>
       <div className="list-header">
         <button type="button" className="button-secondary" onClick={onRefresh}>
@@ -790,6 +804,14 @@ function IssuePane({
     setLastCloseout(null);
   };
 
+  const handleCreateNew = () => {
+    setSelectedIssueId(null);
+    onSelectedIssueChange(null);
+    setSelectedCard(null);
+    setRecordList(null);
+    setLastCloseout(null);
+  };
+
   const handleCardCreated = (id: string) => {
     refreshCardList();
     setSelectedIssueId(id);
@@ -820,16 +842,21 @@ function IssuePane({
           <IssueCardListView
             result={cardList}
             selectedIssueId={selectedIssueId}
+            onCreateNew={handleCreateNew}
             onRefresh={refreshCardList}
             onSelect={handleSelect}
           />
         </aside>
         <section className="issue-workspace" aria-label="问题处理区">
-          <IssueIntakeForm
-            isDefaultMode={selectedIssueId === null}
-            onCreated={handleCardCreated}
-          />
-          <DemoHint />
+          {selectedIssueId === null && (
+            <>
+              <IssueIntakeForm
+                isDefaultMode
+                onCreated={handleCardCreated}
+              />
+              <DemoHint />
+            </>
+          )}
           <MainlineResultPanel
             selectedCard={selectedCard}
             recordCount={recordCount}
@@ -853,7 +880,7 @@ function IssuePane({
               <CloseoutForm issueId={selectedIssueId} onClosed={handleIssueClosed} />
             </>
           )}
-          <IssueStorageControls />
+          {selectedIssueId === null && <IssueStorageControls />}
         </section>
       </div>
     </div>

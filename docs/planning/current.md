@@ -31,26 +31,27 @@
 - 必要时补最小中文演示路径，但不动深层数据流。
 
 ## 当前唯一执行中的原子任务
-- **D1-IA-ISSUE-RAIL-CREATE-ACTION（待执行）**。
-  - 目标：已选中问题卡时，主区域聚焦主线内容；把“创建新问题卡”从主区域大块常驻表单改为问题卡区 header 右侧的显式按钮入口。
-  - 前置状态：D1-ISSUE-RAIL-INITIAL-AUTO-LOAD 已完成代码修复与验证；左侧问题卡列表进入/刷新页面会自动同步加载一次，且不会自动选中第一张卡。
-  - 范围：主要改 `apps/desktop/src/App.tsx` 条件渲染与轻量状态切换，必要时改 `App.css`；保持默认未选中创建态。
-  - 非目标：不改 schema / store / localStorage key / closeout / archive / error-entry 数据流；不做大规模组件拆分。
+- **D1-MAINLINE-BROWSER-SMOKE（阻塞 / 待人工冒烟）**。
+  - 当前状态：D1-ISSUE-RAIL-INITIAL-AUTO-LOAD 与 D1-IA-ISSUE-RAIL-CREATE-ACTION 均已完成代码修改、验证、planning sync 与单独提交；现在需要真实浏览器冒烟确认交互。
+  - 冒烟目标：确认默认创建态、左侧问题卡列表刷新后自动加载、左侧“创建新问题卡”入口、创建后选中、追加记录、排查时间线、结案入口、归档列表与刷新后 localStorage 状态都能真实跑通。
+  - 当前阻塞：本环境此前启动 Chromium 失败，缺少系统库 `libnspr4.so`，且当前用户无免密 sudo，无法安装浏览器系统依赖。
+  - 当前边界：未完成人工浏览器冒烟前，不得标记 D1-MAINLINE-BROWSER-SMOKE 通过；仍不切回 S3 / technical_mainline。
 
 ## 当前前沿任务窗口（候选，不等于顺推队列）
-> 本轮用户指定固定顺序：任务 A 已完成后，只允许进入任务 B；D1-MAINLINE-BROWSER-SMOKE 继续留在 backlog，待 B 完成并提交后再重新判断。
+> 本轮用户指定的 A / B 两个原子任务均已完成；当前 D1 前沿只保留 1 个浏览器冒烟候选。链路 A 技术主线继续留在 backlog。
 
-- D1-IA-ISSUE-RAIL-CREATE-ACTION
-  - 目标：选中问题卡时隐藏主区域常驻创建大表单，改由问题卡区 header 右侧“创建新问题卡”按钮进入创建态。
-  - 范围：App.tsx 条件渲染 / 轻量状态；App.css header action 布局收口。
-  - 验收：未选中问题卡时默认创建态正常；已选中时主区域只保留当前问题卡与闭环状态、追加记录、时间线、结案表单；点击 header 按钮后可进入创建态。
-  - 依赖关系：D1-ISSUE-RAIL-INITIAL-AUTO-LOAD 已完成。
+- D1-MAINLINE-BROWSER-SMOKE
+  - 目标：在浏览器里按最新 IA 真人冒烟，确认默认创建态、左侧选择区、header 创建入口、追记、结案、归档列表与刷新后状态都能真实跑通。
+  - 范围：只验证不改代码；覆盖第一次启动/无选中态、创建后选中、左侧选择切换、主动创建入口、追加记录、结案入口与归档列表并列、刷新后 localStorage 状态。
+  - 非目标：不修 UI；不改业务代码；不补 schema / store / Electron / fs / IPC。
+  - 依赖关系：D1-ISSUE-RAIL-INITIAL-AUTO-LOAD、D1-IA-ISSUE-RAIL-CREATE-ACTION 已完成。
+  - 当前阻塞：本环境不能启动 Chromium（缺 `libnspr4.so`），状态为待人工浏览器冒烟或先补齐依赖后重跑。
 
 ## 下一任务选择流程
 1. 重新读取：`AGENTS.md`、`README.md`、本文件、`docs/planning/backlog.md`、`docs/planning/decisions.md`、`.agent-state/handoff.json`、`git status`、最近 commit、`apps/desktop/src/App.tsx`、`App.css`、`index.css`。
 2. 先确认 `current_mode` 是否仍为 `delivery_priority`；若是，优先链路 B，不切回 S3 / technical_mainline。
-3. 本轮任务顺序固定：D1-IA-ISSUE-RAIL-CREATE-ACTION 是唯一下一原子任务。
-4. 任务 B 完成前不得推进浏览器冒烟或技术主线；任务 B 完成后必须再次执行验证、compact planning sync、单独 commit。
+3. 当前唯一推荐下一动作是完成 `D1-MAINLINE-BROWSER-SMOKE`：人工浏览器冒烟，或先补齐 Chromium 系统依赖后重跑自动化。
+4. 冒烟未真实完成前，不得标记 D1 交互路径通过；不得用 typecheck/build 代替人工浏览器冒烟。
 
 ## 原子任务完成标准（DoD）
 - 文件修改已落盘。

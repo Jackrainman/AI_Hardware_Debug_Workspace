@@ -731,6 +731,22 @@ select:focus-visible {
   top: 18px;
 }
 
+.issue-rail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.issue-rail-header .form-caption {
+  min-width: 0;
+}
+
+.issue-rail-create-button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .issue-workspace {
   display: flex;
   flex-direction: column;
@@ -1244,6 +1260,14 @@ select:focus-visible {
   .closeout-entry-button {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .issue-rail-header {
+    flex-direction: column;
+  }
+
+  .issue-rail-create-button {
+    width: 100%;
   }
 
   .header-entry-actions {
