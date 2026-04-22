@@ -9,6 +9,7 @@ import {
   IssueSeverity,
   type IssueCard,
 } from "./schemas/issue-card.ts";
+import { resolveWorkspaceId } from "./workspace.ts";
 
 export type IntakeSeverity = z.infer<typeof IssueSeverity>;
 
@@ -21,6 +22,7 @@ export interface IntakeInput {
 
 export interface IntakeOptions {
   id: string;
+  // S3 准备期：暂用既有 projectId 字段承载默认 workspace id，避免改 IssueCardSchema。
   projectId: string;
   // 例如 "2026-04-21T03:10:00Z" 或 "2026-04-21T11:10:00+08:00"
   now: string;
@@ -114,10 +116,14 @@ export function generateIssueId(): string {
   return `issue-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
 }
 
-export function defaultIntakeOptions(now: string, id?: string): IntakeOptions {
+export function defaultIntakeOptions(
+  now: string,
+  id?: string,
+  projectId?: string,
+): IntakeOptions {
   return {
     id: id ?? generateIssueId(),
-    projectId: "default-project",
+    projectId: resolveWorkspaceId(projectId),
     now,
   };
 }

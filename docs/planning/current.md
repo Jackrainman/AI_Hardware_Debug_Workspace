@@ -8,7 +8,7 @@
 - 阶段切换理由：D1 中文产品壳与浏览器 smoke 已完成；继续停留在 localStorage 演示版无法支撑战队局域网共享和长期保存，下一阶段必须先解决“数据在哪里、服务怎么访问、能否多设备共享”的工程基础。
 - 阶段目标：把当前 `apps/desktop` 浏览器 SPA + `window.localStorage` 演示版，迁移为同一 WiFi 下可访问、服务器端长期存储的版本。
 - 交付形态：同一 WiFi 下通过类似 `http://hurricane-server.local:<port>/` 的入口访问；服务端负责长期持久化，前端不再把 localStorage 当作唯一事实源。
-- 当前真实边界：本轮仅完成 S3 仓库内准备任务的 planning/state 扩展；未写后端代码，未接 SQLite，未 SSH 服务器，未改前端业务代码，当前应用仍是浏览器 SPA + `window.localStorage`。
+- 当前真实边界：已引入默认共用工作区基础（`workspace-26-r1` / `26年 R1`），新建 IssueCard 默认通过既有 `projectId` 归属该工作区；未写后端代码，未接 SQLite，未 SSH 服务器，当前应用仍是浏览器 SPA + `window.localStorage`。
 
 ## S3 范围与边界
 
@@ -44,30 +44,30 @@
 详细原子任务拆分见 `docs/planning/backlog.md`。
 
 ## 当前唯一执行中的原子任务
-- **S3-PREP-WORKSPACE-FOUNDATION（待下一轮执行）**。
-  - 目标：引入默认共用工作区（例如“26年 R1”）的基础逻辑，让后续 storage adapter、HTTP API 与 SQLite schema 都有一致的数据归属边界。
-  - 范围：只建立默认 workspace 标识 / 名称 / 归属规则与后续可扩展路径；必要代码改动保持最小，并保留 localStorage adapter 行为兼容。
-  - 非目标：不做完整工作区管理系统；不做复杂切换 UI；不做权限隔离；不写后端；不接 SQLite。
-  - 当前状态：`S3-PREP-FRONTIER-EXPANSION` 已把五个仓库内准备任务纳入 planning；下一轮从默认工作区基础开始。
+- **S3-PREP-STORAGE-ADAPTER-ABSTRACTION-A2A3A4（待下一轮执行）**。
+  - 目标：新增统一 localStorage adapter 边界，并让 `apps/desktop/src/storage/*` 经该边界读写，保持现有保存 / 读取 / 列表 / 归档行为兼容。
+  - 范围：只集中 localStorage `getItem` / `setItem` / `key` / `length` 访问；保留既有 key 前缀、schema 校验、排序和 invalid 桶语义。
+  - 非目标：不接服务器；不改 HTTP 主事实源；不迁移历史数据；不改 IssueCard / InvestigationRecord / ArchiveDocument / ErrorEntry schema。
+  - 当前状态：`S3-PREP-WORKSPACE-FOUNDATION-A1` 已完成；默认 workspace 通过既有 `projectId` 承载，后续 storage adapter 可暂不改变 key 结构。
 
 ## 当前前沿任务窗口（候选，不等于顺推队列）
-- S3-PREP-WORKSPACE-FOUNDATION
-  - 依赖关系：D1 smoke 已完成；S3-ENTRY-PLANNING 已完成阶段切换；S3-PREP-FRONTIER-EXPANSION 已补齐准备任务池。
-  - 选择理由：默认 workspace 是 storage key、adapter 接口、API 路由/参数和 SQLite 外键的共同边界；先做它可避免后续 storage adapter 抽象后再返工补 workspaceId。
-  - 完成输出：默认工作区基础逻辑与扩展边界清晰落盘，且不引入完整管理 UI / 权限系统 / 后端。
 - S3-PREP-STORAGE-ADAPTER-ABSTRACTION
-  - 依赖关系：建议依赖 `S3-PREP-WORKSPACE-FOUNDATION`；server adapter 仍需等待 API contract 与后端任务。
+  - 依赖关系：`S3-PREP-WORKSPACE-FOUNDATION-A1` 已完成；server adapter 仍需等待 API contract 与后端任务。
   - 选择理由：当前 localStorage 调用分散在 `apps/desktop/src/storage/*`，先抽统一接口可降低后续切 HTTP API 的改动面。
   - 完成输出：统一 storage adapter 接口 + localStorage adapter 保留，业务行为兼容，不接服务器。
 - S3-PREP-API-CONTRACT-DRAFT
-  - 依赖关系：建议至少确认默认 workspace 命名和 workspaceId 传递方式；不依赖真实服务器。
+  - 依赖关系：默认 workspace id / name 已确认；不依赖真实服务器。
   - 选择理由：先定义最小 HTTP API、错误格式和读回语义，避免后端脚手架和前端 server adapter 各自发散。
   - 完成输出：最小 HTTP API 契约文档，覆盖 workspace、issues、records、archives、error_entries 与 health，不实现后端。
+- S3-PREP-SQLITE-SCHEMA-DRAFT
+  - 依赖关系：默认 workspace id / name 已确认；需与 API contract 对齐。
+  - 选择理由：先定义表、外键和 JSON payload 边界，后续 SQLite 实现不临场发散。
+  - 完成输出：最小 SQLite schema 草案，不创建数据库文件，不写迁移脚本。
 
 ## 下一任务选择流程
 1. 重新读取：`AGENTS.md`、`README.md`、`docs/product/产品介绍.md`、本文件、`docs/planning/backlog.md`、`docs/planning/decisions.md`、`.agent-state/handoff.json`、`git status`、最近 commit、相关代码目录。
-2. 确认 `current_mode = server_storage_migration`，且当前唯一入口为 `S3-PREP-WORKSPACE-FOUNDATION`。
-3. 先完成默认共用工作区基础，再在 `S3-PREP-STORAGE-ADAPTER-ABSTRACTION` 与 `S3-PREP-API-CONTRACT-DRAFT` 之间重新判断最小下一步。
+2. 确认 `current_mode = server_storage_migration`，且当前唯一入口为 `S3-PREP-STORAGE-ADAPTER-ABSTRACTION-A2A3A4`。
+3. 先完成 localStorage adapter 抽象，再进入 `S3-PREP-API-CONTRACT-DRAFT`；SQLite schema 与不可达策略按依赖继续串行。
 4. 本轮准备任务期间不 SSH 服务器、不安装依赖、不写完整后端、不接 SQLite；若需要目标服务器信息，记录待确认项，不得伪造成已确认。
 
 ## 原子任务完成标准（DoD）

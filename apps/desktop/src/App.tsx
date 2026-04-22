@@ -23,6 +23,7 @@ import {
   nowISO as nowISOCloseout,
   type CloseoutInput,
 } from "./domain/closeout";
+import { DEFAULT_WORKSPACE_ID, DEFAULT_WORKSPACE_NAME } from "./domain/workspace";
 import {
   listIssueCards,
   loadIssueCard,
@@ -50,7 +51,7 @@ const CLOSEOUT_FORM_ID = "closeout-form";
 
 const SAMPLE_CARD: IssueCard = {
   id: SAMPLE_ISSUE_ID,
-  projectId: "sample-project-0001",
+  projectId: DEFAULT_WORKSPACE_ID,
   title: "示例问题卡：启动日志停在握手阶段",
   rawInput: "用于演示 localStorage 保存与读回的示例问题卡。",
   normalizedSummary: "验证问题卡可以写入浏览器本地存储并通过结构校验读回。",
@@ -919,7 +920,7 @@ const PANES: Pane[] = [
     hint: "展示当前调试项目的上下文边界。",
     status: "当前演示：浏览器 SPA + localStorage",
     bullets: [
-      "当前项目：演示工作区",
+      `当前工作区：${DEFAULT_WORKSPACE_NAME}`,
       "仓库快照：后续接入 Git",
       "文件写盘：后续接入 .debug_workspace",
     ],
@@ -1209,7 +1210,7 @@ function ProjectSelector({
         data-testid="project-selector-button"
       >
         <span className="header-entry-icon" aria-hidden="true">📁</span>
-        <span className="header-entry-label">项目：演示工作区</span>
+        <span className="header-entry-label">项目：{DEFAULT_WORKSPACE_NAME}</span>
         <span className="project-entry-caret" aria-hidden="true">{open ? "▴" : "▾"}</span>
       </button>
       {open && (
@@ -1234,7 +1235,7 @@ function ProjectSelector({
           <p className="pane-hint">{pane.hint}</p>
           <StaticPaneShell pane={pane} />
           <p className="project-selector-note">
-            当前仅演示工作区；多项目选择与仓库绑定能力后续接入。
+            当前仅启用默认工作区 {DEFAULT_WORKSPACE_NAME}；多项目选择与仓库绑定能力后续接入。
           </p>
         </div>
       )}
