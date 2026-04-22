@@ -14,61 +14,51 @@
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 长期性约束与下一轮必须保留的关键说明（不复写任务完成明细，明细见 git log）"
   },
-  "timestamp": "2026-04-22T15:10:10+08:00",
-  "current_mode": "delivery_priority",
-  "current_stage": "D1",
-  "current_stage_name": "交差优先中文产品壳",
-  "current_stage_goal": "先交付一个好看、中文、能用、像产品壳的 SPA 演示版本；主操作区的创建→选中→追记→结案→结果反馈必须在当前页面上真的跑通；TEST-TOOLING-ADD-PLAYWRIGHT 已独立完成测试工具接入，当前回到 D1 浏览器冒烟验证，不切回 S3 / technical_mainline。",
-  "primary_track": "track_b_delivery_priority_shell",
-  "deferred_track": "track_a_technical_close_loop_mainline",
+  "timestamp": "2026-04-22T15:16:40+08:00",
+  "current_mode": "technical_mainline",
+  "current_stage": "S3",
+  "current_stage_name": "技术闭环深化入口",
+  "current_stage_goal": "D1 中文产品壳已完成 Playwright/Chromium 主流程浏览器 smoke；下一轮重新接回链路 A，先执行 S3-ENTRY-PLANNING 选择技术闭环深化的唯一原子切入点，再进入具体实现。",
+  "primary_track": "track_a_technical_close_loop_mainline",
+  "deferred_track": "track_b_delivery_priority_shell_maintenance",
   "dual_tracks": {
     "track_a_technical_close_loop_mainline": {
-      "status": "deferred",
+      "status": "active",
       "summary": "继续加固 IssueCard / InvestigationRecord / Closeout / ArchiveDocument / ErrorEntry 主闭环，推进 .debug_workspace 文件写盘、Electron/fs/IPC、runtime log、repair task、恢复机制与历史检索。",
-      "resume_condition": "D1 交差壳完成后，由 planning 重新读取真实状态并明确切回 technical_mainline。"
+      "entry_condition": "先执行 S3-ENTRY-PLANNING，基于真实仓库状态选择一个最小技术入口任务。"
     },
     "track_b_delivery_priority_shell": {
-      "status": "active",
-      "summary": "优先做中文化、视觉统一、空状态、项目区/归档区演示壳、问题卡区视觉重心、最小中文演示路径、主操作区主线闭环的真实串联与结果反馈、信息架构收束。",
+      "status": "maintenance",
+      "summary": "D1 中文化、视觉统一、主流程 IA、归档入口与浏览器主流程 smoke 已完成；后续只做低风险修补。",
       "hard_boundaries": [
-        "不改 schema / store / Electron / fs / IPC",
-        "不重做业务数据流",
-        "不把占位功能包装成已完成"
+        "不把 localStorage 包装成文件系统写盘",
+        "不把占位能力包装成已完成",
+        "不为视觉修补重做业务数据流"
       ]
     }
   },
-  "current_atomic_task": "D1-MAINLINE-BROWSER-SMOKE",
+  "current_atomic_task": "S3-ENTRY-PLANNING",
   "frontier_tasks": [
     {
-      "id": "D1-MAINLINE-BROWSER-SMOKE",
-      "track": "track_b_delivery_priority_shell",
-      "goal": "在浏览器里按最新 IA 完成 smoke，确认默认创建态、左侧选择区、header 创建入口、追记、结案、归档列表与刷新后状态都能真实跑通。",
+      "id": "S3-ENTRY-PLANNING",
+      "track": "track_a_technical_close_loop_mainline",
+      "goal": "交差壳 smoke 通过后，重新读取真实状态并选择唯一技术主线入口任务。",
       "scope": [
-        "只验证不改业务代码",
-        "优先使用已接入的 Playwright / Chromium 自动化，必要时补人工浏览器冒烟",
-        "覆盖第一次启动/无选中态",
-        "覆盖左侧问题卡列表进入/刷新页面自动加载",
-        "覆盖创建后选中、左侧选择切换、header 创建新问题卡入口",
-        "覆盖追加记录、排查时间线、结案入口与归档列表并列",
-        "覆盖刷新后 localStorage 状态"
+        "读取 AGENTS / README / current / backlog / decisions / handoff.json / git status / 最近 commit",
+        "确认 D1-MAINLINE-BROWSER-SMOKE 已完成且无 planning 漂移",
+        "在 .debug_workspace 文件写盘、Electron/fs adapter、验证脚本、恢复机制等候选中只选择一个最小入口",
+        "compact 更新 current.md 与 handoff.json，必要时更新 backlog.md"
       ],
       "non_goals": [
-        "不修 UI",
-        "不改业务代码",
-        "不补 schema / store / Electron / fs / IPC",
-        "不切回 S3 / technical_mainline"
+        "不直接实现 Electron / fs / IPC",
+        "不一次性展开多个 S3 任务",
+        "不重做 D1 UI",
+        "不跳过验证与单任务 commit"
       ],
       "depends_on": [
-        "D1-ISSUE-RAIL-INITIAL-AUTO-LOAD",
-        "D1-IA-ISSUE-RAIL-CREATE-ACTION",
-        "TEST-TOOLING-ADD-PLAYWRIGHT"
+        "D1-MAINLINE-BROWSER-SMOKE"
       ],
-      "status": "pending_playwright_or_manual_browser_smoke",
-      "tooling_ready": [
-        "@playwright/test 已作为 devDependency 接入 apps/desktop",
-        "npx playwright install chromium 已成功",
-        "Chromium headless 最小启动验证已通过"
-      ]
+      "status": "pending_next_round"
     }
   ],
   "completed_atomic_tasks": [
@@ -110,7 +100,8 @@
     "D1-IA-CLOSEOUT-HEADER-ACTION",
     "D1-ISSUE-RAIL-INITIAL-AUTO-LOAD",
     "D1-IA-ISSUE-RAIL-CREATE-ACTION",
-    "TEST-TOOLING-ADD-PLAYWRIGHT"
+    "TEST-TOOLING-ADD-PLAYWRIGHT",
+    "D1-MAINLINE-BROWSER-SMOKE"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -122,36 +113,27 @@
       ".agent-state/handoff.json",
       "git status",
       "git log -5",
-      "apps/desktop/package.json",
-      "apps/desktop/src/App.tsx",
-      "apps/desktop/src/App.css",
-      "apps/desktop/src/index.css"
+      "task-relevant code paths selected by S3-ENTRY-PLANNING"
     ],
     "criteria": [
-      "current_mode 是否仍为 delivery_priority",
-      "是否服务 D1 交差验收",
-      "是否完成真实浏览器主流程冒烟",
-      "是否确认刷新后问题卡列表自动加载且不自动选中",
-      "是否确认已选中状态下主区域不再常驻创建大表单",
-      "是否确认 header 创建入口、追加、时间线、结案、归档列表均未破坏",
-      "是否避开 schema/store/localStorage key/Electron/fs/IPC 深改",
-      "planning 与实际是否一致"
+      "current_mode 是否仍为 technical_mainline",
+      "D1-MAINLINE-BROWSER-SMOKE 是否已完成且无 planning 漂移",
+      "是否只选择一个链路 A 技术入口任务",
+      "是否避免在入口规划轮直接实现 Electron / fs / IPC 或大规模重构",
+      "是否保留 localStorage / 未接 fs 的真实边界表达"
     ],
-    "recommended_next": "D1-MAINLINE-BROWSER-SMOKE_WITH_PLAYWRIGHT_OR_MANUAL_BROWSER_SMOKE",
-    "output_rule": "不要继续技术主线；先用 Playwright/Chromium 跑最小自动化 smoke，必要时补人工浏览器冒烟。冒烟未真实完成前不得标记 D1-MAINLINE-BROWSER-SMOKE 通过。"
+    "recommended_next": "S3-ENTRY-PLANNING",
+    "output_rule": "下一轮先做 S3 入口规划并提交；不要在同一轮直接跳入多个技术实现任务。"
   },
   "risks": [
-    "D1-MAINLINE-BROWSER-SMOKE 未完成：Playwright / Chromium 最小 headless 已可用，但尚未跑完整 D1 主流程 smoke；不能把交互路径说成已验证通过。",
+    "D1-MAINLINE-BROWSER-SMOKE 使用 headless Chromium 自动化通过，未额外执行人工 headed 浏览器视觉验收。",
     "ArchiveDocument / ErrorEntry 当前仍在 localStorage，不是 .debug_workspace 文件系统写盘；真实文件写盘、独立归档浏览页、跨项目检索仍未接入。",
-    "Electron / fs / IPC 仍未接入，ProjectSelector popover 与归档 Drawer 只能展示真实边界，不能包装成已完成能力。"
+    "Electron / fs / IPC 仍未接入；S3 入口任务需要先选择一个最小技术切入点，避免直接扩大成多任务重构。"
   ],
   "notes": [
-    "链路 A 没有取消，只是降级为后续主线；链路 B 为当前阶段唯一优先主线。",
-    "TEST-TOOLING-ADD-PLAYWRIGHT 已独立完成：apps/desktop 只新增 Playwright 相关 devDependency 与 lock 依赖；未改业务代码；未运行 npm audit fix。",
-    "D1-ISSUE-RAIL-INITIAL-AUTO-LOAD 已完成：IssuePane 挂载时会同步 listIssueCards()，只刷新列表，不自动选中第一张问题卡。",
-    "D1-IA-ISSUE-RAIL-CREATE-ACTION 已完成：未选中时保留默认创建态；已选中时主区域隐藏创建大表单、演示提示和辅助验证区，问题卡选择区 header 右侧提供“创建新问题卡”入口。",
-    "当前下一动作是 D1-MAINLINE-BROWSER-SMOKE；优先使用已接入的 Playwright / Chromium 跑最小自动化 smoke，必要时补人工浏览器冒烟。",
-    "内部 localStorage key repo-debug:* 暂不改名，原因是保持既有浏览器数据和验证脚本兼容；对外品牌口径已统一为 ProbeFlash。",
+    "D1-MAINLINE-BROWSER-SMOKE 已通过：一次性 Playwright 脚本覆盖默认创建态、创建后选中、左侧刷新/切换、header 创建入口、追加记录、时间线、header 结案入口、归档抽屉、刷新后 localStorage 读回。",
+    "本次 smoke 未修改业务代码；只进行 planning sync。",
+    "内部 localStorage key repo-debug:* 暂不改名，保持既有浏览器数据和验证脚本兼容；对外品牌口径为 ProbeFlash。",
     "用户当前偏好：除非明确要求，由 AI 自行编译（typecheck + build + 必要 verify）。",
     "核心事实源为 AGENTS / current / backlog / decisions / handoff.json；弱化文档不再默认逐轮同步，见 AGENTS.md §13 / §14。"
   ]

@@ -3,55 +3,45 @@
 > 本文件遵循“滚动前沿规划”：只维护当前阶段目标、前沿任务窗口、唯一执行中的原子任务。候选任务不等于顺推队列；更远任务放入 `backlog.md`。
 
 ## 当前阶段
-- 阶段：D1：交差优先中文产品壳。
-- 当前模式：`delivery_priority`。
-- 阶段目标：先交付一个”好看、中文、能用、像产品壳”的 SPA 演示版本，让用户能看懂产品价值、当前能力和未完成边界；主操作区的”创建 → 选中 → 追记 → 结案 → 结果反馈”必须在当前页面上真的跑通，不止是看起来跑通。
-- 当前边界：不切回 S3 / technical_mainline；不改 schema / store 契约 / localStorage key / Electron / fs / IPC；不新增 `task.md` / `tasks/` 目录；不做大规模组件拆分。
-- 阶段完成定义：
-  - 主页面中文文案统一，标题、副标题、按钮、状态、表单、空状态不再混杂英文工程壳。
-  - 项目区、问题卡区、归档区看起来像一个可演示的产品工作台，而不是裸占位。
-  - 问题卡创建、追记、结案的最小演示路径清晰可理解，并且在当前页面上能看到每一步的真实结果反馈。
-  - UI 不伪造未完成能力；Electron / fs / `.debug_workspace` 文件写盘仍如实标注为后续。
-  - 不改 schema / store / Electron / fs / IPC，不重做业务数据流。
+- 阶段：S3：技术闭环深化入口。
+- 当前模式：`technical_mainline`。
+- 阶段目标：D1 中文产品壳已完成 Playwright/Chromium 主流程浏览器 smoke；下一轮重新接回链路 A，先用一个规划入口任务确认技术闭环深化的唯一原子切入点，再执行具体代码任务。
+- 当前边界：当前仍是浏览器 SPA + `window.localStorage`；Electron / fs / IPC / `.debug_workspace` 文件写盘仍未接入。S3 入口任务只做真实状态复核与唯一技术任务选择，不直接大改业务代码。
+- D1 已验事实：`D1-MAINLINE-BROWSER-SMOKE` 已用 headless Chromium 覆盖默认创建态、问题卡创建/选中、左侧刷新/切换、header 创建入口、追加记录、结案、归档抽屉、刷新后 localStorage 读回；这是浏览器自动化 smoke，不等同于人工视觉验收。
 
 ## 两条链路
 
-### 链路 A：技术闭环主线（后续主线，当前降级）
+### 链路 A：技术闭环主线（当前主线）
 - IssueCard / InvestigationRecord / Closeout / ArchiveDocument / ErrorEntry 主闭环继续加固。
 - `.debug_workspace/archive` 与 `.debug_workspace/error-table` 文件系统写盘。
 - Electron / preload / IPC 或其它 fs adapter。
 - runtime log、repair task、失败恢复、读回校验、人工升级。
-- 浏览器真实交互冒烟、历史检索、相似问题关联。
+- 历史检索、相似问题关联与真实仓库上下文增强。
 
-### 链路 B：当前交差优先链路（当前主线）
-- 页面中文化和产品化文案。
-- UI 视觉统一、层级整理、空状态设计。
-- 问题卡区视觉重心优化，降低英文工程验证感。
-- 项目区 / 归档区从裸占位改成“可演示壳”。
-- 必要时补最小中文演示路径，但不动深层数据流。
+### 链路 B：交差优先中文产品壳（已完成当前 smoke，转维护）
+- 中文化、视觉统一、空状态、问题卡主流程 IA 与归档入口已进入可演示状态。
+- 后续只做低风险修补；不得把 localStorage / 占位区包装成已完成的 Electron / 文件系统能力。
 
 ## 当前唯一执行中的原子任务
-- **D1-MAINLINE-BROWSER-SMOKE（待浏览器冒烟 / Playwright 可用）**。
-  - 当前状态：D1-ISSUE-RAIL-INITIAL-AUTO-LOAD 与 D1-IA-ISSUE-RAIL-CREATE-ACTION 均已完成代码修改、验证、planning sync 与单独提交；TEST-TOOLING-ADD-PLAYWRIGHT 已独立接回 `@playwright/test` 与 Chromium，后续可以用 Playwright 或人工浏览器冒烟确认交互。
-  - 冒烟目标：确认默认创建态、左侧问题卡列表刷新后自动加载、左侧“创建新问题卡”入口、创建后选中、追加记录、排查时间线、结案入口、归档列表与刷新后 localStorage 状态都能真实跑通。
-  - 当前环境：`@playwright/test` 已作为 devDependency 接入，`npx playwright install chromium` 已成功，Chromium headless 最小启动通过。
-  - 当前边界：未完成完整 D1 主流程浏览器冒烟前，不得标记 D1-MAINLINE-BROWSER-SMOKE 通过；仍不切回 S3 / technical_mainline。
+- **S3-ENTRY-PLANNING（待下一轮执行）**。
+  - 目标：重新读取真实仓库状态，基于 D1 smoke 已通过的事实，选择链路 A 技术闭环深化的唯一下一原子任务。
+  - 范围：planning/state 对齐；判断是否先做 `.debug_workspace` 写盘、Electron/fs adapter、验证脚本或恢复机制中的一个最小入口。
+  - 非目标：不在同一轮直接实现 Electron / fs / IPC；不重做 UI；不改 schema / store / localStorage key，除非 S3 入口任务明确拆出并选择为下一原子任务。
+  - 当前状态：待下一轮重新读取仓库后执行；本轮不继续推进下一任务。
 
 ## 当前前沿任务窗口（候选，不等于顺推队列）
-> 本轮用户指定的 A / B 两个原子任务均已完成；TEST-TOOLING-ADD-PLAYWRIGHT 已独立完成测试工具接入；当前 D1 前沿只保留 1 个浏览器冒烟候选。链路 A 技术主线继续留在 backlog。
-
-- D1-MAINLINE-BROWSER-SMOKE
-  - 目标：在浏览器里按最新 IA 真人冒烟，确认默认创建态、左侧选择区、header 创建入口、追记、结案、归档列表与刷新后状态都能真实跑通。
-  - 范围：只验证不改业务代码；可使用 Playwright/Chromium 自动化或人工浏览器；覆盖第一次启动/无选中态、创建后选中、左侧选择切换、主动创建入口、追加记录、结案入口与归档列表并列、刷新后 localStorage 状态。
-  - 非目标：不修 UI；不改业务代码；不补 schema / store / Electron / fs / IPC。
-  - 依赖关系：D1-ISSUE-RAIL-INITIAL-AUTO-LOAD、D1-IA-ISSUE-RAIL-CREATE-ACTION 已完成。
-  - 当前状态：Playwright / Chromium 最小 headless 可用；完整 D1 主流程 smoke 仍待执行。
+- S3-ENTRY-PLANNING
+  - 目标：交差壳 smoke 通过后，重新读取真实状态并选择唯一技术主线入口任务。
+  - 范围：更新 `current.md` / `.agent-state/handoff.json` / 必要时 `backlog.md`；只做规划入口，不混入具体实现。
+  - 非目标：不直接做 Electron / fs / IPC；不一次性展开多个 S3 任务；不跳过验证与单任务 commit。
+  - 依赖关系：`D1-MAINLINE-BROWSER-SMOKE` 已通过。
+  - 当前状态：待执行。
 
 ## 下一任务选择流程
-1. 重新读取：`AGENTS.md`、`README.md`、本文件、`docs/planning/backlog.md`、`docs/planning/decisions.md`、`.agent-state/handoff.json`、`git status`、最近 commit、`apps/desktop/src/App.tsx`、`App.css`、`index.css`。
-2. 先确认 `current_mode` 是否仍为 `delivery_priority`；若是，优先链路 B，不切回 S3 / technical_mainline。
-3. 当前唯一推荐下一动作是完成 `D1-MAINLINE-BROWSER-SMOKE`：优先用已接入的 Playwright / Chromium 跑最小自动化 smoke；必要时再补人工浏览器冒烟。
-4. 冒烟未真实完成前，不得标记 D1 交互路径通过；不得用 typecheck/build 代替人工浏览器冒烟。
+1. 重新读取：`AGENTS.md`、`README.md`、本文件、`docs/planning/backlog.md`、`docs/planning/decisions.md`、`.agent-state/handoff.json`、`git status`、最近 commit；再按 S3 入口需要读取相关代码目录。
+2. 先确认 `current_mode` 是否仍为 `technical_mainline`，并确认 `D1-MAINLINE-BROWSER-SMOKE` 已在完成列表中。
+3. 执行 `S3-ENTRY-PLANNING`：只选择链路 A 的一个最小技术入口任务，不同时推进实现。
+4. 若发现 D1 smoke 结论与真实仓库状态脱节，先做 planning sync/repair，不得直接进入技术实现。
 
 ## 原子任务完成标准（DoD）
 - 文件修改已落盘。
