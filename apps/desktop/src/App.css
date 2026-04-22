@@ -695,6 +695,29 @@ select:focus-visible {
   gap: 14px;
 }
 
+.issue-workbench {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.issue-rail {
+  min-width: 0;
+}
+
+.issue-rail .list-view {
+  position: sticky;
+  top: 18px;
+}
+
+.issue-workspace {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 14px;
+}
+
 .demo-hint {
   display: flex;
   flex-direction: column;
@@ -1127,6 +1150,14 @@ select:focus-visible {
 
   .stage-tag {
     white-space: normal;
+  }
+
+  .issue-workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .issue-rail .list-view {
+    position: static;
   }
 }
 

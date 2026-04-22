@@ -244,8 +244,8 @@ function IssueCardListView({
   return (
     <div className="list-view" data-testid="issue-card-list">
       <div className="form-caption">
-        <h3>2. 选择问题卡</h3>
-        <p>刷新后选择一张问题卡，再继续追加排查记录或结案。</p>
+        <h3>问题卡选择区</h3>
+        <p>默认只显示未归档问题卡；选中后在右侧继续追记或结案。</p>
       </div>
       <div className="list-header">
         <button type="button" className="button-secondary" onClick={onRefresh}>
@@ -254,11 +254,11 @@ function IssueCardListView({
         <span className="storage-line" data-testid="list-summary">
           {result === null
             ? "尚未刷新"
-            : `有效 ${activeCards.length} 条 · 异常 ${result.invalid.length} 条`}
+            : `未归档 ${activeCards.length} 条 · 异常 ${result.invalid.length} 条`}
         </span>
       </div>
       {result && activeCards.length === 0 && result.invalid.length === 0 && (
-        <p className="empty-state">暂无问题卡。请先在上方表单填写标题并创建一张卡。</p>
+        <p className="empty-state">暂无未归档问题卡。请先在右侧创建一张卡。</p>
       )}
       {result && activeCards.length > 0 && (
         <ul className="list-items" data-testid="list-valid">
@@ -775,38 +775,44 @@ function IssuePane({ onCloseoutResult }: { onCloseoutResult: (summary: CloseoutS
 
   return (
     <div className="issue-pane-stack">
-      <DemoHint />
-      <IssueIntakeForm onCreated={handleCardCreated} />
-      <IssueCardListView
-        result={cardList}
-        selectedIssueId={selectedIssueId}
-        onRefresh={refreshCardList}
-        onSelect={handleSelect}
-      />
-      <MainlineResultPanel
-        selectedCard={selectedCard}
-        recordCount={recordCount}
-        lastCloseout={lastCloseout}
-      />
-      {selectedIssueId === null && (
-        <p className="empty-state issue-next-step">
-          创建问题卡后会自动选中最新一张，随即展开排查追记和结案归档表单；也可以点「刷新列表」从已有卡中挑选继续处理。
-        </p>
-      )}
-      {selectedIssueId !== null && (
-        <>
-          <InvestigationAppendForm
-            issueId={selectedIssueId}
-            onAppended={handleRecordAppended}
+      <div className="issue-workbench">
+        <aside className="issue-rail" aria-label="问题卡选择区">
+          <IssueCardListView
+            result={cardList}
+            selectedIssueId={selectedIssueId}
+            onRefresh={refreshCardList}
+            onSelect={handleSelect}
           />
-          <InvestigationRecordListView
-            result={recordList}
-            onRefresh={refreshRecordList}
+        </aside>
+        <section className="issue-workspace" aria-label="问题处理区">
+          <DemoHint />
+          <IssueIntakeForm onCreated={handleCardCreated} />
+          <MainlineResultPanel
+            selectedCard={selectedCard}
+            recordCount={recordCount}
+            lastCloseout={lastCloseout}
           />
-          <CloseoutForm issueId={selectedIssueId} onClosed={handleIssueClosed} />
-        </>
-      )}
-      <IssueStorageControls />
+          {selectedIssueId === null && (
+            <p className="empty-state issue-next-step">
+              创建问题卡后会自动选中最新一张，随即展开排查追记和结案归档表单；也可以在左侧点「刷新列表」从已有卡中挑选继续处理。
+            </p>
+          )}
+          {selectedIssueId !== null && (
+            <>
+              <InvestigationAppendForm
+                issueId={selectedIssueId}
+                onAppended={handleRecordAppended}
+              />
+              <InvestigationRecordListView
+                result={recordList}
+                onRefresh={refreshRecordList}
+              />
+              <CloseoutForm issueId={selectedIssueId} onClosed={handleIssueClosed} />
+            </>
+          )}
+          <IssueStorageControls />
+        </section>
+      </div>
     </div>
   );
 }

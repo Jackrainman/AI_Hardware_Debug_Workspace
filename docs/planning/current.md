@@ -31,31 +31,26 @@
 - 必要时补最小中文演示路径，但不动深层数据流。
 
 ## 当前唯一执行中的原子任务
-- **无**。本轮 **D1-IA-PLANNING-SYNC** 只对齐 planning/state，不选择下一执行任务；下一轮仍需重新读取真实状态后再从前沿窗口选择唯一原子任务。
+- **无**。上一原子任务 **D1-IA-LEFT-ISSUE-RAIL** 已完成；下一轮仍需重新读取真实状态后，从前沿窗口选择唯一原子任务，推荐继续 **D1-IA-CREATE-ENTRY-MODES**。
 
 ## 当前前沿任务窗口（候选，不等于顺推队列）
-> 本轮按最新确认的页面 IA 保留 4 个 D1 候选：3 个低风险 IA 改动 + 1 个浏览器冒烟。仍不切回 S3 / 技术主线。
+> 左侧稳定问题卡选择区已落地；当前保留 3 个 D1 候选：2 个低风险 IA 改动 + 1 个浏览器冒烟。仍不切回 S3 / 技术主线。
 
-- D1-IA-LEFT-ISSUE-RAIL
-  - 目标：把“选择问题卡”放到页面左侧，形成长期稳定的问题卡选择区。
-  - 范围：页面布局、选择区中文文案、空状态、刷新/选择入口的视觉位置；复用现有 IssueCard 列表与选中状态。
-  - 非目标：不改 schema / store / localStorage key / Electron / fs / IPC；不引入路由或新的全局状态模型；不把归档文件写盘包装成已完成。
-  - 依赖关系：无。它是后续创建态和结案动作重排的 IA 基础。
 - D1-IA-CREATE-ENTRY-MODES
   - 目标：没选中任何问题卡 / 第一次启动时，主界面默认显示“创建问题卡”；平时页面中心靠上保留主动“创建问题卡”入口。
   - 范围：创建入口的默认态、主动入口位置、创建成功后的结果反馈与选中衔接；保持现有创建数据流。
   - 非目标：不新增 AI intake 能力；不改 IssueCard 字段、校验、存储键；不新增演示数据伪装真实项目。
-  - 依赖关系：依赖 D1-IA-LEFT-ISSUE-RAIL 提供稳定选择区。
+  - 依赖关系：D1-IA-LEFT-ISSUE-RAIL 已完成，依赖满足。
 - D1-IA-CLOSEOUT-HEADER-ACTION
   - 目标：选中问题卡后，把“结案”放到“查看归档列表”旁边，形成同一层级的主操作入口。
   - 范围：选中态主区域/顶部操作区的信息层级、结案入口位置、与归档列表入口的并列关系；保持现有 closeout 生成与 localStorage 归档链路。
   - 非目标：不改 ArchiveDocument / ErrorEntry schema；不改归档 store；不接 Electron / fs / IPC；不把 Drawer 或归档页重做成独立系统。
-  - 依赖关系：依赖 D1-IA-LEFT-ISSUE-RAIL 提供明确的选中问题卡上下文。
+  - 依赖关系：D1-IA-LEFT-ISSUE-RAIL 已完成，依赖满足。
 - D1-MAINLINE-BROWSER-SMOKE
   - 目标：在浏览器里按新 IA 真人冒烟，确认默认创建态、左侧选择区、主动创建入口、追记、结案、归档列表与刷新后状态都能真实跑通。
   - 范围：只验证不改代码；覆盖第一次启动/无选中态、创建后选中、左侧选择切换、追加记录、结案入口与归档列表并列、刷新后 localStorage 状态。
   - 非目标：不修 UI；不改业务代码；不补 schema/store/Electron/fs/IPC。
-  - 依赖关系：依赖 D1-IA-LEFT-ISSUE-RAIL、D1-IA-CREATE-ENTRY-MODES、D1-IA-CLOSEOUT-HEADER-ACTION 完成后执行。
+  - 依赖关系：D1-IA-LEFT-ISSUE-RAIL 已完成；仍依赖 D1-IA-CREATE-ENTRY-MODES、D1-IA-CLOSEOUT-HEADER-ACTION。
 
 ## 下一任务选择流程
 1. 重新读取：`AGENTS.md`、`README.md`、本文件、`docs/planning/backlog.md`、`docs/planning/decisions.md`、`.agent-state/handoff.json`、`git status`、最近 commit、`apps/desktop/src/App.tsx`、`App.css`、`index.css`。

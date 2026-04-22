@@ -14,7 +14,7 @@
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 长期性约束与下一轮必须保留的关键说明（不复写任务完成明细，明细见 git log）"
   },
-  "timestamp": "2026-04-22T12:38:13+08:00",
+  "timestamp": "2026-04-22T13:07:47+08:00",
   "current_mode": "delivery_priority",
   "current_stage": "D1",
   "current_stage_name": "交差优先中文产品壳",
@@ -40,24 +40,6 @@
   "current_atomic_task": "WAITING_FOR_PLANNING_SELECTION",
   "frontier_tasks": [
     {
-      "id": "D1-IA-LEFT-ISSUE-RAIL",
-      "track": "track_b_delivery_priority_shell",
-      "goal": "把“选择问题卡”放到页面左侧，形成长期稳定的问题卡选择区。",
-      "scope": [
-        "页面布局",
-        "选择区中文文案",
-        "空状态",
-        "刷新/选择入口的视觉位置",
-        "复用现有 IssueCard 列表与选中状态"
-      ],
-      "non_goals": [
-        "不改 schema / store / localStorage key / Electron / fs / IPC",
-        "不引入路由或新的全局状态模型",
-        "不把归档文件写盘包装成已完成"
-      ],
-      "depends_on": []
-    },
-    {
       "id": "D1-IA-CREATE-ENTRY-MODES",
       "track": "track_b_delivery_priority_shell",
       "goal": "没选中任何问题卡 / 第一次启动时，主界面默认显示“创建问题卡”；平时页面中心靠上保留主动“创建问题卡”入口。",
@@ -72,7 +54,7 @@
         "不改 IssueCard 字段、校验、存储键",
         "不新增演示数据伪装真实项目"
       ],
-      "depends_on": ["D1-IA-LEFT-ISSUE-RAIL"]
+      "depends_on": []
     },
     {
       "id": "D1-IA-CLOSEOUT-HEADER-ACTION",
@@ -90,7 +72,7 @@
         "不接 Electron / fs / IPC",
         "不把 Drawer 或归档页重做成独立系统"
       ],
-      "depends_on": ["D1-IA-LEFT-ISSUE-RAIL"]
+      "depends_on": []
     },
     {
       "id": "D1-MAINLINE-BROWSER-SMOKE",
@@ -108,7 +90,6 @@
         "不补 schema / store / Electron / fs / IPC"
       ],
       "depends_on": [
-        "D1-IA-LEFT-ISSUE-RAIL",
         "D1-IA-CREATE-ENTRY-MODES",
         "D1-IA-CLOSEOUT-HEADER-ACTION"
       ]
@@ -147,7 +128,8 @@
     "D1-FLOW-GUIDE-REMOVE",
     "D1-DOCS-CONSOLIDATE",
     "D1-BRAND-UNIFY-PROBEFLASH",
-    "D1-IA-PLANNING-SYNC"
+    "D1-IA-PLANNING-SYNC",
+    "D1-IA-LEFT-ISSUE-RAIL"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -178,18 +160,18 @@
       "是否避开 schema/store/Electron/fs/IPC 深改",
       "planning 与实际是否一致"
     ],
-    "recommended_next": "D1-IA-LEFT-ISSUE-RAIL",
+    "recommended_next": "D1-IA-CREATE-ENTRY-MODES",
     "output_rule": "从 frontier_tasks 中选择唯一一个原子任务，写入 current_atomic_task，再进入 task-execution。"
   },
   "risks": [
-    "最新页面 IA 尚未落地：选择问题卡应位于左侧稳定选择区，无选中/首次启动默认显示创建问题卡，平时主区中心靠上保留主动创建入口，选中后结案应与查看归档列表并列。",
-    "浏览器人工点击冒烟需等 D1 IA 三项落地后执行，覆盖第一次启动、创建、左侧选择、追记、结案、归档列表与刷新后状态。",
+    "剩余页面 IA 尚未全部落地：无选中/首次启动默认显示创建问题卡，平时主区中心靠上保留主动创建入口，选中后结案应与查看归档列表并列。",
+    "浏览器人工点击冒烟需等 D1 IA 剩余两项落地后执行，覆盖第一次启动、创建、左侧选择、追记、结案、归档列表与刷新后状态。",
     "ArchiveDocument / ErrorEntry 当前仍在 localStorage，不是 .debug_workspace 文件系统写盘；真实文件写盘、独立归档浏览页、跨项目检索仍未接入。",
     "Electron / fs / IPC 仍未接入，ProjectSelector popover 与归档 Drawer 只能展示真实边界，不能包装成已完成能力。"
   ],
   "notes": [
     "链路 A 没有取消，只是降级为后续主线；链路 B 为当前阶段唯一优先主线。",
-    "D1 最新页面 IA：左侧固定问题卡选择区；无选中/首次启动默认创建问题卡；主区中心靠上保留主动创建入口；选中后结案与查看归档列表并列。",
+    "D1 最新页面 IA：左侧固定问题卡选择区已落地；无选中/首次启动默认创建问题卡、主区中心靠上主动创建入口、选中后结案与查看归档列表并列仍需继续收束。",
     "current_atomic_task 保持 WAITING_FOR_PLANNING_SELECTION；下一轮仍需重新读取真实状态后再选择唯一原子任务。",
     "内部 localStorage key repo-debug:* 暂不改名，原因是保持既有浏览器数据和验证脚本兼容；对外品牌口径已统一为 ProbeFlash。",
     "用户当前偏好：除非明确要求，由 AI 自行编译（typecheck + build + 必要 verify）。",
