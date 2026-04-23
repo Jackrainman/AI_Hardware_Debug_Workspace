@@ -9,8 +9,8 @@
 - 当前技术路线：先补 `S3-ARCH-*` 三个最薄架构缝合点，再在 **本地 WSL** 跑通最小后端 + SQLite + HTTP adapter 闭环，最后做 **服务器独立部署验证**。
 - 当前真实边界：
   - 服务器事实已确认：Ubuntu 20.04.6 LTS、局域网地址 `192.168.2.2`、80 端口已被现有 Web 服务占用、`systemd` 可用、`sqlite3` 未安装、系统 Node 仅 `v10.19.0`。
-  - 本机 / WSL 事实已确认：Ubuntu 24.04 LTS，`sqlite3`、`python3`、`gcc/g++`、`make`、`pkg-config` 已可用。
-  - 当前应用事实：async storage / repository port、closeout orchestrator、统一 storage error / connection state 与单一 storage feedback banner 已落地；但当前数据仍全部停留在浏览器 localStorage，尚无 WSL 本地 backend / SQLite / HTTP adapter。
+  - 本机 / WSL 事实已确认：Ubuntu 24.04 LTS，`sqlite3`、`python3`、`gcc/g++`、`make`、`pkg-config`、Node `v24.14.0` 已可用。
+  - 当前应用事实：前端 async storage / repository port、closeout orchestrator、统一 storage error / connection state 已落地；WSL 本地 backend scaffold 已提供 `/api/health`、默认 workspace seed、SQLite 初始化与最小 issue 写入 + 读回 smoke；但前端主流程仍全部走 localStorage，HTTP adapter 尚未接入。
 
 ## 当前已确认约束
 - 当前必须先在 **WSL 本地** 跑通最小闭环，再走服务器 **独立部署** 验证；不要把“直接去服务器试出来”当主线。
@@ -21,55 +21,55 @@
 - 不做 AI / RAG / 权限 / Electron / fs / IPC / 多租户 / 多工作区复杂管理 / 大 UI 重构 / 离线队列 / 冲突合并 / 实时协作。
 
 ## 当前下一最小闭环
-> 基于已收口的前端架构接缝，在 WSL 本地起最小 backend scaffold，提供 `/health`、SQLite 初始化 / 落盘与至少一条最小写入 + 读回 smoke；先把“前端可联调的本地目标”跑出来，再接 HTTP adapter。
+> 基于已落地的 WSL backend scaffold，把前端主流程切到 HTTP storage adapter，并确保 backend 不可达 / 超时 / 写入失败时不会 silent fallback 到 localStorage 冒充成功；先把“前端真实打到本地服务端”的闭环跑通，再做端到端验证。
 
 ### 为什么这是当前最小闭环
-1. `S3-ARCH-*` 三个前端缝合点已经补齐，继续停留在 localStorage 只会重复验证浏览器演示链路，不能再逼近“局域网共享 + 服务端长期存储”。
-2. HTTP adapter 依赖一个真实可访问的 backend / SQLite 目标；如果不先起 backend scaffold，前端再多改 error state 也无法完成联调闭环。
-3. 当前 WSL 环境已具备 `sqlite3 / gcc / make / pkg-config / python3`，本地最小 backend 是已知依赖满足、且比服务器部署更低风险的下一步。
+1. backend / SQLite 已有可联调目标，当前第一个依赖满足且未完成的任务就是把前端接到 HTTP。
+2. 若继续停留在 localStorage，当前后端能力只是“后场摆设”，不能证明局域网共享和服务端长期存储路线真的成立。
+3. unified storage error / connection state 已经准备好，正好可以承接 `server_unreachable / timeout / write_failed` 等 HTTP 失败态，不需要再回头补前端基础接缝。
 
 ## 当前卡点（已按新路线改写）
-- 前端架构接缝已补齐，当前主要阻塞已经从“前端如何接”切换为“本地后端目标尚不存在”。
+- WSL backend scaffold 已落地，当前主要阻塞已经切换为“前端还没有真的打到服务端”。
 - 当前主要工程阻塞按优先级排序：
-  1. 仓库内还没有可启动的 backend scaffold，也没有 `/health` 与 SQLite 初始化入口。
-  2. `docs/planning/s3-api-contract.md` 与 `docs/planning/s3-sqlite-schema-draft.md` 仍停留在实现输入，尚未转成实际 WSL 本地 runtime。
-  3. 前端虽然已有统一错误出口，但没有真实 server connection 目标可切到 `online / degraded / unreachable` 的 backend 语义。
+  1. `storageRepository` 仍指向 localStorage implementation，前端主流程尚未存在 HTTP adapter。
+  2. backend 虽已提供最小 API 与 SQLite，但 issue / record / archive / error-entry 的浏览器主流程还没通过 HTTP 走起来。
+  3. `server_unreachable / timeout / write_failed` 的 UI 单一错误出口虽已准备好，但还没有真实 HTTP 失败路径接入验证。
 
 ## 当前唯一主线原子任务（下一轮只认领这个）
-- **S3-LOCAL-BACKEND-SCAFFOLD**
-  - 目标：在 WSL 本地起最小后端，提供最小 API、SQLite 初始化 / 落盘能力和健康检查。
-  - 直接输入边界：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`git status --short`、`git log --oneline -5`、`docs/planning/s3-api-contract.md`、`docs/planning/s3-sqlite-schema-draft.md`、拟新增的 backend scaffold 目录、WSL 本地运行环境。
-  - 不做项：不碰服务器、不升级服务器系统 Node、不抢占 80 端口、不做反向代理、不提前接前端 HTTP adapter、不扩成完整权限 / 多租户后端。
-  - 工程化验证：`cd apps/desktop && npm run typecheck`、`npm run build`、`npm run verify:all`、`git diff --check`、`npm run verify:handoff`，以及任务相关验证（backend 启动 smoke、`curl /health`、SQLite 初始化成功、至少一条最小写入 + 读回 smoke）。
+- **S3-LOCAL-HTTP-STORAGE-ADAPTER**
+  - 目标：前端接入 HTTP storage adapter，在 WSL 本地与后端联通；严禁 silent fallback 冒充成功。
+  - 直接输入边界：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`git status --short`、`git log --oneline -5`、`docs/planning/s3-api-contract.md`、`docs/planning/s3-server-unreachable-strategy.md`、`apps/desktop/src/storage/*`、`apps/desktop/src/App.tsx`、`apps/server/src/*`、必要的新 HTTP adapter / config 文件。
+  - 不做项：不做服务器部署、不做离线队列、不做实时协作、不保留 silent fallback 作为默认成功路径。
+  - 工程化验证：`cd apps/desktop && npm run typecheck`、`npm run build`、`npm run verify:all`、`git diff --check`、`npm run verify:handoff`，以及任务相关验证（前端经 HTTP adapter 与本地 backend 联通 smoke；backend 关闭 / 超时 / 不可达时 UI 明确失败；不得伪装为 localStorage 成功）。
   - 完成定义：
-    - WSL 本地 backend + SQLite 最小闭环可独立启动；
-    - 前端 `S3-LOCAL-HTTP-STORAGE-ADAPTER` 已有可联调目标；
-    - 规划同步已更新，且下一轮明确转入 `S3-LOCAL-HTTP-STORAGE-ADAPTER`。
+    - HTTP adapter 已接入当前主流程；
+    - 成功态与失败态都能稳定表达；
+    - `S3-LOCAL-END-TO-END-VERIFY` 依赖解除；
+    - 规划同步已更新，且下一轮明确转入 `S3-LOCAL-END-TO-END-VERIFY`。
 
 ## 当前前沿任务窗口（候选，不等于完整顺推队列）
-- **S3-LOCAL-BACKEND-SCAFFOLD**
-  - 选择理由：三处 `S3-ARCH-*` 缝合点已完成，当前第一个依赖满足且未完成的任务就是 WSL 本地 backend scaffold。
-  - 预期输出：backend scaffold、`/health`、SQLite 初始化 / 落盘、最小写入 + 读回 smoke。
 - **S3-LOCAL-HTTP-STORAGE-ADAPTER**
-  - 依赖关系：`S3-LOCAL-BACKEND-SCAFFOLD` 完成后继续。
-  - 选择理由：有了本地 backend 目标后，前端才能真正切换到 HTTP storage adapter，并验证不可达时不冒充 localStorage 成功。
-  - 预期输出：HTTP storage adapter、本地联通 smoke、明确失败态。
+  - 选择理由：WSL backend scaffold 已完成后，HTTP adapter 是当前第一个依赖满足且未完成的任务，也是“本地服务端真实接入”所必需的下一步。
+  - 预期输出：HTTP storage adapter、本地联通 smoke、明确失败态、禁止 silent fallback。
 - **S3-LOCAL-END-TO-END-VERIFY**
   - 依赖关系：`S3-LOCAL-HTTP-STORAGE-ADAPTER` 完成后继续。
-  - 选择理由：adapter 接通后，需要验证 D1 主路径在 HTTP + SQLite + WSL backend 下跑通且失败态不冒充成功。
-  - 预期输出：问题卡 / 追记 / closeout 的本地端到端验证与 SQLite 读回证明。
+  - 选择理由：adapter 接通后，需要证明 D1 主路径真的在 HTTP + SQLite + WSL backend 下跑通。
+  - 预期输出：问题卡 / 追记 / closeout 的端到端验证与 SQLite 读回。
+- **S3-SERVER-INDEPENDENT-DEPLOY-PREP**
+  - 依赖关系：`S3-LOCAL-END-TO-END-VERIFY` 完成后继续。
+  - 选择理由：只有本地最小闭环跑实后，服务器阶段才只剩“独立部署方案”问题。
+  - 预期输出：独立 runtime / 独立目录 / 独立端口 / systemd service 方案。
 
 ## 后续排队任务（按执行顺序，完整细节见 backlog / handoff）
-1. `S3-LOCAL-BACKEND-SCAFFOLD`
-2. `S3-LOCAL-HTTP-STORAGE-ADAPTER`
-3. `S3-LOCAL-END-TO-END-VERIFY`
-4. `S3-SERVER-INDEPENDENT-DEPLOY-PREP`
-5. `S3-SERVER-INDEPENDENT-DEPLOY-VERIFY`
+1. `S3-LOCAL-HTTP-STORAGE-ADAPTER`
+2. `S3-LOCAL-END-TO-END-VERIFY`
+3. `S3-SERVER-INDEPENDENT-DEPLOY-PREP`
+4. `S3-SERVER-INDEPENDENT-DEPLOY-VERIFY`
 
 ## 下一步最小可执行动作
-- 下一轮默认先认领 `S3-LOCAL-BACKEND-SCAFFOLD`。
-- 只读默认最小事实源 + `docs/planning/s3-api-contract.md` / `docs/planning/s3-sqlite-schema-draft.md` / backend scaffold 相关目录；不默认扩读 README / 产品介绍 / decisions / 服务器部署文档。
-- 动代码前先明确 backend 选型、目录、端口、SQLite 路径与 `/health` / 最小写入接口；不要把 HTTP adapter 或服务器部署提前做掉。
+- 下一轮默认先认领 `S3-LOCAL-HTTP-STORAGE-ADAPTER`。
+- 只读默认最小事实源 + `docs/planning/s3-api-contract.md` / `docs/planning/s3-server-unreachable-strategy.md` / `apps/server/src/*` / `apps/desktop/src/storage/*` / `App.tsx`；不默认扩读 README / 产品介绍 / decisions。
+- 动代码前先明确 HTTP adapter 的 base URL、成功态 path、失败态映射和“禁止 silent fallback”的断点；不要把端到端验证或服务器部署提前做掉。
 
 ## 下一任务选择流程
 1. 默认只读取：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`git status --short`、`git log --oneline -5`、当前任务直接相关代码或专项文档。
@@ -78,7 +78,8 @@
    - `docs/planning/decisions.md`：长期规则变化、阶段拍板变化或需要核对长期决策时；
    - `docs/product/产品介绍.md`：改产品定义 / 页面结构 / 领域语言时；
    - `README.md`：改对外展示 / 快速开始 / 演示口径时；
-   - `docs/planning/s3-api-contract.md`、`docs/planning/s3-sqlite-schema-draft.md`：命中 backend / SQLite 任务时读取；
+   - `docs/planning/s3-api-contract.md`：命中 HTTP adapter / backend 任务时读取；
+   - `docs/planning/s3-sqlite-schema-draft.md`：命中 SQLite backend 任务时读取；
    - `docs/planning/s3-server-unreachable-strategy.md`：命中 HTTP adapter 失败态处理任务时读取。
 3. 只允许从 `backlog.md` / `.agent-state/handoff.json.pending_task_queue` 中认领 **第一个“依赖已满足且未完成”的任务**；禁止 AI 发散式自己找事做。
 4. 当前任务未完成“最小验证 + planning sync + 单任务 commit”前，不得认领下一任务。

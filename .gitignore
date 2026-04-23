@@ -11,3 +11,6 @@
 # commit an explicit template/rules file instead of local workspace state.
 .vscode
 .idea
+
+# Local backend runtime data
+apps/server/.runtime/
