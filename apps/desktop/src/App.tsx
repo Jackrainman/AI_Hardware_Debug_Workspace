@@ -25,25 +25,13 @@ import {
 } from "./domain/closeout";
 import { DEFAULT_WORKSPACE_ID, DEFAULT_WORKSPACE_NAME } from "./domain/workspace";
 import {
-  listIssueCards,
-  loadIssueCard,
-  saveIssueCard,
   type IssueCardListResult,
   type LoadIssueCardResult,
-} from "./storage/issue-card-store";
-import {
-  listInvestigationRecordsByIssueId,
-  saveInvestigationRecord,
   type InvestigationRecordListResult,
-} from "./storage/investigation-record-store";
-import {
-  listArchiveDocuments,
-  saveArchiveDocument,
-} from "./storage/archive-document-store";
-import {
-  listErrorEntries,
-  saveErrorEntry,
-} from "./storage/error-entry-store";
+  type StorageReadError,
+  type StorageWriteError,
+  storageRepository,
+} from "./storage/storage-repository";
 
 const SAMPLE_ISSUE_ID = "sample-issue-0001";
 const SAMPLE_TIMESTAMP = "2026-04-21T02:30:00+08:00";
@@ -80,7 +68,10 @@ const SAMPLE_CARD: IssueCard = {
   updatedAt: SAMPLE_TIMESTAMP,
 };
 
-type SaveStatus = { state: "idle" } | { state: "saved"; at: string };
+type SaveStatus =
+  | { state: "idle" }
+  | { state: "saved"; at: string }
+  | { state: "error"; reason: string };
 
 function DemoHint() {
   return (
@@ -98,13 +89,20 @@ function IssueStorageControls() {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>({ state: "idle" });
   const [loadResult, setLoadResult] = useState<LoadIssueCardResult | null>(null);
 
-  const handleSave = () => {
-    saveIssueCard(SAMPLE_CARD);
+  const handleSave = async () => {
+    const saved = await storageRepository.issueCards.save(SAMPLE_CARD);
+    if (!saved.ok) {
+      setSaveStatus({
+        state: "error",
+        reason: formatStorageWriteError(saved.error),
+      });
+      return;
+    }
     setSaveStatus({ state: "saved", at: new Date().toISOString() });
   };
 
-  const handleLoad = () => {
-    setLoadResult(loadIssueCard(SAMPLE_ISSUE_ID));
+  const handleLoad = async () => {
+    setLoadResult(await storageRepository.issueCards.load(SAMPLE_ISSUE_ID));
   };
 
   return (
@@ -122,7 +120,7 @@ function IssueStorageControls() {
         </button>
       </div>
       <p className="storage-line" data-testid="save-status">
-        保存状态：{saveStatus.state === "idle" ? "尚未保存" : `已保存 · ${saveStatus.at}`}
+        保存状态：{renderSaveStatus(saveStatus)}
       </p>
       <p className="storage-line" data-testid="load-status">
         读取状态：{renderLoadStatus(loadResult)}
@@ -157,7 +155,7 @@ function IssueIntakeForm({
   const [severity, setSeverity] = useState<IntakeSeverity>("medium");
   const [status, setStatus] = useState<IntakeSubmitStatus>({ state: "idle" });
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const input: IntakeInput = { title, description, severity };
     const result: IntakeResult = buildIssueCardFromIntake(
@@ -168,7 +166,14 @@ function IssueIntakeForm({
       setStatus({ state: "error", reason: result.reason });
       return;
     }
-    saveIssueCard(result.card);
+    const saved = await storageRepository.issueCards.save(result.card);
+    if (!saved.ok) {
+      setStatus({
+        state: "error",
+        reason: formatStorageWriteError(saved.error),
+      });
+      return;
+    }
     setStatus({ state: "saved", id: result.card.id, at: result.card.createdAt });
     setTitle("");
     setDescription("");
@@ -295,7 +300,12 @@ function IssueCardListView({
             : `未归档 ${activeCards.length} 条 · 异常 ${result.invalid.length} 条`}
         </span>
       </div>
-      {result && activeCards.length === 0 && result.invalid.length === 0 && (
+      {result?.readError && (
+        <p className="storage-line" data-testid="issue-list-read-error">
+          读取失败：{renderStorageReadError(result.readError)}
+        </p>
+      )}
+      {result && result.readError === null && activeCards.length === 0 && result.invalid.length === 0 && (
         <p className="empty-state">暂无未归档问题卡。请先在右侧创建一张卡。</p>
       )}
       {result && activeCards.length > 0 && (
@@ -377,7 +387,7 @@ function InvestigationAppendForm({
   const [note, setNote] = useState<string>("");
   const [status, setStatus] = useState<InvestigationSubmitStatus>({ state: "idle" });
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const input: InvestigationIntakeInput = { issueId, type, note };
     const result: InvestigationIntakeResult = buildInvestigationRecordFromIntake(
@@ -388,7 +398,14 @@ function InvestigationAppendForm({
       setStatus({ state: "error", reason: result.reason });
       return;
     }
-    saveInvestigationRecord(result.record);
+    const saved = await storageRepository.investigationRecords.append(result.record);
+    if (!saved.ok) {
+      setStatus({
+        state: "error",
+        reason: formatStorageWriteError(saved.error),
+      });
+      return;
+    }
     setStatus({ state: "saved", id: result.record.id, at: result.record.createdAt });
     setNote("");
     setType("observation");
@@ -470,7 +487,12 @@ function InvestigationRecordListView({
             : `记录 ${result.valid.length} 条 · 异常 ${result.invalid.length} 条`}
         </span>
       </div>
-      {result && result.valid.length === 0 && result.invalid.length === 0 && (
+      {result?.readError && (
+        <p className="storage-line" data-testid="record-list-read-error">
+          读取失败：{renderStorageReadError(result.readError)}
+        </p>
+      )}
+      {result && result.readError === null && result.valid.length === 0 && result.invalid.length === 0 && (
         <p className="empty-state">还没有排查记录。选中问题后，在上方追加第一条记录。</p>
       )}
       {result && result.valid.length > 0 && (
@@ -532,18 +554,25 @@ function CloseoutForm({
   const [prevention, setPrevention] = useState<string>("");
   const [status, setStatus] = useState<CloseoutSubmitStatus>({ state: "idle" });
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const loaded = loadIssueCard(issueId);
+    const loaded = await storageRepository.issueCards.load(issueId);
     if (!loaded.ok) {
       setStatus({
         state: "error",
-        reason: `读取问题卡失败：${loaded.error.kind}`,
+        reason: renderLoadIssueCardError(loaded.error),
       });
       return;
     }
 
-    const records = listInvestigationRecordsByIssueId(issueId);
+    const records = await storageRepository.investigationRecords.listByIssueId(issueId);
+    if (records.readError !== null) {
+      setStatus({
+        state: "error",
+        reason: renderStorageReadError(records.readError),
+      });
+      return;
+    }
     if (records.invalid.length > 0) {
       setStatus({
         state: "error",
@@ -565,9 +594,32 @@ function CloseoutForm({
       return;
     }
 
-    saveArchiveDocument(result.archiveDocument);
-    saveErrorEntry(result.errorEntry);
-    saveIssueCard(result.updatedIssueCard);
+    const savedArchive = await storageRepository.archiveDocuments.save(result.archiveDocument);
+    if (!savedArchive.ok) {
+      setStatus({
+        state: "error",
+        reason: `归档摘要写入失败：${formatStorageWriteError(savedArchive.error)}`,
+      });
+      return;
+    }
+
+    const savedErrorEntry = await storageRepository.errorEntries.save(result.errorEntry);
+    if (!savedErrorEntry.ok) {
+      setStatus({
+        state: "error",
+        reason: `错误表条目写入失败：${formatStorageWriteError(savedErrorEntry.error)}`,
+      });
+      return;
+    }
+
+    const savedIssueCard = await storageRepository.issueCards.save(result.updatedIssueCard);
+    if (!savedIssueCard.ok) {
+      setStatus({
+        state: "error",
+        reason: `问题卡回写失败：${formatStorageWriteError(savedIssueCard.error)}`,
+      });
+      return;
+    }
     setStatus({
       state: "saved",
       fileName: result.archiveDocument.fileName,
@@ -665,6 +717,58 @@ function renderCloseoutStatus(status: CloseoutSubmitStatus): string {
       return `已结案 · ${status.errorCode} · ${status.fileName} · ${status.at}`;
     case "error":
       return `结案失败：${status.reason}`;
+  }
+}
+
+function renderSaveStatus(status: SaveStatus): string {
+  switch (status.state) {
+    case "idle":
+      return "尚未保存";
+    case "saved":
+      return `已保存 · ${status.at}`;
+    case "error":
+      return `保存失败：${status.reason}`;
+  }
+}
+
+function labelStorageEntity(entity: StorageReadError["entity"]): string {
+  const labels: Record<StorageReadError["entity"], string> = {
+    issue_card: "问题卡",
+    investigation_record: "排查记录",
+    archive_document: "归档摘要",
+    error_entry: "错误表条目",
+  };
+  return labels[entity];
+}
+
+function renderStorageReadError(error: StorageReadError): string {
+  return `${labelStorageEntity(error.entity)}读取失败（${error.code}）：${error.message}`;
+}
+
+function formatStorageWriteError(error: StorageWriteError): string {
+  const entityLabel = labelStorageEntity(error.entity);
+  switch (error.code) {
+    case "validation_failed":
+      return `${entityLabel}写入前校验失败（${error.issues.length} 个字段问题）`;
+    case "serialize_failed":
+      return `${entityLabel}序列化失败：${error.message}`;
+    case "unexpected_write_error":
+      return `${entityLabel}写入异常：${error.message}`;
+  }
+}
+
+type LoadIssueCardFailure = Extract<LoadIssueCardResult, { ok: false }>["error"];
+
+function renderLoadIssueCardError(error: LoadIssueCardFailure): string {
+  switch (error.kind) {
+    case "not_found":
+      return `未找到问题卡（${error.id}）`;
+    case "parse_error":
+      return `问题卡 JSON 解析失败（${error.id}）：${error.message}`;
+    case "validation_error":
+      return `问题卡结构校验失败（${error.id}，${error.issues.length} 个字段问题）`;
+    case "read_failed":
+      return renderStorageReadError(error);
   }
 }
 
@@ -776,17 +880,21 @@ function IssuePane({
   const [recordList, setRecordList] = useState<InvestigationRecordListResult | null>(null);
   const [lastCloseout, setLastCloseout] = useState<CloseoutSummary | null>(null);
 
-  const refreshCardList = () => {
-    setCardList(listIssueCards());
+  const refreshCardList = async () => {
+    setCardList(await storageRepository.issueCards.list());
   };
 
   useEffect(() => {
-    setCardList(listIssueCards());
+    void refreshCardList();
   }, []);
 
-  const reloadSelectedCard = (id: string) => {
-    const loaded = loadIssueCard(id);
+  const reloadSelectedCard = async (id: string) => {
+    const loaded = await storageRepository.issueCards.load(id);
     setSelectedCard(loaded.ok ? loaded.card : null);
+  };
+
+  const loadRecordList = async (issueId: string) => {
+    setRecordList(await storageRepository.investigationRecords.listByIssueId(issueId));
   };
 
   const refreshRecordList = () => {
@@ -794,14 +902,14 @@ function IssuePane({
       setRecordList(null);
       return;
     }
-    setRecordList(listInvestigationRecordsByIssueId(selectedIssueId));
+    void loadRecordList(selectedIssueId);
   };
 
   const handleSelect = (id: string) => {
     setSelectedIssueId(id);
     onSelectedIssueChange(id);
-    reloadSelectedCard(id);
-    setRecordList(listInvestigationRecordsByIssueId(id));
+    void reloadSelectedCard(id);
+    void loadRecordList(id);
     setLastCloseout(null);
   };
 
@@ -814,11 +922,11 @@ function IssuePane({
   };
 
   const handleCardCreated = (id: string) => {
-    refreshCardList();
+    void refreshCardList();
     setSelectedIssueId(id);
     onSelectedIssueChange(id);
-    reloadSelectedCard(id);
-    setRecordList(listInvestigationRecordsByIssueId(id));
+    void reloadSelectedCard(id);
+    void loadRecordList(id);
     setLastCloseout(null);
   };
 
@@ -829,9 +937,9 @@ function IssuePane({
   const handleIssueClosed = (summary: CloseoutSummary) => {
     setLastCloseout(summary);
     onCloseoutResult(summary);
-    refreshCardList();
-    setRecordList(listInvestigationRecordsByIssueId(summary.issueId));
-    reloadSelectedCard(summary.issueId);
+    void refreshCardList();
+    void loadRecordList(summary.issueId);
+    void reloadSelectedCard(summary.issueId);
   };
 
   const recordCount = recordList?.valid.length ?? 0;
@@ -893,14 +1001,7 @@ function renderLoadStatus(result: LoadIssueCardResult | null): string {
   if (result.ok) {
     return `读取成功 · ${result.card.id} · ${result.card.title} · ${labelIssueStatus(result.card.status)}`;
   }
-  switch (result.error.kind) {
-    case "not_found":
-      return `未找到示例卡（${result.error.id}）`;
-    case "parse_error":
-      return `JSON 解析失败（${result.error.id}）：${result.error.message}`;
-    case "validation_error":
-      return `结构校验失败（${result.error.id}，${result.error.issues.length} 个字段问题）`;
-  }
+  return renderLoadIssueCardError(result.error);
 }
 
 type Pane = {
@@ -994,11 +1095,12 @@ export type ArchiveIndexItem = {
 export type ArchiveIndex = {
   items: ArchiveIndexItem[];
   invalidCount: number;
+  readErrors: string[];
 };
 
-export function loadArchiveIndex(): ArchiveIndex {
-  const docList = listArchiveDocuments();
-  const errorList = listErrorEntries();
+export async function loadArchiveIndex(): Promise<ArchiveIndex> {
+  const docList = await storageRepository.archiveDocuments.list();
+  const errorList = await storageRepository.errorEntries.list();
   const errorByIssue = new Map<string, { errorCode: string; category: string }>();
   for (const entry of errorList.valid) {
     if (errorByIssue.has(entry.sourceIssueId)) continue;
@@ -1021,6 +1123,9 @@ export function loadArchiveIndex(): ArchiveIndex {
   return {
     items,
     invalidCount: docList.invalid.length + errorList.invalid.length,
+    readErrors: [docList.readError, errorList.readError]
+      .filter((error): error is StorageReadError => error !== null)
+      .map(renderStorageReadError),
   };
 }
 
@@ -1057,6 +1162,15 @@ export function ArchivePaneShell({
             查看归档列表
           </button>
         </div>
+      )}
+      {archiveIndex.readErrors.length > 0 && (
+        <ul className="list-invalid" data-testid="archive-read-errors">
+          {archiveIndex.readErrors.map((message) => (
+            <li key={message} className="storage-line">
+              读取失败 · {message}
+            </li>
+          ))}
+        </ul>
       )}
       {archiveIndex.invalidCount > 0 && (
         <p className="storage-line" data-testid="archive-invalid-note">
@@ -1300,21 +1414,22 @@ export default function App() {
   const [archiveIndex, setArchiveIndex] = useState<ArchiveIndex>({
     items: [],
     invalidCount: 0,
+    readErrors: [],
   });
   const [isArchiveListOpen, setIsArchiveListOpen] = useState<boolean>(false);
   const [isProjectEntryOpen, setIsProjectEntryOpen] = useState<boolean>(false);
   const [activeIssueId, setActiveIssueId] = useState<string | null>(null);
 
-  const refreshArchiveIndex = () => {
-    setArchiveIndex(loadArchiveIndex());
+  const refreshArchiveIndex = async () => {
+    setArchiveIndex(await loadArchiveIndex());
   };
 
   useEffect(() => {
-    refreshArchiveIndex();
+    void refreshArchiveIndex();
   }, []);
 
   const handleCloseoutResult = (_summary: CloseoutSummary) => {
-    refreshArchiveIndex();
+    void refreshArchiveIndex();
   };
 
   const projectPane = PANES.find((p) => p.id === "project")!;

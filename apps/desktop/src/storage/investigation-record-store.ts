@@ -8,7 +8,13 @@ import {
   InvestigationRecordSchema,
   type InvestigationRecord,
 } from "../domain/schemas/investigation-record.ts";
+import { persistValidatedEntity } from "./local-storage-store-helpers.ts";
 import { localStorageAdapter } from "./local-storage-adapter.ts";
+import {
+  createReadFailed,
+  type StorageReadError,
+  type StorageWriteResult,
+} from "./storage-result.ts";
 
 const KEY_PREFIX = "repo-debug:investigation-record:";
 
@@ -19,6 +25,7 @@ export type InvestigationRecordListInvalidEntry =
 export interface InvestigationRecordListResult {
   valid: InvestigationRecord[];
   invalid: InvestigationRecordListInvalidEntry[];
+  readError: StorageReadError | null;
 }
 
 function storageKey(id: string): string {
@@ -29,8 +36,14 @@ function idFromKey(key: string): string {
   return key.startsWith(KEY_PREFIX) ? key.slice(KEY_PREFIX.length) : key;
 }
 
-export function saveInvestigationRecord(record: InvestigationRecord): void {
-  localStorageAdapter.setItem(storageKey(record.id), JSON.stringify(record));
+export function saveInvestigationRecord(record: InvestigationRecord): StorageWriteResult {
+  return persistValidatedEntity({
+    entity: "investigation_record",
+    target: record.id,
+    key: storageKey(record.id),
+    value: record,
+    schema: InvestigationRecordSchema,
+  });
 }
 
 export function listInvestigationRecordsByIssueId(
@@ -38,11 +51,29 @@ export function listInvestigationRecordsByIssueId(
 ): InvestigationRecordListResult {
   const valid: InvestigationRecord[] = [];
   const invalid: InvestigationRecordListInvalidEntry[] = [];
-  const keys = localStorageAdapter.listKeys(KEY_PREFIX);
+  let keys: string[];
+  try {
+    keys = localStorageAdapter.listKeys(KEY_PREFIX);
+  } catch (error) {
+    return {
+      valid,
+      invalid,
+      readError: createReadFailed("investigation_record", KEY_PREFIX, error),
+    };
+  }
 
   for (const key of keys) {
     const id = idFromKey(key);
-    const raw = localStorageAdapter.getItem(key);
+    let raw: string | null;
+    try {
+      raw = localStorageAdapter.getItem(key);
+    } catch (error) {
+      return {
+        valid,
+        invalid,
+        readError: createReadFailed("investigation_record", key, error),
+      };
+    }
     if (raw === null) continue;
     let parsed: unknown;
     try {
@@ -74,5 +105,5 @@ export function listInvestigationRecordsByIssueId(
     a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0,
   );
 
-  return { valid, invalid };
+  return { valid, invalid, readError: null };
 }

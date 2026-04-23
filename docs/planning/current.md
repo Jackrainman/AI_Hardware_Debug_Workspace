@@ -10,7 +10,7 @@
 - 当前真实边界：
   - 服务器事实已确认：Ubuntu 20.04.6 LTS、局域网地址 `192.168.2.2`、80 端口已被现有 Web 服务占用、`systemd` 可用、`sqlite3` 未安装、系统 Node 仅 `v10.19.0`。
   - 本机 / WSL 事实已确认：Ubuntu 24.04 LTS，`sqlite3`、`python3`、`gcc/g++`、`make`、`pkg-config` 已可用。
-  - 当前应用事实：`App.tsx` 仍承担 UI 渲染、页面状态、业务编排、存储协调和 closeout 多步写入；现有 store 写操作成功假设偏强，closeout 未来 HTTP 化后存在部分成功 / 状态不一致风险。
+  - 当前应用事实：最薄 async storage / repository port 已落地，`storageRepository` 已成为当前 localStorage 的业务级入口；但 `App.tsx` 仍承担 UI 渲染、页面状态、业务编排、存储协调和 closeout 多步写入。
 
 ## 当前已确认约束
 - 服务器未知已解除；当前卡点不再是“服务器信息不明”，而是“HTTP / SQLite / 部署之前缺少最薄可控接缝”。
@@ -22,59 +22,58 @@
 - 不做 AI / RAG / 权限 / Electron / fs / IPC / 多租户 / 多工作区复杂管理 / 大 UI 重构 / 离线队列 / 冲突合并 / 实时协作。
 
 ## 当前下一最小闭环
-> 先补最薄异步 storage / repository 边界，并让 localStorage 先通过该边界跑通；为后续本地 WSL 最小后端 + HTTP adapter + 服务器独立部署预留可控接缝。
+> 基于已落地的 async storage / repository port，把 closeout 多步写入从 UI 中抽到最薄 orchestrator；先收口编排链路，再做统一 storage error / connection state。
 
 ### 为什么这是当前最小闭环
-1. 直接接 HTTP 会把 `App.tsx` 当前的同步写入假设和 closeout 多步写入风险原样放大到网络层。
-2. 先把 localStorage 放到异步业务边界后，后续 HTTP adapter 才能在不重做 UI 的前提下替换。
-3. 这一步完成后，`S3-ARCH-CLOSEOUT-ORCHESTRATOR` 与 `S3-ARCH-UNIFIED-STORAGE-ERROR-STATE` 才有稳定接缝可用。
+1. async storage / repository 接缝已经落地，当前主流程写操作不再假定 `void` 成功，closeout 已具备继续抽离的稳定边界。
+2. `App.tsx` 里最危险的 HTTP 化链路仍是 closeout 三次写入串联；如果不先抽 orchestrator，后续部分成功 / 状态不一致仍会留在 UI。
+3. closeout orchestrator 完成后，`S3-ARCH-UNIFIED-STORAGE-ERROR-STATE` 才能在单一编排出口上统一错误与连接状态，而不是继续分散到组件里。
 
 ## 当前卡点（已按新路线改写）
 - 服务器未知已解除，但服务器部署必须走独立运行时 / 独立端口 / 独立 `systemd service`，且 **本轮先以 WSL 本地跑通为先**。
 - 当前主要工程阻塞按优先级排序：
-  1. `App.tsx` 同时承担 UI、业务编排和多实体写入协调，HTTP 化后最容易出现部分成功与状态不一致。
-  2. 现有 `src/storage/*` 写操作大多返回 `void`，缺少统一 result / error model，不利于连接态和失败态表达。
-  3. closeout 仍由 UI 直接串联 `ArchiveDocument / ErrorEntry / IssueCard` 多步写入，后续最容易变成难调试的网络边界问题。
+  1. `App.tsx` 仍同时承担 UI、业务编排和多实体写入协调，closeout 仍在组件中直接串联三类写入。
+  2. async storage / repository port 虽已落地，但 closeout 尚未形成单一 orchestration result；一旦后续接 HTTP，最容易出现部分成功与状态不一致。
+  3. 读写 failure 已开始结构化，但 UI 侧尚未统一成单一 storage error / connection state 出口。
 
 ## 当前唯一主线原子任务（下一轮只认领这个）
-- **S3-ARCH-ASYNC-STORAGE-PORT**
-  - 目标：定义最薄异步业务级 storage / repository interface，让 localStorage 先通过该接口跑通，并把写操作从 `void` 收敛为结构化 result。
-  - 直接输入边界：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`git status --short`、`git log --oneline -5`、`apps/desktop/src/App.tsx`、`apps/desktop/src/storage/*`、必要的 domain schema / intake / closeout 代码。
-  - 不做项：不接 HTTP、不写后端、不改服务器部署、不引入 Redux / Zustand / React Query、不大改 UI、不做全量 `projectId` 重命名。
-  - 工程化验证：`cd apps/desktop && npm run typecheck`、`npm run build`、`npm run verify:all`、`git diff --check`、`npm run verify:handoff`，以及任务相关的代码级验证（至少证明 localStorage 读写已经走异步 port，且写结果不再是裸 `void`）。
+- **S3-ARCH-CLOSEOUT-ORCHESTRATOR**
+  - 目标：把 closeout 多步写入从 UI 中抽到 use-case / service 层，UI 不再直接协调 `ArchiveDocument / ErrorEntry / IssueCard` 三类写入。
+  - 直接输入边界：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`git status --short`、`git log --oneline -5`、`apps/desktop/src/App.tsx`、closeout domain 代码、`apps/desktop/src/storage/*`、必要的 use-case / service 文件。
+  - 不做项：不做 UI 重构、不接 HTTP、不写后端、不改服务器部署、不引入 Redux / Zustand / React Query、不提前做 unified error / connection state 全套体系。
+  - 工程化验证：`cd apps/desktop && npm run typecheck`、`npm run build`、`npm run verify:all`、`git diff --check`、`npm run verify:handoff`，以及任务相关的代码级验证（至少覆盖 closeout happy path 与部分失败路径，证明 UI 不再直接串联多实体写入）。
   - 完成定义：
-    - 已落地最薄 async storage / repository port；
-    - localStorage adapter 已适配该 port；
-    - 当前主流程涉及的写操作至少能返回统一结构化 result；
-    - 规划同步已更新，且下一轮明确转入 `S3-ARCH-CLOSEOUT-ORCHESTRATOR`。
+    - closeout orchestration 已从 UI 抽离；
+    - 返回统一 orchestration result；
+    - 后续 `S3-ARCH-UNIFIED-STORAGE-ERROR-STATE` 依赖解除；
+    - 规划同步已更新，且下一轮明确转入 `S3-ARCH-UNIFIED-STORAGE-ERROR-STATE`。
 
 ## 当前前沿任务窗口（候选，不等于完整顺推队列）
-- **S3-ARCH-ASYNC-STORAGE-PORT**
-  - 选择理由：它是后续 HTTP / SQLite / 部署前的最小接缝，依赖已满足，且当前收益最高。
-  - 预期输出：异步 storage / repository port、localStorage adapter 适配、结构化写结果。
 - **S3-ARCH-CLOSEOUT-ORCHESTRATOR**
-  - 依赖关系：`S3-ARCH-ASYNC-STORAGE-PORT` 完成后继续。
-  - 选择理由：closeout 多步写入是最危险的 HTTP 化链路，必须先从 UI 抽到 use-case / service。
-  - 预期输出：UI 不再直接协调 archive / error-entry / issue 三类写入。
+  - 选择理由：async storage / repository port 已落地后，closeout 多步写入是当前最危险的 UI 编排链路，依赖已满足且收益最高。
+  - 预期输出：closeout use-case / service、统一 orchestration result、UI 不再直接协调 archive / error-entry / issue 写入。
 - **S3-ARCH-UNIFIED-STORAGE-ERROR-STATE**
   - 依赖关系：`S3-ARCH-CLOSEOUT-ORCHESTRATOR` 完成后继续。
-  - 选择理由：HTTP 化前先统一 storage result / error / connection state，后续 adapter 与部署失败态才有单一出口。
+  - 选择理由：closeout 编排收口后，才能把 validation / write_failed / server_unreachable 等错误映射成单一出口。
   - 预期输出：统一 storage error model、统一连接状态表达、统一 UI 错误出口。
+- **S3-LOCAL-BACKEND-SCAFFOLD**
+  - 依赖关系：`S3-ARCH-UNIFIED-STORAGE-ERROR-STATE` 完成后继续。
+  - 选择理由：三处 S3-ARCH 缝合点补齐后，才能在 WSL 本地接最小后端与 SQLite 闭环。
+  - 预期输出：WSL 本地 backend scaffold、最小 `/health`、SQLite 初始化 / 落盘能力。
 
 ## 后续排队任务（按执行顺序，完整细节见 backlog / handoff）
-1. `S3-ARCH-ASYNC-STORAGE-PORT`
-2. `S3-ARCH-CLOSEOUT-ORCHESTRATOR`
-3. `S3-ARCH-UNIFIED-STORAGE-ERROR-STATE`
-4. `S3-LOCAL-BACKEND-SCAFFOLD`
-5. `S3-LOCAL-HTTP-STORAGE-ADAPTER`
-6. `S3-LOCAL-END-TO-END-VERIFY`
-7. `S3-SERVER-INDEPENDENT-DEPLOY-PREP`
-8. `S3-SERVER-INDEPENDENT-DEPLOY-VERIFY`
+1. `S3-ARCH-CLOSEOUT-ORCHESTRATOR`
+2. `S3-ARCH-UNIFIED-STORAGE-ERROR-STATE`
+3. `S3-LOCAL-BACKEND-SCAFFOLD`
+4. `S3-LOCAL-HTTP-STORAGE-ADAPTER`
+5. `S3-LOCAL-END-TO-END-VERIFY`
+6. `S3-SERVER-INDEPENDENT-DEPLOY-PREP`
+7. `S3-SERVER-INDEPENDENT-DEPLOY-VERIFY`
 
 ## 下一步最小可执行动作
-- 下一轮默认先认领 `S3-ARCH-ASYNC-STORAGE-PORT`。
-- 只读默认最小事实源 + `App.tsx` / `src/storage/*` 等直接相关代码；不默认扩读 README / 产品介绍 / backlog / decisions / S3 专项文档。
-- 动代码前先明确 async port 的输入输出、result / error shape、localStorage adapter 承接方式，再落地最小改动。
+- 下一轮默认先认领 `S3-ARCH-CLOSEOUT-ORCHESTRATOR`。
+- 只读默认最小事实源 + `App.tsx` / closeout domain / `src/storage/*` 等直接相关代码；不默认扩读 README / 产品介绍 / decisions / S3 专项文档。
+- 动代码前先明确 orchestrator 输入输出、部分失败表达与 UI 收口方式，再落地最小改动；不要把 unified error state 或 HTTP adapter 提前做掉。
 
 ## 下一任务选择流程
 1. 默认只读取：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`git status --short`、`git log --oneline -5`、当前任务直接相关代码或专项文档。

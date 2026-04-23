@@ -4,14 +4,21 @@
 
 import type { ZodIssue } from "zod";
 import { ErrorEntrySchema, type ErrorEntry } from "../domain/schemas/error-entry.ts";
+import { persistValidatedEntity } from "./local-storage-store-helpers.ts";
 import { localStorageAdapter } from "./local-storage-adapter.ts";
+import {
+  createReadFailed,
+  type StorageReadError,
+  type StorageWriteResult,
+} from "./storage-result.ts";
 
 const KEY_PREFIX = "repo-debug:error-entry:";
 
 export type LoadErrorEntryError =
   | { kind: "not_found"; id: string }
   | { kind: "parse_error"; id: string; message: string }
-  | { kind: "validation_error"; id: string; issues: ZodIssue[] };
+  | { kind: "validation_error"; id: string; issues: ZodIssue[] }
+  | StorageReadError;
 
 export type LoadErrorEntryResult =
   | { ok: true; entry: ErrorEntry }
@@ -24,6 +31,7 @@ export type ErrorEntryListInvalidEntry =
 export interface ErrorEntryListResult {
   valid: ErrorEntry[];
   invalid: ErrorEntryListInvalidEntry[];
+  readError: StorageReadError | null;
 }
 
 function storageKey(id: string): string {
@@ -34,12 +42,26 @@ function idFromKey(key: string): string {
   return key.startsWith(KEY_PREFIX) ? key.slice(KEY_PREFIX.length) : key;
 }
 
-export function saveErrorEntry(entry: ErrorEntry): void {
-  localStorageAdapter.setItem(storageKey(entry.id), JSON.stringify(entry));
+export function saveErrorEntry(entry: ErrorEntry): StorageWriteResult {
+  return persistValidatedEntity({
+    entity: "error_entry",
+    target: entry.id,
+    key: storageKey(entry.id),
+    value: entry,
+    schema: ErrorEntrySchema,
+  });
 }
 
 export function loadErrorEntry(id: string): LoadErrorEntryResult {
-  const raw = localStorageAdapter.getItem(storageKey(id));
+  let raw: string | null;
+  try {
+    raw = localStorageAdapter.getItem(storageKey(id));
+  } catch (error) {
+    return {
+      ok: false,
+      error: createReadFailed("error_entry", id, error),
+    };
+  }
   if (raw === null) {
     return { ok: false, error: { kind: "not_found", id } };
   }
@@ -69,11 +91,29 @@ export function loadErrorEntry(id: string): LoadErrorEntryResult {
 export function listErrorEntries(): ErrorEntryListResult {
   const valid: ErrorEntry[] = [];
   const invalid: ErrorEntryListInvalidEntry[] = [];
-  const keys = localStorageAdapter.listKeys(KEY_PREFIX);
+  let keys: string[];
+  try {
+    keys = localStorageAdapter.listKeys(KEY_PREFIX);
+  } catch (error) {
+    return {
+      valid,
+      invalid,
+      readError: createReadFailed("error_entry", KEY_PREFIX, error),
+    };
+  }
 
   for (const key of keys) {
     const id = idFromKey(key);
-    const raw = localStorageAdapter.getItem(key);
+    let raw: string | null;
+    try {
+      raw = localStorageAdapter.getItem(key);
+    } catch (error) {
+      return {
+        valid,
+        invalid,
+        readError: createReadFailed("error_entry", key, error),
+      };
+    }
     if (raw === null) continue;
     let parsed: unknown;
     try {
@@ -105,5 +145,5 @@ export function listErrorEntries(): ErrorEntryListResult {
   );
   invalid.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 
-  return { valid, invalid };
+  return { valid, invalid, readError: null };
 }
