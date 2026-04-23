@@ -18,9 +18,6 @@ import {
   type InvestigationType,
 } from "./domain/investigation-intake";
 import {
-  buildCloseoutFromIssue,
-  defaultCloseoutOptions,
-  nowISO as nowISOCloseout,
   type CloseoutInput,
 } from "./domain/closeout";
 import { DEFAULT_WORKSPACE_ID, DEFAULT_WORKSPACE_NAME } from "./domain/workspace";
@@ -32,6 +29,10 @@ import {
   type StorageWriteError,
   storageRepository,
 } from "./storage/storage-repository";
+import {
+  formatCloseoutOrchestrationFailure,
+  orchestrateIssueCloseout,
+} from "./use-cases/closeout-orchestrator";
 
 const SAMPLE_ISSUE_ID = "sample-issue-0001";
 const SAMPLE_TIMESTAMP = "2026-04-21T02:30:00+08:00";
@@ -556,67 +557,12 @@ function CloseoutForm({
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const loaded = await storageRepository.issueCards.load(issueId);
-    if (!loaded.ok) {
-      setStatus({
-        state: "error",
-        reason: renderLoadIssueCardError(loaded.error),
-      });
-      return;
-    }
-
-    const records = await storageRepository.investigationRecords.listByIssueId(issueId);
-    if (records.readError !== null) {
-      setStatus({
-        state: "error",
-        reason: renderStorageReadError(records.readError),
-      });
-      return;
-    }
-    if (records.invalid.length > 0) {
-      setStatus({
-        state: "error",
-        reason: `排查记录校验失败：有 ${records.invalid.length} 条异常记录`,
-      });
-      return;
-    }
-
     const input: CloseoutInput = { category, rootCause, resolution, prevention };
-    const now = nowISOCloseout();
-    const result = buildCloseoutFromIssue(
-      loaded.card,
-      records.valid,
-      input,
-      defaultCloseoutOptions(now),
-    );
+    const result = await orchestrateIssueCloseout(issueId, input);
     if (!result.ok) {
-      setStatus({ state: "error", reason: result.reason });
-      return;
-    }
-
-    const savedArchive = await storageRepository.archiveDocuments.save(result.archiveDocument);
-    if (!savedArchive.ok) {
       setStatus({
         state: "error",
-        reason: `归档摘要写入失败：${formatStorageWriteError(savedArchive.error)}`,
-      });
-      return;
-    }
-
-    const savedErrorEntry = await storageRepository.errorEntries.save(result.errorEntry);
-    if (!savedErrorEntry.ok) {
-      setStatus({
-        state: "error",
-        reason: `错误表条目写入失败：${formatStorageWriteError(savedErrorEntry.error)}`,
-      });
-      return;
-    }
-
-    const savedIssueCard = await storageRepository.issueCards.save(result.updatedIssueCard);
-    if (!savedIssueCard.ok) {
-      setStatus({
-        state: "error",
-        reason: `问题卡回写失败：${formatStorageWriteError(savedIssueCard.error)}`,
+        reason: formatCloseoutOrchestrationFailure(result),
       });
       return;
     }

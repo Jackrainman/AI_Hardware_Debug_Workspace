@@ -19,14 +19,14 @@
     "verification_expectations": "object - 当前阶段默认验证矩阵与按任务加严要求",
     "environment_facts": "object - 当前已确认的服务器与本机环境事实"
   },
-  "timestamp": "2026-04-23T17:04:06+08:00",
+  "timestamp": "2026-04-23T18:20:38+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "S3",
   "current_stage_name": "存储迁移与服务器化",
   "current_stage_goal": "把 D1 的浏览器 SPA + window.localStorage 演示版迁移为战队局域网可访问、服务端长期存储的版本；当前先走“架构缝合 -> WSL 本地最小闭环 -> 服务器独立部署验证”。",
   "primary_track": "s3_local_first_then_independent_server_deploy",
   "deferred_track": "ai_rag_permissions_electron_multi_workspace",
-  "current_atomic_task": "S3-ARCH-CLOSEOUT-ORCHESTRATOR",
+  "current_atomic_task": "S3-ARCH-UNIFIED-STORAGE-ERROR-STATE",
   "storage_strategy": {
     "current_truth": "apps/desktop 当前仍是浏览器 SPA + window.localStorage；最薄 async storageRepository 已落地，localStorage 仍为当前唯一实现，但 App.tsx 仍承担 closeout 多步写入协调。",
     "next_closure": "先把 closeout 多步写入从 UI 抽到 use-case / service，并返回统一 orchestration result；不在这一轮做 unified error state 或 HTTP adapter。",
@@ -43,36 +43,13 @@
   },
   "frontier_tasks": [
     {
-      "id": "S3-ARCH-CLOSEOUT-ORCHESTRATOR",
-      "track": "s3_local_first_then_independent_server_deploy",
-      "goal": "把 closeout 多步写入从 UI 中抽到 use-case / service 层，UI 不再直接协调 archive / error-entry / issue 三类写入。",
-      "scope": [
-        "抽离 closeout orchestration",
-        "统一 orchestration result",
-        "为 HTTP 化前的失败态处理做准备"
-      ],
-      "non_goals": [
-        "不做 UI 重构",
-        "不引入复杂状态框架",
-        "不做服务器部署"
-      ],
-      "depends_on": [
-        "S3-ARCH-ASYNC-STORAGE-PORT"
-      ],
-      "verification": [
-        "默认验证矩阵",
-        "closeout happy path + 部分失败路径验证",
-        "证明 UI 不再直接串联多实体写入"
-      ],
-      "status": "ready_to_claim_now"
-    },
-    {
       "id": "S3-ARCH-UNIFIED-STORAGE-ERROR-STATE",
       "track": "s3_local_first_then_independent_server_deploy",
       "goal": "统一 storage result / error model、连接状态与 UI 错误出口。",
       "scope": [
         "统一 validation / write_failed / server_unreachable / timeout 等表达",
-        "让 UI 错误出口收敛为单一入口"
+        "让 UI 错误出口收敛为单一入口",
+        "为后续 HTTP adapter 保持同一失败语义"
       ],
       "non_goals": [
         "不做离线队列",
@@ -84,9 +61,10 @@
       ],
       "verification": [
         "默认验证矩阵",
-        "错误映射与 UI 单一出口验证"
+        "错误映射验证",
+        "UI 单一错误出口验证"
       ],
-      "status": "queued_after_current"
+      "status": "ready_to_claim_now"
     },
     {
       "id": "S3-LOCAL-BACKEND-SCAFFOLD",
@@ -112,7 +90,31 @@
         "curl /health",
         "SQLite 初始化与最小写入 / 读回 smoke"
       ],
-      "status": "queued_after_unified_storage_error_state"
+      "status": "queued_after_current"
+    },
+    {
+      "id": "S3-LOCAL-HTTP-STORAGE-ADAPTER",
+      "track": "s3_local_first_then_independent_server_deploy",
+      "goal": "前端接入 HTTP storage adapter，在 WSL 本地与后端联通；严禁 silent fallback。",
+      "scope": [
+        "接入 HTTP storage adapter",
+        "覆盖成功态与不可达失败态",
+        "保持当前主流程最小适配"
+      ],
+      "non_goals": [
+        "不做服务器部署",
+        "不做离线队列",
+        "不保留 silent fallback 作为默认成功路径"
+      ],
+      "depends_on": [
+        "S3-LOCAL-BACKEND-SCAFFOLD"
+      ],
+      "verification": [
+        "默认验证矩阵",
+        "前端经 HTTP adapter 本地联通 smoke",
+        "后端关闭 / 超时 / 不可达时 UI 明确失败"
+      ],
+      "status": "queued_after_backend_scaffold"
     }
   ],
   "s3_task_breakdown": {
@@ -176,7 +178,8 @@
     "S3-PREP-SERVER-UNREACHABLE-HANDLING-A1A2A3",
     "DOCS-HYGIENE-HARD-DELETE-WEAK-DOCS",
     "S3-PLANNING-WSL-FIRST-REALIGN",
-    "S3-ARCH-ASYNC-STORAGE-PORT"
+    "S3-ARCH-ASYNC-STORAGE-PORT",
+    "S3-ARCH-CLOSEOUT-ORCHESTRATOR"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -196,9 +199,9 @@
       "是否保持默认读取集合最小，不把 README / 产品介绍 / backlog / decisions / 专项文档重新塞回默认必读"
     ],
     "claiming_rule": "只允许从 pending_task_queue 中认领第一个“依赖已满足且未完成”的原子任务；禁止发散式自找任务。",
-    "recommended_next": "S3-ARCH-CLOSEOUT-ORCHESTRATOR",
-    "after_current_complete": "S3-ARCH-UNIFIED-STORAGE-ERROR-STATE",
-    "output_rule": "下一轮先读默认最小事实源，再读 App.tsx / closeout domain / src/storage/* 等直接相关代码；只做当前唯一任务，不顺推。",
+    "recommended_next": "S3-ARCH-UNIFIED-STORAGE-ERROR-STATE",
+    "after_current_complete": "S3-LOCAL-BACKEND-SCAFFOLD",
+    "output_rule": "下一轮先读默认最小事实源，再读 App.tsx / closeout-orchestrator / src/storage/* / s3-server-unreachable-strategy；只做当前唯一任务，不顺推。",
     "conditional_inputs": {
       "docs/planning/backlog.md": "当前窗口变化、排队任务新增/移除/改名/重排、或需要核对完整串行队列时读取。",
       "docs/planning/decisions.md": "长期规则变化、阶段拍板变化、技术争议或需要核对长期决策时读取。",
@@ -211,14 +214,13 @@
   },
   "risks": [
     "当前应用仍是 localStorage 演示存储；在 HTTP / SQLite 未接入且失败态未统一前，不得宣称服务器化完成。",
-    "App.tsx 仍承担 UI、业务编排、存储协调与 closeout 多步写入；若不先抽 closeout orchestrator，HTTP 化后极易出现部分成功 / 状态不一致。",
-    "async storage / repository port 已落地，但统一 storage error / connection state 尚未完成；UI 侧错误出口仍可能分散。",
+    "closeout 编排虽已收口，但 UI 侧错误与连接状态仍未统一；若此时直接接 HTTP，server_unreachable / timeout / write_failed 会继续分散在组件里。",
     "服务器系统 Node 过老且 80 端口已占用；若不走独立 runtime + 独立端口 + systemd service，会影响现有服务或导致返工。"
   ],
   "notes": [
     "默认读取链仍然只保留 AGENTS/current/handoff/git status/git log/任务相关文件；README、产品介绍、backlog、decisions、S3 专项文档都不回到默认必读集合。",
     "S3 当前路线已改为：先 S3-ARCH-* 架构缝合，再 WSL 本地最小闭环，再服务器独立部署验证。",
-    "最薄 async storage / repository port 已落地；localStorage 仍是当前唯一 implementation，closeout orchestrator 仍未抽离。",
+    "最薄 async storage / repository port 与 closeout orchestrator 已落地；当前 localStorage 仍是唯一 implementation。",
     "服务器阶段必须使用独立 runtime + 独立端口 + 独立 systemd service；不升级服务器全局 Node，不抢占 80 端口。",
     "当前访问口径先按 http://192.168.2.2:<port>/ 理解；`.local` / 反向代理美化延后。",
     "不得把 localStorage silent fallback 冒充服务器成功；失败态必须显式可见。",
@@ -293,7 +295,7 @@
       }
     }
   },
-  "current_focus": "基于已落地的 async storage / repository port，把 closeout 多步写入从 UI 抽到最薄 orchestrator；先收口编排链路，再做统一 storage error / connection state。",
+  "current_focus": "基于已落地的 async storage / repository port + closeout orchestrator，把 StorageReadError / StorageWriteError / closeout orchestration failure 收口成统一 storage error / connection state 与 UI 单一错误出口。",
   "environment_facts": {
     "server": {
       "os": "Ubuntu 20.04.6 LTS",
@@ -351,7 +353,7 @@
         "S3-ARCH-ASYNC-STORAGE-PORT"
       ],
       "claim_after": null,
-      "status": "current"
+      "status": "completed"
     },
     {
       "order": 2,
@@ -382,7 +384,7 @@
         "S3-ARCH-CLOSEOUT-ORCHESTRATOR"
       ],
       "claim_after": "S3-ARCH-CLOSEOUT-ORCHESTRATOR",
-      "status": "pending"
+      "status": "current"
     },
     {
       "order": 3,
