@@ -26,13 +26,22 @@ import {
   type LoadIssueCardResult,
   type InvestigationRecordListResult,
   type StorageReadError,
-  type StorageWriteError,
   storageRepository,
 } from "./storage/storage-repository";
+import { orchestrateIssueCloseout } from "./use-cases/closeout-orchestrator";
 import {
-  formatCloseoutOrchestrationFailure,
-  orchestrateIssueCloseout,
-} from "./use-cases/closeout-orchestrator";
+  LOCAL_STORAGE_CONNECTION_STATE,
+  closeoutFailureToFeedback,
+  createInvalidDataStorageFeedbackError,
+  createValidationStorageFeedbackError,
+  describeStorageConnectionState,
+  formatStorageFeedbackError,
+  loadIssueCardFailureToFeedback,
+  storageReadErrorToFeedback,
+  storageWriteErrorToFeedback,
+  type StorageConnectionState,
+  type StorageFeedbackError,
+} from "./storage/storage-feedback";
 
 const SAMPLE_ISSUE_ID = "sample-issue-0001";
 const SAMPLE_TIMESTAMP = "2026-04-21T02:30:00+08:00";
@@ -86,24 +95,66 @@ function DemoHint() {
   );
 }
 
-function IssueStorageControls() {
+function StorageStatusBanner({
+  connectionState,
+  error,
+}: {
+  connectionState: StorageConnectionState;
+  error: StorageFeedbackError | null;
+}) {
+  return (
+    <section
+      className={`storage-feedback-banner${error === null ? "" : " storage-feedback-banner-error"}`}
+      data-testid="storage-feedback-banner"
+      data-connection-state={connectionState.state}
+    >
+      <div className="storage-feedback-row">
+        <span className="storage-feedback-label">统一存储状态</span>
+        <span className="storage-feedback-connection">
+          {describeStorageConnectionState(connectionState)}
+        </span>
+      </div>
+      <p className="storage-feedback-message" data-testid="storage-feedback-message">
+        {error === null
+          ? "当前未发现新的存储异常；后续 HTTP / 服务器不可达也会统一显示在这里。"
+          : formatStorageFeedbackError(error)}
+      </p>
+    </section>
+  );
+}
+
+function IssueStorageControls({
+  reportStorageError,
+  clearStorageFeedback,
+}: {
+  reportStorageError: (error: StorageFeedbackError) => void;
+  clearStorageFeedback: () => void;
+}) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>({ state: "idle" });
   const [loadResult, setLoadResult] = useState<LoadIssueCardResult | null>(null);
 
   const handleSave = async () => {
     const saved = await storageRepository.issueCards.save(SAMPLE_CARD);
     if (!saved.ok) {
+      reportStorageError(storageWriteErrorToFeedback("demo", "create_issue", saved.error));
       setSaveStatus({
         state: "error",
-        reason: formatStorageWriteError(saved.error),
+        reason: "请查看顶部统一存储提示",
       });
       return;
     }
+    clearStorageFeedback();
     setSaveStatus({ state: "saved", at: new Date().toISOString() });
   };
 
   const handleLoad = async () => {
-    setLoadResult(await storageRepository.issueCards.load(SAMPLE_ISSUE_ID));
+    const loaded = await storageRepository.issueCards.load(SAMPLE_ISSUE_ID);
+    setLoadResult(loaded);
+    if (!loaded.ok) {
+      reportStorageError(loadIssueCardFailureToFeedback("demo", loaded.error));
+      return;
+    }
+    clearStorageFeedback();
   };
 
   return (
@@ -147,9 +198,13 @@ type IntakeSubmitStatus =
 function IssueIntakeForm({
   isDefaultMode,
   onCreated,
+  reportStorageError,
+  clearStorageFeedback,
 }: {
   isDefaultMode: boolean;
   onCreated: (id: string) => void;
+  reportStorageError: (error: StorageFeedbackError) => void;
+  clearStorageFeedback: () => void;
 }) {
   const [title, setTitle] = useState<string>("");
   const [description, setDescription] = useState<string>("");
@@ -164,17 +219,22 @@ function IssueIntakeForm({
       defaultIntakeOptions(nowISO()),
     );
     if (!result.ok) {
-      setStatus({ state: "error", reason: result.reason });
+      reportStorageError(
+        createValidationStorageFeedbackError("issue_intake", "create_issue", result.reason),
+      );
+      setStatus({ state: "error", reason: "请查看顶部统一存储提示" });
       return;
     }
     const saved = await storageRepository.issueCards.save(result.card);
     if (!saved.ok) {
+      reportStorageError(storageWriteErrorToFeedback("issue_intake", "create_issue", saved.error));
       setStatus({
         state: "error",
-        reason: formatStorageWriteError(saved.error),
+        reason: "请查看顶部统一存储提示",
       });
       return;
     }
+    clearStorageFeedback();
     setStatus({ state: "saved", id: result.card.id, at: result.card.createdAt });
     setTitle("");
     setDescription("");
@@ -301,11 +361,6 @@ function IssueCardListView({
             : `未归档 ${activeCards.length} 条 · 异常 ${result.invalid.length} 条`}
         </span>
       </div>
-      {result?.readError && (
-        <p className="storage-line" data-testid="issue-list-read-error">
-          读取失败：{renderStorageReadError(result.readError)}
-        </p>
-      )}
       {result && result.readError === null && activeCards.length === 0 && result.invalid.length === 0 && (
         <p className="empty-state">暂无未归档问题卡。请先在右侧创建一张卡。</p>
       )}
@@ -335,19 +390,6 @@ function IssueCardListView({
               </li>
             );
           })}
-        </ul>
-      )}
-      {result && result.invalid.length > 0 && (
-        <ul className="list-invalid" data-testid="list-invalid">
-          {result.invalid.map((entry) => (
-            <li key={entry.key} className="storage-line">
-              异常数据 · {entry.kind === "parse_error" ? "JSON 解析失败" : "结构校验失败"} ·
-              key={entry.key}
-              {entry.kind === "parse_error"
-                ? ` · ${entry.message}`
-                : ` · ${entry.issues.length} 个字段问题`}
-            </li>
-          ))}
         </ul>
       )}
     </div>
@@ -380,9 +422,13 @@ type InvestigationSubmitStatus =
 function InvestigationAppendForm({
   issueId,
   onAppended,
+  reportStorageError,
+  clearStorageFeedback,
 }: {
   issueId: string;
   onAppended: () => void;
+  reportStorageError: (error: StorageFeedbackError) => void;
+  clearStorageFeedback: () => void;
 }) {
   const [type, setType] = useState<InvestigationType>("observation");
   const [note, setNote] = useState<string>("");
@@ -396,17 +442,28 @@ function InvestigationAppendForm({
       defaultInvestigationIntakeOptions(nowISOInvestigation()),
     );
     if (!result.ok) {
-      setStatus({ state: "error", reason: result.reason });
+      reportStorageError(
+        createValidationStorageFeedbackError(
+          "investigation_append",
+          "save_record",
+          result.reason,
+        ),
+      );
+      setStatus({ state: "error", reason: "请查看顶部统一存储提示" });
       return;
     }
     const saved = await storageRepository.investigationRecords.append(result.record);
     if (!saved.ok) {
+      reportStorageError(
+        storageWriteErrorToFeedback("investigation_append", "save_record", saved.error),
+      );
       setStatus({
         state: "error",
-        reason: formatStorageWriteError(saved.error),
+        reason: "请查看顶部统一存储提示",
       });
       return;
     }
+    clearStorageFeedback();
     setStatus({ state: "saved", id: result.record.id, at: result.record.createdAt });
     setNote("");
     setType("observation");
@@ -488,11 +545,6 @@ function InvestigationRecordListView({
             : `记录 ${result.valid.length} 条 · 异常 ${result.invalid.length} 条`}
         </span>
       </div>
-      {result?.readError && (
-        <p className="storage-line" data-testid="record-list-read-error">
-          读取失败：{renderStorageReadError(result.readError)}
-        </p>
-      )}
       {result && result.readError === null && result.valid.length === 0 && result.invalid.length === 0 && (
         <p className="empty-state">还没有排查记录。选中问题后，在上方追加第一条记录。</p>
       )}
@@ -505,19 +557,6 @@ function InvestigationRecordListView({
               </span>
               <span className="list-item-meta">{record.createdAt}</span>
               <span className="list-item-id">编号：{record.id}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-      {result && result.invalid.length > 0 && (
-        <ul className="list-invalid" data-testid="record-list-invalid">
-          {result.invalid.map((entry) => (
-            <li key={entry.key} className="storage-line">
-              异常数据 · {entry.kind === "parse_error" ? "JSON 解析失败" : "结构校验失败"} ·
-              key={entry.key}
-              {entry.kind === "parse_error"
-                ? ` · ${entry.message}`
-                : ` · ${entry.issues.length} 个字段问题`}
             </li>
           ))}
         </ul>
@@ -545,9 +584,13 @@ type CloseoutSummary = {
 function CloseoutForm({
   issueId,
   onClosed,
+  reportStorageError,
+  clearStorageFeedback,
 }: {
   issueId: string;
   onClosed: (summary: CloseoutSummary) => void;
+  reportStorageError: (error: StorageFeedbackError) => void;
+  clearStorageFeedback: () => void;
 }) {
   const [category, setCategory] = useState<string>("");
   const [rootCause, setRootCause] = useState<string>("");
@@ -560,12 +603,14 @@ function CloseoutForm({
     const input: CloseoutInput = { category, rootCause, resolution, prevention };
     const result = await orchestrateIssueCloseout(issueId, input);
     if (!result.ok) {
+      reportStorageError(closeoutFailureToFeedback(result));
       setStatus({
         state: "error",
-        reason: formatCloseoutOrchestrationFailure(result),
+        reason: "请查看顶部统一存储提示",
       });
       return;
     }
+    clearStorageFeedback();
     setStatus({
       state: "saved",
       fileName: result.archiveDocument.fileName,
@@ -677,47 +722,6 @@ function renderSaveStatus(status: SaveStatus): string {
   }
 }
 
-function labelStorageEntity(entity: StorageReadError["entity"]): string {
-  const labels: Record<StorageReadError["entity"], string> = {
-    issue_card: "问题卡",
-    investigation_record: "排查记录",
-    archive_document: "归档摘要",
-    error_entry: "错误表条目",
-  };
-  return labels[entity];
-}
-
-function renderStorageReadError(error: StorageReadError): string {
-  return `${labelStorageEntity(error.entity)}读取失败（${error.code}）：${error.message}`;
-}
-
-function formatStorageWriteError(error: StorageWriteError): string {
-  const entityLabel = labelStorageEntity(error.entity);
-  switch (error.code) {
-    case "validation_failed":
-      return `${entityLabel}写入前校验失败（${error.issues.length} 个字段问题）`;
-    case "serialize_failed":
-      return `${entityLabel}序列化失败：${error.message}`;
-    case "unexpected_write_error":
-      return `${entityLabel}写入异常：${error.message}`;
-  }
-}
-
-type LoadIssueCardFailure = Extract<LoadIssueCardResult, { ok: false }>["error"];
-
-function renderLoadIssueCardError(error: LoadIssueCardFailure): string {
-  switch (error.kind) {
-    case "not_found":
-      return `未找到问题卡（${error.id}）`;
-    case "parse_error":
-      return `问题卡 JSON 解析失败（${error.id}）：${error.message}`;
-    case "validation_error":
-      return `问题卡结构校验失败（${error.id}，${error.issues.length} 个字段问题）`;
-    case "read_failed":
-      return renderStorageReadError(error);
-  }
-}
-
 function MainlineResultPanel({
   selectedCard,
   recordCount,
@@ -816,9 +820,13 @@ function MainlineResultPanel({
 function IssuePane({
   onCloseoutResult,
   onSelectedIssueChange,
+  reportStorageError,
+  clearStorageFeedback,
 }: {
   onCloseoutResult: (summary: CloseoutSummary) => void;
   onSelectedIssueChange: (id: string | null) => void;
+  reportStorageError: (error: StorageFeedbackError) => void;
+  clearStorageFeedback: () => void;
 }) {
   const [cardList, setCardList] = useState<IssueCardListResult | null>(null);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
@@ -827,7 +835,24 @@ function IssuePane({
   const [lastCloseout, setLastCloseout] = useState<CloseoutSummary | null>(null);
 
   const refreshCardList = async () => {
-    setCardList(await storageRepository.issueCards.list());
+    const result = await storageRepository.issueCards.list();
+    setCardList(result);
+    if (result.readError !== null) {
+      reportStorageError(storageReadErrorToFeedback("issue_list", "list_issues", result.readError));
+      return;
+    }
+    if (result.invalid.length > 0) {
+      reportStorageError(
+        createInvalidDataStorageFeedbackError(
+          "issue_list",
+          "list_issues",
+          `问题卡列表中有 ${result.invalid.length} 条异常数据，已跳过。`,
+          "issue_card",
+        ),
+      );
+      return;
+    }
+    clearStorageFeedback();
   };
 
   useEffect(() => {
@@ -837,10 +862,34 @@ function IssuePane({
   const reloadSelectedCard = async (id: string) => {
     const loaded = await storageRepository.issueCards.load(id);
     setSelectedCard(loaded.ok ? loaded.card : null);
+    if (!loaded.ok) {
+      reportStorageError(loadIssueCardFailureToFeedback("issue_detail", loaded.error));
+      return;
+    }
+    clearStorageFeedback();
   };
 
   const loadRecordList = async (issueId: string) => {
-    setRecordList(await storageRepository.investigationRecords.listByIssueId(issueId));
+    const result = await storageRepository.investigationRecords.listByIssueId(issueId);
+    setRecordList(result);
+    if (result.readError !== null) {
+      reportStorageError(
+        storageReadErrorToFeedback("investigation_list", "list_records", result.readError),
+      );
+      return;
+    }
+    if (result.invalid.length > 0) {
+      reportStorageError(
+        createInvalidDataStorageFeedbackError(
+          "investigation_list",
+          "list_records",
+          `排查时间线里有 ${result.invalid.length} 条异常数据，已跳过。`,
+          "investigation_record",
+        ),
+      );
+      return;
+    }
+    clearStorageFeedback();
   };
 
   const refreshRecordList = () => {
@@ -908,6 +957,8 @@ function IssuePane({
               <IssueIntakeForm
                 isDefaultMode
                 onCreated={handleCardCreated}
+                reportStorageError={reportStorageError}
+                clearStorageFeedback={clearStorageFeedback}
               />
               <DemoHint />
             </>
@@ -927,15 +978,27 @@ function IssuePane({
               <InvestigationAppendForm
                 issueId={selectedIssueId}
                 onAppended={handleRecordAppended}
+                reportStorageError={reportStorageError}
+                clearStorageFeedback={clearStorageFeedback}
               />
               <InvestigationRecordListView
                 result={recordList}
                 onRefresh={refreshRecordList}
               />
-              <CloseoutForm issueId={selectedIssueId} onClosed={handleIssueClosed} />
+              <CloseoutForm
+                issueId={selectedIssueId}
+                onClosed={handleIssueClosed}
+                reportStorageError={reportStorageError}
+                clearStorageFeedback={clearStorageFeedback}
+              />
             </>
           )}
-          {selectedIssueId === null && <IssueStorageControls />}
+          {selectedIssueId === null && (
+            <IssueStorageControls
+              reportStorageError={reportStorageError}
+              clearStorageFeedback={clearStorageFeedback}
+            />
+          )}
         </section>
       </div>
     </div>
@@ -947,7 +1010,7 @@ function renderLoadStatus(result: LoadIssueCardResult | null): string {
   if (result.ok) {
     return `读取成功 · ${result.card.id} · ${result.card.title} · ${labelIssueStatus(result.card.status)}`;
   }
-  return renderLoadIssueCardError(result.error);
+  return "读取失败：请查看顶部统一存储提示";
 }
 
 type Pane = {
@@ -1041,7 +1104,7 @@ export type ArchiveIndexItem = {
 export type ArchiveIndex = {
   items: ArchiveIndexItem[];
   invalidCount: number;
-  readErrors: string[];
+  readErrors: StorageReadError[];
 };
 
 export async function loadArchiveIndex(): Promise<ArchiveIndex> {
@@ -1069,9 +1132,9 @@ export async function loadArchiveIndex(): Promise<ArchiveIndex> {
   return {
     items,
     invalidCount: docList.invalid.length + errorList.invalid.length,
-    readErrors: [docList.readError, errorList.readError]
-      .filter((error): error is StorageReadError => error !== null)
-      .map(renderStorageReadError),
+    readErrors: [docList.readError, errorList.readError].filter(
+      (error): error is StorageReadError => error !== null,
+    ),
   };
 }
 
@@ -1109,18 +1172,9 @@ export function ArchivePaneShell({
           </button>
         </div>
       )}
-      {archiveIndex.readErrors.length > 0 && (
-        <ul className="list-invalid" data-testid="archive-read-errors">
-          {archiveIndex.readErrors.map((message) => (
-            <li key={message} className="storage-line">
-              读取失败 · {message}
-            </li>
-          ))}
-        </ul>
-      )}
       {archiveIndex.invalidCount > 0 && (
         <p className="storage-line" data-testid="archive-invalid-note">
-          有 {archiveIndex.invalidCount} 条归档数据校验失败，已跳过。
+          有 {archiveIndex.invalidCount} 条归档相关异常数据已跳过；详细原因见顶部统一存储提示。
         </p>
       )}
       {latest === null ? (
@@ -1357,6 +1411,12 @@ function CloseoutEntryButton({ issueId }: { issueId: string | null }) {
 }
 
 export default function App() {
+  const [storageConnectionState, setStorageConnectionState] = useState<StorageConnectionState>(
+    LOCAL_STORAGE_CONNECTION_STATE,
+  );
+  const [storageFeedbackError, setStorageFeedbackError] = useState<StorageFeedbackError | null>(
+    null,
+  );
   const [archiveIndex, setArchiveIndex] = useState<ArchiveIndex>({
     items: [],
     invalidCount: 0,
@@ -1366,8 +1426,34 @@ export default function App() {
   const [isProjectEntryOpen, setIsProjectEntryOpen] = useState<boolean>(false);
   const [activeIssueId, setActiveIssueId] = useState<string | null>(null);
 
+  const reportStorageError = (error: StorageFeedbackError) => {
+    setStorageConnectionState(error.connectionState);
+    setStorageFeedbackError(error);
+  };
+
+  const clearStorageFeedback = () => {
+    setStorageConnectionState(LOCAL_STORAGE_CONNECTION_STATE);
+    setStorageFeedbackError(null);
+  };
+
   const refreshArchiveIndex = async () => {
-    setArchiveIndex(await loadArchiveIndex());
+    const index = await loadArchiveIndex();
+    setArchiveIndex(index);
+    if (index.readErrors.length > 0) {
+      reportStorageError(storageReadErrorToFeedback("archive_index", "list_archives", index.readErrors[0]!));
+      return;
+    }
+    if (index.invalidCount > 0) {
+      reportStorageError(
+        createInvalidDataStorageFeedbackError(
+          "archive_index",
+          "list_archives",
+          `归档区有 ${index.invalidCount} 条异常数据，已跳过。`,
+        ),
+      );
+      return;
+    }
+    clearStorageFeedback();
   };
 
   useEffect(() => {
@@ -1421,6 +1507,10 @@ export default function App() {
           </div>
         </div>
       </header>
+      <StorageStatusBanner
+        connectionState={storageConnectionState}
+        error={storageFeedbackError}
+      />
       <main className="app-main">
         <section className="pane" data-pane="issue">
           <div className="pane-heading">
@@ -1433,6 +1523,8 @@ export default function App() {
           <IssuePane
             onCloseoutResult={handleCloseoutResult}
             onSelectedIssueChange={setActiveIssueId}
+            reportStorageError={reportStorageError}
+            clearStorageFeedback={clearStorageFeedback}
           />
         </section>
       </main>
