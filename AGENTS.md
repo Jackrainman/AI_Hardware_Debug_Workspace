@@ -21,14 +21,15 @@
 
 ## 4. S3 Storage Serverization Rule（存储迁移与服务器化规则）
 - 当 `.agent-state/handoff.json.current_mode = "server_storage_migration"` 或 `current.md` 写明阶段为 S3 存储迁移与服务器化时，当前最高优先级是：把 localStorage 演示版迁移为“局域网共享 + 服务器长期存储”版本。
-- S3 当前主线：服务器环境盘点、最小后端 API、SQLite 长期存储、前端 storage adapter、局域网部署、多设备 smoke。
-- S3 当前不做：AI、RAG、权限系统、Electron、preload、fs/IPC、大 UI 重构、复杂统计、云同步或公网多租户。
+- S3 当前主线：先补最薄异步 storage / repository port、closeout orchestration 与统一 storage error / connection state；再在本地 WSL 跑通最小后端 + SQLite + HTTP adapter 闭环；最后做服务器独立部署验证。
+- S3 当前不做：AI、RAG、权限系统、Electron、preload、fs/IPC、大 UI 重构、复杂统计、云同步或公网多租户、抢占 80 端口、优先做反向代理 / `.local` 美化、升级服务器全局 Node。
 - `current.md` 的前沿任务窗口只放当前 S3 主线 1~3 个候选；更远任务放入 `backlog.md`，不得把 AI/RAG/Electron 等后续方向混入当前入口。
-- 交付目标必须表述为“同一 WiFi 下通过类似 `http://hurricane-server.local:<port>/` 访问，服务端长期持久化”，不得把静态演示版或 localStorage 刷新保留说成服务器化完成。
+- S3 当前访问口径应先按 `http://192.168.2.2:<port>/` 理解；`.local` / 反向代理美化只在独立部署验证后再考虑。交付目标必须表述为“先在 WSL 本地跑通最小闭环，再把同一方案以独立 runtime + 独立端口 + systemd service 部署到局域网服务器”，不得把静态演示版或 localStorage 刷新保留说成服务器化完成。
 
 ## 5. Safe Change Rule（安全改动规则）
 - D1 维护期允许低风险中文文案、空状态和小视觉修补，但不得重做业务数据流。
 - S3 阶段允许围绕服务器化目标做最小必要改动：后端脚手架、SQLite schema、storage adapter、部署脚本和 smoke 验证。
+- S3 阶段若命中 storage / closeout / adapter / backend scaffold，必须先补最薄架构缝合点，再接 HTTP，再做服务器独立部署；禁止把 HTTP API 直接硬塞进现有组件。
 - S3 阶段禁止为了“顺手优化”大规模重构 UI、改动无关 schema / store、引入复杂抽象或提前接 AI/RAG/权限/Electron。
 - 涉及仓库访问、归档写盘路径、服务器数据目录、端口和启动方式时，优先可预测性、可调试性和可恢复性，不为表面美化牺牲真实状态表达。
 
@@ -41,7 +42,7 @@
   - `docs/product/产品介绍.md`：改产品定义、页面结构、领域模型、用户场景或领域语言时读取。
   - `README.md`：对外展示、快速开始、比赛/演示口径变更时读取；它不是内部事实源，不进入默认内部读取链。
   - `docs/planning/s3-api-contract.md`、`docs/planning/s3-sqlite-schema-draft.md`、`docs/planning/s3-server-unreachable-strategy.md`：仅在任务命中对应 API、SQLite 或服务器不可达策略实现时读取。
-- 选择下一任务时优先判断：当前 mode、阶段目标、completion gate 是否闭合、依赖是否满足、planning 与实际是否脱节、是否最有利于验收演示。
+- 选择下一任务时优先判断：当前 mode、阶段目标、completion gate 是否闭合、依赖是否满足、是否遵守“本地 WSL 最小闭环先于服务器部署验证”、planning 与实际是否脱节、是否最有利于验收演示。
 - 如果 `current.md` 前沿窗口不再匹配真实阶段，先更新 `current.md` / `.agent-state/handoff.json`，再执行任务。
 - 禁止凭旧计划机械顺推；禁止同时推进两个原子任务。
 
@@ -118,7 +119,7 @@
 
 ## 15. Overnight / Unattended Boundaries（夜跑 / 无人值守边界）
 - 允许方向：文档对齐、`.agent-state/handoff.json` 对齐、verify 脚本补齐、低风险异味扫描、单个原子任务内的 S3 服务器化最小改动（仍受 §5 安全改动限制）。
-- S3 阶段禁止方向：AI runtime 接入、RAG/embedding、权限系统、Electron / preload / IPC、大规模 UI 重构、复杂统计、多任务并行推进、未完成 `S3-SERVER-INVENTORY` 前直接开写后端。
+- S3 阶段禁止方向：AI runtime 接入、RAG/embedding、权限系统、Electron / preload / IPC、大规模 UI 重构、复杂统计、多任务并行推进、未完成 `S3-ARCH-*` 三个缝合任务前直接把 HTTP 硬塞进组件、未完成 `S3-LOCAL-END-TO-END-VERIFY` 前直接开做服务器部署验证。
 - 每轮仍遵守 §6 / §7：只一个原子任务在执行、完成前必须跑最小验证 + planning sync + 单任务 commit；夜跑不允许跳过。
 
 ## 16. Verification Matrix（验证矩阵）
@@ -129,6 +130,7 @@
   - `.agent-state/handoff.json` 可被 `JSON.parse`。
 - **按需**（任务相关时跑）：
   - `apps/desktop/scripts/verify-*.mts` 中与本轮改动语义相关的脚本。
+  - 涉及 storage / repository / closeout / adapter / backend scaffold 时，额外执行 `npm run verify:all` 与任务相关代码级 / 契约级验证；若本轮仅改 docs / planning / skills 且未跑某项，必须明确记录原因。
   - 浏览器人工冒烟（涉及 UI 行为变化时；不改代码时可仅标注未执行）。
 - **文档/规划类任务专用最小验证**：路径存在、内容可读、引用一致、planning sync 边界符合 §7 / §14、`JSON.parse` 通过、`git diff --check` 通过；typecheck 与 build 仍建议跑以避免误伤。
 - 未跑的必跑项必须在 commit message 或 handoff 中如实标注原因，不得静默跳过。

@@ -118,3 +118,21 @@
   - `current_mode` 更新为 `server_storage_migration`。
   - 当前唯一入口任务为 `S3-SERVER-INVENTORY`。
   - S3 后续候选拆分为 `S3-BACKEND-SCAFFOLD`、`S3-SQLITE-STORAGE`、`S3-FRONTEND-STORAGE-ADAPTER`、`S3-LAN-DEPLOY`、`S3-MULTI-DEVICE-SMOKE`。
+
+
+## D-010：S3 改为“WSL 本地最小闭环优先，服务器独立部署后验”
+- 日期：2026-04-23
+- 背景：D-009 已把阶段切到 S3，但其执行顺序仍偏“服务器 inventory 优先”。现在服务器与本机事实已确认：服务器为 Ubuntu 20.04.6 LTS，IP `192.168.2.2`，80 端口已被占用，`systemd` 可用，系统 Node 仅 `v10.19.0`，且 `sqlite3` 未安装；本机 / WSL 为 Ubuntu 24.04 LTS，已具备 `sqlite3`、`python3`、`gcc/g++`、`make`、`pkg-config`。同时代码现状表明 `App.tsx` 仍承担 UI + 业务编排 + 存储协调 + closeout 多步写入，若直接接 HTTP / SQLite / 服务器部署，返工与不一致风险高。
+- 决策：S3 主线改为“先补最薄架构缝合点，再在 WSL 本地跑通最小 backend + SQLite + HTTP adapter 闭环，最后做服务器独立部署验证”。服务器部署必须使用 **独立 runtime + 独立端口 + 独立 systemd service**；不升级服务器全局 Node，不影响现有 Web 服务，不抢占 80 端口。当前访问口径先按 `http://192.168.2.2:<port>/` 理解，`.local` / 反向代理美化延后。
+- 原因：
+  - 服务器事实已足够支撑后续独立部署方案，不再需要把“服务器未知”当当前第一阻塞。
+  - 真正高风险点在现有前端架构：同步 store、`void` 写操作、closeout 多步写入都不适合直接硬塞 HTTP。
+  - WSL 本地已具备 SQLite 与编译环境，最适合先把最小闭环跑通，再把已验证方案迁到服务器。
+- 放弃方案：
+  - 继续沿用“服务器 inventory 优先，然后再决定能不能写后端”的旧顺序。
+  - 直接升级服务器全局 Node 或改动现有服务依赖。
+  - 把 HTTP API 直接硬塞进现有组件，或用 localStorage silent fallback 冒充服务器化成功。
+- 影响与后续动作：
+  - 当前唯一待认领任务改为 `S3-ARCH-ASYNC-STORAGE-PORT`。
+  - `current.md` / `handoff.json` / `backlog.md` 统一切换到 8 个串行原子任务队列。
+  - 后续只有在 `S3-LOCAL-END-TO-END-VERIFY` 完成后，才允许认领服务器独立部署准备与验证任务。

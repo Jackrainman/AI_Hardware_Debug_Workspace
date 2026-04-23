@@ -13,98 +13,117 @@
     "next_task_selection_basis": "object - 下一任务选择依据",
     "risks": "string[] - 当前已知风险",
     "notes": "string[] - 长期性约束与下一轮必须保留的关键说明",
-    "s3_prep_task_pool": "object - S3 仓库内准备任务池、推荐顺序与依赖摘要"
+    "s3_prep_task_pool": "object - S3 仓库内准备任务池、推荐顺序与依赖摘要",
+    "current_focus": "string - 当前阶段下正在收敛的最小闭环",
+    "pending_task_queue": "object[] - 已拆好的串行原子任务队列，按认领顺序排列",
+    "verification_expectations": "object - 当前阶段默认验证矩阵与按任务加严要求",
+    "environment_facts": "object - 当前已确认的服务器与本机环境事实"
   },
-  "timestamp": "2026-04-23T13:58:34+08:00",
+  "timestamp": "2026-04-23T16:37:10+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "S3",
   "current_stage_name": "存储迁移与服务器化",
-  "current_stage_goal": "把 D1 的浏览器 SPA + window.localStorage 演示版迁移为同一 WiFi 下可访问、服务器端长期存储的版本；五个 S3-PREP 仓库内准备任务已完成，下一步需要真实服务器摸底。",
-  "primary_track": "s3_storage_serverization",
-  "deferred_track": "ai_rag_electron_advanced_features",
-  "current_atomic_task": "S3-SERVER-INVENTORY-A1",
+  "current_stage_goal": "把 D1 的浏览器 SPA + window.localStorage 演示版迁移为战队局域网可访问、服务端长期存储的版本；当前先走“架构缝合 -> WSL 本地最小闭环 -> 服务器独立部署验证”。",
+  "primary_track": "s3_local_first_then_independent_server_deploy",
+  "deferred_track": "ai_rag_permissions_electron_multi_workspace",
+  "current_atomic_task": "S3-ARCH-ASYNC-STORAGE-PORT",
   "storage_strategy": {
-    "current_truth": "apps/desktop 仍使用 window.localStorage；默认 workspace、local-storage-adapter、API contract、SQLite schema draft 与服务器不可达策略均已作为准备物落地。",
-    "prep_direction": "下一步是 S3-SERVER-INVENTORY-A1，需真实服务器环境信息；未摸底前不写后端、不创建数据库、不部署。",
-    "s3_target": "服务端 SQLite / 数据目录作为长期事实源，前端通过 HTTP storage adapter 访问。"
+    "current_truth": "apps/desktop 当前仍是浏览器 SPA + window.localStorage；App.tsx 仍承担 UI、业务编排、存储协调与 closeout 多步写入。",
+    "next_closure": "先把 localStorage 迁入最薄 async storage / repository port，并统一写结果 / 错误模型；不先接 HTTP。",
+    "local_first_route": "完成 S3-ARCH-* 三个缝合任务后，在 WSL 本地跑通最小 backend + SQLite + HTTP adapter。",
+    "server_route_after_local": "仅在 S3-LOCAL-END-TO-END-VERIFY 完成后，才进入服务器独立部署准备与验证。",
+    "silent_fallback_policy": "禁止用 localStorage silent fallback 冒充服务器成功；失败态必须显式暴露。"
   },
   "access_strategy": {
-    "target_lan_entry": "http://hurricane-server.local:<port>/",
-    "fallback": "服务器局域网 IP + 端口",
-    "must_confirm_next": [
-      "目标服务器 OS / CPU 架构 / Node 与 npm 版本 / 可安装依赖方式",
-      "hurricane-server.local 是否可解析，或是否使用服务器局域网 IP + 端口",
-      "端口、防火墙、启动用户、工作目录、数据目录、备份目录和日志目录权限"
-    ]
+    "current_server_entry": "http://192.168.2.2:<port>/",
+    "port_policy": "使用独立端口；不抢占 80 端口。",
+    "runtime_policy": "使用独立 runtime；不升级服务器全局 Node。",
+    "service_policy": "使用独立 systemd service；不影响现有 Web 服务。",
+    "beautification_policy": "`.local` / 反向代理美化延后到独立部署验证后再评估。"
   },
   "frontier_tasks": [
     {
-      "id": "S3-SERVER-INVENTORY-A1",
-      "track": "s3_storage_serverization",
-      "goal": "确认目标服务器 OS / CPU 架构 / Node 与 npm 版本 / 可安装依赖方式。",
+      "id": "S3-ARCH-ASYNC-STORAGE-PORT",
+      "track": "s3_local_first_then_independent_server_deploy",
+      "goal": "定义最薄 async storage / repository port，让 localStorage 先通过该边界跑通，并把写操作从 void 改为结构化 result。",
       "scope": [
-        "读取或由用户提供服务器环境事实",
-        "记录后端 scaffold 的基础运行约束"
+        "只读默认最小事实源 + App.tsx / src/storage/* 等直接相关代码",
+        "落地最薄业务级异步 port 与 localStorage adapter 承接",
+        "为 closeout orchestrator 与统一错误模型留接缝"
       ],
       "non_goals": [
+        "不接 HTTP",
         "不写后端",
-        "不部署",
-        "不创建 SQLite 数据库",
-        "不伪造服务器事实"
+        "不改服务器部署",
+        "不引入 Redux / Zustand / React Query",
+        "不做全量 projectId 重命名"
       ],
-      "depends_on": [
-        "S3-PREP-SERVER-UNREACHABLE-HANDLING-A1A2A3"
+      "depends_on": [],
+      "verification": [
+        "cd apps/desktop && npm run typecheck",
+        "cd apps/desktop && npm run build",
+        "cd apps/desktop && npm run verify:all",
+        "git diff --check",
+        "任务相关代码级验证：localStorage 已走 async port，写结果不再是裸 void"
       ],
-      "status": "blocked_until_server_access_or_user_input"
+      "status": "ready_to_claim_now"
     },
     {
-      "id": "S3-SERVER-INVENTORY-A2",
-      "track": "s3_storage_serverization",
-      "goal": "确认局域网入口方式：hurricane-server.local、mDNS/路由器 DNS/IP 回退策略和预期端口范围。",
+      "id": "S3-ARCH-CLOSEOUT-ORCHESTRATOR",
+      "track": "s3_local_first_then_independent_server_deploy",
+      "goal": "把 closeout 多步写入从 UI 中抽到 use-case / service 层，UI 不再直接协调 archive / error-entry / issue 三类写入。",
       "scope": [
-        "记录 LAN 入口候选",
-        "记录端口范围与访问方式"
+        "抽离 closeout orchestration",
+        "统一 orchestration result",
+        "为 HTTP 化前的失败态处理做准备"
       ],
       "non_goals": [
-        "不改后端启动脚本",
-        "不配置路由器或防火墙"
+        "不做 UI 重构",
+        "不引入复杂状态框架",
+        "不做服务器部署"
       ],
       "depends_on": [
-        "S3-SERVER-INVENTORY-A1"
+        "S3-ARCH-ASYNC-STORAGE-PORT"
       ],
-      "status": "candidate_after_a1"
+      "verification": [
+        "默认验证矩阵",
+        "closeout happy path + 部分失败路径验证",
+        "证明 UI 不再直接串联多实体写入"
+      ],
+      "status": "queued_after_current"
     },
     {
-      "id": "S3-SERVER-INVENTORY-A3",
-      "track": "s3_storage_serverization",
-      "goal": "确认防火墙、端口开放、启动用户、工作目录、数据目录、备份目录和日志目录权限。",
+      "id": "S3-ARCH-UNIFIED-STORAGE-ERROR-STATE",
+      "track": "s3_local_first_then_independent_server_deploy",
+      "goal": "统一 storage result / error model、连接状态与 UI 错误出口。",
       "scope": [
-        "记录权限与路径约束",
-        "为 SQLite 文件与日志位置提供输入"
+        "统一 validation / write_failed / server_unreachable / timeout 等表达",
+        "让 UI 错误出口收敛为单一入口"
       ],
       "non_goals": [
-        "不创建生产数据目录",
-        "不部署服务"
+        "不做离线队列",
+        "不做冲突合并",
+        "不引入大状态方案"
       ],
       "depends_on": [
-        "S3-SERVER-INVENTORY-A1",
-        "S3-SERVER-INVENTORY-A2"
+        "S3-ARCH-CLOSEOUT-ORCHESTRATOR"
       ],
-      "status": "candidate_after_a1_a2"
+      "verification": [
+        "默认验证矩阵",
+        "错误映射与 UI 单一出口验证"
+      ],
+      "status": "queued_after_closeout_orchestrator"
     }
   ],
   "s3_task_breakdown": {
-    "S3-PREP-WORKSPACE-FOUNDATION": "默认共用工作区基础与扩展边界。",
-    "S3-PREP-STORAGE-ADAPTER-ABSTRACTION": "统一 storage adapter 边界，localStorage adapter 保留。",
-    "S3-PREP-API-CONTRACT-DRAFT": "最小 HTTP API 契约，不实现后端。",
-    "S3-PREP-SQLITE-SCHEMA-DRAFT": "最小 SQLite schema 草案，不落库。",
-    "S3-PREP-SERVER-UNREACHABLE-HANDLING": "服务不可达提示、阻断、回退策略。",
-    "S3-SERVER-INVENTORY": "服务器环境、端口、LAN 入口、权限、数据路径、部署条件盘点。",
-    "S3-BACKEND-SCAFFOLD": "最小 Node 后端、/health、配置入口、静态资源服务策略。",
-    "S3-SQLITE-STORAGE": "SQLite schema、初始化、CRUD、读回验证。",
-    "S3-FRONTEND-STORAGE-ADAPTER": "前端从 localStorage 主事实源切到 HTTP storage adapter。",
-    "S3-LAN-DEPLOY": "局域网启动、端口开放、hostname/IP 访问、持久运行与备份说明。",
-    "S3-MULTI-DEVICE-SMOKE": "两台设备跨端读写、归档和服务器重启读回 smoke。"
+    "S3-ARCH-ASYNC-STORAGE-PORT": "最薄 async storage / repository port + localStorage adapter 适配。",
+    "S3-ARCH-CLOSEOUT-ORCHESTRATOR": "closeout 多步写入从 UI 抽到 use-case / service。",
+    "S3-ARCH-UNIFIED-STORAGE-ERROR-STATE": "统一 storage result / error / connection state 与 UI 错误出口。",
+    "S3-LOCAL-BACKEND-SCAFFOLD": "WSL 本地最小 backend + SQLite + health + 最小 API。",
+    "S3-LOCAL-HTTP-STORAGE-ADAPTER": "前端接 HTTP storage adapter，本地联通，禁止 silent fallback。",
+    "S3-LOCAL-END-TO-END-VERIFY": "验证 D1 主路径在 HTTP + SQLite + 本地 backend 下可跑通。",
+    "S3-SERVER-INDEPENDENT-DEPLOY-PREP": "规划独立 runtime / 目录 / 端口 / systemd service。",
+    "S3-SERVER-INDEPENDENT-DEPLOY-VERIFY": "服务器独立端口部署 + systemd 拉起 + LAN 访问验证。"
   },
   "completed_atomic_tasks": [
     "A1_setup_planning_and_handoff_workspace",
@@ -155,7 +174,8 @@
     "S3-PREP-API-CONTRACT-DRAFT-A1A2",
     "S3-PREP-SQLITE-SCHEMA-DRAFT-A1A2A3A4",
     "S3-PREP-SERVER-UNREACHABLE-HANDLING-A1A2A3",
-    "DOCS-HYGIENE-HARD-DELETE-WEAK-DOCS"
+    "DOCS-HYGIENE-HARD-DELETE-WEAK-DOCS",
+    "S3-PLANNING-WSL-FIRST-REALIGN"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -168,41 +188,43 @@
     ],
     "criteria": [
       "current_mode 是否为 server_storage_migration",
-      "是否已有服务器访问权限或用户提供的环境事实",
-      "是否仍坚持先 inventory 再 backend scaffold",
-      "是否不伪造 OS/Node/端口/权限/路径结论",
-      "是否避免 AI/RAG/权限/Electron/大 UI 重构进入当前主线",
-      "是否遵守新文档范式：默认少数事实源，条件命中才读取专项或对外文档"
+      "是否遵守“先架构缝合，再 WSL 本地最小闭环，再服务器独立部署验证”",
+      "是否只从 pending_task_queue 中认领第一个依赖满足且未完成的任务",
+      "是否避免 AI / RAG / 权限 / Electron / 大 UI 重构重新混入当前主线",
+      "是否坚持独立 runtime / 独立端口 / 独立 systemd service，且不升级服务器全局 Node",
+      "是否保持默认读取集合最小，不把 README / 产品介绍 / backlog / decisions / 专项文档重新塞回默认必读"
     ],
-    "recommended_next": "S3-SERVER-INVENTORY-A1",
-    "output_rule": "下一轮若未获服务器信息则停下询问；若已获信息，只做服务器环境盘点，不写后端。",
+    "claiming_rule": "只允许从 pending_task_queue 中认领第一个“依赖已满足且未完成”的原子任务；禁止发散式自找任务。",
+    "recommended_next": "S3-ARCH-ASYNC-STORAGE-PORT",
+    "after_current_complete": "S3-ARCH-CLOSEOUT-ORCHESTRATOR",
+    "output_rule": "下一轮先读默认最小事实源，再读 App.tsx / src/storage/* 等直接相关代码；只做当前唯一任务，不顺推。",
     "conditional_inputs": {
-      "docs/planning/backlog.md": "当前窗口耗尽、任务切换、候选新增/移除/改名/重排优先级时读取。",
-      "docs/planning/decisions.md": "阶段切换、长期规则变化、技术争议或需要核对长期拍板时读取。",
+      "docs/planning/backlog.md": "当前窗口变化、排队任务新增/移除/改名/重排、或需要核对完整串行队列时读取。",
+      "docs/planning/decisions.md": "长期规则变化、阶段拍板变化、技术争议或需要核对长期决策时读取。",
       "docs/product/产品介绍.md": "改产品定义、页面结构、领域模型、用户场景或领域语言时读取；不默认读取。",
       "README.md": "对外展示、快速开始、比赛/演示口径变化时读取；不是内部事实源。",
-      "docs/planning/s3-api-contract.md": "命中 S3 API 契约、后端接口或 HTTP adapter 任务时读取。",
-      "docs/planning/s3-sqlite-schema-draft.md": "命中 SQLite schema、迁移、初始化或 CRUD 任务时读取。",
-      "docs/planning/s3-server-unreachable-strategy.md": "命中服务器不可达提示、阻断、回退策略实现时读取。"
+      "docs/planning/s3-api-contract.md": "命中本地 backend scaffold 或 HTTP storage adapter 任务时读取。",
+      "docs/planning/s3-sqlite-schema-draft.md": "命中本地 backend scaffold / SQLite 读写任务时读取。",
+      "docs/planning/s3-server-unreachable-strategy.md": "命中统一错误状态或 HTTP adapter 失败态处理任务时读取。"
     }
   },
   "risks": [
-    "当前应用仍是 localStorage 演示存储，不支持跨设备共享；S3 未完成前不得宣称服务器化完成。",
-    "HTTP/server adapter 尚未实现，后端和 SQLite 也未接入。",
-    "目标服务器 OS、Node/npm、端口、防火墙、hostname、运行权限、数据目录和备份目录均未确认。",
-    "未完成 S3-SERVER-INVENTORY 前，直接写后端或选择 SQLite 文件路径存在返工风险。"
+    "当前应用仍是 localStorage 演示存储；在 HTTP / SQLite 未接入且失败态未统一前，不得宣称服务器化完成。",
+    "App.tsx 仍承担 UI、业务编排、存储协调与 closeout 多步写入；若不先拆缝合点，HTTP 化后极易出现部分成功 / 状态不一致。",
+    "现有 store 写操作返回 void 的地方较多；若不先统一 result / error model，后续连接态与失败态会继续分散。",
+    "服务器系统 Node 过老且 80 端口已占用；若不走独立 runtime + 独立端口 + systemd service，会影响现有服务或导致返工。"
   ],
   "notes": [
-    "DOCS-HYGIENE-HARD-DELETE-WEAK-DOCS 已完成：默认读取链收敛为 AGENTS/current/handoff.json/git status/git log/任务相关文件；README 仅对外，产品介绍仅产品定义，旧弱化文档已硬删除且不得恢复。",
-    "五个 S3-PREP 仓库内准备任务已完成：workspace foundation、storage adapter abstraction、API contract、SQLite schema draft、server unreachable strategy。",
-    "D1 产品壳与浏览器 smoke 已完成，当前处于 S3 存储迁移与服务器化。",
-    "S3 当前不优先做 AI、RAG、权限系统、Electron、fs/IPC、大 UI 重构或复杂统计。",
-    "交付目标是同一 WiFi 下局域网访问 + 服务器长期存储，不是静态演示版。",
-    "下一步 S3-SERVER-INVENTORY-A1 需要真实服务器信息；今晚目标明确不 SSH、不部署、不写后端。"
+    "默认读取链仍然只保留 AGENTS/current/handoff/git status/git log/任务相关文件；README、产品介绍、backlog、decisions、S3 专项文档都不回到默认必读集合。",
+    "S3 当前路线已改为：先 S3-ARCH-* 架构缝合，再 WSL 本地最小闭环，再服务器独立部署验证。",
+    "服务器阶段必须使用独立 runtime + 独立端口 + 独立 systemd service；不升级服务器全局 Node，不抢占 80 端口。",
+    "当前访问口径先按 http://192.168.2.2:<port>/ 理解；`.local` / 反向代理美化延后。",
+    "不得把 localStorage silent fallback 冒充服务器成功；失败态必须显式可见。",
+    "保留 projectId -> workspaceId 兼容口径，但当前不做全量字段重命名。"
   ],
   "s3_prep_task_pool": {
     "recommended_order": [],
-    "ordering_note": "五个 S3-PREP 仓库内准备任务均已完成；下一主线切到 S3-SERVER-INVENTORY。",
+    "ordering_note": "五个 S3-PREP 仓库内准备任务均已完成；当前主线改为 S3-ARCH-* -> S3-LOCAL-* -> S3-SERVER-INDEPENDENT-*。",
     "tasks": {
       "S3-PREP-WORKSPACE-FOUNDATION": {
         "goal": "引入默认共用工作区基础逻辑，并预留后续增加工作区路径。",
@@ -268,5 +290,310 @@
         "status": "completed_as_S3-PREP-SERVER-UNREACHABLE-HANDLING-A1A2A3"
       }
     }
+  },
+  "current_focus": "先补最薄异步 storage / repository 边界，并让 localStorage 先通过该边界跑通；为后续本地 WSL 最小后端 + HTTP adapter + 服务器独立部署预留可控接缝。",
+  "environment_facts": {
+    "server": {
+      "os": "Ubuntu 20.04.6 LTS",
+      "lan_ip": "192.168.2.2",
+      "port_80": "occupied_by_existing_web_service",
+      "systemd": "available",
+      "sqlite3": "not_installed",
+      "system_node": "v10.19.0"
+    },
+    "local_wsl": {
+      "os": "Ubuntu 24.04 LTS",
+      "sqlite3": "available",
+      "python3": "available",
+      "gcc_gpp": "available",
+      "make": "available",
+      "pkg_config": "available"
+    }
+  },
+  "pending_task_queue": [
+    {
+      "order": 1,
+      "id": "S3-ARCH-ASYNC-STORAGE-PORT",
+      "goal": "定义最薄 async storage / repository port，让 localStorage 先通过该边界跑通，并把写操作从 void 改为结构化 result。",
+      "input_boundary": [
+        "AGENTS.md",
+        "docs/planning/current.md",
+        ".agent-state/handoff.json",
+        "git status --short",
+        "git log --oneline -5",
+        "apps/desktop/src/App.tsx",
+        "apps/desktop/src/storage/*",
+        "必要的 domain schema / intake / closeout 代码"
+      ],
+      "non_goals": [
+        "不接 HTTP",
+        "不写后端",
+        "不改服务器部署",
+        "不引入大状态方案",
+        "不做全量字段重命名"
+      ],
+      "verification": [
+        "cd apps/desktop && npm run typecheck",
+        "cd apps/desktop && npm run build",
+        "cd apps/desktop && npm run verify:all",
+        "git diff --check",
+        "cd apps/desktop && npm run verify:handoff",
+        "任务相关验证：证明 localStorage 读写已走 async port，写结果不再是裸 void"
+      ],
+      "definition_of_done": [
+        "async storage / repository port 已落地",
+        "localStorage adapter 已适配该 port",
+        "当前主流程写操作已返回统一结构化 result",
+        "S3-ARCH-CLOSEOUT-ORCHESTRATOR 依赖解除"
+      ],
+      "depends_on": [],
+      "claim_after": null,
+      "status": "current"
+    },
+    {
+      "order": 2,
+      "id": "S3-ARCH-CLOSEOUT-ORCHESTRATOR",
+      "goal": "把 closeout 多步写入从 UI 中抽到 use-case / service 层。",
+      "input_boundary": [
+        "App.tsx",
+        "closeout domain 代码",
+        "storage / repository port",
+        "必要的 use-case / service 文件"
+      ],
+      "non_goals": [
+        "不做 UI 重构",
+        "不接服务器部署",
+        "不引入复杂状态框架"
+      ],
+      "verification": [
+        "默认验证矩阵",
+        "closeout happy path + 部分失败路径",
+        "证明 UI 不再直接协调 archive / error-entry / issue 写入"
+      ],
+      "definition_of_done": [
+        "closeout orchestration 已从 UI 抽离",
+        "返回统一 orchestration result",
+        "S3-ARCH-UNIFIED-STORAGE-ERROR-STATE 依赖解除"
+      ],
+      "depends_on": [
+        "S3-ARCH-ASYNC-STORAGE-PORT"
+      ],
+      "claim_after": "S3-ARCH-ASYNC-STORAGE-PORT",
+      "status": "pending"
+    },
+    {
+      "order": 3,
+      "id": "S3-ARCH-UNIFIED-STORAGE-ERROR-STATE",
+      "goal": "统一 storage result / error model、连接状态与 UI 错误出口。",
+      "input_boundary": [
+        "storage / repository port",
+        "closeout orchestrator",
+        "App.tsx 错误展示路径",
+        "docs/planning/s3-server-unreachable-strategy.md（命中时读取）"
+      ],
+      "non_goals": [
+        "不做离线队列",
+        "不做冲突合并",
+        "不引入大状态方案"
+      ],
+      "verification": [
+        "默认验证矩阵",
+        "错误映射验证",
+        "UI 单一错误出口验证"
+      ],
+      "definition_of_done": [
+        "统一 error model 与 connection state 已落地",
+        "UI 有单一错误出口",
+        "S3-LOCAL-BACKEND-SCAFFOLD 依赖解除"
+      ],
+      "depends_on": [
+        "S3-ARCH-CLOSEOUT-ORCHESTRATOR"
+      ],
+      "claim_after": "S3-ARCH-CLOSEOUT-ORCHESTRATOR",
+      "status": "pending"
+    },
+    {
+      "order": 4,
+      "id": "S3-LOCAL-BACKEND-SCAFFOLD",
+      "goal": "在 WSL 本地起最小后端，提供最小 API、SQLite 初始化 / 落盘能力和健康检查。",
+      "input_boundary": [
+        "docs/planning/s3-api-contract.md",
+        "docs/planning/s3-sqlite-schema-draft.md",
+        "本地 backend scaffold 目录",
+        "WSL 本地运行环境"
+      ],
+      "non_goals": [
+        "不碰服务器",
+        "不升级服务器系统 Node",
+        "不抢占 80 端口",
+        "不做反向代理"
+      ],
+      "verification": [
+        "默认验证矩阵",
+        "backend 启动 smoke",
+        "curl /health",
+        "SQLite 初始化与最小写入 / 读回 smoke"
+      ],
+      "definition_of_done": [
+        "WSL 本地 backend + SQLite 最小闭环可独立启动",
+        "前端 HTTP adapter 已有可联调目标",
+        "S3-LOCAL-HTTP-STORAGE-ADAPTER 依赖解除"
+      ],
+      "depends_on": [
+        "S3-ARCH-UNIFIED-STORAGE-ERROR-STATE"
+      ],
+      "claim_after": "S3-ARCH-UNIFIED-STORAGE-ERROR-STATE",
+      "status": "pending"
+    },
+    {
+      "order": 5,
+      "id": "S3-LOCAL-HTTP-STORAGE-ADAPTER",
+      "goal": "前端接入 HTTP storage adapter，在 WSL 本地与后端联通；严禁 silent fallback。",
+      "input_boundary": [
+        "S3-ARCH-* 三个缝合结果",
+        "S3-LOCAL-BACKEND-SCAFFOLD 产物",
+        "s3-api-contract.md",
+        "s3-server-unreachable-strategy.md"
+      ],
+      "non_goals": [
+        "不做服务器部署",
+        "不做离线队列",
+        "不保留 silent fallback 作为默认成功路径"
+      ],
+      "verification": [
+        "默认验证矩阵",
+        "前端经 HTTP adapter 本地联通 smoke",
+        "后端关闭 / 超时 / 不可达时 UI 明确失败"
+      ],
+      "definition_of_done": [
+        "HTTP adapter 已接入当前主流程",
+        "成功态与失败态都可稳定表达",
+        "S3-LOCAL-END-TO-END-VERIFY 依赖解除"
+      ],
+      "depends_on": [
+        "S3-LOCAL-BACKEND-SCAFFOLD"
+      ],
+      "claim_after": "S3-LOCAL-BACKEND-SCAFFOLD",
+      "status": "pending"
+    },
+    {
+      "order": 6,
+      "id": "S3-LOCAL-END-TO-END-VERIFY",
+      "goal": "验证 D1 主路径在 HTTP + SQLite + 本地 WSL 后端下跑通，并证明失败态不会伪装成功。",
+      "input_boundary": [
+        "前端 HTTP adapter",
+        "本地 backend",
+        "SQLite 数据文件",
+        "当前 D1 主流程"
+      ],
+      "non_goals": [
+        "不做服务器部署",
+        "不改系统 Node",
+        "不优先做入口美化"
+      ],
+      "verification": [
+        "默认验证矩阵",
+        "创建问题卡 / 追加 InvestigationRecord / closeout 归档的端到端验证",
+        "失败态不冒充成功",
+        "SQLite 读回验证"
+      ],
+      "definition_of_done": [
+        "WSL 本地最小闭环已通过端到端验证",
+        "服务器阶段只剩独立部署问题",
+        "S3-SERVER-INDEPENDENT-DEPLOY-PREP 依赖解除"
+      ],
+      "depends_on": [
+        "S3-LOCAL-HTTP-STORAGE-ADAPTER"
+      ],
+      "claim_after": "S3-LOCAL-HTTP-STORAGE-ADAPTER",
+      "status": "pending"
+    },
+    {
+      "order": 7,
+      "id": "S3-SERVER-INDEPENDENT-DEPLOY-PREP",
+      "goal": "只为服务器独立部署做准备，规划独立 runtime / 目录 / 端口 / systemd service，不碰系统全局 Node。",
+      "input_boundary": [
+        "已验证的 WSL 本地方案",
+        "已确认服务器事实",
+        "部署脚本 / service unit / 路径规划文档"
+      ],
+      "non_goals": [
+        "不改服务器现有 Web 服务",
+        "不抢占 80 端口",
+        "不优先做 `.local` / 反向代理美化",
+        "不升级系统 Node"
+      ],
+      "verification": [
+        "文档 / 路径 / service unit / 启动脚本一致性检查",
+        "git diff --check",
+        "若新增脚本或 service 文件，完成语法 / 引用 / 路径级验证"
+      ],
+      "definition_of_done": [
+        "服务器独立部署所需目录、端口、runtime、service 方案明确且可执行",
+        "S3-SERVER-INDEPENDENT-DEPLOY-VERIFY 依赖解除"
+      ],
+      "depends_on": [
+        "S3-LOCAL-END-TO-END-VERIFY"
+      ],
+      "claim_after": "S3-LOCAL-END-TO-END-VERIFY",
+      "status": "pending"
+    },
+    {
+      "order": 8,
+      "id": "S3-SERVER-INDEPENDENT-DEPLOY-VERIFY",
+      "goal": "将本地已验证方案部署到服务器独立端口，由 systemd 拉起，并验证局域网设备可访问且不影响既有 Web 服务。",
+      "input_boundary": [
+        "服务器独立部署方案",
+        "本地已验证产物",
+        "目标服务器 192.168.2.2"
+      ],
+      "non_goals": [
+        "不抢占 80 端口",
+        "不修改现有服务依赖的系统 Node",
+        "不把 localStorage 演示版说成服务器化完成"
+      ],
+      "verification": [
+        "systemctl status / 日志检查",
+        "curl http://192.168.2.2:<port>/health",
+        "局域网设备访问 smoke",
+        "服务重启后 SQLite 数据读回",
+        "确认 80 端口既有服务不受影响"
+      ],
+      "definition_of_done": [
+        "局域网设备可通过独立端口访问 ProbeFlash",
+        "服务端长期存储生效",
+        "既有服务不受影响"
+      ],
+      "depends_on": [
+        "S3-SERVER-INDEPENDENT-DEPLOY-PREP"
+      ],
+      "claim_after": "S3-SERVER-INDEPENDENT-DEPLOY-PREP",
+      "status": "pending"
+    }
+  ],
+  "verification_expectations": {
+    "always_run": [
+      "cd apps/desktop && npm run typecheck",
+      "cd apps/desktop && npm run build",
+      "cd apps/desktop && npm run verify:all",
+      "git diff --check",
+      "cd apps/desktop && npm run verify:handoff"
+    ],
+    "docs_planning_skill_only": [
+      "路径存在 / 内容可读 / 引用一致",
+      "handoff.json 可 JSON.parse / verify:handoff 通过",
+      "若未跑某项额外验证，必须在汇报中明确写原因"
+    ],
+    "architecture_and_code_tasks": [
+      "涉及 storage / repository / closeout / adapter / backend scaffold 时，必须补任务相关代码级验证与契约级验证",
+      "验证必须同时覆盖成功态与失败态",
+      "不得以 localStorage silent fallback 冒充服务器成功"
+    ],
+    "server_deploy_tasks": [
+      "确认独立端口监听",
+      "确认 systemd service 可拉起且日志可读",
+      "确认既有 80 端口 Web 服务不受影响",
+      "确认局域网访问与重启后读回"
+    ]
   }
 }

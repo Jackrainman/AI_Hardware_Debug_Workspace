@@ -25,12 +25,16 @@ description: 完成定义检查 + 读回验证 + completion gate 放行判断；
 2. 检查产物路径存在且可读。
 3. 对结构化输出执行 schema 校验（IssueCard / InvestigationRecord / ErrorEntry / ArchiveDocument）。
 4. 对归档类任务执行读回验证（文件存在、条目存在、必填字段非空）。
-5. 执行 completion gate 三件事齐全性检查：
+5. 按任务类型检查验证矩阵：
+   - 默认核对：`npm run typecheck`、`npm run build`、`npm run verify:all`、`git diff --check`、`verify:handoff`；
+   - docs / planning / skills-only：至少核对路径、内容、引用、JSON.parse、`git diff --check`，若缺少默认项必须有明确理由；
+   - `storage / repository / closeout / adapter / backend scaffold`：除默认项外，必须看到任务相关代码级验证与契约级验证结果，并覆盖成功态与失败态。
+6. 执行 completion gate 三件事齐全性检查：
    - 最小验证已通过？
    - planning sync 是否已更新 `docs/planning/current.md` 与 `.agent-state/handoff.json`？
    - 是否已完成单任务 commit？
-6. 若任务职责命中过候选池、长期决策、产品定义或对外展示文档，检查对应保留文档是否同步；未命中则不得要求默认更新。
-7. 失败时返回 repair actions，明确禁止进入“下一任务选择”。
+7. 若任务职责命中过候选池、长期决策、产品定义或对外展示文档，检查对应保留文档是否同步；未命中则不得要求默认更新。
+8. 失败时返回 repair actions，明确禁止进入“下一任务选择”。
 
 ## output
 ```json
@@ -49,3 +53,4 @@ description: 完成定义检查 + 读回验证 + completion gate 放行判断；
 - `completionGate = blocked` 时，禁止 `planning` 选择下一任务。
 - 连续失败必须升级人工确认。
 - 不得把 README 当作内部事实源；不得把产品介绍当作当前战况源。
+- 架构类任务若只有分析结论、没有工程化验证结果，一律视为未完成。
