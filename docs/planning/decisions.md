@@ -81,7 +81,7 @@
   - S1 阶段完成定义最后一项已满足，S1 阶段即刻关闭。
   - 下一阶段切换为 S2（调试闭环主流程）。
   - 前沿窗口切换到 S2 候选：优先考虑 IssueCard intake 最小表单、IssueCard 列表视图、InvestigationRecord 追加三类任务；M-1 typecheck 脚本修复仍保留作为低风险插入项。
-  - `current.md` / `handoff.md` / `.agent-state/*` 同步更新，阶段代号从 S1 过渡到 S2。
+  - 当前战况与机读状态同步更新，阶段代号从 S1 过渡到 S2。
 
 ## D-008：切换到 D1 交差优先中文产品壳
 - 日期：2026-04-21

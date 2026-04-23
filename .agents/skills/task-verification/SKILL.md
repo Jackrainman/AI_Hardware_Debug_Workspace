@@ -27,9 +27,10 @@ description: 完成定义检查 + 读回验证 + completion gate 放行判断；
 4. 对归档类任务执行读回验证（文件存在、条目存在、必填字段非空）。
 5. 执行 completion gate 三件事齐全性检查：
    - 最小验证已通过？
-   - 交接区是否已更新（`current.md` / `handoff.md` / `progress.md` / `session-log.md` / `handoff.json`）？
+   - planning sync 是否已更新 `docs/planning/current.md` 与 `.agent-state/handoff.json`？
    - 是否已完成单任务 commit？
-6. 失败时返回 repair actions，明确禁止进入“下一任务选择”。
+6. 若任务职责命中过候选池、长期决策、产品定义或对外展示文档，检查对应保留文档是否同步；未命中则不得要求默认更新。
+7. 失败时返回 repair actions，明确禁止进入“下一任务选择”。
 
 ## output
 ```json
@@ -47,3 +48,4 @@ description: 完成定义检查 + 读回验证 + completion gate 放行判断；
 - 不得把部分成功当作全部成功。
 - `completionGate = blocked` 时，禁止 `planning` 选择下一任务。
 - 连续失败必须升级人工确认。
+- 不得把 README 当作内部事实源；不得把产品介绍当作当前战况源。

@@ -65,16 +65,22 @@
   - 完成输出：后端 scaffold / SQLite storage 的运行权限和路径输入。
 
 ## 下一任务选择流程
-1. 重新读取：`AGENTS.md`、`README.md`、`docs/product/产品介绍.md`、本文件、`docs/planning/backlog.md`、`docs/planning/decisions.md`、`.agent-state/handoff.json`、`git status`、最近 commit、相关代码目录。
-2. 确认 `current_mode = server_storage_migration`，且当前唯一入口为 `S3-SERVER-INVENTORY-A1`。
-3. 只有在允许服务器摸底或用户提供环境信息后，才执行 S3-SERVER-INVENTORY；否则停下并汇报“等待服务器信息”。
-4. 未完成服务器摸底前，不写完整后端、不接 SQLite、不做部署；若需要目标服务器信息，记录待确认项，不得伪造成已确认。
+1. 默认只读取：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`git status --short`、`git log --oneline -5`、当前任务直接相关代码或专项文档。
+2. 条件读取：
+   - `docs/planning/backlog.md`：当前窗口耗尽、任务切换、候选新增/移除/改名/重排优先级时读取。
+   - `docs/planning/decisions.md`：阶段切换、长期规则变化、技术争议或需要核对长期拍板时读取。
+   - `docs/product/产品介绍.md`：改产品定义、页面结构、领域模型、用户场景或领域语言时读取。
+   - `README.md`：对外展示、快速开始、比赛/演示口径变化时读取；不作为内部事实源默认读取。
+   - `docs/planning/s3-api-contract.md`、`docs/planning/s3-sqlite-schema-draft.md`、`docs/planning/s3-server-unreachable-strategy.md`：仅在任务命中对应 API、SQLite 或服务器不可达策略实现时读取。
+3. 确认 `current_mode = server_storage_migration`，且当前唯一入口仍为 `S3-SERVER-INVENTORY-A1`；若阶段或窗口与真实状态不一致，先同步本文件与 `.agent-state/handoff.json`。
+4. 只有在允许服务器摸底或用户提供环境信息后，才执行 S3-SERVER-INVENTORY；否则停下并汇报“等待服务器信息”。
+5. 未完成服务器摸底前，不写完整后端、不接 SQLite、不做部署；若需要目标服务器信息，记录待确认项，不得伪造成已确认。
 
 ## 原子任务完成标准（DoD）
 - 文件修改已落盘，且只服务于当前唯一原子任务。
 - 文档/规划类任务至少执行：路径可读检查、`.agent-state/handoff.json` JSON.parse、`git diff --check`。
 - 若本轮只改文档规划，可不跑 `npm run typecheck` / `npm run build`，但必须在汇报或 commit message 中说明原因。
 - `docs/planning/current.md`、`.agent-state/handoff.json` 必须 compact 覆盖同步；`docs/planning/backlog.md` 仅在任务窗口或候选拆分变化时更新。
-- 阶段或产品口径变化时，同步 `README.md`、`docs/product/产品介绍.md`、`docs/planning/decisions.md`、`docs/planning/roadmap.md`、`docs/planning/architecture.md`。
+- 阶段、产品定义或对外口径变化时，按职责条件同步 `docs/planning/decisions.md`、`docs/product/产品介绍.md`、`README.md`；README 与产品介绍都不承担当前战况职责。
 - 已完成独立 commit，且 message 对应单一任务结果。
 - 以上任一项未满足，不得选择或执行下一任务。

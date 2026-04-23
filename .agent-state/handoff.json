@@ -15,7 +15,7 @@
     "notes": "string[] - 长期性约束与下一轮必须保留的关键说明",
     "s3_prep_task_pool": "object - S3 仓库内准备任务池、推荐顺序与依赖摘要"
   },
-  "timestamp": "2026-04-23T01:19:23+08:00",
+  "timestamp": "2026-04-23T13:58:34+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "S3",
   "current_stage_name": "存储迁移与服务器化",
@@ -154,33 +154,37 @@
     "S3-PREP-STORAGE-ADAPTER-ABSTRACTION-A2A3A4",
     "S3-PREP-API-CONTRACT-DRAFT-A1A2",
     "S3-PREP-SQLITE-SCHEMA-DRAFT-A1A2A3A4",
-    "S3-PREP-SERVER-UNREACHABLE-HANDLING-A1A2A3"
+    "S3-PREP-SERVER-UNREACHABLE-HANDLING-A1A2A3",
+    "DOCS-HYGIENE-HARD-DELETE-WEAK-DOCS"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
       "AGENTS.md",
-      "README.md",
-      "docs/product/产品介绍.md",
       "docs/planning/current.md",
-      "docs/planning/backlog.md",
-      "docs/planning/decisions.md",
-      "docs/planning/s3-api-contract.md",
-      "docs/planning/s3-sqlite-schema-draft.md",
-      "docs/planning/s3-server-unreachable-strategy.md",
       ".agent-state/handoff.json",
-      "git status",
-      "git log -5",
-      "真实服务器信息或允许执行服务器摸底命令"
+      "git status --short",
+      "git log --oneline -5",
+      "当前任务直接相关代码或专项文档"
     ],
     "criteria": [
       "current_mode 是否为 server_storage_migration",
       "是否已有服务器访问权限或用户提供的环境事实",
       "是否仍坚持先 inventory 再 backend scaffold",
       "是否不伪造 OS/Node/端口/权限/路径结论",
-      "是否避免 AI/RAG/权限/Electron/大 UI 重构进入当前主线"
+      "是否避免 AI/RAG/权限/Electron/大 UI 重构进入当前主线",
+      "是否遵守新文档范式：默认少数事实源，条件命中才读取专项或对外文档"
     ],
     "recommended_next": "S3-SERVER-INVENTORY-A1",
-    "output_rule": "下一轮若未获服务器信息则停下询问；若已获信息，只做服务器环境盘点，不写后端。"
+    "output_rule": "下一轮若未获服务器信息则停下询问；若已获信息，只做服务器环境盘点，不写后端。",
+    "conditional_inputs": {
+      "docs/planning/backlog.md": "当前窗口耗尽、任务切换、候选新增/移除/改名/重排优先级时读取。",
+      "docs/planning/decisions.md": "阶段切换、长期规则变化、技术争议或需要核对长期拍板时读取。",
+      "docs/product/产品介绍.md": "改产品定义、页面结构、领域模型、用户场景或领域语言时读取；不默认读取。",
+      "README.md": "对外展示、快速开始、比赛/演示口径变化时读取；不是内部事实源。",
+      "docs/planning/s3-api-contract.md": "命中 S3 API 契约、后端接口或 HTTP adapter 任务时读取。",
+      "docs/planning/s3-sqlite-schema-draft.md": "命中 SQLite schema、迁移、初始化或 CRUD 任务时读取。",
+      "docs/planning/s3-server-unreachable-strategy.md": "命中服务器不可达提示、阻断、回退策略实现时读取。"
+    }
   },
   "risks": [
     "当前应用仍是 localStorage 演示存储，不支持跨设备共享；S3 未完成前不得宣称服务器化完成。",
@@ -189,6 +193,7 @@
     "未完成 S3-SERVER-INVENTORY 前，直接写后端或选择 SQLite 文件路径存在返工风险。"
   ],
   "notes": [
+    "DOCS-HYGIENE-HARD-DELETE-WEAK-DOCS 已完成：默认读取链收敛为 AGENTS/current/handoff.json/git status/git log/任务相关文件；README 仅对外，产品介绍仅产品定义，旧弱化文档已硬删除且不得恢复。",
     "五个 S3-PREP 仓库内准备任务已完成：workspace foundation、storage adapter abstraction、API contract、SQLite schema draft、server unreachable strategy。",
     "D1 产品壳与浏览器 smoke 已完成，当前处于 S3 存储迁移与服务器化。",
     "S3 当前不优先做 AI、RAG、权限系统、Electron、fs/IPC、大 UI 重构或复杂统计。",
