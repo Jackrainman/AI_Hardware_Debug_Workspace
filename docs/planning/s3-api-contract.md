@@ -1,11 +1,13 @@
 # S3 API Contract Draft
 
-> 状态：草案。用于后续 `S3-BACKEND-SCAFFOLD`、`S3-SQLITE-STORAGE` 与前端 HTTP storage adapter 对齐；本文件不代表后端已经实现。
+> 状态：契约草案（`apps/server` 已按本契约落地最小 backend scaffold；当前仍需 `S3-LOCAL-HTTP-STORAGE-ADAPTER` 把前端主流程真正接到这些接口）。本文件是 HTTP / SQLite / adapter 对齐输入，不单独声明“服务器化已完成”。
 
 ## 1. 目标与边界
 
 ### 目标
-- 为同一 WiFi 下 `http://hurricane-server.local:<port>/` 访问形态定义最小 HTTP API。
+- 为 S3 当前两段访问形态定义同一套最小 HTTP API：
+  - **本地联调**：前端请求相对路径 `/api`，由 Vite dev server 代理到 `http://127.0.0.1:4100`。
+  - **后续独立部署**：继续按 `http://192.168.2.2:<port>/api` 理解。
 - 覆盖当前闭环实体：Workspace、IssueCard、InvestigationRecord、ArchiveDocument、ErrorEntry。
 - 明确 workspace 归属、读回语义、统一错误返回，避免后端与前端 adapter 各自发散。
 
@@ -13,25 +15,32 @@
 - 不定义权限、登录、多租户或公网暴露。
 - 不定义 AI / RAG / embedding / 相似问题检索接口。
 - 不定义实时协作、WebSocket、SSE、离线队列或冲突合并。
-- 不实现后端、不创建数据库、不改变现有 localStorage schema。
+- 不在本文件中实现 adapter、部署脚本或 CORS 策略；当前本地联调默认走 Vite proxy，不优先改 backend CORS。
 
 ## 2. 基础约定
 
 - Base path：`/api`
 - 内容类型：`application/json; charset=utf-8`
+- 本地联调连接约定：
+  - 前端 base URL 使用相对路径 `/api`
+  - `apps/desktop/vite.config.ts` 在 `S3-LOCAL-HTTP-STORAGE-ADAPTER` 中把 `/api` 代理到 `http://127.0.0.1:4100`
+  - 这样可以避免当前 `apps/server` 先补 CORS header，保持修改面最小
+- 独立部署连接约定：
+  - 不在当前阶段决定 `.local` / 反向代理
+  - 先按 `http://192.168.2.2:<port>/api` 理解
 - 默认 workspace：
   - `workspaceId = "workspace-26-r1"`
   - `name = "26年 R1"`
 - Workspace 传递方式：
-  - health 不带 workspace。
+  - health 不带 workspace
   - 业务实体统一放在 path：`/api/workspaces/{workspaceId}/...`
 - S3 兼容期实体归属：
-  - 当前前端实体仍只有 `projectId`，没有单独 `workspaceId` 字段。
-  - 服务端写入时必须校验：`payload.projectId === workspaceId`。
-  - 如果后续需要迁移历史 `projectId = "default-project"` 数据，必须另开迁移任务；本契约不隐式改写历史数据。
+  - 当前前端实体仍只有 `projectId`，没有单独 `workspaceId` 字段
+  - 服务端写入时必须校验：`payload.projectId === workspaceId`
+  - 如果后续需要迁移历史 `projectId = "default-project"` 数据，必须另开迁移任务；本契约不隐式改写历史数据
 - ID 生成：
-  - 当前前端可继续生成 `issue-*`、`record-*`、`error-entry-*` 等 id。
-  - 服务端接收客户端 id，但必须拒绝 workspace 内重复 id。
+  - 当前前端可继续生成 `issue-*`、`record-*`、`error-entry-*` 等 id
+  - 服务端接收客户端 id，但必须拒绝 workspace 内重复 id
 
 ## 3. 通用响应 envelope
 
@@ -70,7 +79,7 @@
 | `STORAGE_ERROR` | 500 | true | 服务端读写异常 |
 | `SERVICE_UNAVAILABLE` | 503 | true | 服务端暂不可用或依赖未就绪 |
 
-> 网络不可达、DNS 失败、连接超时不属于服务端 JSON 响应；前端 server adapter 需在不可达策略中映射为本地错误状态。
+> 网络不可达、连接拒绝、代理转发失败、连接超时不属于服务端 JSON 响应；前端 HTTP adapter 需在 `s3-server-unreachable-strategy.md` 中映射为本地统一错误状态。
 
 ## 4. Health
 
@@ -227,8 +236,9 @@
   3. `PUT issue` 为 archived
   4. 任一写入失败时不得在前端显示“已结案完成”
 
-## 11. 后续实现输入
+## 11. 当前实现落点与后续输入
 
-- `S3-SQLITE-SCHEMA-DRAFT` 需按本契约补齐 workspaces 外键与唯一约束。
-- `S3-PREP-SERVER-UNREACHABLE-HANDLING` 需基于通用错误 envelope 与网络不可达状态定义前端行为。
-- `S3-BACKEND-SCAFFOLD` 只需先实现 `/api/health` 与通用错误 envelope，再逐步接入实体 API。
+- `apps/server/src/server.mjs` 已实现：`/api/health`、`/api/workspaces`、issues / records / archives / error-entries 最小 HTTP 路由。
+- `apps/server/src/database.mjs` 已实现：默认 workspace seed、SQLite schema、最小实体持久化与校验。
+- `S3-LOCAL-HTTP-STORAGE-ADAPTER` 需按本契约把前端主流程接到这些接口，并明确 `/api` proxy / base URL 策略。
+- `S3-LOCAL-END-TO-END-VERIFY` 需按本契约验证 issue / record / closeout 主路径与失败态，不得再把“后端已存在”误写成“前端已接通”。

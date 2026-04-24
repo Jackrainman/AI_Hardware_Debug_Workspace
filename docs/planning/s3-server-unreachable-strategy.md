@@ -1,13 +1,13 @@
 # S3 Server Unreachable Strategy
 
-> 状态：策略草案。用于后续 HTTP storage adapter 与 UI 最小提示对齐；本文件不实现 UI、不接 server adapter、不做离线队列。
+> 状态：策略草案（已对齐当前代码里的 `storage-feedback.ts` 命名与连接状态模型）。本文件用于约束后续 HTTP storage adapter 与统一错误出口的接法；本轮不直接实现 UI、不做离线队列。
 
 ## 1. 目标
 
 - 服务器不可达时，用户必须明确知道“没有写入服务器”。
 - 写失败不得显示成保存成功、结案成功或归档完成。
 - localStorage 只能作为当前演示存储或显式 fallback，不能静默伪装成服务器长期存储。
-- 为后续前端 HTTP adapter 留出可预测错误状态。
+- 让后续 HTTP adapter 直接桥接到现有 `StorageFeedbackError` / `StorageConnectionState`，而不是另起一套平行错误模型。
 
 ## 2. 非目标
 
@@ -16,27 +16,27 @@
 - 不做冲突合并。
 - 不做多端实时协作。
 - 不做复杂容灾或本地/服务端双主写入。
-- 不改当前 UI 与 localStorage store。
+- 不在本文件中直接改 UI；这里只定义 HTTP adapter 与统一错误出口的行为约束。
 
-## 3. 错误来源分类
+## 3. 错误来源分类（source）与现有 feedback 目标口径
 
-| 分类 | 来源 | 示例 | retryable | 用户含义 |
+| source | 来源 | 示例 | retryable | 应桥接到的 feedback code / state |
 |---|---|---|---:|---|
-| `health_failed` | `/api/health` 非 ok 或 503 | 服务启动但 storage not ready | true | 服务器入口可达，但后端未就绪 |
-| `network_unreachable` | DNS / TCP / CORS / fetch failed | `hurricane-server.local` 不通 | true | 当前设备连不到服务器 |
-| `timeout` | 请求超时 | 局域网抖动、服务器卡住 | true | 本次操作未确认结果 |
-| `read_failed` | 列表 / 详情读取失败 | 500 / 503 / parse error | true | 当前显示可能不是最新服务器数据 |
-| `write_failed` | 创建 / 追记 / 归档写入失败 | 500 / 503 / timeout | true | 本次修改未保存到服务器 |
-| `validation_failed` | 400 / 422 | payload 与 schema 不符 | false | 数据结构有问题，需修正 |
-| `conflict` | 409 | id 重复、状态已归档 | false | 需要刷新或人工处理 |
+| `health_unreachable` | `/api/health` 无法访问 | Vite proxy 指向的 `127.0.0.1:4100` 未启动、连接拒绝 | true | `server_unreachable` + `connectionState.unreachable` |
+| `timeout` | 请求超时 | 局域网抖动、服务卡住、AbortSignal 超时 | true | `timeout` + `connectionState.degraded` |
+| `http_validation` | 400 / 422 | payload 与 schema 不符 | false | `validation_failed` |
+| `http_conflict` | 409 | id 重复、状态冲突 | false | `conflict` |
+| `http_not_found` | 404 | workspace / issue / archive 不存在 | false | `not_found` |
+| `http_storage` | 500 / 503 / invalid envelope | storage 未就绪、服务内部错误、响应体异常 | true | 读操作映射 `read_failed`，写操作映射 `write_failed`，连接状态标记 `degraded` |
+| `network_unreachable` | fetch failed / 代理失败 / 连接拒绝 | `/api` 代理不可达、部署阶段 `192.168.2.2:<port>` 不通 | true | `server_unreachable` + `connectionState.unreachable` |
 
-## 4. 前端连接状态草案
+## 4. 前端连接状态（与现有代码对齐）
 
-后续 server adapter 可暴露最小状态：
+后续 HTTP adapter 必须直接复用现有 `storage-feedback.ts` 里的连接状态语义：
 
 ```ts
-type ServerConnectionState =
-  | { state: "unknown" }
+type StorageConnectionState =
+  | { state: "local_ready"; mode: "local_storage" }
   | { state: "checking" }
   | { state: "online"; checkedAt: string }
   | { state: "degraded"; reason: string; checkedAt: string }
@@ -45,48 +45,44 @@ type ServerConnectionState =
 
 说明：
 
-- `unknown`：尚未做 health check。
+- `local_ready`：HTTP adapter 尚未接入时，当前仍是浏览器本地存储演示路径。
 - `checking`：正在检查 `/api/health`。
 - `online`：health ok，允许正常读写。
-- `degraded`：服务器可达但 storage 未就绪或部分读失败；默认不允许写入显示成功。
-- `unreachable`：网络、DNS、超时或 CORS 等导致不可达；默认阻断服务器写入。
+- `degraded`：服务器可达但 storage 未就绪、响应异常或部分读写失败；默认不允许把写入显示为成功。
+- `unreachable`：网络、代理、连接拒绝或超时等导致不可达；默认阻断服务器写入成功态。
 
-## 5. Adapter 错误草案
+## 5. HTTP adapter 应桥接到的现有 operation / surface 口径
 
-后续 HTTP storage adapter 可把 API envelope 与网络异常映射为：
+后续 HTTP adapter 不再单独发明 `save_archive` / `save_error_entry` 之类的新顶层 operation；必须复用现有 `storage-feedback.ts`：
 
 ```ts
-type StorageOperation =
+type StorageFeedbackOperation =
   | "health"
+  | "create_issue"
   | "list_issues"
   | "load_issue"
-  | "save_issue"
   | "save_record"
-  | "save_archive"
-  | "save_error_entry";
-
-interface ServerStorageError {
-  source: "network" | "timeout" | "http" | "validation" | "conflict" | "storage";
-  code: string;
-  operation: StorageOperation;
-  message: string;
-  retryable: boolean;
-  serverStatus?: number;
-}
+  | "list_records"
+  | "closeout"
+  | "list_archives";
 ```
 
-本任务不把该类型落进代码；先作为后续实现约束。
+补充约束：
+- closeout 仍然是前端 orchestration 的单一 operation：`closeout`。
+- 若 closeout 的 archive / error-entry / issue update 某一步失败，用现有 `step` / `completedWrites` 字段指明失败位置，不把 archive / error-entry 再拆成新的顶层 operation。
+- HTTP / network / timeout bridge 应直接产出 `StorageFeedbackError`，避免 UI 再额外理解一层 `ServerStorageError`。
 
 ## 6. 操作级策略
 
 ### 6.1 启动 / health check
 
 必须改：
-- 进入 server storage 模式后，前端启动时先请求 `/api/health`。
+- 进入 HTTP storage 模式后，前端启动时先请求 `/api/health`。
 - health 失败时，顶部或主区域必须显示“服务器不可达 / 未连接服务器长期存储”。
+- 在 health 未成功前，不得把 HTTP 路径上的写入显示为已成功。
 
 建议改：
-- health 失败时允许用户查看已经在页面内的旧数据，但标记为“可能不是最新服务器数据”。
+- health 失败时允许用户查看已经在页面内的旧数据，但必须标记“可能不是最新服务器数据”。
 
 可选优化：
 - 增加“重试连接”按钮。
@@ -96,9 +92,10 @@ interface ServerStorageError {
 必须改：
 - 不得把读取失败渲染为空列表并让用户误以为服务器无数据。
 - 如果已有旧列表，允许继续显示，但必须标记 stale。
+- 读失败时统一落到当前 storage banner / 错误出口，而不是在各组件偷偷吞掉。
 
 建议改：
-- 错误文案包含 operation、retryable 与下一步动作，例如“刷新重试 / 检查服务器是否启动”。
+- 错误文案包含 operation、retryable 与下一步动作，例如“刷新重试 / 检查服务是否启动”。
 
 可选优化：
 - 显示最近一次成功读取时间。
@@ -111,7 +108,7 @@ interface ServerStorageError {
 - 表单内容应尽量保留，方便用户复制或重试。
 
 建议改：
-- 若提供 localStorage 临时保存，文案必须是“仅保存到本机临时草稿，未写入服务器”。
+- 若保留 localStorage 临时保存能力，文案必须明确为“仅保存到本机临时草稿，未写入服务器”；当前任务默认不做这条 fallback。
 
 可选优化：
 - 提供复制 JSON / 复制文本，方便现场保底记录。
@@ -123,7 +120,7 @@ interface ServerStorageError {
 - 若为了交互连续性临时展示，必须标记“未同步 / 未保存到服务器”，且不能参与结案归档的服务器成功判断。
 
 建议改：
-- 默认先不做本地未同步队列，降低冲突风险。
+- 当前阶段默认先不做本地未同步队列，降低冲突风险。
 
 可选优化：
 - 后续单独设计 offline draft queue。
@@ -136,17 +133,17 @@ interface ServerStorageError {
 - 已部分写入时必须提示“可能存在部分写入，需要刷新读回或人工检查”。
 
 建议改：
-- 后端实现期尽量把 closeout 设计为事务型接口；若仍沿用三个接口，前端必须按读回结果判断完成状态。
+- 当前后端仍按三个接口写入；前端必须按读回结果与 `step` / `completedWrites` 判断完成状态。
 
 可选优化：
-- 增加 closeout repair task 入口。
+- 后续独立任务再评估是否引入后端事务型 closeout 接口。
 
 ## 7. localStorage fallback 边界
 
 ### 允许
 - 当前 D1 / S3 准备期继续使用 localStorage 演示链路。
-- server adapter 未接入前，UI 可如实显示“当前仍是浏览器本地存储”。
-- 服务器不可达时，允许显式进入“本机临时记录 / 演示模式”，但必须和服务器模式视觉区分。
+- HTTP adapter 未接入前，UI 可如实显示“当前仍是浏览器本地存储”。
+- 若后续明确设计“本机临时模式”，可以显式进入，但必须与服务器模式视觉区分，并另开任务实现。
 
 ### 禁止
 - 禁止 server 写失败后静默写 localStorage 并显示“保存成功”。
@@ -157,23 +154,22 @@ interface ServerStorageError {
 
 | 场景 | 建议文案 |
 |---|---|
-| health 失败 | `无法连接 ProbeFlash 服务器，当前未接入服务器长期存储。请检查服务是否启动、设备是否在同一 WiFi、地址/端口是否正确。` |
+| health 失败 | `无法连接 ProbeFlash 服务器，当前未接入服务器长期存储。请检查服务是否启动、设备是否在同一网络、地址/端口是否正确。` |
 | 读失败 | `读取服务器数据失败，当前列表可能不是最新数据。请重试或检查服务器状态。` |
 | 写失败 | `保存失败：本次内容未写入服务器，请勿关闭页面；可重试或复制内容保底。` |
 | closeout 部分失败 | `结案未完成：部分归档写入失败，请刷新读回或人工检查后再继续。` |
 | fallback | `仅本机临时保存，未同步到服务器，其他设备不可见。` |
 
-## 9. 后续实现顺序建议
+## 9. 当前任务顺序建议（按现有主线对齐）
 
-1. `S3-SERVER-INVENTORY` 确认服务器地址、端口和可访问条件。
-2. `S3-BACKEND-SCAFFOLD` 先实现 `/api/health` 和统一错误 envelope。
-3. 前端 HTTP adapter 初接入时，先实现 health 状态与写失败阻断。
-4. 再逐步实现 issues / records / archives / error_entries 的 server CRUD。
-5. 多设备 smoke 前必须确认：写失败不会落为成功态。
+1. `S3-ARCH-*` 已完成：提供 storage port、closeout orchestrator、统一 storage error / connection state。
+2. `S3-LOCAL-BACKEND-SCAFFOLD` 已完成：提供 `/api/health`、workspace seed、SQLite 与最小实体 API。
+3. `S3-LOCAL-HTTP-STORAGE-ADAPTER`：优先实现 HTTP error -> feedback bridge、health 状态与写失败阻断，并确定 `/api` -> `127.0.0.1:4100` Vite proxy。
+4. `S3-LOCAL-END-TO-END-VERIFY`：验证成功态与失败态，不得把 HTTP 失败落成成功。
+5. `S3-SERVER-INDEPENDENT-DEPLOY-*`：仅在本地闭环通过后再进入独立部署准备与验证。
 
-## 10. 待确认项
+## 10. 仍待单独决策的事项
 
-- 服务器入口最终是 `hurricane-server.local` 还是 IP + port。
-- 浏览器 CORS / same-origin 策略由后端静态服务还是反向代理解决。
-- 是否允许用户手动选择“本机临时模式”；若允许，需要单独 UI 任务。
-- closeout 是否需要后端事务接口，避免三步写入部分成功。
+- 是否需要显式“本机临时模式”切换 UI；若需要，必须另开任务。
+- closeout 是否值得后续引入后端事务接口，避免三步写入部分成功。
+- 独立部署阶段是否还需要同源静态入口或额外反向代理；当前不作为 blocker。
