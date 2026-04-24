@@ -1,0 +1,597 @@
+import { z, type ZodIssue } from "zod";
+
+import {
+  ArchiveDocumentSchema,
+  type ArchiveDocument,
+} from "../domain/schemas/archive-document.ts";
+import { ErrorEntrySchema, type ErrorEntry } from "../domain/schemas/error-entry.ts";
+import {
+  InvestigationRecordSchema,
+  type InvestigationRecord,
+} from "../domain/schemas/investigation-record.ts";
+import {
+  IssueCardSchema,
+  IssueSeverity,
+  IssueStatus,
+  type IssueCard,
+} from "../domain/schemas/issue-card.ts";
+import { DEFAULT_WORKSPACE_ID, resolveWorkspaceId } from "../domain/workspace.ts";
+import type {
+  ArchiveDocumentListInvalidEntry,
+  ArchiveDocumentListResult,
+} from "./archive-document-store.ts";
+import type {
+  ErrorEntryListInvalidEntry,
+  ErrorEntryListResult,
+} from "./error-entry-store.ts";
+import type {
+  InvestigationRecordListInvalidEntry,
+  InvestigationRecordListResult,
+} from "./investigation-record-store.ts";
+import type {
+  IssueCardListInvalidEntry,
+  IssueCardListResult,
+  IssueCardSummary,
+  LoadIssueCardResult,
+} from "./issue-card-store.ts";
+import { createHttpStorageClient, type HttpStorageClientOptions, type HttpStorageRequestError } from "./http-storage-client.ts";
+import {
+  createConflictWriteError,
+  createDegradedConnection,
+  createNotFoundReadError,
+  createNotFoundWriteError,
+  createReadFailed,
+  createRemoteValidationFailed,
+  createServerUnreachableReadError,
+  createServerUnreachableWriteError,
+  createTimeoutReadError,
+  createTimeoutWriteError,
+  createUnexpectedWriteError,
+  storageWriteOk,
+  type StorageEntity,
+  type StorageReadError,
+  type StorageWriteError,
+  type StorageWriteResult,
+} from "./storage-result.ts";
+import type { StorageRepository } from "./storage-repository.ts";
+
+const ItemsEnvelopeSchema = z.object({
+  items: z.array(z.unknown()),
+});
+
+const IssueCardSummarySchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  severity: IssueSeverity,
+  status: IssueStatus,
+  createdAt: z.string().datetime({ offset: true }),
+  updatedAt: z.string().datetime({ offset: true }),
+});
+
+const HealthResponseSchema = z.object({
+  status: z.string().min(1),
+  serverTime: z.string().datetime({ offset: true }).optional(),
+  storage: z
+    .object({
+      kind: z.string().min(1),
+      ready: z.boolean(),
+    })
+    .optional(),
+});
+
+export interface HttpStorageRepositoryOptions extends HttpStorageClientOptions {
+  workspaceId?: string;
+}
+
+export type HttpStorageHealthCheckResult =
+  | { ok: true; checkedAt: string }
+  | { ok: false; error: StorageReadError };
+
+function workspaceBasePath(workspaceId: string): string {
+  return `/workspaces/${encodeURIComponent(workspaceId)}`;
+}
+
+function dataValidationReadError(
+  entity: StorageEntity,
+  target: string,
+  message: string,
+): StorageReadError {
+  const checkedAt = new Date().toISOString();
+  return createReadFailed(entity, target, message, createDegradedConnection(message, checkedAt));
+}
+
+function isRequestError(error: unknown): error is HttpStorageRequestError {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "type" in error &&
+    typeof (error as { type?: unknown }).type === "string"
+  );
+}
+
+function mapRequestErrorToReadError(
+  entity: StorageEntity,
+  target: string,
+  error: HttpStorageRequestError,
+): StorageReadError {
+  switch (error.type) {
+    case "server_unreachable":
+      return createServerUnreachableReadError(entity, target, error.message, error.checkedAt);
+    case "timeout":
+      return createTimeoutReadError(entity, target, error.message, error.checkedAt);
+    case "http_error":
+      if (error.status === 404 || error.code === "NOT_FOUND") {
+        return createNotFoundReadError(entity, target, error.message);
+      }
+      return createReadFailed(
+        entity,
+        target,
+        error.message,
+        error.status >= 500 || error.code === "SERVICE_UNAVAILABLE"
+          ? createDegradedConnection(error.message, error.checkedAt)
+          : undefined,
+      );
+    case "invalid_envelope":
+      return createReadFailed(
+        entity,
+        target,
+        error.message,
+        createDegradedConnection(error.message, error.checkedAt),
+      );
+  }
+}
+
+function mapRequestErrorToWriteError(
+  entity: StorageEntity,
+  target: string,
+  error: HttpStorageRequestError,
+): StorageWriteError {
+  switch (error.type) {
+    case "server_unreachable":
+      return createServerUnreachableWriteError(entity, target, error.message, error.checkedAt);
+    case "timeout":
+      return createTimeoutWriteError(entity, target, error.message, error.checkedAt);
+    case "http_error":
+      if (
+        error.status === 400 ||
+        error.status === 422 ||
+        error.code === "BAD_REQUEST" ||
+        error.code === "VALIDATION_ERROR"
+      ) {
+        return createRemoteValidationFailed(entity, target, error.message);
+      }
+      if (error.status === 409 || error.code === "CONFLICT") {
+        return createConflictWriteError(entity, target, error.message);
+      }
+      if (error.status === 404 || error.code === "NOT_FOUND") {
+        return createNotFoundWriteError(entity, target, error.message);
+      }
+      return createUnexpectedWriteError(
+        entity,
+        target,
+        error.message,
+        error.status >= 500 || error.code === "SERVICE_UNAVAILABLE"
+          ? createDegradedConnection(error.message, error.checkedAt)
+          : undefined,
+      );
+    case "invalid_envelope":
+      return createUnexpectedWriteError(
+        entity,
+        target,
+        error.message,
+        createDegradedConnection(error.message, error.checkedAt),
+      );
+  }
+}
+
+function createValidationInvalidEntry<T extends { kind: string }>(
+  factory: (issues: ZodIssue[], index: number) => T,
+  result: z.SafeParseError<unknown>,
+  index: number,
+): T {
+  return factory(result.error.issues, index);
+}
+
+function normalizeIssueCardListInvalidEntry(
+  issues: ZodIssue[],
+  index: number,
+): IssueCardListInvalidEntry {
+  return {
+    kind: "validation_error",
+    key: `http:issues:${index}`,
+    id: `invalid-http-issue-${index}`,
+    issues,
+  };
+}
+
+function normalizeRecordListInvalidEntry(
+  issues: ZodIssue[],
+  index: number,
+): InvestigationRecordListInvalidEntry {
+  return {
+    kind: "validation_error",
+    key: `http:records:${index}`,
+    id: `invalid-http-record-${index}`,
+    issues,
+  };
+}
+
+function normalizeArchiveListInvalidEntry(
+  issues: ZodIssue[],
+  index: number,
+): ArchiveDocumentListInvalidEntry {
+  return {
+    kind: "validation_error",
+    key: `http:archives:${index}`,
+    fileName: `invalid-http-archive-${index}`,
+    issues,
+  };
+}
+
+function normalizeErrorEntryListInvalidEntry(
+  issues: ZodIssue[],
+  index: number,
+): ErrorEntryListInvalidEntry {
+  return {
+    kind: "validation_error",
+    key: `http:error-entries:${index}`,
+    id: `invalid-http-error-entry-${index}`,
+    issues,
+  };
+}
+
+async function performWrite(
+  writer: () => Promise<unknown>,
+  entity: StorageEntity,
+  target: string,
+): Promise<StorageWriteResult> {
+  try {
+    await writer();
+    return storageWriteOk();
+  } catch (error) {
+    if (isRequestError(error)) {
+      return { ok: false, error: mapRequestErrorToWriteError(entity, target, error) };
+    }
+    return { ok: false, error: createUnexpectedWriteError(entity, target, error) };
+  }
+}
+
+export function createHttpStorageRepository(
+  options: HttpStorageRepositoryOptions = {},
+): StorageRepository {
+  const workspaceId = resolveWorkspaceId(options.workspaceId ?? DEFAULT_WORKSPACE_ID);
+  const client = createHttpStorageClient(options);
+  const basePath = workspaceBasePath(workspaceId);
+
+  return {
+    issueCards: {
+      async list(): Promise<IssueCardListResult> {
+        try {
+          const data = await client.request<unknown>(`${basePath}/issues?status=all`);
+          const envelope = ItemsEnvelopeSchema.safeParse(data);
+          if (!envelope.success) {
+            return {
+              valid: [],
+              invalid: [],
+              readError: dataValidationReadError(
+                "issue_card",
+                `${basePath}/issues?status=all`,
+                "issue list response must contain data.items[]",
+              ),
+            };
+          }
+          const valid: IssueCardSummary[] = [];
+          const invalid: IssueCardListInvalidEntry[] = [];
+          envelope.data.items.forEach((item, index) => {
+            const parsed = IssueCardSummarySchema.safeParse(item);
+            if (!parsed.success) {
+              invalid.push(
+                createValidationInvalidEntry(normalizeIssueCardListInvalidEntry, parsed, index),
+              );
+              return;
+            }
+            valid.push(parsed.data);
+          });
+          return { valid, invalid, readError: null };
+        } catch (error) {
+          if (isRequestError(error)) {
+            return {
+              valid: [],
+              invalid: [],
+              readError: mapRequestErrorToReadError(
+                "issue_card",
+                `${basePath}/issues?status=all`,
+                error,
+              ),
+            };
+          }
+          return {
+            valid: [],
+            invalid: [],
+            readError: createReadFailed("issue_card", `${basePath}/issues?status=all`, error),
+          };
+        }
+      },
+      async load(id: string): Promise<LoadIssueCardResult> {
+        const target = `${basePath}/issues/${encodeURIComponent(id)}`;
+        try {
+          const data = await client.request<unknown>(target);
+          const parsed = IssueCardSchema.safeParse(data);
+          if (!parsed.success) {
+            return {
+              ok: false,
+              error: {
+                kind: "validation_error",
+                id,
+                issues: parsed.error.issues,
+              },
+            };
+          }
+          return { ok: true, card: parsed.data };
+        } catch (error) {
+          if (isRequestError(error)) {
+            if (
+              (error.type === "http_error" && (error.status === 404 || error.code === "NOT_FOUND")) ||
+              (error.type === "http_error" && error.code === "NOT_FOUND")
+            ) {
+              return { ok: false, error: { kind: "not_found", id } };
+            }
+            return {
+              ok: false,
+              error: mapRequestErrorToReadError("issue_card", id, error),
+            };
+          }
+          return {
+            ok: false,
+            error: createReadFailed("issue_card", id, error),
+          };
+        }
+      },
+      async save(card: IssueCard): Promise<StorageWriteResult> {
+        const createResult = await performWrite(
+          () =>
+            client.request(`${basePath}/issues`, {
+              method: "POST",
+              body: JSON.stringify(card),
+            }),
+          "issue_card",
+          card.id,
+        );
+        if (createResult.ok) {
+          return createResult;
+        }
+        if (createResult.error.code !== "conflict") {
+          return createResult;
+        }
+        return performWrite(
+          () =>
+            client.request(`${basePath}/issues/${encodeURIComponent(card.id)}`, {
+              method: "PUT",
+              body: JSON.stringify(card),
+            }),
+          "issue_card",
+          card.id,
+        );
+      },
+    },
+    investigationRecords: {
+      async listByIssueId(issueId: string): Promise<InvestigationRecordListResult> {
+        const target = `${basePath}/issues/${encodeURIComponent(issueId)}/records`;
+        try {
+          const data = await client.request<unknown>(target);
+          const envelope = ItemsEnvelopeSchema.safeParse(data);
+          if (!envelope.success) {
+            return {
+              valid: [],
+              invalid: [],
+              readError: dataValidationReadError(
+                "investigation_record",
+                target,
+                "record list response must contain data.items[]",
+              ),
+            };
+          }
+          const valid: InvestigationRecord[] = [];
+          const invalid: InvestigationRecordListInvalidEntry[] = [];
+          envelope.data.items.forEach((item, index) => {
+            const parsed = InvestigationRecordSchema.safeParse(item);
+            if (!parsed.success) {
+              invalid.push(
+                createValidationInvalidEntry(normalizeRecordListInvalidEntry, parsed, index),
+              );
+              return;
+            }
+            valid.push(parsed.data);
+          });
+          return { valid, invalid, readError: null };
+        } catch (error) {
+          if (isRequestError(error)) {
+            return {
+              valid: [],
+              invalid: [],
+              readError: mapRequestErrorToReadError("investigation_record", target, error),
+            };
+          }
+          return {
+            valid: [],
+            invalid: [],
+            readError: createReadFailed("investigation_record", issueId, error),
+          };
+        }
+      },
+      async append(record: InvestigationRecord): Promise<StorageWriteResult> {
+        return performWrite(
+          () =>
+            client.request(`${basePath}/issues/${encodeURIComponent(record.issueId)}/records`, {
+              method: "POST",
+              body: JSON.stringify(record),
+            }),
+          "investigation_record",
+          record.id,
+        );
+      },
+    },
+    archiveDocuments: {
+      async list(): Promise<ArchiveDocumentListResult> {
+        const target = `${basePath}/archives`;
+        try {
+          const data = await client.request<unknown>(target);
+          const envelope = ItemsEnvelopeSchema.safeParse(data);
+          if (!envelope.success) {
+            return {
+              valid: [],
+              invalid: [],
+              readError: dataValidationReadError(
+                "archive_document",
+                target,
+                "archive list response must contain data.items[]",
+              ),
+            };
+          }
+          const valid: ArchiveDocument[] = [];
+          const invalid: ArchiveDocumentListInvalidEntry[] = [];
+          envelope.data.items.forEach((item, index) => {
+            const parsed = ArchiveDocumentSchema.safeParse(item);
+            if (!parsed.success) {
+              invalid.push(
+                createValidationInvalidEntry(normalizeArchiveListInvalidEntry, parsed, index),
+              );
+              return;
+            }
+            valid.push(parsed.data);
+          });
+          return { valid, invalid, readError: null };
+        } catch (error) {
+          if (isRequestError(error)) {
+            return {
+              valid: [],
+              invalid: [],
+              readError: mapRequestErrorToReadError("archive_document", target, error),
+            };
+          }
+          return {
+            valid: [],
+            invalid: [],
+            readError: createReadFailed("archive_document", target, error),
+          };
+        }
+      },
+      async save(document: ArchiveDocument): Promise<StorageWriteResult> {
+        return performWrite(
+          () =>
+            client.request(`${basePath}/archives`, {
+              method: "POST",
+              body: JSON.stringify(document),
+            }),
+          "archive_document",
+          document.fileName,
+        );
+      },
+    },
+    errorEntries: {
+      async list(): Promise<ErrorEntryListResult> {
+        const target = `${basePath}/error-entries`;
+        try {
+          const data = await client.request<unknown>(target);
+          const envelope = ItemsEnvelopeSchema.safeParse(data);
+          if (!envelope.success) {
+            return {
+              valid: [],
+              invalid: [],
+              readError: dataValidationReadError(
+                "error_entry",
+                target,
+                "error-entry list response must contain data.items[]",
+              ),
+            };
+          }
+          const valid: ErrorEntry[] = [];
+          const invalid: ErrorEntryListInvalidEntry[] = [];
+          envelope.data.items.forEach((item, index) => {
+            const parsed = ErrorEntrySchema.safeParse(item);
+            if (!parsed.success) {
+              invalid.push(
+                createValidationInvalidEntry(normalizeErrorEntryListInvalidEntry, parsed, index),
+              );
+              return;
+            }
+            valid.push(parsed.data);
+          });
+          return { valid, invalid, readError: null };
+        } catch (error) {
+          if (isRequestError(error)) {
+            return {
+              valid: [],
+              invalid: [],
+              readError: mapRequestErrorToReadError("error_entry", target, error),
+            };
+          }
+          return {
+            valid: [],
+            invalid: [],
+            readError: createReadFailed("error_entry", target, error),
+          };
+        }
+      },
+      async save(entry: ErrorEntry): Promise<StorageWriteResult> {
+        return performWrite(
+          () =>
+            client.request(`${basePath}/error-entries`, {
+              method: "POST",
+              body: JSON.stringify(entry),
+            }),
+          "error_entry",
+          entry.id,
+        );
+      },
+    },
+  };
+}
+
+export async function checkHttpStorageHealth(
+  options: HttpStorageRepositoryOptions = {},
+): Promise<HttpStorageHealthCheckResult> {
+  const client = createHttpStorageClient(options);
+  try {
+    const data = await client.request<unknown>("/health");
+    const parsed = HealthResponseSchema.safeParse(data);
+    if (!parsed.success) {
+      return {
+        ok: false,
+        error: dataValidationReadError(
+          "issue_card",
+          "/health",
+          "health response must include status/storage/serverTime payload",
+        ),
+      };
+    }
+    if (parsed.data.storage && parsed.data.storage.ready !== true) {
+      return {
+        ok: false,
+        error: createReadFailed(
+          "issue_card",
+          "/health",
+          "server storage is not ready",
+          createDegradedConnection("server storage is not ready", new Date().toISOString()),
+        ),
+      };
+    }
+    return {
+      ok: true,
+      checkedAt: parsed.data.serverTime ?? new Date().toISOString(),
+    };
+  } catch (error) {
+    if (isRequestError(error)) {
+      return {
+        ok: false,
+        error: mapRequestErrorToReadError("issue_card", "/health", error),
+      };
+    }
+    return {
+      ok: false,
+      error: createReadFailed("issue_card", "/health", error),
+    };
+  }
+}
+
+export const httpStorageRepository = createHttpStorageRepository();

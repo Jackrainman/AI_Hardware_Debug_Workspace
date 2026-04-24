@@ -12,6 +12,7 @@ import {
   saveErrorEntry,
   type ErrorEntryListResult,
 } from "./error-entry-store.ts";
+import { checkHttpStorageHealth, httpStorageRepository } from "./http-storage-repository.ts";
 import {
   listInvestigationRecordsByIssueId,
   saveInvestigationRecord,
@@ -25,6 +26,7 @@ import {
   type LoadIssueCardResult,
 } from "./issue-card-store.ts";
 import type {
+  StorageErrorConnection,
   StorageReadError,
   StorageWriteError,
   StorageWriteResult,
@@ -36,6 +38,7 @@ export type {
   InvestigationRecordListResult,
   IssueCardListResult,
   LoadIssueCardResult,
+  StorageErrorConnection,
   StorageReadError,
   StorageWriteError,
   StorageWriteResult,
@@ -99,4 +102,12 @@ export const localStorageStorageRepository: StorageRepository = {
   },
 };
 
-export const storageRepository: StorageRepository = localStorageStorageRepository;
+export type StorageRepositoryRuntime = "http" | "local_storage";
+
+export const STORAGE_REPOSITORY_RUNTIME: StorageRepositoryRuntime =
+  typeof document !== "undefined" && typeof window !== "undefined" ? "http" : "local_storage";
+
+export const storageRepository: StorageRepository =
+  STORAGE_REPOSITORY_RUNTIME === "http" ? httpStorageRepository : localStorageStorageRepository;
+
+export { checkHttpStorageHealth, httpStorageRepository };

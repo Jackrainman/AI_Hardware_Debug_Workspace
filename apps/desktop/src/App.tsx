@@ -22,6 +22,8 @@ import {
 } from "./domain/closeout";
 import { DEFAULT_WORKSPACE_ID, DEFAULT_WORKSPACE_NAME } from "./domain/workspace";
 import {
+  STORAGE_REPOSITORY_RUNTIME,
+  checkHttpStorageHealth,
   type IssueCardListResult,
   type LoadIssueCardResult,
   type InvestigationRecordListResult,
@@ -30,12 +32,15 @@ import {
 } from "./storage/storage-repository";
 import { orchestrateIssueCloseout } from "./use-cases/closeout-orchestrator";
 import {
+  CHECKING_STORAGE_CONNECTION_STATE,
   LOCAL_STORAGE_CONNECTION_STATE,
   closeoutFailureToFeedback,
   createInvalidDataStorageFeedbackError,
+  createOnlineStorageConnectionState,
   createValidationStorageFeedbackError,
   describeStorageConnectionState,
   formatStorageFeedbackError,
+  healthCheckErrorToFeedback,
   loadIssueCardFailureToFeedback,
   storageReadErrorToFeedback,
   storageWriteErrorToFeedback,
@@ -51,17 +56,17 @@ const SAMPLE_CARD: IssueCard = {
   id: SAMPLE_ISSUE_ID,
   projectId: DEFAULT_WORKSPACE_ID,
   title: "示例问题卡：启动日志停在握手阶段",
-  rawInput: "用于演示 localStorage 保存与读回的示例问题卡。",
-  normalizedSummary: "验证问题卡可以写入浏览器本地存储并通过结构校验读回。",
+  rawInput: "用于演示 HTTP 存储链路保存与读回的示例问题卡。",
+  normalizedSummary: "验证问题卡可以经 /api 写入本地 WSL backend，并通过结构校验读回。",
   symptomSummary: "演示数据：启动流程卡在握手阶段，尚未绑定真实硬件日志。",
-  suspectedDirections: ["本地存储读写演示路径"],
+  suspectedDirections: ["HTTP 存储适配链路"],
   suggestedActions: [
-    "点击“保存示例卡”写入浏览器 localStorage。",
+    "点击“保存示例卡”经 /api 写入本地 WSL backend。",
     "点击“读取示例卡”执行结构化读回。",
   ],
   status: "open",
   severity: "low",
-  tags: ["示例", "本地存储"],
+  tags: ["示例", "HTTP 存储"],
   repoSnapshot: {
     branch: "master",
     headCommitHash: "0000000000000000000000000000000000000000",
@@ -90,7 +95,7 @@ function DemoHint() {
       <div className="demo-hint-steps">
         <span>1️⃣ 填写上方表单 → 2️⃣ 创建后自动选中 / 左侧选择已有卡 → 3️⃣ 追加排查记录 → 4️⃣ 填写结案归档</span>
       </div>
-      <p className="demo-hint-note">以上步骤全部在浏览器本地执行，无需真实硬件或 Git 仓库。</p>
+      <p className="demo-hint-note">以上步骤默认走前端 /api → 本地 WSL backend → SQLite；若服务未启动，顶部会明确提示。</p>
     </div>
   );
 }
@@ -116,7 +121,9 @@ function StorageStatusBanner({
       </div>
       <p className="storage-feedback-message" data-testid="storage-feedback-message">
         {error === null
-          ? "当前未发现新的存储异常；后续 HTTP / 服务器不可达也会统一显示在这里。"
+          ? connectionState.state === "checking"
+            ? "正在检查 /api 与服务器长期存储状态…"
+            : "当前通过 HTTP 连接服务器存储；若服务异常、超时或写入失败，会统一显示在这里。"
           : formatStorageFeedbackError(error)}
       </p>
     </section>
@@ -161,7 +168,7 @@ function IssueStorageControls({
     <div className="storage-controls" data-testid="issue-storage-controls">
       <div className="form-caption form-caption-muted">
         <h3>辅助验证</h3>
-        <p>保存/读取示例卡，验证本地存储链路。</p>
+        <p>保存/读取示例卡，验证 HTTP 存储链路。</p>
       </div>
       <div className="storage-buttons">
         <button type="button" className="button-secondary" onClick={handleSave}>
@@ -647,7 +654,7 @@ function CloseoutForm({
     >
       <div className="form-caption">
         <h3>4. 结案归档</h3>
-        <p>填写根因和处理结论，生成浏览器本地归档摘要与错误表条目。</p>
+        <p>填写根因和处理结论，经 HTTP 写入归档摘要与错误表条目。</p>
       </div>
       <p className="storage-line" data-testid="closeout-target">
         结案对象：{issueId}
@@ -809,7 +816,7 @@ function MainlineResultPanel({
             <pre>{lastCloseout.markdownPreview}</pre>
           </details>
           <p className="mainline-closeout-note">
-            归档文档与错误表条目已写入浏览器本地存储；后续接入 .debug_workspace 文件系统双写后将落到上面的路径。
+            归档文档与错误表条目已写入本地 WSL 后端 SQLite；后续接入 .debug_workspace 文件双写后会补真实文件落盘。
           </p>
         </div>
       )}
@@ -1028,7 +1035,7 @@ const PANES: Pane[] = [
     title: "项目区",
     badge: "上下文",
     hint: "展示当前调试项目的上下文边界。",
-    status: "当前演示：浏览器 SPA + localStorage",
+    status: "当前联调：前端 /api + 本地 WSL backend + SQLite",
     bullets: [
       `当前工作区：${DEFAULT_WORKSPACE_NAME}`,
       "仓库快照：后续接入 Git",
@@ -1040,7 +1047,7 @@ const PANES: Pane[] = [
     title: "问题卡区",
     badge: "主流程",
     hint: "创建问题卡、追加排查记录、结案生成本地归档摘要。",
-    status: "当前可用：问题卡、排查记录、结案归档的浏览器本地链路",
+    status: "当前可用：问题卡、排查记录、结案归档经 HTTP 写入 SQLite",
     bullets: [],
   },
   {
@@ -1048,10 +1055,10 @@ const PANES: Pane[] = [
     title: "归档区",
     badge: "沉淀物",
     hint: "结案后会沉淀的归档资产。",
-    status: "当前演示：localStorage，后续接文件系统",
+    status: "当前演示：服务器 SQLite，后续补文件双写",
     bullets: [
-      "归档文档：结案摘要（localStorage）",
-      "错误表条目：复发检索入口（localStorage）",
+      "归档文档：结案摘要（SQLite）",
+      "错误表条目：复发检索入口（SQLite）",
       "后续：.debug_workspace 文件双写",
     ],
   },
@@ -1188,7 +1195,7 @@ export function ArchivePaneShell({
             <h3>最近一次归档摘要</h3>
           </header>
           <p className="archive-result-status" data-testid="archive-result-status">
-            已生成 ArchiveDocument 与 ErrorEntry，已写入浏览器本地存储；刷新页面仍可读回。
+            已生成 ArchiveDocument 与 ErrorEntry，已写入本地 WSL 后端 SQLite；刷新页面仍可读回。
           </p>
           <dl className="archive-result-fields">
             <div>
@@ -1295,7 +1302,7 @@ export function ArchiveListDrawer({
           </div>
         )}
         <p className="archive-drawer-note">
-          当前归档仍在浏览器 localStorage，不是 .debug_workspace 文件写盘；接入 Electron / fs 后这里会切换到真实文件路径。
+          当前归档来自本地 WSL 后端 SQLite，不是 .debug_workspace 文件写盘；接入 Electron / fs 后这里会补真实文件路径。
         </p>
       </div>
     </div>
@@ -1412,7 +1419,9 @@ function CloseoutEntryButton({ issueId }: { issueId: string | null }) {
 
 export default function App() {
   const [storageConnectionState, setStorageConnectionState] = useState<StorageConnectionState>(
-    LOCAL_STORAGE_CONNECTION_STATE,
+    STORAGE_REPOSITORY_RUNTIME === "http"
+      ? CHECKING_STORAGE_CONNECTION_STATE
+      : LOCAL_STORAGE_CONNECTION_STATE,
   );
   const [storageFeedbackError, setStorageFeedbackError] = useState<StorageFeedbackError | null>(
     null,
@@ -1432,7 +1441,11 @@ export default function App() {
   };
 
   const clearStorageFeedback = () => {
-    setStorageConnectionState(LOCAL_STORAGE_CONNECTION_STATE);
+    setStorageConnectionState(
+      STORAGE_REPOSITORY_RUNTIME === "http"
+        ? createOnlineStorageConnectionState()
+        : LOCAL_STORAGE_CONNECTION_STATE,
+    );
     setStorageFeedbackError(null);
   };
 
@@ -1449,12 +1462,38 @@ export default function App() {
           "archive_index",
           "list_archives",
           `归档区有 ${index.invalidCount} 条异常数据，已跳过。`,
+          undefined,
+          createOnlineStorageConnectionState(),
         ),
       );
       return;
     }
     clearStorageFeedback();
   };
+
+  useEffect(() => {
+    if (STORAGE_REPOSITORY_RUNTIME !== "http") {
+      return;
+    }
+    let cancelled = false;
+    const checkConnection = async () => {
+      setStorageConnectionState(CHECKING_STORAGE_CONNECTION_STATE);
+      const result = await checkHttpStorageHealth();
+      if (cancelled) {
+        return;
+      }
+      if (!result.ok) {
+        reportStorageError(healthCheckErrorToFeedback(result.error));
+        return;
+      }
+      setStorageConnectionState(createOnlineStorageConnectionState(result.checkedAt));
+      setStorageFeedbackError(null);
+    };
+    void checkConnection();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     void refreshArchiveIndex();
@@ -1477,14 +1516,14 @@ export default function App() {
             <p className="app-eyebrow">嵌入式调试现场 · 问题闪记</p>
             <h1>ProbeFlash</h1>
             <p className="app-subtitle">
-              面向嵌入式调试现场的问题闪记与知识归档系统。当前是浏览器 SPA 演示版。
+              面向嵌入式调试现场的问题闪记与知识归档系统。当前主路径已切到本地 HTTP + SQLite 联调版。
             </p>
           </div>
           <div className="header-status-stack">
             <p className="stage-tag" data-testid="stage-tag">
-              D1：交差优先中文产品壳
+              S3：本地 HTTP + SQLite 闭环
             </p>
-            <p className="header-boundary">SPA + localStorage，未接 Electron/fs</p>
+            <p className="header-boundary">前端 /api + 本地 WSL backend + SQLite；独立部署未验证</p>
           </div>
         </div>
         <div className="app-header-toolbar" data-testid="app-header-toolbar">
@@ -1529,7 +1568,7 @@ export default function App() {
         </section>
       </main>
       <footer className="app-footer">
-        <span>当前边界：浏览器 SPA + localStorage；Electron / fs / IPC / .debug_workspace 文件写盘未接入。</span>
+        <span>当前边界：前端 /api + 本地 WSL backend + SQLite；独立部署、Electron / fs / IPC / .debug_workspace 文件写盘未接入。</span>
       </footer>
       <ArchiveListDrawer
         open={isArchiveListOpen}

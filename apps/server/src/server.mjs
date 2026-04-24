@@ -237,8 +237,18 @@ export async function startProbeFlashServer(overrides = {}) {
 
   const server = createServer(createRequestHandler({ store, storeInitError }));
 
-  await new Promise((resolvePromise) => {
-    server.listen(port, host, resolvePromise);
+  await new Promise((resolvePromise, rejectPromise) => {
+    const handleError = (error) => {
+      server.off("listening", handleListening);
+      rejectPromise(error);
+    };
+    const handleListening = () => {
+      server.off("error", handleError);
+      resolvePromise();
+    };
+    server.once("error", handleError);
+    server.once("listening", handleListening);
+    server.listen(port, host);
   });
 
   const address = server.address();

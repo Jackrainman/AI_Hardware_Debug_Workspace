@@ -112,11 +112,21 @@ function formatStorageWriteError(error: StorageWriteError): string {
   const entityLabel = labelStorageEntity(error.entity);
   switch (error.code) {
     case "validation_failed":
-      return `${entityLabel}写入前校验失败（${error.issues.length} 个字段问题）`;
+      return error.issues.length > 0
+        ? `${entityLabel}写入前校验失败（${error.issues.length} 个字段问题）`
+        : `${entityLabel}写入前校验失败：${error.message}`;
     case "serialize_failed":
       return `${entityLabel}序列化失败：${error.message}`;
     case "unexpected_write_error":
       return `${entityLabel}写入异常：${error.message}`;
+    case "server_unreachable":
+      return `${entityLabel}写入失败：无法连接服务器长期存储（${error.message}）`;
+    case "timeout":
+      return `${entityLabel}写入超时：${error.message}`;
+    case "conflict":
+      return `${entityLabel}写入冲突：${error.message}`;
+    case "not_found":
+      return `${entityLabel}写入目标不存在：${error.message}`;
   }
 }
 

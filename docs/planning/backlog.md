@@ -7,7 +7,7 @@
 - 大目标：把 D1 的浏览器 SPA + `window.localStorage` 演示版，迁移为“战队局域网可访问 + 服务端长期存储”的版本。
 - 当前技术路线：**先架构缝合，再本地 WSL 闭环，再服务器独立部署验证**。
 - 当前访问口径分层：
-  - 本地联调：前端请求 `/api`，下一任务通过 Vite proxy 转发到 `http://127.0.0.1:4100`。
+  - 本地联调：前端请求 `/api`，已通过 Vite proxy 转发到 `http://127.0.0.1:4100`。
   - 独立部署：继续按 `http://192.168.2.2:<port>/` 理解；不抢占 80 端口，不优先做 `.local` / 反向代理美化。
 
 ## 认领规则
@@ -15,77 +15,18 @@
 2. 每次只允许一个任务处于执行中；完成前必须做最小验证、planning sync、单任务 commit。
 3. 若发现队列顺序、依赖或约束与真实仓库状态脱节，先修 `current.md` / `handoff.json` / 本文件，再继续。
 4. 架构类任务不能只产出分析结论，必须附带工程化验证要求；涉及 `storage / repository / closeout / adapter / backend scaffold` 时必须同时覆盖成功态与失败态。
-5. `pending_task_queue` 现在只保留**剩余未完成任务**；已完成的 `S3-ARCH-*` 与 `S3-LOCAL-BACKEND-SCAFFOLD` 只保留在 `completed_atomic_tasks` 中，不再重复混入 pending queue。
+5. `pending_task_queue` 现在只保留**剩余未完成任务**；已完成的 `S3-ARCH-*`、`S3-LOCAL-BACKEND-SCAFFOLD`、`S3-LOCAL-HTTP-STORAGE-ADAPTER` 只保留在 `completed_atomic_tasks` 中，不再重复混入 pending queue。
 
 ## S3 剩余串行原子任务队列
 
-> 已完成前置：`S3-ARCH-ASYNC-STORAGE-PORT`、`S3-ARCH-CLOSEOUT-ORCHESTRATOR`、`S3-ARCH-UNIFIED-STORAGE-ERROR-STATE`、`S3-LOCAL-BACKEND-SCAFFOLD`。以下 4 项是当前仅剩的可执行主线队列。
+> 已完成前置：`S3-ARCH-ASYNC-STORAGE-PORT`、`S3-ARCH-CLOSEOUT-ORCHESTRATOR`、`S3-ARCH-UNIFIED-STORAGE-ERROR-STATE`、`S3-LOCAL-BACKEND-SCAFFOLD`、`S3-LOCAL-HTTP-STORAGE-ADAPTER`。以下 3 项是当前仅剩的可执行主线队列。
 
-### 1. S3-LOCAL-HTTP-STORAGE-ADAPTER
-- **目标**：前端主流程切到 HTTP storage adapter，在本地 WSL 与后端真实联通；任何失败态都必须显式暴露，严禁 silent fallback 冒充成功。
-- **前置依赖**：
-  - `S3-LOCAL-BACKEND-SCAFFOLD` 已完成并可提供 `/api/health`、workspace seed、SQLite 初始化与最小实体 API；
-  - `S3-ARCH-UNIFIED-STORAGE-ERROR-STATE` 已提供统一 storage feedback / connection state；
-  - `S3-ARCH-CLOSEOUT-ORCHESTRATOR` 已让 closeout 走 repository 接缝而非 UI 直写。
-- **直接输入文件**：
-  - `docs/planning/s3-api-contract.md`
-  - `docs/planning/s3-server-unreachable-strategy.md`
-  - `apps/desktop/src/storage/storage-repository.ts`
-  - `apps/desktop/src/storage/storage-feedback.ts`
-  - `apps/desktop/src/use-cases/closeout-orchestrator.ts`
-  - `apps/desktop/src/App.tsx`
-  - `apps/desktop/vite.config.ts`
-  - `apps/server/src/server.mjs`
-  - `apps/server/src/database.mjs`
-  - `apps/desktop/src/domain/workspace.ts`
-- **执行拆解**：
-  1. 明确 HTTP / network / timeout / 4xx / 5xx / invalid envelope 到现有 `StorageFeedbackError` 的桥接规则。
-  2. 实现最薄 `HttpStorageRepository`，接口保持与当前 `StorageRepository` 一致，先覆盖当前真正会走到的主路径：issue list/load/save、record list/append、archive list/save、error-entry list/save。
-  3. 开发连接方案固定为 **Vite proxy**，而不是先改 backend CORS：前端 base URL 使用相对路径 `/api`，`vite.config.ts` 代理到 `http://127.0.0.1:4100`；这样最小、可调试、与后续独立部署同样保留 `/api` path。
-  4. 统一 `workspaceId`：沿用 `DEFAULT_WORKSPACE_ID = "workspace-26-r1"`，HTTP path 使用 `workspaceId`，payload 保持 `projectId === workspaceId` 的兼容校验，不做 schema 重命名。
-  5. 将 `storageRepository` 的单一出口切换到 HTTP implementation；localStorage 若仍保留，仅允许显式演示模式或单独开关，不允许 health / 写入失败后自动 fallback。
-  6. 对 `App.tsx` 只做最小适配：接入连接检查、错误反馈和必要的状态刷新，不顺手重构视图层。
-  7. 若现有验证矩阵不能证明 HTTP adapter 成功态 / 失败态，就补最薄 verify 脚本，不引入新框架。
-- **预期改动点**：
-  - `apps/desktop/src/storage/storage-repository.ts`（切换导出点）
-  - `apps/desktop/src/storage/storage-feedback.ts`（补 HTTP -> feedback bridge 所需 helper）
-  - `apps/desktop/src/App.tsx`（最小接线）
-  - `apps/desktop/vite.config.ts`（增加 `/api` proxy）
-  - 新增 `apps/desktop/src/storage/http-*.ts`
-  - 视需要新增 `apps/desktop/scripts/verify-s3-local-http-storage-adapter.mts`
-- **明确不做项**：
-  - 不做服务器部署
-  - 不做离线队列 / 自动重放 / 冲突合并 / 实时协作
-  - 不重构 `App.tsx` 大结构
-  - 不做 `.local` / 反向代理 / 80 端口接管
-  - 不保留 silent fallback 作为默认成功路径
-- **工程化验证**：
-  - `cd apps/server && npm run verify:s3-local-backend-scaffold`
-  - `cd apps/desktop && npm run typecheck`
-  - `cd apps/desktop && npm run build`
-  - `cd apps/desktop && npm run verify:all`
-  - `git diff --check`
-  - `cd apps/desktop && npm run verify:handoff`
-  - 任务级验证：
-    - HTTP happy path：前端主流程经 `/api` 打到本地 backend 并写入 SQLite
-    - 服务关闭 / 端口错误 / fetch failed：顶部统一错误出口出现 `server_unreachable`
-    - 请求超时：统一错误出口出现 `timeout`
-    - 4xx / 5xx：映射为可解释的 validation / conflict / read_failed / write_failed
-    - 失败后不得偷偷回落到 localStorage 并显示成功
-- **完成定义**：
-  - HTTP adapter 已成为当前主流程的真实存储入口
-  - Vite proxy / base URL 方案已落地且可复现
-  - workspaceId / projectId 兼容口径已打通
-  - 成功态与失败态都已稳定表达
-  - `S3-LOCAL-END-TO-END-VERIFY` 依赖解除
-- **完成后下一任务**：`S3-LOCAL-END-TO-END-VERIFY`
-
-### 2. S3-LOCAL-END-TO-END-VERIFY
+### 1. S3-LOCAL-END-TO-END-VERIFY
 - **目标**：验证“前端 -> HTTP -> SQLite”主路径真实跑通，并证明失败态不会伪装成功。
 - **前置依赖**：
-  - `S3-LOCAL-HTTP-STORAGE-ADAPTER` 已完成
-  - 本地 backend scaffold 与 SQLite 已可独立启动
-  - 当前 D1 主流程仍保持最小可用
+  - `S3-LOCAL-HTTP-STORAGE-ADAPTER` 已完成；
+  - 本地 backend scaffold 与 SQLite 已可独立启动；
+  - 当前 D1 主流程仍保持最小可用。
 - **直接输入文件**：
   - `apps/desktop/src/App.tsx`
   - `apps/desktop/src/storage/http-*.ts`
@@ -94,7 +35,7 @@
   - `apps/server/src/server.mjs`
   - `apps/server/src/database.mjs`
   - `apps/server/scripts/verify-s3-local-backend-scaffold.mjs`
-  - 当前已有 verify scripts 与可能新增的 adapter verify 脚本
+  - 当前已有 verify scripts 与可能新增的 adapter / end-to-end verify 脚本
 - **执行拆解**：
   1. 固定主路径验证范围：创建问题卡 -> 加载问题卡 / 列表 -> 追加 InvestigationRecord -> closeout -> 读取 archive / error-entry / archived issue。
   2. 明确自动化与 smoke 边界：优先补最薄任务级 verify 脚本，不引入新框架；浏览器人工 smoke 只覆盖 UI 呈现与关键交互闭环。
@@ -129,7 +70,7 @@
   - `S3-SERVER-INDEPENDENT-DEPLOY-PREP` 依赖解除
 - **完成后下一任务**：`S3-SERVER-INDEPENDENT-DEPLOY-PREP`
 
-### 3. S3-SERVER-INDEPENDENT-DEPLOY-PREP
+### 2. S3-SERVER-INDEPENDENT-DEPLOY-PREP
 - **目标**：只为服务器独立部署做准备，明确独立 runtime / 独立目录 / 独立端口 / 独立 systemd service 的最小可执行方案，不碰系统全局 Node。
 - **前置依赖**：
   - `S3-LOCAL-END-TO-END-VERIFY` 已完成
@@ -173,7 +114,7 @@
   - `S3-SERVER-INDEPENDENT-DEPLOY-VERIFY` 依赖解除
 - **完成后下一任务**：`S3-SERVER-INDEPENDENT-DEPLOY-VERIFY`
 
-### 4. S3-SERVER-INDEPENDENT-DEPLOY-VERIFY
+### 3. S3-SERVER-INDEPENDENT-DEPLOY-VERIFY
 - **目标**：把“本地已验证方案”部署到服务器独立端口，由 systemd 拉起，并验证局域网设备可访问、SQLite 数据可持续、现有 80 端口服务不受影响。
 - **前置依赖**：
   - `S3-SERVER-INDEPENDENT-DEPLOY-PREP` 已完成
