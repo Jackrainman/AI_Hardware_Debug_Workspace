@@ -19,19 +19,19 @@
     "verification_expectations": "object - 当前阶段默认验证矩阵与按任务加严要求",
     "environment_facts": "object - 当前已确认的服务器与本机环境事实"
   },
-  "timestamp": "2026-04-24T22:47:01+08:00",
+  "timestamp": "2026-04-25T11:11:31+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "S3",
   "current_stage_name": "存储迁移与服务器化",
   "current_stage_goal": "把 D1 的浏览器 SPA + window.localStorage 演示版迁移为战队局域网可访问、服务端长期存储的版本；当前先走“架构缝合 -> WSL 本地最小闭环 -> 服务器独立部署验证”。",
   "primary_track": "s3_local_first_then_independent_server_deploy",
   "deferred_track": "ai_rag_permissions_electron_multi_workspace",
-  "current_atomic_task": "S3-LOCAL-END-TO-END-VERIFY",
+  "current_atomic_task": "S3-SERVER-INDEPENDENT-DEPLOY-PREP",
   "storage_strategy": {
-    "current_truth": "apps/desktop 浏览器 runtime 已切到 HTTP storage adapter；Node / 无 window 的 verify 环境保留 localStorage repository 兼容旧 verify。/api 相对路径、Vite proxy、统一 storage error / connection state 与 backend scaffold 已接通，server-backed adapter verify 与全量 verify 已通过。",
-    "next_closure": "证明问题卡 / InvestigationRecord / closeout 主路径真实走通 HTTP + SQLite，并补足自动化 verify 与浏览器 smoke 的边界说明。",
+    "current_truth": "apps/desktop 浏览器 runtime 已切到 HTTP storage adapter；Node / 无 window 的 verify 环境保留 localStorage repository 兼容旧 verify。/api 相对路径、Vite proxy、统一 storage error / connection state 与 backend scaffold 已接通；S3-LOCAL-END-TO-END-VERIFY 已通过，issue -> record -> closeout -> archive/error-entry/archived issue 可从 SQLite 读回。",
+    "next_closure": "只为服务器独立部署做准备，锁定独立 runtime / 目录 / 端口 / systemd service 与部署材料；不要开始服务器部署验证。",
     "local_first_route": "完成 S3-ARCH-* 三个缝合任务后，在 WSL 本地跑通最小 backend + SQLite + HTTP adapter。",
-    "server_route_after_local": "仅在 S3-LOCAL-END-TO-END-VERIFY 完成后，才进入服务器独立部署准备与验证。",
+    "server_route_after_local": "S3-LOCAL-END-TO-END-VERIFY 已完成；下一步先做服务器独立部署准备，再做服务器独立部署验证。",
     "silent_fallback_policy": "禁止用 localStorage silent fallback 冒充服务器成功；失败态必须显式暴露。"
   },
   "access_strategy": {
@@ -45,31 +45,6 @@
     "beautification_policy": "`.local` / 反向代理美化延后到独立部署验证后再评估。"
   },
   "frontier_tasks": [
-    {
-      "id": "S3-LOCAL-END-TO-END-VERIFY",
-      "track": "s3_local_first_then_independent_server_deploy",
-      "goal": "验证 D1 主路径在 HTTP + SQLite + 本地 WSL 后端下跑通，并证明失败态不会伪装成功。",
-      "scope": [
-        "串起问题卡 / InvestigationRecord / closeout 主路径",
-        "验证 SQLite 读回",
-        "必要时补最薄 verify 脚本，不引入新框架"
-      ],
-      "non_goals": [
-        "不做服务器部署",
-        "不改系统 Node",
-        "不优先做入口美化"
-      ],
-      "depends_on": [
-        "S3-LOCAL-HTTP-STORAGE-ADAPTER"
-      ],
-      "verification": [
-        "默认验证矩阵",
-        "前端 -> HTTP -> SQLite 主路径验证",
-        "失败态不冒充成功",
-        "浏览器人工 smoke 与自动化边界说明"
-      ],
-      "status": "ready_to_claim_now"
-    },
     {
       "id": "S3-SERVER-INDEPENDENT-DEPLOY-PREP",
       "track": "s3_local_first_then_independent_server_deploy",
@@ -90,9 +65,10 @@
       "verification": [
         "文档 / 路径 / service unit / 启动脚本一致性检查",
         "脚本语法 / 引用 / 路径级验证",
-        "git diff --check"
+        "git diff --check",
+        "cd apps/desktop && npm run verify:handoff"
       ],
-      "status": "queued_after_current"
+      "status": "ready_to_claim_now"
     },
     {
       "id": "S3-SERVER-INDEPENDENT-DEPLOY-VERIFY",
@@ -185,7 +161,8 @@
     "S3-ARCH-CLOSEOUT-ORCHESTRATOR",
     "S3-ARCH-UNIFIED-STORAGE-ERROR-STATE",
     "S3-LOCAL-BACKEND-SCAFFOLD",
-    "S3-LOCAL-HTTP-STORAGE-ADAPTER"
+    "S3-LOCAL-HTTP-STORAGE-ADAPTER",
+    "S3-LOCAL-END-TO-END-VERIFY"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -205,9 +182,9 @@
       "是否保持默认读取集合最小，不把 README / 产品介绍 / decisions 重新塞回默认必读"
     ],
     "claiming_rule": "只允许从 pending_task_queue 中认领第一个“依赖已满足且未完成”的原子任务；禁止发散式自找任务。",
-    "recommended_next": "S3-LOCAL-END-TO-END-VERIFY",
-    "after_current_complete": "S3-SERVER-INDEPENDENT-DEPLOY-PREP",
-    "output_rule": "下一轮先读默认最小事实源，再读 apps/desktop/src/storage/http-*.ts / storage-repository.ts / App.tsx / closeout-orchestrator.ts / apps/server/src/* / verify scripts；严格按 current.md 与 pending_task_queue 中的当前任务拆解执行，不扩到服务器部署。",
+    "recommended_next": "S3-SERVER-INDEPENDENT-DEPLOY-PREP",
+    "after_current_complete": "S3-SERVER-INDEPENDENT-DEPLOY-VERIFY",
+    "output_rule": "下一轮先读默认最小事实源，再读服务器独立部署准备直接相关文件；严格按 current.md 与 pending_task_queue 中的当前任务拆解执行，只准备独立部署材料，不开始服务器部署验证。",
     "conditional_inputs": {
       "docs/planning/backlog.md": "需要完整剩余队列、详细任务拆解、或队列新增/移除/改名/重排时读取。",
       "docs/planning/decisions.md": "长期规则变化、阶段拍板变化、技术争议或需要核对长期决策时读取。",
@@ -219,7 +196,7 @@
     }
   },
   "risks": [
-    "当前 adapter 验证已证明 repository happy path 与失败态桥接成立，但仍需在 S3-LOCAL-END-TO-END-VERIFY 中证明 UI 主路径与 SQLite 读回一致，不只停在仓库级 harness。",
+    "下一轮是服务器独立部署准备，容易越界成真实服务器部署；必须只准备独立 runtime / 目录 / 端口 / systemd service 材料，不上服务器执行验证。",
     "在当前 Codex 执行环境中，任何需要监听 127.0.0.1 的 server-backed verify 都会在沙箱内报 listen EPERM；后续这类验证需继续使用无沙箱执行。",
     "服务器环境事实（80 端口占用、系统 Node v10.19.0、systemd 可用等）本轮未在仓库内复验；进入部署类任务前必须再次现场确认。"
   ],
@@ -228,6 +205,7 @@
     "S3 当前路线已固定为：先 S3-ARCH-* 架构缝合，再 WSL 本地最小闭环，再服务器独立部署验证。",
     "前端浏览器 runtime 已切到 HTTP storage adapter；Node / 无 window 的 verify 环境继续走 localStorage compatibility，仅用于既有 verify 脚本。",
     "本地联调连接方案已落地并固定：前端请求 /api，经 Vite proxy 转发到 127.0.0.1:4100；独立部署仍按 192.168.2.2:<port> 理解。",
+    "S3-LOCAL-END-TO-END-VERIFY 已通过：任务级脚本已证明 issue -> record -> closeout -> archive/error-entry/archived issue 可经 HTTP + SQLite 读回，失败态不会 silent fallback。",
     "当前 Codex 沙箱内对 127.0.0.1 监听会触发 listen EPERM；server-backed verify 需要无沙箱执行。",
     "不得把 localStorage silent fallback 冒充服务器成功；失败态必须显式可见。"
   ],
@@ -300,7 +278,7 @@
       }
     }
   },
-  "current_focus": "基于已接通的 HTTP storage adapter，验证 issue -> record -> closeout -> SQLite 读回主路径，并证明失败态不会冒充成功。",
+  "current_focus": "基于已通过的本地 HTTP + SQLite 闭环，准备服务器独立部署所需的 runtime / 目录 / 端口 / systemd service 材料；本轮不开始服务器部署验证。",
   "environment_facts": {
     "server": {
       "os": "Ubuntu 20.04.6 LTS",
@@ -323,66 +301,6 @@
   "pending_task_queue": [
     {
       "order": 1,
-      "id": "S3-LOCAL-END-TO-END-VERIFY",
-      "goal": "验证 D1 主路径在 HTTP + SQLite + 本地 WSL 后端下跑通，并证明失败态不会伪装成功。",
-      "input_boundary": [
-        "前端 HTTP adapter",
-        "apps/desktop/src/App.tsx",
-        "apps/desktop/src/storage/http-*.ts",
-        "apps/desktop/src/use-cases/closeout-orchestrator.ts",
-        "apps/server/src/server.mjs",
-        "apps/server/src/database.mjs",
-        "apps/server/scripts/verify-s3-local-backend-scaffold.mjs",
-        "当前已有 verify scripts 与可能新增的 adapter verify 脚本"
-      ],
-      "implementation_steps": [
-        "固定主路径验证范围：创建问题卡 -> 加载 / 列表 -> 追加 InvestigationRecord -> closeout -> 读取 archive / error-entry / archived issue。",
-        "明确自动化与人工 smoke 边界：优先补最薄 verify 脚本，不引入新框架。",
-        "若当前验证矩阵仍缺覆盖，补 verify-s3-local-end-to-end 脚本，用于拉起本地 backend、驱动当前 HTTP storage path，并读回 SQLite。",
-        "验证成功态：问题卡、记录、archive、error-entry、issue archived 状态都能通过 HTTP 写入并从 SQLite 读回。",
-        "验证失败态：服务关闭、错误端口、超时、SERVICE_UNAVAILABLE / 500 / 409 等情况下，UI 与脚本都不能把结果当成功。",
-        "沉淀验证证据与 planning sync，确保服务器阶段只剩独立部署问题。"
-      ],
-      "expected_change_points": [
-        "apps/desktop/scripts/verify-*.mts",
-        "apps/server/scripts/verify-*.mjs",
-        "必要时极小量 smoke helper / fixture 调整",
-        "docs/planning/current.md",
-        ".agent-state/handoff.json",
-        "docs/planning/backlog.md（若队列状态切换）"
-      ],
-      "non_goals": [
-        "不做服务器部署",
-        "不升级系统 Node",
-        "不做入口美化 / 反向代理",
-        "不把验证任务扩成新的功能开发"
-      ],
-      "verification": [
-        "cd apps/server && npm run verify:s3-local-backend-scaffold",
-        "cd apps/desktop && npm run typecheck",
-        "cd apps/desktop && npm run build",
-        "cd apps/desktop && npm run verify:all",
-        "git diff --check",
-        "cd apps/desktop && npm run verify:handoff",
-        "任务级验证：前端 -> HTTP -> SQLite 主路径",
-        "任务级验证：服务停机 / 错端口 / timeout / 写入失败",
-        "浏览器人工 smoke：确认 UI 呈现与自动化结论一致"
-      ],
-      "definition_of_done": [
-        "本地 WSL 最小闭环已经通过主路径验证",
-        "SQLite 中可读回问题卡、记录、归档摘要、错误表条目与 archived 状态",
-        "失败态不会冒充成功",
-        "S3-SERVER-INDEPENDENT-DEPLOY-PREP 依赖解除"
-      ],
-      "depends_on": [
-        "S3-LOCAL-HTTP-STORAGE-ADAPTER"
-      ],
-      "next_task": "S3-SERVER-INDEPENDENT-DEPLOY-PREP",
-      "claim_after": "S3-LOCAL-HTTP-STORAGE-ADAPTER",
-      "status": "current"
-    },
-    {
-      "order": 2,
       "id": "S3-SERVER-INDEPENDENT-DEPLOY-PREP",
       "goal": "只为服务器独立部署做准备，规划独立 runtime / 目录 / 端口 / systemd service，不碰系统全局 Node。",
       "input_boundary": [
@@ -435,10 +353,10 @@
       ],
       "next_task": "S3-SERVER-INDEPENDENT-DEPLOY-VERIFY",
       "claim_after": "S3-LOCAL-END-TO-END-VERIFY",
-      "status": "pending"
+      "status": "current"
     },
     {
-      "order": 3,
+      "order": 2,
       "id": "S3-SERVER-INDEPENDENT-DEPLOY-VERIFY",
       "goal": "将本地已验证方案部署到服务器独立端口，由 systemd 拉起，并验证局域网设备可访问且不影响既有 Web 服务。",
       "input_boundary": [

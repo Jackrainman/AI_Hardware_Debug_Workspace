@@ -15,62 +15,13 @@
 2. 每次只允许一个任务处于执行中；完成前必须做最小验证、planning sync、单任务 commit。
 3. 若发现队列顺序、依赖或约束与真实仓库状态脱节，先修 `current.md` / `handoff.json` / 本文件，再继续。
 4. 架构类任务不能只产出分析结论，必须附带工程化验证要求；涉及 `storage / repository / closeout / adapter / backend scaffold` 时必须同时覆盖成功态与失败态。
-5. `pending_task_queue` 现在只保留**剩余未完成任务**；已完成的 `S3-ARCH-*`、`S3-LOCAL-BACKEND-SCAFFOLD`、`S3-LOCAL-HTTP-STORAGE-ADAPTER` 只保留在 `completed_atomic_tasks` 中，不再重复混入 pending queue。
+5. `pending_task_queue` 现在只保留**剩余未完成任务**；已完成的 `S3-ARCH-*`、`S3-LOCAL-BACKEND-SCAFFOLD`、`S3-LOCAL-HTTP-STORAGE-ADAPTER`、`S3-LOCAL-END-TO-END-VERIFY` 只保留在 `completed_atomic_tasks` 中，不再重复混入 pending queue。
 
 ## S3 剩余串行原子任务队列
 
-> 已完成前置：`S3-ARCH-ASYNC-STORAGE-PORT`、`S3-ARCH-CLOSEOUT-ORCHESTRATOR`、`S3-ARCH-UNIFIED-STORAGE-ERROR-STATE`、`S3-LOCAL-BACKEND-SCAFFOLD`、`S3-LOCAL-HTTP-STORAGE-ADAPTER`。以下 3 项是当前仅剩的可执行主线队列。
+> 已完成前置：`S3-ARCH-ASYNC-STORAGE-PORT`、`S3-ARCH-CLOSEOUT-ORCHESTRATOR`、`S3-ARCH-UNIFIED-STORAGE-ERROR-STATE`、`S3-LOCAL-BACKEND-SCAFFOLD`、`S3-LOCAL-HTTP-STORAGE-ADAPTER`、`S3-LOCAL-END-TO-END-VERIFY`。以下 2 项是当前仅剩的可执行主线队列。
 
-### 1. S3-LOCAL-END-TO-END-VERIFY
-- **目标**：验证“前端 -> HTTP -> SQLite”主路径真实跑通，并证明失败态不会伪装成功。
-- **前置依赖**：
-  - `S3-LOCAL-HTTP-STORAGE-ADAPTER` 已完成；
-  - 本地 backend scaffold 与 SQLite 已可独立启动；
-  - 当前 D1 主流程仍保持最小可用。
-- **直接输入文件**：
-  - `apps/desktop/src/App.tsx`
-  - `apps/desktop/src/storage/http-*.ts`
-  - `apps/desktop/src/storage/storage-repository.ts`
-  - `apps/desktop/src/use-cases/closeout-orchestrator.ts`
-  - `apps/server/src/server.mjs`
-  - `apps/server/src/database.mjs`
-  - `apps/server/scripts/verify-s3-local-backend-scaffold.mjs`
-  - 当前已有 verify scripts 与可能新增的 adapter / end-to-end verify 脚本
-- **执行拆解**：
-  1. 固定主路径验证范围：创建问题卡 -> 加载问题卡 / 列表 -> 追加 InvestigationRecord -> closeout -> 读取 archive / error-entry / archived issue。
-  2. 明确自动化与 smoke 边界：优先补最薄任务级 verify 脚本，不引入新框架；浏览器人工 smoke 只覆盖 UI 呈现与关键交互闭环。
-  3. 若当前验证矩阵仍缺覆盖，补一条 `verify-s3-local-end-to-end` 脚本；它至少要能拉起本地 backend、驱动当前 HTTP storage path，并读回 SQLite 结果。
-  4. 验证成功态：问题卡、排查记录、archive、error-entry、issue archived 状态都能通过 HTTP 写入并从 SQLite 读回。
-  5. 验证失败态：服务关闭、错误端口、超时、`SERVICE_UNAVAILABLE` / 500 / 409 等情况下，UI 与验证脚本都不能把结果当成功。
-  6. 沉淀执行证据与 planning sync，确保服务器阶段只剩“独立部署”问题。
-- **预期改动点**：
-  - 优先是 `apps/desktop/scripts/verify-*.mts` / `apps/server/scripts/verify-*.mjs`
-  - 视验证需要做极小量 smoke helper / fixture 调整
-  - 如非必要，不继续改业务代码
-- **明确不做项**：
-  - 不做服务器部署
-  - 不升级系统 Node
-  - 不做入口美化 / 反向代理
-  - 不把验证任务扩成新的功能开发
-- **工程化验证**：
-  - `cd apps/server && npm run verify:s3-local-backend-scaffold`
-  - `cd apps/desktop && npm run typecheck`
-  - `cd apps/desktop && npm run build`
-  - `cd apps/desktop && npm run verify:all`
-  - `git diff --check`
-  - `cd apps/desktop && npm run verify:handoff`
-  - 任务级验证：
-    - 自动化：前端 storage path / 或对应 verify harness 完整走 issue -> record -> closeout -> SQLite 读回
-    - 失败态：服务停机 / 错端口 / 超时 / 写入失败时明确失败
-    - 浏览器人工 smoke：确认顶部统一 storage feedback、列表 / 详情 / 结案结果与自动化结论一致
-- **完成定义**：
-  - 本地 WSL 最小闭环已经通过主路径验证
-  - SQLite 中可读回问题卡、记录、归档摘要、错误表条目与 archived 状态
-  - 失败态不会冒充成功
-  - `S3-SERVER-INDEPENDENT-DEPLOY-PREP` 依赖解除
-- **完成后下一任务**：`S3-SERVER-INDEPENDENT-DEPLOY-PREP`
-
-### 2. S3-SERVER-INDEPENDENT-DEPLOY-PREP
+### 1. S3-SERVER-INDEPENDENT-DEPLOY-PREP
 - **目标**：只为服务器独立部署做准备，明确独立 runtime / 独立目录 / 独立端口 / 独立 systemd service 的最小可执行方案，不碰系统全局 Node。
 - **前置依赖**：
   - `S3-LOCAL-END-TO-END-VERIFY` 已完成
@@ -114,7 +65,7 @@
   - `S3-SERVER-INDEPENDENT-DEPLOY-VERIFY` 依赖解除
 - **完成后下一任务**：`S3-SERVER-INDEPENDENT-DEPLOY-VERIFY`
 
-### 3. S3-SERVER-INDEPENDENT-DEPLOY-VERIFY
+### 2. S3-SERVER-INDEPENDENT-DEPLOY-VERIFY
 - **目标**：把“本地已验证方案”部署到服务器独立端口，由 systemd 拉起，并验证局域网设备可访问、SQLite 数据可持续、现有 80 端口服务不受影响。
 - **前置依赖**：
   - `S3-SERVER-INDEPENDENT-DEPLOY-PREP` 已完成

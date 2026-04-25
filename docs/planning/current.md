@@ -14,8 +14,10 @@
 - `apps/desktop/src/storage/storage-result.ts`、`storage-feedback.ts` 与 `apps/desktop/src/use-cases/closeout-orchestrator.ts` 已补齐 HTTP 失败态口径，`closeout` 失败不会再被伪装成成功。
 - `apps/desktop/src/App.tsx` 已在 HTTP runtime 启动时执行 `/api/health` 检查，并通过统一 banner 暴露连接状态；`apps/desktop/vite.config.ts` 已固定 `/api -> http://127.0.0.1:4100` proxy。
 - `apps/server/src/server.mjs` 已把 `listen()` 启动失败改成显式抛出，避免 server-backed verify 在端口 / 权限异常时静默挂住。
-- 已重新跑通并确认：`git diff --check`、`cd apps/desktop && npm run typecheck`、`npm run build`、`npm run verify:handoff`、`cd apps/server && npm run verify:s3-local-backend-scaffold`、`cd apps/desktop && npm run verify:s3-local-http-storage-adapter`、`npm run verify:all`。
-- 当前 Codex 沙箱内对 `127.0.0.1` 监听仍会触发 `listen EPERM`；server-backed verify 需要无沙箱执行。但在无沙箱重跑后，上述 backend / adapter 验证均已通过。
+- `apps/desktop/scripts/verify-s3-local-end-to-end.mts` 已新增并接入 `npm run verify:all`，覆盖 issue -> record -> `orchestrateIssueCloseout` -> archive / error-entry / archived issue -> SQLite 读回。
+- 本地 HTTP + SQLite E2E 已通过：主路径可从 SQLite 读回问题卡、排查记录、归档摘要、错误表条目与 archived 状态；失败态覆盖 server unreachable、timeout、500、503、409 conflict、validation / bad request，且不会触发 localStorage fallback。
+- 已重新跑通并确认：`git diff --check`、`cd apps/desktop && npm run typecheck`、`npm run build`、`npm run verify:handoff`、`cd apps/server && npm run verify:s3-local-backend-scaffold`、`cd apps/desktop && npm run verify:s3-local-http-storage-adapter`、`npm run verify:s3-local-end-to-end`、`npm run verify:all`。
+- 当前 Codex 沙箱内对 `127.0.0.1` 监听仍会触发 `listen EPERM`；server-backed verify 需要无沙箱执行。但在无沙箱重跑后，上述 backend / adapter / E2E 验证均已通过。
 
 ## 当前已确认约束
 - 当前必须先在 **WSL 本地** 跑通最小闭环，再走服务器 **独立部署** 验证；不要把“直接去服务器试出来”当主线。
@@ -28,50 +30,47 @@
 - 不做 AI / RAG / 权限 / Electron / fs / IPC / 多租户 / 多工作区复杂管理 / 大 UI 重构 / 离线队列 / 冲突合并 / 实时协作。
 
 ## 当前唯一主线原子任务（下一轮只认领这个）
-- **S3-LOCAL-END-TO-END-VERIFY**
-  - 目标：验证 D1 主路径在 HTTP + SQLite + 本地 WSL 后端下真实跑通，并证明失败态不会伪装成功。
-  - 前置依赖：`S3-LOCAL-HTTP-STORAGE-ADAPTER` 已完成；前端浏览器 runtime 已切到 HTTP adapter，任务级 adapter verify 与全量 verify 已通过。
-  - 直接输入文件：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`git status --short`、`git log --oneline -5`、`apps/desktop/src/App.tsx`、`apps/desktop/src/storage/http-*.ts`、`apps/desktop/src/storage/storage-repository.ts`、`apps/desktop/src/use-cases/closeout-orchestrator.ts`、`apps/server/src/server.mjs`、`apps/server/src/database.mjs`、`apps/server/scripts/verify-s3-local-backend-scaffold.mjs`、当前已有 verify scripts 与可能新增的 end-to-end verify 脚本。
+- **S3-SERVER-INDEPENDENT-DEPLOY-PREP**
+  - 目标：只为服务器独立部署做准备，明确独立 runtime / 独立目录 / 独立端口 / 独立 systemd service 的最小可执行方案，不碰系统全局 Node。
+  - 前置依赖：`S3-LOCAL-END-TO-END-VERIFY` 已完成；本地 HTTP + SQLite 最小闭环已验证通过；现有服务器事实（IP、80 端口占用、systemd 可用、系统 Node 过旧）已在事实源中存在。
+  - 直接输入文件：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`docs/planning/backlog.md`、`git status --short`、`git log --oneline -5`、`apps/server/package.json`、`apps/server/src/server.mjs`、后续可能新增的部署脚本 / service unit / 环境变量模板（优先集中在 `apps/server/deploy/` 与 `apps/server/scripts/`）。
   - 执行拆解（认领后按此顺序收敛）：
-    1. 固定主路径验证范围：创建问题卡 -> 加载 / 列表 -> 追加 InvestigationRecord -> closeout -> 读取 archive / error-entry / archived issue。
-    2. 明确自动化与人工 smoke 边界：优先补最薄 verify 脚本，不引入新框架。
-    3. 若当前验证矩阵仍缺覆盖，补一条 `verify-s3-local-end-to-end` 脚本，用于拉起本地 backend、驱动当前 HTTP storage path，并读回 SQLite。
-    4. 验证成功态：问题卡、记录、archive、error-entry、issue archived 状态都能通过 HTTP 写入并从 SQLite 读回。
-    5. 验证失败态：服务关闭、错误端口、超时、`SERVICE_UNAVAILABLE` / 500 / 409 等情况下，UI 与脚本都不能把结果当成功。
-    6. 沉淀执行证据与 planning sync，确保服务器阶段只剩独立部署问题。
-  - 预期改动点：优先是 `apps/desktop/scripts/verify-*.mts` / `apps/server/scripts/verify-*.mjs`；视验证需要做极小量 smoke helper / fixture 调整；如非必要，不继续改业务代码。
-  - 明确不做项：不做服务器部署、不升级系统 Node、不做入口美化 / 反向代理、不把验证任务扩成新的功能开发。
-  - 工程化验证：`cd apps/server && npm run verify:s3-local-backend-scaffold`、`cd apps/desktop && npm run typecheck`、`npm run build`、`npm run verify:all`、`git diff --check`、`cd apps/desktop && npm run verify:handoff`，以及任务级验证（前端 -> HTTP -> SQLite 主路径、服务停机 / 错端口 / timeout / 写入失败、浏览器人工 smoke 与自动化边界说明）。
+    1. 锁定独立 runtime 方案：使用随应用分发或单独放置的 Node 24 运行时，不依赖服务器系统 `node v10.19.0`。
+    2. 锁定独立目录：应用目录、数据目录、日志目录、runtime 目录彼此清晰，不污染现有服务目录。
+    3. 锁定独立端口：明确 ProbeFlash 服务监听的非 80 端口，并记录端口选择依据。
+    4. 锁定独立 systemd service：单独 service name、WorkingDirectory、Environment、ExecStart、Restart 策略。
+    5. 补齐最小部署材料：安装 / 更新脚本、service unit、目录说明、必要环境变量模板。
+    6. 记录执行前置条件：服务器登录用户、sudo 边界、目标路径权限、开放端口 / 防火墙要求、runtime 获取方式。
+    7. 只在仓库内做语法 / 路径 / 引用级验证，不提前上服务器真正部署。
+  - 预期改动点：`apps/server/package.json`（如需补部署脚本入口）、`apps/server/deploy/*`、`apps/server/scripts/*`、`docs/planning/current.md`、`.agent-state/handoff.json`、`docs/planning/backlog.md`。
+  - 明确不做项：不上服务器执行真实部署、不升级系统 Node、不抢占 80 端口、不改现有 Web 服务 / 反向代理 / `.local`。
+  - 工程化验证：`git diff --check`；若新增 shell 脚本至少 `bash -n`；若新增 systemd unit 至少做路径 / 字段 / 依赖检查；读回确认端口、工作目录、数据目录、日志目录、runtime 路径一致；`cd apps/desktop && npm run verify:handoff`。
   - 完成定义：
-    - 本地 WSL 最小闭环已经通过主路径验证；
-    - SQLite 中可读回问题卡、记录、归档摘要、错误表条目与 archived 状态；
-    - 失败态不会冒充成功；
-    - `S3-SERVER-INDEPENDENT-DEPLOY-PREP` 依赖解除。
-  - 完成后下一任务：`S3-SERVER-INDEPENDENT-DEPLOY-PREP`。
+    - 独立 runtime / 目录 / 端口 / service 方案明确且可执行；
+    - 部署所需输入信息列全，不再靠临场拍脑袋；
+    - 仓库内的部署材料位置、命名、职责清晰；
+    - `S3-SERVER-INDEPENDENT-DEPLOY-VERIFY` 依赖解除。
+  - 完成后下一任务：`S3-SERVER-INDEPENDENT-DEPLOY-VERIFY`。
 
 ## 当前前沿任务窗口（候选，不等于完整顺推队列）
-- **S3-LOCAL-END-TO-END-VERIFY**
-  - 状态：当前唯一可认领任务。
-  - 选择理由：HTTP adapter 已接通，当前第一优先级是证明主路径 issue -> record -> closeout 真实落到 HTTP + SQLite，而不是只停在 repository harness。
 - **S3-SERVER-INDEPENDENT-DEPLOY-PREP**
-  - 状态：依赖 `S3-LOCAL-END-TO-END-VERIFY`。
-  - 选择理由：只有本地最小闭环通过后，服务器阶段才会收敛成“独立部署方案准备”问题。
+  - 状态：当前唯一可认领任务。
+  - 选择理由：本地 HTTP + SQLite 最小闭环已通过，服务器阶段现在应先把独立 runtime / 目录 / 端口 / service 方案准备清楚，而不是直接上服务器试。
 - **S3-SERVER-INDEPENDENT-DEPLOY-VERIFY**
   - 状态：依赖 `S3-SERVER-INDEPENDENT-DEPLOY-PREP`。
   - 选择理由：部署验证只能在独立 runtime / 目录 / 端口 / service 方案明确后进行。
 
 ## 剩余完整 pending queue（按执行顺序）
-1. `S3-LOCAL-END-TO-END-VERIFY`
-2. `S3-SERVER-INDEPENDENT-DEPLOY-PREP`
-3. `S3-SERVER-INDEPENDENT-DEPLOY-VERIFY`
+1. `S3-SERVER-INDEPENDENT-DEPLOY-PREP`
+2. `S3-SERVER-INDEPENDENT-DEPLOY-VERIFY`
 
 ## 下一步最小可执行动作
-- 下一轮默认先认领 `S3-LOCAL-END-TO-END-VERIFY`。
-- 只读默认最小事实源 + 当前 HTTP adapter / server / verify 直接相关文件；不默认扩读 README / 产品介绍 / decisions。
+- 下一轮默认先认领 `S3-SERVER-INDEPENDENT-DEPLOY-PREP`。
+- 只读默认最小事实源 + 服务器独立部署准备直接相关文件；不默认扩读 README / 产品介绍 / decisions。
 - 动代码前先固定三件事：
-  1. 自动化 verify 覆盖到 issue -> record -> closeout -> SQLite 读回；
-  2. 浏览器人工 smoke 与自动化边界说明清楚；
-  3. 失败态验证不能退化成“仓库层失败已测过，所以 UI 层默认没问题”。
+  1. 独立 runtime、目录、端口、systemd service 的边界；
+  2. 部署材料集中放置位置与仓库内验证方式；
+  3. 明确本轮仍不执行服务器部署验证。
 
 ## 下一任务选择流程
 1. 默认只读取：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`git status --short`、`git log --oneline -5`、当前任务直接相关代码或专项文档。
@@ -85,7 +84,7 @@
    - `docs/planning/s3-server-unreachable-strategy.md`：需要核对失败态验证口径时。
 3. 只允许从 `backlog.md` / `.agent-state/handoff.json.pending_task_queue` 中认领 **第一个“依赖已满足且未完成”的任务**；禁止 AI 发散式自己找事做。
 4. 当前任务未完成“最小验证 + planning sync + 单任务 commit”前，不得认领下一任务。
-5. 未完成 `S3-LOCAL-END-TO-END-VERIFY` 前，不得把服务器部署验证当当前唯一入口。
+5. 未完成 `S3-SERVER-INDEPENDENT-DEPLOY-PREP` 前，不得把服务器部署验证当当前唯一入口。
 6. 服务器阶段只允许“独立运行时 + 独立端口 + 独立 systemd service”；不升级系统 Node，不抢占 80 端口，不优先做反向代理或 `.local` 美化。
 
 ## DoD / Verification Expectation
