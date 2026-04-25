@@ -3,83 +3,85 @@
 > 本文件只维护当前阶段目标、前沿任务窗口、唯一主线原子任务与下一任务选择规则。完整剩余串行队列与详细执行拆解见 `docs/planning/backlog.md` 与 `.agent-state/handoff.json.pending_task_queue`。
 
 ## 当前阶段
-- 阶段：S3：存储迁移与服务器化。
+- 阶段：S3 到 S4 到 AI 能力的分层路线图重建后，当前仍处于 **S3：服务器安全部署**。
 - 当前模式：`server_storage_migration`。
-- 阶段目标：本地主路径已从 `window.localStorage` 演示版迁移到 `apps/desktop` HTTP adapter + `apps/server` + SQLite；当前剩余目标是完成真实服务器独立部署验证。
-- 当前技术路线：`S3-ARCH-*` 三个最薄架构缝合点、本地 WSL 后端 + SQLite + HTTP adapter 闭环、workspace 创建与 v0.2.0 本地 release 已完成；最后只做 **服务器独立部署验证**。
+- 阶段目标：基于 v0.2.0 已完成的本地 HTTP + SQLite 主链路，先在 Ubuntu 20.04 服务器上完成安全、可回滚、可验证的用户目录部署；再进入 systemd 自启、数据安全、AI-ready 与代码上下文分析能力。
+- 当前技术路线：先 `/home/hurricane/probeflash` no-sudo 验证，再准备并授权安装 `probeflash.service`，再定义 release tarball 更新 / 回滚；完成 operability / data safety 后，才进入 AI-ready、最小真实 AI 草稿、code context bundle。
 
-## 本轮按代码 / 脚本复核后的事实
-- v0.2.0 release 已发布并完成本地 release 测试：web dist 可托管、`/api` proxy 可连到 backend、backend 可连 SQLite；停掉 backend 后 `/api` 返回 proxy_error，没有 silent fallback。真实服务器部署仍未完成。
-- `S3-LOCAL-HTTP-STORAGE-ADAPTER` 已完成（`c3525b2`）；`S3-LOCAL-END-TO-END-VERIFY` 已完成（`1470571`）。
-- 本地 HTTP + SQLite E2E 已通过：主路径可从 SQLite 读回问题卡、排查记录、归档摘要、错误表条目与 archived 状态；失败态覆盖 server unreachable、timeout、500、503、409 conflict、validation / bad request，且不会触发 localStorage fallback。
-- `S3-SERVER-INDEPENDENT-DEPLOY-PREP` 已完成：新增 `apps/server/deploy/` 下的独立部署准备材料，并为 server 补齐部署 env 的最小支持。
-- 当前部署准备材料只说明和验证仓库内方案：独立 runtime、独立目录、独立端口、独立 systemd service；**本轮未 SSH、未上传、未 sudo、未安装 runtime、未启动 systemd、未实际部署到 192.168.2.2**。
-- `S3-WORKSPACE-CREATE-MINIMAL` 已完成：前端可经 HTTP 创建新项目 / workspace，创建后自动切换；issues / records / archives / error entries 继续按 `projectId === workspaceId` 隔离在当前 workspace 下；新增 `verify:s3-workspace-create-minimal` 并接入 `verify:all`。
-- `apps/server/src/server.mjs` 仍保持默认本地开发行为：默认 `127.0.0.1:4100`、默认 DB 在 `apps/server/.runtime/probeflash.local.sqlite`、默认 workspace 为 `workspace-26-r1 / 26年 R1`。
-- `apps/server/src/server.mjs` 已支持部署 env：`PROBEFLASH_HOST`、`PROBEFLASH_PORT`、`PROBEFLASH_DB_PATH`、`PROBEFLASH_LOG_DIR`、`PROBEFLASH_WORKSPACE_ID`、`PROBEFLASH_WORKSPACE_NAME`。
-- `apps/server/src/database.mjs` 已支持从 server 传入默认 workspace seed；verify 已覆盖默认行为与 env 覆盖路径。
-- 当前 Codex 环境本轮可监听 `127.0.0.1`，已跑通 server-backed verify；若后续环境再次出现 `listen EPERM`，仍按沙箱限制处理，不得伪造通过。
+## 本轮按已知事实重建后的状态
+- v0.2.0 release 已完成：本地 HTTP + SQLite 主链路、`/api` adapter、`apps/server`、SQLite schema/API、workspace 创建与切换、issue / record / closeout / archive / error-entry 主路径、`dev-start.sh`、本地 release smoke 均已完成。
+- 本地 release smoke 已确认：web dist 可被 `127.0.0.1:4173` 托管；`4173/api` 可代理到 `127.0.0.1:4100`；`4100` 后端可返回 sqlite ready；停掉后端后 `4173/api` 返回 `proxy_error`，没有 fake data / silent fallback。
+- 真实服务器部署、systemd 开机自启、服务器 LAN 持久化验证、AI 功能、仓库代码上下文分析均未完成。
+- 目标服务器事实：`192.168.2.2` / `hurricane-server` / SSH 用户 `hurricane` / Ubuntu 20.04.6 LTS / systemd 可用；80 端口由 filebrowser 占用；系统 Node 为 `v10.19.0`，不能用于 ProbeFlash；`4100` 当前未见监听，适合 ProbeFlash。
+- 服务器安全边界：不占用 80，不升级系统 Node，不影响 filebrowser / vnt-cli / docker / Portainer；`/home/hurricane` 可写，`/opt` 属于 root，不作为第一步部署目录。
+- 旧 `apps/server/deploy/*` 材料仍是已存在的部署准备输入，但其中 `/opt` 路径不能被解释为当前授权；下一轮应按本文件与 backlog 的 no-sudo 用户目录策略优先执行。
 
 ## 当前已确认约束
-- 服务器阶段必须使用 **独立运行时 + 独立端口 + 独立 systemd service**；不升级服务器全局 Node，不影响现有 Web 服务，不抢占 80 端口。
-- 目标服务器既有事实：`192.168.2.2`、Ubuntu 20.04.6 LTS、80 端口已占用、systemd 可用、sqlite3 未装、系统 Node 为 `v10.19.0` 且不能作为 ProbeFlash runtime。
-- ProbeFlash 后端当前依赖 `node:sqlite`；部署 runtime 必须使用独立 Node 24 LTS，或至少 Node 22 LTS `>=22.13.0`。旧 Node 10/18/20 不能运行当前 backend。
-- 当前访问口径分两层：
-  - 本地联调：前端请求相对路径 `/api`，通过 Vite proxy 转发到 `http://127.0.0.1:4100`。
-  - 独立部署：继续按 `http://192.168.2.2:<port>/` 理解；`.local`、反向代理、美化入口都不是当前第一优先级。
-- 不得把 localStorage silent fallback 冒充服务器成功；失败态必须可见、可调试、可区分。
-- 不做 AI / RAG / 权限 / Electron / fs / IPC / 多租户 / 多工作区复杂管理 / 大 UI 重构 / 离线队列 / 冲突合并 / 实时协作。
+- 先做 **no-sudo 用户目录部署验证**：`/home/hurricane/probeflash`。
+- 再做 **systemd 开机自启准备**：只准备 `probeflash.service` 内容与静态检查，不执行真正 `systemctl`，除非用户授权。
+- 用户授权后才做 **systemd 安装与自启验证**：写 `/etc/systemd/system/probeflash.service` 前必须再次确认 sudo 边界。
+- 最后才考虑 `/opt`、反向代理、`.local`、80/443 美化；这些不是当前前沿任务。
+- AI 路线必须先 AI-ready：规则模板草稿与 prompt schema 先落地；真实 AI 只返回草稿，不直接写库；API key 只允许在 server env；不做 RAG / embedding。
+- 代码上下文路线必须先 code context bundle：只分析用户显式提供的内容，不让服务器任意扫描仓库路径，不自动执行命令。
 
 ## 当前唯一主线原子任务（下一轮只认领这个）
-- **S3-SERVER-INDEPENDENT-DEPLOY-VERIFY**
-  - 目标：把“本地已验证方案 + 本轮已准备的独立部署材料”部署到服务器独立端口，由 systemd 拉起，并验证局域网设备可访问、SQLite 数据可持续、现有 80 端口服务不受影响。
-  - 前置依赖：`S3-SERVER-INDEPENDENT-DEPLOY-PREP` 已完成；独立 runtime / 目录 / 端口 / service 模板 / env 模板 / 回滚边界已在 `apps/server/deploy/` 中准备。
-  - 直接输入文件 / 环境：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`docs/planning/backlog.md`、`apps/server/deploy/README.md`、`apps/server/deploy/install-layout.md`、`apps/server/deploy/env.example`、`apps/server/deploy/probeflash.service.template`、目标服务器 `192.168.2.2` 与人工确认的登录 / sudo / 服务账号边界。
-  - 执行拆解（认领后按此顺序收敛）：
-    1. 部署前人工确认：目标服务器、登录用户、sudo 边界、服务账号 / group、是否允许创建 `/opt/probeflash`、是否允许新增 `probeflash.service`、是否允许使用 4100 端口。
-    2. 在服务器确认系统事实：80 端口仍由旧服务占用、系统 Node 仍不改、systemd 可用、独立 runtime 路径可用。
-    3. 按 `apps/server/deploy/install-layout.md` 准备独立目录、release、shared data/log/env、runtime 与 `current` symlink。
-    4. 按 `env.example` 写入 `/opt/probeflash/shared/env/probeflash.env`，按 service template 渲染真实 unit。
-    5. 只启动独立 `probeflash.service`，验证 `/api/health`、SQLite 创建 / 重启读回、日志、LAN 访问与旧 80 服务旁路。
-    6. 若失败，按部署材料中的回滚边界只停用新 service / 回退 current symlink，不动旧 80 服务和系统 Node。
-  - 预期改动点：真实部署动作发生在服务器环境；仓库内通常只允许补充 deployment notes / planning sync / 必要的 deploy 材料修补，不得伪造“已部署完成”。
-  - 明确不做项：不抢占 80 端口；不升级系统 Node；不修改现有 Web 服务 / 反向代理 / `.local`；不把 localStorage 演示链路当作服务器化完成。
-  - 工程化验证：`systemctl status probeflash.service` / `journalctl -u probeflash.service`；服务器本机 `curl http://127.0.0.1:4100/api/health`；局域网 `curl http://192.168.2.2:4100/api/health` 或等价浏览器 smoke；服务重启后 SQLite 数据读回；确认旧 80 端口服务不受影响；仓库侧仍需按 completion gate 跑最小验证与 planning sync。
-  - 完成定义：局域网设备可通过独立端口访问 ProbeFlash；服务端长期存储生效并可跨服务重启读回；既有 80 端口服务不受影响；S3 服务器独立部署最小闭环成立。
-  - 完成后下一任务：无；后续再评估 `.local` / 反向代理美化、复杂项目管理或更深层服务器化能力。
+- **S3-SERVER-USER-DIR-DEPLOY-VERIFY**
+  - 目标：在服务器 `/home/hurricane/probeflash` 下完成 v0.2.0 no-sudo 用户目录部署验证，确认独立 Node runtime、4100 端口、SQLite 持久化与 filebrowser:80 旁路都成立。
+  - 前置依赖：v0.2.0 release asset 已生成并本地测试；本地 HTTP + SQLite E2E 已通过；服务器事实已确认；用户明确允许 SSH 到 `hurricane@192.168.2.2` 并在 `/home/hurricane` 下写入文件。
+  - 输入文件 / 环境：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`docs/planning/backlog.md`、v0.2.0 release assets、`apps/server/deploy/*` 作为参考输入、目标服务器 `192.168.2.2`、人工确认的 SSH / 上传方式。
+  - 允许改动：服务器 `/home/hurricane/probeflash` 下的 release、runtime、shared data/log/env；仓库内只允许做 planning sync 或必要 deploy 文档修正，不能写业务功能。
+  - 明确不做：不 sudo；不 systemd；不写 `/opt`；不碰 80；不升级系统 Node；不使用系统 Node v10；不影响 filebrowser / vnt-cli / docker / Portainer；不做反向代理 / `.local`。
+  - 验证要求：`curl http://127.0.0.1:4100/api/health`；`curl http://192.168.2.2:4100/api/health`；创建 workspace / issue；停止重启后读回；确认 `http://192.168.2.2/` 上 filebrowser:80 仍正常；仓库侧运行 planning 类 completion gate。
+  - 完成定义：ProbeFlash 可在服务器用户目录下以独立 Node runtime 运行；SQLite 文件位于 `/home/hurricane/probeflash/shared/data/probeflash.sqlite` 且重启后可读回；LAN 可访问 4100；既有 80 端口服务不受影响；未执行任何 sudo / systemd / `/opt` 操作。
+  - 下一个任务：`S3-SERVER-SYSTEMD-AUTOSTART-PREP`。
 
-## 当前前沿任务窗口（候选，不等于完整顺推队列）
-- **S3-SERVER-INDEPENDENT-DEPLOY-VERIFY**
+## 当前前沿任务窗口（最多 3 个候选）
+- **S3-SERVER-USER-DIR-DEPLOY-VERIFY**
   - 状态：当前唯一可认领任务。
-  - 选择理由：`S3-SERVER-INDEPENDENT-DEPLOY-PREP` 已完成，下一步必须在真实服务器环境和人工确认边界下验证独立 runtime / 独立目录 / 独立端口 / 独立 systemd service；不得再停留在本地部署材料准备，也不得绕过人工边界直接操作未知服务器。
+  - 选择理由：服务器真实部署未完成，但 `/opt` 与 systemd 需要更高权限；先用 `/home/hurricane/probeflash` 验证同一 runtime / DB / 端口方案，风险最小。
+- **S3-SERVER-SYSTEMD-AUTOSTART-PREP**
+  - 状态：等待 `S3-SERVER-USER-DIR-DEPLOY-VERIFY` 完成。
+  - 选择理由：只有 no-sudo 跑通后，才值得准备与用户目录路径一致的 `probeflash.service`。
+- **S3-SERVER-SYSTEMD-AUTOSTART-VERIFY**
+  - 状态：等待用户授权 sudo，且等待 systemd unit 准备完成。
+  - 选择理由：自启验证必须明确授权写 `/etc/systemd/system/probeflash.service`，不能与 no-sudo 验证混在同一轮。
 
 ## 剩余完整 pending queue（按执行顺序）
-1. `S3-SERVER-INDEPENDENT-DEPLOY-VERIFY`
+1. `S3-SERVER-USER-DIR-DEPLOY-VERIFY`
+2. `S3-SERVER-SYSTEMD-AUTOSTART-PREP`
+3. `S3-SERVER-SYSTEMD-AUTOSTART-VERIFY`
+4. `S3-SERVER-RELEASE-UPDATE-FLOW`
+5. `S4-DATA-BACKUP-EXPORT`
+6. `S4-DATA-RESTORE-DRY-RUN`
+7. `S4-OPERABILITY-HEALTH-STATUS`
+8. `S4-RELEASE-VERSION-ENDPOINT`
+9. `AI-READY-PROMPT-TEMPLATE-SYSTEM`
+10. `AI-READY-CLOSEOUT-DRAFT-PANEL`
+11. `AI-ASSIST-POLISH-CLOSEOUT-MINIMAL`
+12. `AI-ASSIST-SUGGEST-PREVENTION`
+13. `CODE-CONTEXT-BUNDLE-CLI`
+14. `CODE-CONTEXT-ATTACH-TO-ISSUE`
+15. `AI-ASSIST-ANALYZE-CODE-CONTEXT`
+16. `CODE-CONTEXT-REPO-CONNECTOR-LATER`
 
 ## 下一步最小可执行动作
-- 下一轮默认先认领 `S3-SERVER-INDEPENDENT-DEPLOY-VERIFY`。
-- 认领前必须重新读取默认最小事实源 + `apps/server/deploy/*` 部署材料。
-- 真实部署前必须人工确认：SSH / 登录方式、sudo 边界、服务账号与 group、`/opt/probeflash` 创建权限、4100 端口可用性、是否允许安装独立 Node runtime、是否允许新增并启动 `probeflash.service`。
-- 若人工边界未确认，不要实际部署；输出阻塞点和需要确认的问题。
+- 下一轮默认先认领 `S3-SERVER-USER-DIR-DEPLOY-VERIFY`。
+- 认领前必须重新读取默认事实源 + `docs/planning/backlog.md` + `apps/server/deploy/*` + v0.2.0 release asset 状态。
+- 真实服务器操作前必须获得用户确认：SSH 登录方式、上传方式、是否允许在 `/home/hurricane/probeflash` 写入、是否允许启动临时进程、是否允许用 4100 端口。
+- 若用户未授权 SSH / 上传 / 启动进程，不得自行部署；只输出阻塞点和需要确认的问题。
 
 ## 下一任务选择流程
-1. 默认只读取：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`git status --short`、`git log --oneline -5`、当前任务直接相关代码或专项文档。
-2. 只有在以下情况才条件读取：
-   - `docs/planning/backlog.md`：需要完整剩余队列、详细任务拆解、或队列新增 / 移除 / 改名 / 重排时；
-   - `docs/planning/decisions.md`：长期规则变化、阶段拍板变化或需要核对长期决策时；
-   - `docs/product/产品介绍.md`：改产品定义 / 页面结构 / 领域语言时；
-   - `README.md`：改对外展示 / 快速开始 / 演示口径时；
-   - `docs/planning/s3-api-contract.md`：需要核对 HTTP / SQLite 主路径契约时；
-   - `docs/planning/s3-sqlite-schema-draft.md`：需要核对 SQLite 读回预期时；
-   - `docs/planning/s3-server-unreachable-strategy.md`：需要核对失败态验证口径时。
-3. 只允许从 `backlog.md` / `.agent-state/handoff.json.pending_task_queue` 中认领 **第一个“依赖已满足且未完成”的任务**；禁止 AI 发散式自己找事做。
-4. 当前任务未完成“最小验证 + planning sync + 单任务 commit”前，不得认领下一任务。
-5. 下一轮是首次真实服务器部署验证；必须先获得人工确认边界，不得默认 SSH / sudo / 上传 / systemd 操作都已授权。
-6. 服务器阶段只允许“独立运行时 + 独立端口 + 独立 systemd service”；不升级系统 Node，不抢占 80 端口，不优先做反向代理或 `.local` 美化。
+1. 默认只读取：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`git status --short`、`git log --oneline -5`、当前任务直接相关文件。
+2. 需要完整队列、任务新增 / 重排 / 改名时读取 `docs/planning/backlog.md`。
+3. 服务器部署任务命中时读取 `apps/server/deploy/*` 与 release asset 状态；但不得把旧 `/opt` 材料当作当前授权。
+4. 只允许从 `backlog.md` / `.agent-state/handoff.json.pending_task_queue` 中认领第一个“依赖已满足且未完成”的任务。
+5. 当前任务未完成“最小验证 + planning sync + 单任务 commit”前，不得认领下一任务。
+6. 真实服务器部署必须分层：用户目录 no-sudo 验证先于 systemd，自启验证先于 `/opt` / 反向代理 / `.local`。
+7. AI 任务必须分层：AI-ready 草稿与 prompt schema 先于真实 AI，真实 AI 先于 code context AI，code context bundle 先于任何 repo connector。
 
 ## DoD / Verification Expectation
-- 每个原子任务都必须写清：目标、前置依赖、直接输入文件、预期改动点、明确不做项、工程化验证、完成定义、完成后下一任务。
-- 每轮默认执行：`cd apps/desktop && npm run typecheck`、`npm run build`、`npm run verify:all`、`git diff --check`、`cd apps/desktop && npm run verify:handoff`；命中 server scaffold / adapter / E2E 时按任务加严。
-- 若本轮仅改 docs / planning / skills，允许说明性不跑某项**额外**验证，但必须明确写出原因，不得默认省略；本轮若能跑则优先跑。
+- 每个原子任务都必须写清：ID、目标、前置依赖、输入文件、允许改动、明确不做、验证要求、完成定义、下一个任务。
+- 本轮 planning-only 验证要求：`git diff --check`、`.agent-state/handoff.json` 可被 `JSON.parse`、`cd apps/desktop && npm run verify:handoff`、`git status --short`。
+- 后续代码或部署类任务若改 package 或业务代码，必须额外跑 `cd apps/desktop && npm run typecheck`、`npm run build`、`npm run verify:all` 与任务相关 server / deploy 验证。
 - `docs/planning/current.md`、`.agent-state/handoff.json` 为 planning sync 必更文件；排队顺序或详细计划变化时同步 `docs/planning/backlog.md`；长期拍板变化时才同步 `docs/planning/decisions.md`。
 - 任一验证未过、planning sync 未完成或未单独 commit，都不得进入下一任务选择。

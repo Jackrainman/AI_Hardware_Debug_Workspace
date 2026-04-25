@@ -136,3 +136,21 @@
   - 当前唯一待认领任务改为 `S3-ARCH-ASYNC-STORAGE-PORT`。
   - `current.md` / `handoff.json` / `backlog.md` 统一切换到 8 个串行原子任务队列。
   - 后续只有在 `S3-LOCAL-END-TO-END-VERIFY` 完成后，才允许认领服务器独立部署准备与验证任务。
+
+
+## D-011：服务器部署采用分层授权策略
+- 日期：2026-04-26
+- 背景：v0.2.0 本地 release 已验证，但目标服务器 `/opt` 属于 root、sudo 需要密码、80 端口已有 filebrowser，且系统 Node 为 `v10.19.0`，不适合一次性直接进入 `/opt` + systemd 部署。
+- 决策：ProbeFlash 服务器部署必须按分层顺序推进：先在 `/home/hurricane/probeflash` 做 no-sudo 用户目录验证；再准备指向该用户目录的 `probeflash.service`；用户明确授权后才写 `/etc/systemd/system/probeflash.service` 并验证 systemd 自启；`/opt`、反向代理、`.local`、80/443 美化全部后置。
+- 原因：先验证独立 Node runtime、4100 端口、SQLite 持久化与旧服务旁路，能把权限风险、服务风险和数据风险拆开，避免影响 filebrowser / vnt-cli / docker / Portainer。
+- 放弃方案：直接写 `/opt`；默认 sudo；直接安装 systemd；抢占 80；升级系统 Node；把 Portainer / vnt-cli 的 root 服务方式照抄给 ProbeFlash。
+- 影响与后续动作：`current.md`、`backlog.md`、`.agent-state/handoff.json` 的下一任务切到 `S3-SERVER-USER-DIR-DEPLOY-VERIFY`，后续 systemd 任务必须显式依赖用户授权。
+
+
+## D-012：AI 与代码上下文能力采用 draft-only 与 explicit bundle 优先
+- 日期：2026-04-26
+- 背景：ProbeFlash 下一阶段需要 AI 辅助措辞与代码上下文分析，但当前尚未完成服务器安全部署和 operability，且不能让 AI 或 server 默认扫描用户仓库、持有浏览器侧 API key 或自动写库。
+- 决策：AI 路线按四层推进：先定义 prompt template / schema 与规则草稿面板，不调用外部模型；再接最小真实 AI 措辞优化，API key 只在 server env，AI 只返回草稿；再扩展预防建议草稿；代码上下文分析必须先由用户在本地生成 explicit code context bundle，ProbeFlash 只分析用户显式提供的内容。
+- 原因：draft-only 能保留用户确认权，explicit bundle 能避免服务器任意扫仓库路径、读取 secrets 或自动执行命令，同时仍能支撑后续 AI 排查建议。
+- 放弃方案：一上来接 RAG / embedding；浏览器保存 API key；AI 直接写库；server 任意读取项目路径；默认扫全仓库；自动运行构建或测试命令。
+- 影响与后续动作：`AI-READY-*` 必须先于 `AI-ASSIST-*`；`CODE-CONTEXT-BUNDLE-CLI` 必须先于任何 repo connector；repo connector 只作为 bundle MVP 后的后续评估项。
