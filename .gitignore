@@ -14,3 +14,15 @@
 
 # Local backend runtime data
 apps/server/.runtime/
+
+# Dependency directories
+node_modules/
+
+# Generated local outputs
+apps/desktop/dist/
+tmp/
+*.sqlite
+*.sqlite-*
+
+# Release build outputs; tracked historical release assets stay tracked until convention changes.
+.release/

@@ -5,10 +5,11 @@
 ## 当前阶段
 - 阶段：S3：存储迁移与服务器化。
 - 当前模式：`server_storage_migration`。
-- 阶段目标：把当前 `apps/desktop` 浏览器 SPA + `window.localStorage` 演示版，迁移为“战队局域网可访问 + 服务端长期存储”的版本。
-- 当前技术路线：先完成 `S3-ARCH-*` 三个最薄架构缝合点，再在 **本地 WSL** 跑通最小后端 + SQLite + HTTP adapter 闭环，最后做 **服务器独立部署验证**。
+- 阶段目标：本地主路径已从 `window.localStorage` 演示版迁移到 `apps/desktop` HTTP adapter + `apps/server` + SQLite；当前剩余目标是完成真实服务器独立部署验证。
+- 当前技术路线：`S3-ARCH-*` 三个最薄架构缝合点、本地 WSL 后端 + SQLite + HTTP adapter 闭环、workspace 创建与 v0.2.0 本地 release 已完成；最后只做 **服务器独立部署验证**。
 
 ## 本轮按代码 / 脚本复核后的事实
+- v0.2.0 release 已发布并完成本地 release 测试：web dist 可托管、`/api` proxy 可连到 backend、backend 可连 SQLite；停掉 backend 后 `/api` 返回 proxy_error，没有 silent fallback。真实服务器部署仍未完成。
 - `S3-LOCAL-HTTP-STORAGE-ADAPTER` 已完成（`c3525b2`）；`S3-LOCAL-END-TO-END-VERIFY` 已完成（`1470571`）。
 - 本地 HTTP + SQLite E2E 已通过：主路径可从 SQLite 读回问题卡、排查记录、归档摘要、错误表条目与 archived 状态；失败态覆盖 server unreachable、timeout、500、503、409 conflict、validation / bad request，且不会触发 localStorage fallback。
 - `S3-SERVER-INDEPENDENT-DEPLOY-PREP` 已完成：新增 `apps/server/deploy/` 下的独立部署准备材料，并为 server 补齐部署 env 的最小支持。

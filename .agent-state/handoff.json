@@ -17,20 +17,21 @@
     "current_focus": "string - 当前阶段下正在收敛的最小闭环",
     "pending_task_queue": "object[] - 已拆好的串行原子任务队列，按认领顺序排列",
     "verification_expectations": "object - 当前阶段默认验证矩阵与按任务加严要求",
-    "environment_facts": "object - 当前已确认的服务器与本机环境事实"
+    "environment_facts": "object - 当前已确认的服务器与本机环境事实",
+    "release_state": "object - v0.2.0 release closeout 事实"
   },
-  "timestamp": "2026-04-25T18:59:06+08:00",
+  "timestamp": "2026-04-26T01:40:09+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "S3",
   "current_stage_name": "存储迁移与服务器化",
-  "current_stage_goal": "把 D1 的浏览器 SPA + window.localStorage 演示版迁移为战队局域网可访问、服务端长期存储的版本；当前先走“架构缝合 -> WSL 本地最小闭环 -> 服务器独立部署验证”。",
+  "current_stage_goal": "本地主路径已从 D1 的浏览器 SPA + window.localStorage 演示版迁移到 HTTP adapter + apps/server + SQLite；v0.2.0 本地 release 已可测试，当前剩余目标是服务器独立部署验证。",
   "primary_track": "s3_local_first_then_independent_server_deploy",
   "deferred_track": "ai_rag_permissions_electron_complex_workspace_management",
   "current_atomic_task": "S3-SERVER-INDEPENDENT-DEPLOY-VERIFY",
   "storage_strategy": {
-    "current_truth": "apps/desktop 浏览器 runtime 已切到 HTTP storage adapter；Node / 无 window 的 verify 环境保留 localStorage repository 兼容旧 verify。/api 相对路径、Vite proxy、统一 storage error / connection state 与 backend scaffold 已接通；S3-LOCAL-END-TO-END-VERIFY 已通过，issue -> record -> closeout -> archive/error-entry/archived issue 可从 SQLite 读回。S3-WORKSPACE-CREATE-MINIMAL 已完成：可经 HTTP 创建 workspace 并按当前 workspace 隔离主流程数据。",
-    "next_closure": "S3-WORKSPACE-CREATE-MINIMAL 与 S3-SERVER-INDEPENDENT-DEPLOY-PREP 均已完成；下一步只在人工确认边界后执行 S3-SERVER-INDEPENDENT-DEPLOY-VERIFY，把独立 runtime / 目录 / 端口 / systemd service 方案部署到服务器并验证 LAN + SQLite + 80 端口旁路。",
-    "local_first_route": "完成 S3-ARCH-* 三个缝合任务后，在 WSL 本地跑通最小 backend + SQLite + HTTP adapter。",
+    "current_truth": "apps/desktop 浏览器 runtime 已切到 HTTP storage adapter；Node / 无 window 的 verify 环境保留 localStorage repository 兼容旧 verify。/api 相对路径、Vite proxy、统一 storage error / connection state 与 backend scaffold 已接通；S3-LOCAL-END-TO-END-VERIFY 已通过，issue -> record -> closeout -> archive/error-entry/archived issue 可从 SQLite 读回。S3-WORKSPACE-CREATE-MINIMAL 已完成：可经 HTTP 创建 workspace 并按当前 workspace 隔离主流程数据。v0.2.0 release 已发布并完成本地 release 测试，停掉 backend 后 /api 返回 proxy_error，没有 silent fallback。",
+    "next_closure": "S3-WORKSPACE-CREATE-MINIMAL、S3-SERVER-INDEPENDENT-DEPLOY-PREP 与 v0.2.0 release closeout 均已完成；下一步只在人工确认边界后执行 S3-SERVER-INDEPENDENT-DEPLOY-VERIFY，把独立 runtime / 目录 / 端口 / systemd service 方案部署到服务器并验证 LAN + SQLite + 80 端口旁路。",
+    "local_first_route": "S3-ARCH-* 三个缝合任务与 WSL 本地最小 backend + SQLite + HTTP adapter 已完成。",
     "server_route_after_local": "S3-LOCAL-END-TO-END-VERIFY 与 S3-SERVER-INDEPENDENT-DEPLOY-PREP 已完成；下一步是服务器独立部署验证。",
     "silent_fallback_policy": "禁止用 localStorage silent fallback 冒充服务器成功；失败态必须显式暴露。"
   },
@@ -144,7 +145,8 @@
     "S3-LOCAL-HTTP-STORAGE-ADAPTER",
     "S3-LOCAL-END-TO-END-VERIFY",
     "S3-SERVER-INDEPENDENT-DEPLOY-PREP",
-    "S3-WORKSPACE-CREATE-MINIMAL"
+    "S3-WORKSPACE-CREATE-MINIMAL",
+    "REPO-HYGIENE-V0.2.0-CLOSEOUT"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -184,6 +186,7 @@
     "若后续执行环境出现 listen EPERM，必须标注为环境限制并改用允许监听的执行方式；不得伪造 server-backed verify 通过。"
   ],
   "notes": [
+    "v0.2.0 release state：GitHub release 与本地 .release/v0.2.0 assets 存在，SHA256SUMS 可校验；v0.2.0 tag 当前指向 6d648b1，HEAD 在本轮开始时为 e0061ed release assets commit，本轮未修改 tag。",
     "默认读取链仍然只保留 AGENTS/current/handoff/git status/git log/任务相关文件；README、产品介绍、decisions 都不回到默认必读集合。",
     "S3 当前路线已固定为：先 S3-ARCH-* 架构缝合，再 WSL 本地最小闭环，再服务器独立部署验证。",
     "S3-SERVER-INDEPENDENT-DEPLOY-PREP 已完成：apps/server/deploy/ 提供 env.example、probeflash.service.template、install-layout.md、README.md；本轮未实际部署到服务器。",
@@ -262,7 +265,7 @@
       }
     }
   },
-  "current_focus": "S3-WORKSPACE-CREATE-MINIMAL 已完成且未触碰服务器部署；当前收敛点恢复为 S3-SERVER-INDEPENDENT-DEPLOY-VERIFY。下一轮需要真实服务器环境和人工确认边界后，按 apps/server/deploy/ 材料执行独立部署验证。",
+  "current_focus": "v0.2.0 release closeout / repo hygiene 已完成且未触碰产品功能、AI 或服务器部署；当前收敛点仍是 S3-SERVER-INDEPENDENT-DEPLOY-VERIFY。下一轮需要真实服务器环境和人工确认边界后，按 apps/server/deploy/ 材料执行独立部署验证。",
   "environment_facts": {
     "server": {
       "os": "Ubuntu 20.04.6 LTS",
@@ -362,6 +365,30 @@
       "确认 systemd service 可拉起且日志可读",
       "确认既有 80 端口 Web 服务不受影响",
       "确认局域网访问与重启后读回"
+    ]
+  },
+  "release_state": {
+    "version": "v0.2.0",
+    "github_release_exists": true,
+    "local_assets_path": ".release/v0.2.0",
+    "local_assets_present": [
+      "probeflash-dev-tools-v0.2.0.tar.gz",
+      "probeflash-server-v0.2.0.tar.gz",
+      "probeflash-web-v0.2.0.tar.gz",
+      "RELEASE_NOTES.md",
+      "SHA256SUMS.txt"
+    ],
+    "sha256sums_verified": true,
+    "tag_name": "v0.2.0",
+    "tag_target_at_closeout": "6d648b1",
+    "head_at_closeout_start": "e0061ed",
+    "tag_modified_in_closeout": false,
+    "server_deploy_completed": false,
+    "local_release_smoke": [
+      "web dist 可托管",
+      "/api proxy 可连到 backend",
+      "backend 可连 SQLite",
+      "backend 停止后 /api 返回 proxy_error，无 silent fallback"
     ]
   },
   "deploy_prep_artifacts": {

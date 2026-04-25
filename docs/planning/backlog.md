@@ -4,8 +4,9 @@
 
 ## 当前阶段
 - S3：存储迁移与服务器化。
-- 大目标：把 D1 的浏览器 SPA + `window.localStorage` 演示版，迁移为“战队局域网可访问 + 服务端长期存储”的版本。
-- 当前技术路线：**先架构缝合，再本地 WSL 闭环，再服务器独立部署验证**。
+- 大目标：本地主路径已从 D1 的浏览器 SPA + `window.localStorage` 演示版迁移到 HTTP adapter + `apps/server` + SQLite；剩余目标是完成真实服务器独立部署验证。
+- 当前技术路线：**架构缝合、本地 WSL 闭环、workspace 创建与 v0.2.0 本地 release 已完成；下一步是服务器独立部署验证**。
+- v0.2.0 release 已发布 / 本地可测试；真实服务器 systemd / LAN 部署仍未完成。
 - 当前访问口径分层：
   - 本地联调：前端请求 `/api`，已通过 Vite proxy 转发到 `http://127.0.0.1:4100`。
   - 独立部署：继续按 `http://192.168.2.2:<port>/` 理解；不抢占 80 端口，不优先做 `.local` / 反向代理美化。
@@ -19,7 +20,7 @@
 
 ## S3 剩余串行原子任务队列
 
-> 已完成前置：`S3-ARCH-ASYNC-STORAGE-PORT`、`S3-ARCH-CLOSEOUT-ORCHESTRATOR`、`S3-ARCH-UNIFIED-STORAGE-ERROR-STATE`、`S3-LOCAL-BACKEND-SCAFFOLD`、`S3-LOCAL-HTTP-STORAGE-ADAPTER`、`S3-LOCAL-END-TO-END-VERIFY`、`S3-SERVER-INDEPENDENT-DEPLOY-PREP`、`S3-WORKSPACE-CREATE-MINIMAL`。当前只剩 1 项主线队列。
+> 已完成前置：`S3-ARCH-ASYNC-STORAGE-PORT`、`S3-ARCH-CLOSEOUT-ORCHESTRATOR`、`S3-ARCH-UNIFIED-STORAGE-ERROR-STATE`、`S3-LOCAL-BACKEND-SCAFFOLD`、`S3-LOCAL-HTTP-STORAGE-ADAPTER`、`S3-LOCAL-END-TO-END-VERIFY`、`S3-SERVER-INDEPENDENT-DEPLOY-PREP`、`S3-WORKSPACE-CREATE-MINIMAL`、v0.2.0 本地 release closeout。当前只剩 1 项主线队列。
 
 ### 1. S3-SERVER-INDEPENDENT-DEPLOY-VERIFY
 - **目标**：把“本地已验证方案 + 已准备的独立部署材料”部署到服务器独立端口，由 systemd 拉起，并验证局域网设备可访问、SQLite 数据可持续、现有 80 端口服务不受影响。

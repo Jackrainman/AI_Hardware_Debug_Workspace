@@ -3,7 +3,7 @@
 ## 1. Project Overview
 - 本项目是 **ProbeFlash — 面向嵌入式调试现场的问题闪记与知识归档系统**。
 - 核心模块：项目绑定与仓库快照、问题闪记 / IssueCard intake、InvestigationRecord 追记、debug closeout、ArchiveDocument / ErrorEntry 归档。
-- 当前真实运行形态：`apps/desktop` 浏览器 SPA + `window.localStorage`；D1 产品壳与浏览器 smoke 已完成。当前 S3 目标是迁移为局域网 Web 入口 + 服务器长期存储；后端 / SQLite / LAN 部署尚未接入。
+- 当前真实运行形态：`apps/desktop` 浏览器 SPA 已通过 HTTP adapter 接入 `apps/server` + SQLite 本地主链路；`window.localStorage` 仅保留为兼容 / verify 路径。v0.2.0 本地 release 已可测试；真实服务器部署尚未完成。
 
 ## 2. Workspace Rules
 - `docs/product/` 只放产品定义、用户场景、领域语言、数据模型与长期能力方向。
@@ -20,11 +20,11 @@
 - 阶段名使用 `D1：交差优先中文产品壳`，除非 planning 明确切出 D1 并更新 `current.md` / `.agent-state/handoff.json`。
 
 ## 4. S3 Storage Serverization Rule（存储迁移与服务器化规则）
-- 当 `.agent-state/handoff.json.current_mode = "server_storage_migration"` 或 `current.md` 写明阶段为 S3 存储迁移与服务器化时，当前最高优先级是：把 localStorage 演示版迁移为“局域网共享 + 服务器长期存储”版本。
-- S3 当前主线：先补最薄异步 storage / repository port、closeout orchestration 与统一 storage error / connection state；再在本地 WSL 跑通最小后端 + SQLite + HTTP adapter 闭环；最后做服务器独立部署验证。
+- 当 `.agent-state/handoff.json.current_mode = "server_storage_migration"` 或 `current.md` 写明阶段为 S3 存储迁移与服务器化时，当前最高优先级是：在本地 HTTP + SQLite 主链路已完成的基础上，完成“局域网共享 + 服务器长期存储”的真实部署验证。
+- S3 当前主线：最薄异步 storage / repository port、closeout orchestration、统一 storage error / connection state、本地 WSL 后端 + SQLite + HTTP adapter、workspace 创建与 v0.2.0 本地 release 已完成；下一步只在人工确认边界后做服务器独立部署验证。
 - S3 当前不做：AI、RAG、权限系统、Electron、preload、fs/IPC、大 UI 重构、复杂统计、云同步或公网多租户、抢占 80 端口、优先做反向代理 / `.local` 美化、升级服务器全局 Node。
 - `current.md` 的前沿任务窗口只放当前 S3 主线 1~3 个候选；更远任务放入 `backlog.md`，不得把 AI/RAG/Electron 等后续方向混入当前入口。
-- S3 当前访问口径应先按 `http://192.168.2.2:<port>/` 理解；`.local` / 反向代理美化只在独立部署验证后再考虑。交付目标必须表述为“先在 WSL 本地跑通最小闭环，再把同一方案以独立 runtime + 独立端口 + systemd service 部署到局域网服务器”，不得把静态演示版或 localStorage 刷新保留说成服务器化完成。
+- S3 当前访问口径应先按 `http://192.168.2.2:<port>/` 理解；`.local` / 反向代理美化只在独立部署验证后再考虑。交付目标必须表述为“本地 WSL 最小闭环已跑通，下一步把同一方案以独立 runtime + 独立端口 + systemd service 部署到局域网服务器”，不得把静态演示版或 localStorage 刷新保留说成服务器化完成。
 
 ## 5. Safe Change Rule（安全改动规则）
 - D1 维护期允许低风险中文文案、空状态和小视觉修补，但不得重做业务数据流。
@@ -73,7 +73,7 @@
 
 ## 10. Acceptance-Facing Mindset（面向验收）
 - D1 阶段选择任务时，优先问：页面是否更像产品？中文是否统一？演示是否更顺？用户是否更容易理解当前已做到什么？
-- S3 阶段选择任务时，优先问：是否更接近局域网共享？是否更接近服务器长期存储？是否保持 localStorage / 后端未接入等真实边界？是否避免把 AI/RAG/Electron 误塞回当前主线？
+- S3 阶段选择任务时，优先问：是否更接近局域网共享？是否更接近服务器长期存储？是否保持 HTTP 主链路、localStorage 兼容路径、服务器尚未部署等真实边界？是否避免把 AI/RAG/Electron 误塞回当前主线？
 - 输出必须区分“必须改 / 建议改 / 可选优化”，不确定处标注“待确认 / 信息不足”。
 
 ## 11. Feedback Loop And Truthfulness
