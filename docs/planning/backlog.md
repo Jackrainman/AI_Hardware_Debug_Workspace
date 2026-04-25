@@ -19,7 +19,7 @@
 
 ## S3 剩余串行原子任务队列
 
-> 已完成前置：`S3-ARCH-ASYNC-STORAGE-PORT`、`S3-ARCH-CLOSEOUT-ORCHESTRATOR`、`S3-ARCH-UNIFIED-STORAGE-ERROR-STATE`、`S3-LOCAL-BACKEND-SCAFFOLD`、`S3-LOCAL-HTTP-STORAGE-ADAPTER`、`S3-LOCAL-END-TO-END-VERIFY`、`S3-SERVER-INDEPENDENT-DEPLOY-PREP`。当前只剩 1 项主线队列。
+> 已完成前置：`S3-ARCH-ASYNC-STORAGE-PORT`、`S3-ARCH-CLOSEOUT-ORCHESTRATOR`、`S3-ARCH-UNIFIED-STORAGE-ERROR-STATE`、`S3-LOCAL-BACKEND-SCAFFOLD`、`S3-LOCAL-HTTP-STORAGE-ADAPTER`、`S3-LOCAL-END-TO-END-VERIFY`、`S3-SERVER-INDEPENDENT-DEPLOY-PREP`、`S3-WORKSPACE-CREATE-MINIMAL`。当前只剩 1 项主线队列。
 
 ### 1. S3-SERVER-INDEPENDENT-DEPLOY-VERIFY
 - **目标**：把“本地已验证方案 + 已准备的独立部署材料”部署到服务器独立端口，由 systemd 拉起，并验证局域网设备可访问、SQLite 数据可持续、现有 80 端口服务不受影响。
@@ -65,7 +65,7 @@
   - 服务端长期存储生效并可跨服务重启读回
   - 既有服务不受影响
   - S3 的“服务器独立部署最小闭环”成立
-- **完成后下一任务**：无；后续再评估 `.local` / 反向代理美化、多 workspace 或更深层服务器化能力。
+- **完成后下一任务**：无；后续再评估 `.local` / 反向代理美化、复杂项目管理或更深层服务器化能力。
 
 ## 当前先不做
 - 不做 AI、RAG、embedding、相似问题向量检索或自治 agent。

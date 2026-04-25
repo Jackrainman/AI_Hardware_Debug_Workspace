@@ -131,6 +131,38 @@
 
 返回单个 workspace；不存在返回 `NOT_FOUND`。
 
+### `POST /api/workspaces`
+
+创建一个最小 workspace。请求体只接收用户可读名称，`id` 由服务端生成；S3 兼容期仍保持 `projectId === workspaceId`。
+
+请求体：
+
+```json
+{
+  "name": "27年 R1"
+}
+```
+
+成功：`201`。
+
+```json
+{
+  "ok": true,
+  "data": {
+    "workspace": {
+      "id": "workspace-project-...",
+      "name": "27年 R1",
+      "description": "",
+      "isDefault": false,
+      "createdAt": "2026-04-25T14:00:00+08:00",
+      "updatedAt": "2026-04-25T14:00:00+08:00"
+    }
+  }
+}
+```
+
+失败：空名称或名称过长返回 `VALIDATION_ERROR`；服务端生成 id 连续冲突返回 `CONFLICT`；SQLite 写入异常返回 `STORAGE_ERROR`。
+
 ## 6. Issues
 
 当前对应前端 `IssueCard`。
@@ -238,7 +270,7 @@
 
 ## 11. 当前实现落点与后续输入
 
-- `apps/server/src/server.mjs` 已实现：`/api/health`、`/api/workspaces`、issues / records / archives / error-entries 最小 HTTP 路由。
-- `apps/server/src/database.mjs` 已实现：默认 workspace seed、SQLite schema、最小实体持久化与校验。
+- `apps/server/src/server.mjs` 已实现：`/api/health`、workspace 列表 / 创建、issues / records / archives / error-entries 最小 HTTP 路由。
+- `apps/server/src/database.mjs` 已实现：默认 workspace seed、workspace 创建、SQLite schema、最小实体持久化与校验。
 - `S3-LOCAL-HTTP-STORAGE-ADAPTER` 需按本契约把前端主流程接到这些接口，并明确 `/api` proxy / base URL 策略。
 - `S3-LOCAL-END-TO-END-VERIFY` 需按本契约验证 issue / record / closeout 主路径与失败态，不得再把“后端已存在”误写成“前端已接通”。

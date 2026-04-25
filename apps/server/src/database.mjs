@@ -1,4 +1,5 @@
 import { mkdirSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
@@ -33,6 +34,38 @@ function assertString(value, fieldName) {
     error.code = "VALIDATION_ERROR";
     throw error;
   }
+}
+
+function normalizeWorkspacePayload(payload) {
+  assertObject(payload, "workspace payload must be an object");
+  assertString(payload.name, "workspace.name");
+  const name = payload.name.trim();
+  if (name.length > 80) {
+    const error = new Error("workspace.name must be at most 80 characters");
+    error.code = "VALIDATION_ERROR";
+    throw error;
+  }
+  return { name };
+}
+
+function slugifyWorkspaceName(name) {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 32)
+    .replace(/-+$/g, "");
+  return slug.length > 0 ? slug : "project";
+}
+
+function generateWorkspaceId(name) {
+  const timestamp = Date.now().toString(36);
+  const shortId = randomUUID().replaceAll("-", "").slice(0, 8);
+  return `workspace-${slugifyWorkspaceName(name)}-${timestamp}-${shortId}`;
+}
+
+function isUniqueConstraintError(error) {
+  return error && typeof error === "object" && String(error.message).includes("UNIQUE");
 }
 
 function assertArray(value, fieldName) {
@@ -342,6 +375,26 @@ export function createProbeFlashDatabase(dbPath, options = {}) {
     },
     getWorkspace(workspaceId) {
       return requireWorkspace(workspaceId);
+    },
+    createWorkspace(payload) {
+      const workspace = normalizeWorkspacePayload(structuredClone(payload));
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        const id = generateWorkspaceId(workspace.name);
+        const now = new Date().toISOString();
+        try {
+          db.prepare(`
+            INSERT INTO workspaces (id, name, description, is_default, created_at, updated_at)
+            VALUES (?, ?, '', 0, ?, ?)
+          `).run(id, workspace.name, now, now);
+          return requireWorkspace(id);
+        } catch (error) {
+          if (isUniqueConstraintError(error)) {
+            continue;
+          }
+          throw error;
+        }
+      }
+      throw createStorageError("workspace id conflict after retries", "CONFLICT");
     },
     listIssues(workspaceId, statusFilter = "active") {
       requireWorkspace(workspaceId);

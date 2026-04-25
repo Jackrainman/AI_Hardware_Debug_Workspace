@@ -13,6 +13,11 @@ export interface WorkspaceIdentity {
   isDefault: boolean;
 }
 
+export interface Workspace extends WorkspaceIdentity {
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const DEFAULT_WORKSPACE: WorkspaceIdentity = {
   id: DEFAULT_WORKSPACE_ID,
   name: DEFAULT_WORKSPACE_NAME,

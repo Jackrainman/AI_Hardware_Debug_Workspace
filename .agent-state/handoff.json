@@ -19,17 +19,17 @@
     "verification_expectations": "object - 当前阶段默认验证矩阵与按任务加严要求",
     "environment_facts": "object - 当前已确认的服务器与本机环境事实"
   },
-  "timestamp": "2026-04-25T13:22:20+08:00",
+  "timestamp": "2026-04-25T18:59:06+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "S3",
   "current_stage_name": "存储迁移与服务器化",
   "current_stage_goal": "把 D1 的浏览器 SPA + window.localStorage 演示版迁移为战队局域网可访问、服务端长期存储的版本；当前先走“架构缝合 -> WSL 本地最小闭环 -> 服务器独立部署验证”。",
   "primary_track": "s3_local_first_then_independent_server_deploy",
-  "deferred_track": "ai_rag_permissions_electron_multi_workspace",
+  "deferred_track": "ai_rag_permissions_electron_complex_workspace_management",
   "current_atomic_task": "S3-SERVER-INDEPENDENT-DEPLOY-VERIFY",
   "storage_strategy": {
-    "current_truth": "apps/desktop 浏览器 runtime 已切到 HTTP storage adapter；Node / 无 window 的 verify 环境保留 localStorage repository 兼容旧 verify。/api 相对路径、Vite proxy、统一 storage error / connection state 与 backend scaffold 已接通；S3-LOCAL-END-TO-END-VERIFY 已通过，issue -> record -> closeout -> archive/error-entry/archived issue 可从 SQLite 读回。",
-    "next_closure": "S3-SERVER-INDEPENDENT-DEPLOY-PREP 已完成；下一步只在人工确认边界后执行 S3-SERVER-INDEPENDENT-DEPLOY-VERIFY，把独立 runtime / 目录 / 端口 / systemd service 方案部署到服务器并验证 LAN + SQLite + 80 端口旁路。",
+    "current_truth": "apps/desktop 浏览器 runtime 已切到 HTTP storage adapter；Node / 无 window 的 verify 环境保留 localStorage repository 兼容旧 verify。/api 相对路径、Vite proxy、统一 storage error / connection state 与 backend scaffold 已接通；S3-LOCAL-END-TO-END-VERIFY 已通过，issue -> record -> closeout -> archive/error-entry/archived issue 可从 SQLite 读回。S3-WORKSPACE-CREATE-MINIMAL 已完成：可经 HTTP 创建 workspace 并按当前 workspace 隔离主流程数据。",
+    "next_closure": "S3-WORKSPACE-CREATE-MINIMAL 与 S3-SERVER-INDEPENDENT-DEPLOY-PREP 均已完成；下一步只在人工确认边界后执行 S3-SERVER-INDEPENDENT-DEPLOY-VERIFY，把独立 runtime / 目录 / 端口 / systemd service 方案部署到服务器并验证 LAN + SQLite + 80 端口旁路。",
     "local_first_route": "完成 S3-ARCH-* 三个缝合任务后，在 WSL 本地跑通最小 backend + SQLite + HTTP adapter。",
     "server_route_after_local": "S3-LOCAL-END-TO-END-VERIFY 与 S3-SERVER-INDEPENDENT-DEPLOY-PREP 已完成；下一步是服务器独立部署验证。",
     "silent_fallback_policy": "禁止用 localStorage silent fallback 冒充服务器成功；失败态必须显式暴露。"
@@ -83,6 +83,7 @@
     "S3-LOCAL-HTTP-STORAGE-ADAPTER": "前端接 HTTP storage adapter，完成 error bridge、workspaceId 对齐、/api proxy 与禁止 silent fallback。",
     "S3-LOCAL-END-TO-END-VERIFY": "验证前端 -> HTTP -> SQLite 主路径与失败态，不足时补最薄 verify 脚本。",
     "S3-SERVER-INDEPENDENT-DEPLOY-PREP": "规划独立 runtime / 目录 / 端口 / systemd service 与部署材料。",
+    "S3-WORKSPACE-CREATE-MINIMAL": "最小项目 / workspace 创建、前端切换与当前 workspace 下主流程数据隔离。",
     "S3-SERVER-INDEPENDENT-DEPLOY-VERIFY": "服务器独立端口部署 + systemd 拉起 + LAN 访问 + 回滚边界验证。"
   },
   "completed_atomic_tasks": [
@@ -142,7 +143,8 @@
     "S3-LOCAL-BACKEND-SCAFFOLD",
     "S3-LOCAL-HTTP-STORAGE-ADAPTER",
     "S3-LOCAL-END-TO-END-VERIFY",
-    "S3-SERVER-INDEPENDENT-DEPLOY-PREP"
+    "S3-SERVER-INDEPENDENT-DEPLOY-PREP",
+    "S3-WORKSPACE-CREATE-MINIMAL"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -185,6 +187,7 @@
     "默认读取链仍然只保留 AGENTS/current/handoff/git status/git log/任务相关文件；README、产品介绍、decisions 都不回到默认必读集合。",
     "S3 当前路线已固定为：先 S3-ARCH-* 架构缝合，再 WSL 本地最小闭环，再服务器独立部署验证。",
     "S3-SERVER-INDEPENDENT-DEPLOY-PREP 已完成：apps/server/deploy/ 提供 env.example、probeflash.service.template、install-layout.md、README.md；本轮未实际部署到服务器。",
+    "S3-WORKSPACE-CREATE-MINIMAL 已完成：默认 workspace-26-r1 保留；新 workspace 通过 POST /api/workspaces 创建；前端创建后自动切换，主流程 repository 以当前 workspaceId 创建。",
     "apps/server 支持 PROBEFLASH_HOST / PORT / DB_PATH / LOG_DIR / WORKSPACE_ID / WORKSPACE_NAME；默认本地行为保持 127.0.0.1:4100 + apps/server/.runtime + workspace-26-r1。",
     "部署 runtime 必须独立放在 /opt/probeflash/runtime/node/；systemd ExecStart 必须指向该绝对路径，不得使用系统 Node。",
     "前端浏览器 runtime 已切到 HTTP storage adapter；Node / 无 window 的 verify 环境继续走 localStorage compatibility，仅用于既有 verify 脚本。",
@@ -259,7 +262,7 @@
       }
     }
   },
-  "current_focus": "S3-SERVER-INDEPENDENT-DEPLOY-PREP 已完成；当前收敛点切换为 S3-SERVER-INDEPENDENT-DEPLOY-VERIFY。下一轮需要真实服务器环境和人工确认边界后，按 apps/server/deploy/ 材料执行独立部署验证。",
+  "current_focus": "S3-WORKSPACE-CREATE-MINIMAL 已完成且未触碰服务器部署；当前收敛点恢复为 S3-SERVER-INDEPENDENT-DEPLOY-VERIFY。下一轮需要真实服务器环境和人工确认边界后，按 apps/server/deploy/ 材料执行独立部署验证。",
   "environment_facts": {
     "server": {
       "os": "Ubuntu 20.04.6 LTS",
@@ -276,7 +279,7 @@
       "gcc_gpp": "available",
       "make": "available",
       "pkg_config": "available",
-      "codex_sandbox_listen_127001": "listen EPERM；server-backed verify 需无沙箱执行。"
+      "codex_sandbox_listen_127001": "当前环境已可监听 127.0.0.1 并跑通 server-backed verify；若后续再次出现 listen EPERM，按沙箱限制处理。"
     }
   },
   "pending_task_queue": [

@@ -13,6 +13,7 @@
 - 本地 HTTP + SQLite E2E 已通过：主路径可从 SQLite 读回问题卡、排查记录、归档摘要、错误表条目与 archived 状态；失败态覆盖 server unreachable、timeout、500、503、409 conflict、validation / bad request，且不会触发 localStorage fallback。
 - `S3-SERVER-INDEPENDENT-DEPLOY-PREP` 已完成：新增 `apps/server/deploy/` 下的独立部署准备材料，并为 server 补齐部署 env 的最小支持。
 - 当前部署准备材料只说明和验证仓库内方案：独立 runtime、独立目录、独立端口、独立 systemd service；**本轮未 SSH、未上传、未 sudo、未安装 runtime、未启动 systemd、未实际部署到 192.168.2.2**。
+- `S3-WORKSPACE-CREATE-MINIMAL` 已完成：前端可经 HTTP 创建新项目 / workspace，创建后自动切换；issues / records / archives / error entries 继续按 `projectId === workspaceId` 隔离在当前 workspace 下；新增 `verify:s3-workspace-create-minimal` 并接入 `verify:all`。
 - `apps/server/src/server.mjs` 仍保持默认本地开发行为：默认 `127.0.0.1:4100`、默认 DB 在 `apps/server/.runtime/probeflash.local.sqlite`、默认 workspace 为 `workspace-26-r1 / 26年 R1`。
 - `apps/server/src/server.mjs` 已支持部署 env：`PROBEFLASH_HOST`、`PROBEFLASH_PORT`、`PROBEFLASH_DB_PATH`、`PROBEFLASH_LOG_DIR`、`PROBEFLASH_WORKSPACE_ID`、`PROBEFLASH_WORKSPACE_NAME`。
 - `apps/server/src/database.mjs` 已支持从 server 传入默认 workspace seed；verify 已覆盖默认行为与 env 覆盖路径。
@@ -44,7 +45,7 @@
   - 明确不做项：不抢占 80 端口；不升级系统 Node；不修改现有 Web 服务 / 反向代理 / `.local`；不把 localStorage 演示链路当作服务器化完成。
   - 工程化验证：`systemctl status probeflash.service` / `journalctl -u probeflash.service`；服务器本机 `curl http://127.0.0.1:4100/api/health`；局域网 `curl http://192.168.2.2:4100/api/health` 或等价浏览器 smoke；服务重启后 SQLite 数据读回；确认旧 80 端口服务不受影响；仓库侧仍需按 completion gate 跑最小验证与 planning sync。
   - 完成定义：局域网设备可通过独立端口访问 ProbeFlash；服务端长期存储生效并可跨服务重启读回；既有 80 端口服务不受影响；S3 服务器独立部署最小闭环成立。
-  - 完成后下一任务：无；后续再评估 `.local` / 反向代理美化、多 workspace 或更深层服务器化能力。
+  - 完成后下一任务：无；后续再评估 `.local` / 反向代理美化、复杂项目管理或更深层服务器化能力。
 
 ## 当前前沿任务窗口（候选，不等于完整顺推队列）
 - **S3-SERVER-INDEPENDENT-DEPLOY-VERIFY**

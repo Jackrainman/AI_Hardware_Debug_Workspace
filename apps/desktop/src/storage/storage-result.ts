@@ -1,13 +1,14 @@
 import type { ZodIssue } from "zod";
 
 export type StorageEntity =
+  | "workspace"
   | "issue_card"
   | "investigation_record"
   | "archive_document"
   | "error_entry";
 
 export interface StorageErrorConnection {
-  state: "degraded" | "unreachable";
+  state: "online" | "degraded" | "unreachable";
   reason: string;
   checkedAt: string;
 }
@@ -95,6 +96,17 @@ function normalizeErrorMessage(error: unknown, fallback: string): string {
 export function createDegradedConnection(reason: string, checkedAt: string): StorageErrorConnection {
   return {
     state: "degraded",
+    reason,
+    checkedAt,
+  };
+}
+
+export function createOnlineConnection(
+  checkedAt: string,
+  reason = "server storage responded without localStorage fallback",
+): StorageErrorConnection {
+  return {
+    state: "online",
     reason,
     checkedAt,
   };

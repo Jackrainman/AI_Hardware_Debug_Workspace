@@ -15,7 +15,7 @@ import {
   IssueStatus,
   type IssueCard,
 } from "../domain/schemas/issue-card.ts";
-import { DEFAULT_WORKSPACE_ID, resolveWorkspaceId } from "../domain/workspace.ts";
+import { DEFAULT_WORKSPACE_ID, resolveWorkspaceId, type Workspace } from "../domain/workspace.ts";
 import type {
   ArchiveDocumentListInvalidEntry,
   ArchiveDocumentListResult,
@@ -40,6 +40,7 @@ import {
   createDegradedConnection,
   createNotFoundReadError,
   createNotFoundWriteError,
+  createOnlineConnection,
   createReadFailed,
   createRemoteValidationFailed,
   createServerUnreachableReadError,
@@ -53,7 +54,12 @@ import {
   type StorageWriteError,
   type StorageWriteResult,
 } from "./storage-result.ts";
-import type { StorageRepository } from "./storage-repository.ts";
+import type {
+  CreateWorkspaceResult,
+  StorageRepository,
+  WorkspaceListInvalidEntry,
+  WorkspaceListResult,
+} from "./storage-repository.ts";
 
 const ItemsEnvelopeSchema = z.object({
   items: z.array(z.unknown()),
@@ -66,6 +72,19 @@ const IssueCardSummarySchema = z.object({
   status: IssueStatus,
   createdAt: z.string().datetime({ offset: true }),
   updatedAt: z.string().datetime({ offset: true }),
+});
+
+const WorkspaceSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string(),
+  isDefault: z.boolean(),
+  createdAt: z.string().datetime({ offset: true }),
+  updatedAt: z.string().datetime({ offset: true }),
+});
+
+const WorkspaceCreateResponseSchema = z.object({
+  workspace: WorkspaceSchema,
 });
 
 const HealthResponseSchema = z.object({
@@ -158,7 +177,12 @@ function mapRequestErrorToWriteError(
         error.code === "BAD_REQUEST" ||
         error.code === "VALIDATION_ERROR"
       ) {
-        return createRemoteValidationFailed(entity, target, error.message);
+        return createRemoteValidationFailed(
+          entity,
+          target,
+          error.message,
+          createOnlineConnection(error.checkedAt),
+        );
       }
       if (error.status === 409 || error.code === "CONFLICT") {
         return createConflictWriteError(entity, target, error.message);
@@ -200,6 +224,18 @@ function normalizeIssueCardListInvalidEntry(
     kind: "validation_error",
     key: `http:issues:${index}`,
     id: `invalid-http-issue-${index}`,
+    issues,
+  };
+}
+
+function normalizeWorkspaceListInvalidEntry(
+  issues: ZodIssue[],
+  index: number,
+): WorkspaceListInvalidEntry {
+  return {
+    kind: "validation_error",
+    key: `http:workspaces:${index}`,
+    id: `invalid-http-workspace-${index}`,
     issues,
   };
 }
@@ -264,6 +300,82 @@ export function createHttpStorageRepository(
   const basePath = workspaceBasePath(workspaceId);
 
   return {
+    workspaces: {
+      async list(): Promise<WorkspaceListResult> {
+        const target = "/workspaces";
+        try {
+          const data = await client.request<unknown>(target);
+          const envelope = ItemsEnvelopeSchema.safeParse(data);
+          if (!envelope.success) {
+            return {
+              valid: [],
+              invalid: [],
+              readError: dataValidationReadError(
+                "workspace",
+                target,
+                "workspace list response must contain data.items[]",
+              ),
+            };
+          }
+          const valid: Workspace[] = [];
+          const invalid: WorkspaceListInvalidEntry[] = [];
+          envelope.data.items.forEach((item, index) => {
+            const parsed = WorkspaceSchema.safeParse(item);
+            if (!parsed.success) {
+              invalid.push(
+                createValidationInvalidEntry(normalizeWorkspaceListInvalidEntry, parsed, index),
+              );
+              return;
+            }
+            valid.push(parsed.data);
+          });
+          return { valid, invalid, readError: null };
+        } catch (error) {
+          if (isRequestError(error)) {
+            return {
+              valid: [],
+              invalid: [],
+              readError: mapRequestErrorToReadError("workspace", target, error),
+            };
+          }
+          return {
+            valid: [],
+            invalid: [],
+            readError: createReadFailed("workspace", target, error),
+          };
+        }
+      },
+      async create(input): Promise<CreateWorkspaceResult> {
+        const target = "/workspaces";
+        try {
+          const data = await client.request<unknown>(target, {
+            method: "POST",
+            body: JSON.stringify(input),
+          });
+          const parsed = WorkspaceCreateResponseSchema.safeParse(data);
+          if (!parsed.success) {
+            return {
+              ok: false,
+              error: createUnexpectedWriteError(
+                "workspace",
+                target,
+                "workspace create response must contain data.workspace",
+                createDegradedConnection(
+                  "workspace create response must contain data.workspace",
+                  new Date().toISOString(),
+                ),
+              ),
+            };
+          }
+          return { ok: true, workspace: parsed.data.workspace };
+        } catch (error) {
+          if (isRequestError(error)) {
+            return { ok: false, error: mapRequestErrorToWriteError("workspace", target, error) };
+          }
+          return { ok: false, error: createUnexpectedWriteError("workspace", target, error) };
+        }
+      },
+    },
     issueCards: {
       async list(): Promise<IssueCardListResult> {
         try {

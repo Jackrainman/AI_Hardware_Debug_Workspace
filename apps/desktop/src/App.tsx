@@ -20,14 +20,23 @@ import {
 import {
   type CloseoutInput,
 } from "./domain/closeout";
-import { DEFAULT_WORKSPACE_ID, DEFAULT_WORKSPACE_NAME } from "./domain/workspace";
+import {
+  DEFAULT_WORKSPACE,
+  DEFAULT_WORKSPACE_ID,
+  DEFAULT_WORKSPACE_NAME,
+  type Workspace,
+} from "./domain/workspace";
 import {
   STORAGE_REPOSITORY_RUNTIME,
   checkHttpStorageHealth,
+  createStorageRepository,
+  type CreateWorkspaceResult,
   type IssueCardListResult,
   type LoadIssueCardResult,
   type InvestigationRecordListResult,
+  type StorageRepository,
   type StorageReadError,
+  type WorkspaceListResult,
   storageRepository,
 } from "./storage/storage-repository";
 import { orchestrateIssueCloseout } from "./use-cases/closeout-orchestrator";
@@ -51,6 +60,12 @@ import {
 const SAMPLE_ISSUE_ID = "sample-issue-0001";
 const SAMPLE_TIMESTAMP = "2026-04-21T02:30:00+08:00";
 const CLOSEOUT_FORM_ID = "closeout-form";
+
+const DEFAULT_WORKSPACE_SUMMARY: Workspace = {
+  ...DEFAULT_WORKSPACE,
+  createdAt: SAMPLE_TIMESTAMP,
+  updatedAt: SAMPLE_TIMESTAMP,
+};
 
 const SAMPLE_CARD: IssueCard = {
   id: SAMPLE_ISSUE_ID,
@@ -82,6 +97,22 @@ const SAMPLE_CARD: IssueCard = {
   createdAt: SAMPLE_TIMESTAMP,
   updatedAt: SAMPLE_TIMESTAMP,
 };
+
+function sampleIssueIdForWorkspace(workspaceId: string): string {
+  const safeWorkspaceId = workspaceId
+    .replace(/[^a-zA-Z0-9-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+  return `${SAMPLE_ISSUE_ID}-${safeWorkspaceId || "workspace"}`;
+}
+
+function buildSampleCard(workspaceId: string): IssueCard {
+  return {
+    ...SAMPLE_CARD,
+    id: sampleIssueIdForWorkspace(workspaceId),
+    projectId: workspaceId,
+  };
+}
 
 type SaveStatus =
   | { state: "idle" }
@@ -131,9 +162,13 @@ function StorageStatusBanner({
 }
 
 function IssueStorageControls({
+  repository,
+  workspaceId,
   reportStorageError,
   clearStorageFeedback,
 }: {
+  repository: StorageRepository;
+  workspaceId: string;
   reportStorageError: (error: StorageFeedbackError) => void;
   clearStorageFeedback: () => void;
 }) {
@@ -141,7 +176,7 @@ function IssueStorageControls({
   const [loadResult, setLoadResult] = useState<LoadIssueCardResult | null>(null);
 
   const handleSave = async () => {
-    const saved = await storageRepository.issueCards.save(SAMPLE_CARD);
+    const saved = await repository.issueCards.save(buildSampleCard(workspaceId));
     if (!saved.ok) {
       reportStorageError(storageWriteErrorToFeedback("demo", "create_issue", saved.error));
       setSaveStatus({
@@ -155,7 +190,7 @@ function IssueStorageControls({
   };
 
   const handleLoad = async () => {
-    const loaded = await storageRepository.issueCards.load(SAMPLE_ISSUE_ID);
+    const loaded = await repository.issueCards.load(sampleIssueIdForWorkspace(workspaceId));
     setLoadResult(loaded);
     if (!loaded.ok) {
       reportStorageError(loadIssueCardFailureToFeedback("demo", loaded.error));
@@ -203,11 +238,15 @@ type IntakeSubmitStatus =
   | { state: "error"; reason: string };
 
 function IssueIntakeForm({
+  repository,
+  workspaceId,
   isDefaultMode,
   onCreated,
   reportStorageError,
   clearStorageFeedback,
 }: {
+  repository: StorageRepository;
+  workspaceId: string;
   isDefaultMode: boolean;
   onCreated: (id: string) => void;
   reportStorageError: (error: StorageFeedbackError) => void;
@@ -223,7 +262,7 @@ function IssueIntakeForm({
     const input: IntakeInput = { title, description, severity };
     const result: IntakeResult = buildIssueCardFromIntake(
       input,
-      defaultIntakeOptions(nowISO()),
+      defaultIntakeOptions(nowISO(), undefined, workspaceId),
     );
     if (!result.ok) {
       reportStorageError(
@@ -232,7 +271,7 @@ function IssueIntakeForm({
       setStatus({ state: "error", reason: "请查看顶部统一存储提示" });
       return;
     }
-    const saved = await storageRepository.issueCards.save(result.card);
+    const saved = await repository.issueCards.save(result.card);
     if (!saved.ok) {
       reportStorageError(storageWriteErrorToFeedback("issue_intake", "create_issue", saved.error));
       setStatus({
@@ -427,11 +466,13 @@ type InvestigationSubmitStatus =
   | { state: "error"; reason: string };
 
 function InvestigationAppendForm({
+  repository,
   issueId,
   onAppended,
   reportStorageError,
   clearStorageFeedback,
 }: {
+  repository: StorageRepository;
   issueId: string;
   onAppended: () => void;
   reportStorageError: (error: StorageFeedbackError) => void;
@@ -459,7 +500,7 @@ function InvestigationAppendForm({
       setStatus({ state: "error", reason: "请查看顶部统一存储提示" });
       return;
     }
-    const saved = await storageRepository.investigationRecords.append(result.record);
+    const saved = await repository.investigationRecords.append(result.record);
     if (!saved.ok) {
       reportStorageError(
         storageWriteErrorToFeedback("investigation_append", "save_record", saved.error),
@@ -589,11 +630,13 @@ type CloseoutSummary = {
 };
 
 function CloseoutForm({
+  repository,
   issueId,
   onClosed,
   reportStorageError,
   clearStorageFeedback,
 }: {
+  repository: StorageRepository;
   issueId: string;
   onClosed: (summary: CloseoutSummary) => void;
   reportStorageError: (error: StorageFeedbackError) => void;
@@ -608,7 +651,7 @@ function CloseoutForm({
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const input: CloseoutInput = { category, rootCause, resolution, prevention };
-    const result = await orchestrateIssueCloseout(issueId, input);
+    const result = await orchestrateIssueCloseout(issueId, input, { repository });
     if (!result.ok) {
       reportStorageError(closeoutFailureToFeedback(result));
       setStatus({
@@ -825,11 +868,15 @@ function MainlineResultPanel({
 }
 
 function IssuePane({
+  repository,
+  activeWorkspace,
   onCloseoutResult,
   onSelectedIssueChange,
   reportStorageError,
   clearStorageFeedback,
 }: {
+  repository: StorageRepository;
+  activeWorkspace: Workspace;
   onCloseoutResult: (summary: CloseoutSummary) => void;
   onSelectedIssueChange: (id: string | null) => void;
   reportStorageError: (error: StorageFeedbackError) => void;
@@ -842,7 +889,7 @@ function IssuePane({
   const [lastCloseout, setLastCloseout] = useState<CloseoutSummary | null>(null);
 
   const refreshCardList = async () => {
-    const result = await storageRepository.issueCards.list();
+    const result = await repository.issueCards.list();
     setCardList(result);
     if (result.readError !== null) {
       reportStorageError(storageReadErrorToFeedback("issue_list", "list_issues", result.readError));
@@ -867,7 +914,7 @@ function IssuePane({
   }, []);
 
   const reloadSelectedCard = async (id: string) => {
-    const loaded = await storageRepository.issueCards.load(id);
+    const loaded = await repository.issueCards.load(id);
     setSelectedCard(loaded.ok ? loaded.card : null);
     if (!loaded.ok) {
       reportStorageError(loadIssueCardFailureToFeedback("issue_detail", loaded.error));
@@ -877,7 +924,7 @@ function IssuePane({
   };
 
   const loadRecordList = async (issueId: string) => {
-    const result = await storageRepository.investigationRecords.listByIssueId(issueId);
+    const result = await repository.investigationRecords.listByIssueId(issueId);
     setRecordList(result);
     if (result.readError !== null) {
       reportStorageError(
@@ -962,6 +1009,8 @@ function IssuePane({
           {selectedIssueId === null && (
             <>
               <IssueIntakeForm
+                repository={repository}
+                workspaceId={activeWorkspace.id}
                 isDefaultMode
                 onCreated={handleCardCreated}
                 reportStorageError={reportStorageError}
@@ -983,6 +1032,7 @@ function IssuePane({
           {selectedIssueId !== null && (
             <>
               <InvestigationAppendForm
+                repository={repository}
                 issueId={selectedIssueId}
                 onAppended={handleRecordAppended}
                 reportStorageError={reportStorageError}
@@ -993,6 +1043,7 @@ function IssuePane({
                 onRefresh={refreshRecordList}
               />
               <CloseoutForm
+                repository={repository}
                 issueId={selectedIssueId}
                 onClosed={handleIssueClosed}
                 reportStorageError={reportStorageError}
@@ -1002,6 +1053,8 @@ function IssuePane({
           )}
           {selectedIssueId === null && (
             <IssueStorageControls
+              repository={repository}
+              workspaceId={activeWorkspace.id}
               reportStorageError={reportStorageError}
               clearStorageFeedback={clearStorageFeedback}
             />
@@ -1034,10 +1087,11 @@ const PANES: Pane[] = [
     id: "project",
     title: "项目区",
     badge: "上下文",
-    hint: "展示当前调试项目的上下文边界。",
-    status: "当前联调：前端 /api + 本地 WSL backend + SQLite",
+    hint: "选择或创建当前调试项目，后续问题卡都落在该项目边界内。",
+    status: "当前联调：项目列表与创建走 /api + 本地 WSL backend + SQLite",
     bullets: [
-      `当前工作区：${DEFAULT_WORKSPACE_NAME}`,
+      `默认工作区：${DEFAULT_WORKSPACE_NAME} 保留`,
+      "新项目：创建成功后自动切换",
       "仓库快照：后续接入 Git",
       "文件写盘：后续接入 .debug_workspace",
     ],
@@ -1114,9 +1168,11 @@ export type ArchiveIndex = {
   readErrors: StorageReadError[];
 };
 
-export async function loadArchiveIndex(): Promise<ArchiveIndex> {
-  const docList = await storageRepository.archiveDocuments.list();
-  const errorList = await storageRepository.errorEntries.list();
+export async function loadArchiveIndex(
+  repository: StorageRepository = storageRepository,
+): Promise<ArchiveIndex> {
+  const docList = await repository.archiveDocuments.list();
+  const errorList = await repository.errorEntries.list();
   const errorByIssue = new Map<string, { errorCode: string; category: string }>();
   for (const entry of errorList.valid) {
     if (errorByIssue.has(entry.sourceIssueId)) continue;
@@ -1309,17 +1365,78 @@ export function ArchiveListDrawer({
   );
 }
 
+type WorkspaceCreateStatus =
+  | { state: "idle" }
+  | { state: "saving" }
+  | { state: "saved"; id: string }
+  | { state: "error"; reason: string };
+
+function renderWorkspaceCreateStatus(status: WorkspaceCreateStatus): string {
+  switch (status.state) {
+    case "idle":
+      return "输入名称后创建";
+    case "saving":
+      return "正在创建并写入服务器";
+    case "saved":
+      return `已创建并切换 · ${status.id}`;
+    case "error":
+      return `创建失败：${status.reason}`;
+  }
+}
+
+function mergeWorkspaceItems(
+  result: WorkspaceListResult | null,
+  activeWorkspace: Workspace,
+): Workspace[] {
+  const items = result?.valid ?? [];
+  if (items.some((workspace) => workspace.id === activeWorkspace.id)) {
+    return items;
+  }
+  return [activeWorkspace, ...items];
+}
+
 function ProjectSelector({
   pane,
   open,
+  activeWorkspace,
+  workspaceList,
   onToggle,
   onClose,
+  onRefreshWorkspaces,
+  onSelectWorkspace,
+  onCreateWorkspace,
 }: {
   pane: Pane;
   open: boolean;
+  activeWorkspace: Workspace;
+  workspaceList: WorkspaceListResult | null;
   onToggle: () => void;
   onClose: () => void;
+  onRefreshWorkspaces: () => void;
+  onSelectWorkspace: (workspace: Workspace) => void;
+  onCreateWorkspace: (name: string) => Promise<CreateWorkspaceResult>;
 }) {
+  const [name, setName] = useState<string>("");
+  const [createStatus, setCreateStatus] = useState<WorkspaceCreateStatus>({ state: "idle" });
+  const workspaces = mergeWorkspaceItems(workspaceList, activeWorkspace);
+
+  const handleCreate = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedName = name.trim();
+    if (trimmedName.length === 0) {
+      setCreateStatus({ state: "error", reason: "项目名称不能为空" });
+      return;
+    }
+    setCreateStatus({ state: "saving" });
+    const result = await onCreateWorkspace(trimmedName);
+    if (!result.ok) {
+      setCreateStatus({ state: "error", reason: "请查看顶部统一存储提示" });
+      return;
+    }
+    setName("");
+    setCreateStatus({ state: "saved", id: result.workspace.id });
+  };
+
   return (
     <div className="project-selector" data-testid="project-selector">
       <button
@@ -1331,7 +1448,7 @@ function ProjectSelector({
         data-testid="project-selector-button"
       >
         <span className="header-entry-icon" aria-hidden="true">📁</span>
-        <span className="header-entry-label">项目：{DEFAULT_WORKSPACE_NAME}</span>
+        <span className="header-entry-label">项目：{activeWorkspace.name}</span>
         <span className="project-entry-caret" aria-hidden="true">{open ? "▴" : "▾"}</span>
       </button>
       {open && (
@@ -1354,9 +1471,67 @@ function ProjectSelector({
             </button>
           </div>
           <p className="pane-hint">{pane.hint}</p>
-          <StaticPaneShell pane={pane} />
+          <section className="project-current-card" data-testid="project-current-card">
+            <span className="project-current-label">当前项目</span>
+            <strong>{activeWorkspace.name}</strong>
+            <span className="project-current-id">{activeWorkspace.id}</span>
+          </section>
+          <div className="project-selector-section">
+            <div className="project-selector-section-header">
+              <span>可用项目</span>
+              <button type="button" className="button-secondary" onClick={onRefreshWorkspaces}>
+                刷新
+              </button>
+            </div>
+            {workspaceList?.readError !== null && workspaceList?.readError !== undefined && (
+              <p className="storage-line">项目列表读取失败，请查看顶部统一存储提示。</p>
+            )}
+            {workspaceList !== null && workspaceList.invalid.length > 0 && (
+              <p className="storage-line">有 {workspaceList.invalid.length} 个异常项目已跳过。</p>
+            )}
+            <ul className="project-workspace-list" data-testid="workspace-list">
+              {workspaces.map((workspace) => {
+                const selected = workspace.id === activeWorkspace.id;
+                return (
+                  <li key={workspace.id}>
+                    <button
+                      type="button"
+                      className="project-workspace-option"
+                      data-selected={selected ? "true" : "false"}
+                      onClick={() => onSelectWorkspace(workspace)}
+                    >
+                      <span className="project-workspace-name">
+                        {workspace.name}{workspace.isDefault ? "（默认）" : ""}
+                      </span>
+                      <span className="project-workspace-id">{workspace.id}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          <form className="project-create-form" onSubmit={handleCreate} data-testid="workspace-create-form">
+            <label className="intake-field">
+              <span>创建项目</span>
+              <input
+                type="text"
+                value={name}
+                maxLength={80}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="例如：27年 R1 / 舵轮调试"
+              />
+            </label>
+            <div className="intake-actions">
+              <button type="submit" disabled={createStatus.state === "saving"}>
+                创建并切换
+              </button>
+            </div>
+            <p className="storage-line" data-testid="workspace-create-status">
+              创建状态：{renderWorkspaceCreateStatus(createStatus)}
+            </p>
+          </form>
           <p className="project-selector-note">
-            当前仅启用默认工作区 {DEFAULT_WORKSPACE_NAME}；多项目选择与仓库绑定能力后续接入。
+            当前只做创建与切换；删除、重命名、成员和权限后续再接入。
           </p>
         </div>
       )}
@@ -1426,6 +1601,11 @@ export default function App() {
   const [storageFeedbackError, setStorageFeedbackError] = useState<StorageFeedbackError | null>(
     null,
   );
+  const [workspaceRepository, setWorkspaceRepository] = useState<StorageRepository>(() =>
+    createStorageRepository({ workspaceId: DEFAULT_WORKSPACE_ID }),
+  );
+  const [activeWorkspace, setActiveWorkspace] = useState<Workspace>(DEFAULT_WORKSPACE_SUMMARY);
+  const [workspaceList, setWorkspaceList] = useState<WorkspaceListResult | null>(null);
   const [archiveIndex, setArchiveIndex] = useState<ArchiveIndex>({
     items: [],
     invalidCount: 0,
@@ -1449,8 +1629,32 @@ export default function App() {
     setStorageFeedbackError(null);
   };
 
+  const refreshWorkspaceList = async () => {
+    const result = await workspaceRepository.workspaces.list();
+    setWorkspaceList(result);
+    if (result.readError !== null) {
+      reportStorageError(
+        storageReadErrorToFeedback("workspace_selector", "list_workspaces", result.readError),
+      );
+      return;
+    }
+    if (result.invalid.length > 0) {
+      reportStorageError(
+        createInvalidDataStorageFeedbackError(
+          "workspace_selector",
+          "list_workspaces",
+          `项目列表中有 ${result.invalid.length} 条异常数据，已跳过。`,
+          "workspace",
+          createOnlineStorageConnectionState(),
+        ),
+      );
+      return;
+    }
+    clearStorageFeedback();
+  };
+
   const refreshArchiveIndex = async () => {
-    const index = await loadArchiveIndex();
+    const index = await loadArchiveIndex(workspaceRepository);
     setArchiveIndex(index);
     if (index.readErrors.length > 0) {
       reportStorageError(storageReadErrorToFeedback("archive_index", "list_archives", index.readErrors[0]!));
@@ -1496,8 +1700,35 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    void refreshArchiveIndex();
+    void refreshWorkspaceList();
   }, []);
+
+  useEffect(() => {
+    void refreshArchiveIndex();
+  }, [workspaceRepository]);
+
+  const handleWorkspaceSelected = (workspace: Workspace) => {
+    setActiveWorkspace(workspace);
+    setWorkspaceRepository(createStorageRepository({ workspaceId: workspace.id }));
+    setActiveIssueId(null);
+    setArchiveIndex({ items: [], invalidCount: 0, readErrors: [] });
+    setIsArchiveListOpen(false);
+    setIsProjectEntryOpen(false);
+    clearStorageFeedback();
+  };
+
+  const handleWorkspaceCreate = async (name: string): Promise<CreateWorkspaceResult> => {
+    const result = await workspaceRepository.workspaces.create({ name });
+    if (!result.ok) {
+      reportStorageError(
+        storageWriteErrorToFeedback("workspace_selector", "create_workspace", result.error),
+      );
+      return result;
+    }
+    handleWorkspaceSelected(result.workspace);
+    void refreshWorkspaceList();
+    return result;
+  };
 
   const handleCloseoutResult = (_summary: CloseoutSummary) => {
     void refreshArchiveIndex();
@@ -1531,8 +1762,13 @@ export default function App() {
             <ProjectSelector
               pane={projectPane}
               open={isProjectEntryOpen}
+              activeWorkspace={activeWorkspace}
+              workspaceList={workspaceList}
               onToggle={() => setIsProjectEntryOpen((prev) => !prev)}
               onClose={() => setIsProjectEntryOpen(false)}
+              onRefreshWorkspaces={() => void refreshWorkspaceList()}
+              onSelectWorkspace={handleWorkspaceSelected}
+              onCreateWorkspace={handleWorkspaceCreate}
             />
           </div>
           <div className="header-entry-slot header-entry-slot-right">
@@ -1560,6 +1796,9 @@ export default function App() {
             <p className="pane-hint">{issuePane.hint}</p>
           </div>
           <IssuePane
+            key={activeWorkspace.id}
+            repository={workspaceRepository}
+            activeWorkspace={activeWorkspace}
             onCloseoutResult={handleCloseoutResult}
             onSelectedIssueChange={setActiveIssueId}
             reportStorageError={reportStorageError}

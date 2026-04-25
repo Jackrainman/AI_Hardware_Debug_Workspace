@@ -2,6 +2,7 @@ import type { ArchiveDocument } from "../domain/schemas/archive-document.ts";
 import type { ErrorEntry } from "../domain/schemas/error-entry.ts";
 import type { InvestigationRecord } from "../domain/schemas/investigation-record.ts";
 import type { IssueCard } from "../domain/schemas/issue-card.ts";
+import { DEFAULT_WORKSPACE, type Workspace } from "../domain/workspace.ts";
 import {
   listArchiveDocuments,
   saveArchiveDocument,
@@ -12,7 +13,11 @@ import {
   saveErrorEntry,
   type ErrorEntryListResult,
 } from "./error-entry-store.ts";
-import { checkHttpStorageHealth, httpStorageRepository } from "./http-storage-repository.ts";
+import {
+  checkHttpStorageHealth,
+  createHttpStorageRepository,
+  httpStorageRepository,
+} from "./http-storage-repository.ts";
 import {
   listInvestigationRecordsByIssueId,
   saveInvestigationRecord,
@@ -31,6 +36,7 @@ import type {
   StorageWriteError,
   StorageWriteResult,
 } from "./storage-result.ts";
+import { createRemoteValidationFailed, createUnexpectedWriteError } from "./storage-result.ts";
 
 export type {
   ArchiveDocumentListResult,
@@ -44,7 +50,40 @@ export type {
   StorageWriteResult,
 };
 
+export type WorkspaceListInvalidEntry = {
+  kind: "validation_error";
+  key: string;
+  id: string;
+  issues: unknown[];
+};
+
+export type WorkspaceListResult = {
+  valid: Workspace[];
+  invalid: WorkspaceListInvalidEntry[];
+  readError: StorageReadError | null;
+};
+
+export type CreateWorkspaceInput = {
+  name: string;
+};
+
+export type CreateWorkspaceResult =
+  | { ok: true; workspace: Workspace }
+  | { ok: false; error: StorageWriteError };
+
+const LOCAL_DEFAULT_WORKSPACE_TIMESTAMP = "2026-04-23T00:00:00+08:00";
+
+const LOCAL_DEFAULT_WORKSPACE: Workspace = {
+  ...DEFAULT_WORKSPACE,
+  createdAt: LOCAL_DEFAULT_WORKSPACE_TIMESTAMP,
+  updatedAt: LOCAL_DEFAULT_WORKSPACE_TIMESTAMP,
+};
+
 export interface StorageRepository {
+  workspaces: {
+    list(): Promise<WorkspaceListResult>;
+    create(input: CreateWorkspaceInput): Promise<CreateWorkspaceResult>;
+  };
   issueCards: {
     list(): Promise<IssueCardListResult>;
     load(id: string): Promise<LoadIssueCardResult>;
@@ -65,6 +104,31 @@ export interface StorageRepository {
 }
 
 export const localStorageStorageRepository: StorageRepository = {
+  workspaces: {
+    async list(): Promise<WorkspaceListResult> {
+      return { valid: [LOCAL_DEFAULT_WORKSPACE], invalid: [], readError: null };
+    },
+    async create(input: CreateWorkspaceInput): Promise<CreateWorkspaceResult> {
+      if (input.name.trim().length === 0) {
+        return {
+          ok: false,
+          error: createRemoteValidationFailed(
+            "workspace",
+            "create_workspace",
+            "workspace.name is required",
+          ),
+        };
+      }
+      return {
+        ok: false,
+        error: createUnexpectedWriteError(
+          "workspace",
+          "create_workspace",
+          "creating workspaces requires the HTTP storage adapter",
+        ),
+      };
+    },
+  },
   issueCards: {
     async list(): Promise<IssueCardListResult> {
       return listIssueCards();
@@ -107,7 +171,12 @@ export type StorageRepositoryRuntime = "http" | "local_storage";
 export const STORAGE_REPOSITORY_RUNTIME: StorageRepositoryRuntime =
   typeof document !== "undefined" && typeof window !== "undefined" ? "http" : "local_storage";
 
-export const storageRepository: StorageRepository =
-  STORAGE_REPOSITORY_RUNTIME === "http" ? httpStorageRepository : localStorageStorageRepository;
+export function createStorageRepository(options: { workspaceId?: string } = {}): StorageRepository {
+  return STORAGE_REPOSITORY_RUNTIME === "http"
+    ? createHttpStorageRepository({ workspaceId: options.workspaceId })
+    : localStorageStorageRepository;
+}
+
+export const storageRepository: StorageRepository = createStorageRepository();
 
 export { checkHttpStorageHealth, httpStorageRepository };

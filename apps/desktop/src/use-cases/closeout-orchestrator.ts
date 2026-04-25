@@ -100,6 +100,7 @@ export interface CloseoutOrchestratorOptions {
 
 function labelStorageEntity(entity: StorageEntity): string {
   const labels: Record<StorageEntity, string> = {
+    workspace: "项目/工作区",
     issue_card: "问题卡",
     investigation_record: "排查记录",
     archive_document: "归档摘要",

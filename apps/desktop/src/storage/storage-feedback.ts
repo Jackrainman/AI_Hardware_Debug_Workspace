@@ -35,6 +35,7 @@ export function createOnlineStorageConnectionState(
 export type StorageFeedbackSurface =
   | "demo"
   | "server_connection"
+  | "workspace_selector"
   | "issue_intake"
   | "issue_list"
   | "issue_detail"
@@ -45,6 +46,8 @@ export type StorageFeedbackSurface =
 
 export type StorageFeedbackOperation =
   | "health"
+  | "list_workspaces"
+  | "create_workspace"
   | "create_issue"
   | "list_issues"
   | "load_issue"
@@ -80,6 +83,7 @@ type LoadIssueCardFailure = Extract<LoadIssueCardResult, { ok: false }>["error"]
 
 function labelStorageEntity(entity: StorageEntity): string {
   const labels: Record<StorageEntity, string> = {
+    workspace: "项目/工作区",
     issue_card: "问题卡",
     investigation_record: "排查记录",
     archive_document: "归档摘要",
@@ -92,6 +96,7 @@ function labelSurface(surface: StorageFeedbackSurface): string {
   const labels: Record<StorageFeedbackSurface, string> = {
     demo: "辅助验证",
     server_connection: "服务器连接",
+    workspace_selector: "项目选择",
     issue_intake: "创建问题卡",
     issue_list: "问题卡列表",
     issue_detail: "问题卡详情",
@@ -121,6 +126,12 @@ function connectionStateFromError(
 ): StorageConnectionState {
   if (!connection) {
     return LOCAL_STORAGE_CONNECTION_STATE;
+  }
+  if (connection.state === "online") {
+    return {
+      state: "online",
+      checkedAt: connection.checkedAt,
+    };
   }
   if (connection.state === "unreachable") {
     return {

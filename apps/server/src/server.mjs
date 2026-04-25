@@ -140,6 +140,11 @@ function createRequestHandler({ store, storeInitError }) {
         return ok(res, { items: store.listWorkspaces() });
       }
 
+      if (url.pathname === "/api/workspaces" && method === "POST") {
+        const payload = await readJson(req);
+        return ok(res, { workspace: store.createWorkspace(payload) }, 201);
+      }
+
       if (workspaceDetailMatch && method === "GET") {
         return ok(res, store.getWorkspace(decodeURIComponent(workspaceDetailMatch[1])));
       }
