@@ -1,6 +1,6 @@
 # S3 API Contract Draft
 
-> 状态：契约草案（`apps/server` 已按本契约落地最小 backend scaffold；当前仍需 `S3-LOCAL-HTTP-STORAGE-ADAPTER` 把前端主流程真正接到这些接口）。本文件是 HTTP / SQLite / adapter 对齐输入，不单独声明“服务器化已完成”。
+> 归档状态：v0.2.0 前专项输入，已由本地 HTTP + SQLite 主链路、`apps/server` 与 HTTP adapter 实现吸收。默认事实源不再读取本文件；仅在追溯历史 API 契约或排查 v0.2 前实现背景时读取。
 
 ## 1. 目标与边界
 

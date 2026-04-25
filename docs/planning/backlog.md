@@ -1,6 +1,6 @@
 # 待办池（Backlog）
 
-> Backlog 只存**未开做候选与串行认领队列**。当前唯一主线任务看 `docs/planning/current.md`；机读顺序、依赖、验证要求与详细执行边界看 `.agent-state/handoff.json.pending_task_queue`。
+> Backlog 只存**未开做候选与串行认领队列**。当前唯一主线任务看 `docs/planning/current.md`；机读顺序、依赖、验证要求与详细执行边界看 `.agent-state/handoff.json.pending_task_queue`。v0.2.0 前历史专项输入已移入 `docs/archive/v0.2-closeout/`，默认不读。
 
 ## 当前阶段与总路线
 - 当前版本：v0.2.0 release。
@@ -15,12 +15,15 @@
 4. 服务器任务不得默认 SSH / sudo / 上传 / systemd 已授权；涉及真实服务器动作前必须先由用户确认。
 5. AI 任务不得跳过 AI-ready；真实 AI 只返回草稿，不自动写库；code context 只分析用户显式提供的 bundle。
 6. `pending_task_queue` 只保留剩余未完成任务；已完成任务只保留在 `.agent-state/handoff.json.completed_atomic_tasks` 中。
+7. 夜跑 / 无人值守模式只能执行 repo-local、可自动验证、可回滚任务；遇到真实服务器、SSH、sudo、systemd、外部账号、API key、删除 / 迁移数据或用户拍板问题必须停止。
+8. `docs/archive/v0.2-closeout/` 只在需要 v0.2 前历史背景、专项实现追溯或归档审计时读取，不作为默认认领输入。
 
 ## 近期 3 个任务
 
 ### 1. S3-SERVER-USER-DIR-DEPLOY-VERIFY
 - **目标**：在服务器 `/home/hurricane/probeflash` 下完成 v0.2.0 no-sudo 用户目录部署验证。
 - **前置依赖**：v0.2.0 release asset 已生成并完成本地 smoke；本地 HTTP + SQLite E2E 已完成；服务器事实已确认；用户授权 SSH / 上传 / 在 `/home/hurricane` 写入。
+- **夜跑状态**：不可夜跑；必须等用户白天确认 SSH、上传方式、写入路径、启动进程与 4100 端口边界后执行。
 - **输入文件**：`AGENTS.md`、`docs/planning/current.md`、`.agent-state/handoff.json`、本文件、v0.2.0 release assets、`apps/server/deploy/*` 参考材料、目标服务器 `192.168.2.2`。
 - **允许改动**：服务器 `/home/hurricane/probeflash/releases`、`/home/hurricane/probeflash/current`、`/home/hurricane/probeflash/runtime/node`、`/home/hurricane/probeflash/shared/data`、`/home/hurricane/probeflash/shared/logs`、`/home/hurricane/probeflash/shared/env`；仓库内仅 planning sync 或必要 deployment note。
 - **明确不做**：不 sudo；不 systemd；不写 `/opt`；不碰 80；不升级系统 Node；不使用系统 Node v10；不影响 filebrowser / vnt-cli / docker / Portainer；不做反向代理 / `.local`。
@@ -186,6 +189,7 @@
 
 ## 当前先不做
 - 不把真实服务器部署标记为 completed。
+- 不在夜跑 / 无人值守模式下执行 `S3-SERVER-USER-DIR-DEPLOY-VERIFY` 或任何真实服务器任务。
 - 不把 AI-ready / AI assist / code context 写成已实现。
 - 不让服务器直接扫描任意仓库路径。
 - 不引入 RAG / embedding 作为第一步。

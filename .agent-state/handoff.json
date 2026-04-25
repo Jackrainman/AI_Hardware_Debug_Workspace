@@ -12,9 +12,11 @@
     "completed_atomic_tasks": "string[] - 已完成原子任务 ID 列表，按时间顺序",
     "next_task_selection_basis": "object - 下一任务选择依据",
     "risks": "string[] - 当前已知风险",
+    "night_run_mode": "object - 夜跑 / 无人值守安全执行边界",
+    "archive_state": "object - v0.2.0 前历史文档归档状态与读取条件",
     "notes": "string[] - 长期性约束与下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-04-26T01:49:57+08:00",
+  "timestamp": "2026-04-26T01:59:11+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "S3",
   "current_stage_name": "服务器安全部署",
@@ -96,6 +98,93 @@
     "layer_3": "after explicit user sudo authorization, install and verify systemd autostart",
     "later": "only after the above consider /opt, reverse proxy, .local or 80/443 beautification"
   },
+  "night_run_mode": {
+    "policy": "Night run / unattended mode may only execute repo-local, automatically verifiable and rollback-friendly atomic tasks. External systems, real servers, privileged operations, destructive data operations and product decisions must stop with handoff.",
+    "allowed_task_classes": [
+      "docs / planning 整理",
+      ".agent-state/handoff.json 对齐",
+      "本地代码功能",
+      "本地 verify 脚本",
+      "单元测试 / smoke 脚本",
+      "backup / export 本地功能",
+      "AI-ready UI / prompt schema",
+      "code context bundle CLI",
+      "小型局部重构"
+    ],
+    "forbidden_actions": [
+      "SSH 到服务器写入",
+      "sudo",
+      "systemd",
+      "写 /opt",
+      "操作 80/443 端口",
+      "真实服务器部署",
+      "GitHub release 删除 / tag 删除",
+      "数据库 destructive migration",
+      "删除用户数据",
+      "修改真实生产数据",
+      "大规模 UI 重构",
+      "引入大型框架",
+      "需要用户拍板的产品方向",
+      "任何无法本地自动验证的任务"
+    ],
+    "stop_conditions": [
+      "git status --short 不干净且无法归类",
+      "typecheck / build / verify 失败且不能在当前任务边界内修复",
+      "需要 SSH / sudo / systemd / 外部账号 / API key",
+      "需要用户确认路径、权限、端口、账号或密钥",
+      "涉及真实服务器",
+      "涉及删除或迁移数据",
+      "planning 与代码冲突且无法判断谁 stale",
+      "任务边界不清",
+      "连续两次修复验证仍失败",
+      "命令出现权限错误、网络错误或端口冲突但无法确定原因"
+    ],
+    "commit_rules": [
+      "每个原子任务单独 commit",
+      "提交前必须验证",
+      "提交后 git status --short 必须为空",
+      "不允许 push，除非用户明确要求",
+      "不允许改 tag / release",
+      "不允许进入下一个任务前留下脏工作区"
+    ],
+    "required_end_report": [
+      "已完成任务",
+      "每个任务 commit",
+      "验证结果",
+      "未完成任务",
+      "阻塞点",
+      "下一步最小动作",
+      "是否需要用户白天介入"
+    ],
+    "server_task_policy": "S3-SERVER-USER-DIR-DEPLOY-VERIFY、S3-SERVER-SYSTEMD-AUTOSTART-PREP、S3-SERVER-SYSTEMD-AUTOSTART-VERIFY 与任何真实服务器 / systemd / sudo 任务都不能夜跑；必须等用户白天确认 SSH、上传、写入路径、启动进程与端口边界。"
+  },
+  "archive_state": {
+    "directory": "docs/archive/v0.2-closeout/",
+    "default_read_policy": "Do not read archive by default. Read only for v0.2.0 前历史背景、专项实现追溯、API / SQLite / 不可达策略背景、release closeout 追溯或归档审计。",
+    "archived_documents": [
+      {
+        "path": "docs/archive/v0.2-closeout/s3-api-contract.md",
+        "reason": "S3 HTTP API 契约草案已被 apps/server、SQLite 主链路和 HTTP adapter 实现吸收。"
+      },
+      {
+        "path": "docs/archive/v0.2-closeout/s3-sqlite-schema-draft.md",
+        "reason": "SQLite schema 草案已被本地 SQLite storage 实现吸收。"
+      },
+      {
+        "path": "docs/archive/v0.2-closeout/s3-server-unreachable-strategy.md",
+        "reason": "服务器不可达策略已被 HTTP adapter、统一 storage feedback 与本地 smoke 验证吸收。"
+      }
+    ],
+    "current_default_fact_sources": [
+      "AGENTS.md",
+      "docs/planning/current.md",
+      "docs/planning/backlog.md",
+      "docs/planning/decisions.md",
+      ".agent-state/handoff.json",
+      "docs/product/产品介绍.md（仅产品定义 / 领域语言命中时）",
+      "README.md（仅对外展示 / 快速开始 / release 口径命中时）"
+    ]
+  },
   "frontier_tasks": [
     {
       "id": "S3-SERVER-USER-DIR-DEPLOY-VERIFY",
@@ -105,7 +194,7 @@
         "v0.2.0 release asset 已生成并本地 smoke 通过",
         "用户授权 SSH / 上传 / 在 /home/hurricane 写入"
       ],
-      "status": "ready_to_claim_now"
+      "status": "current_requires_daytime_user_authorization_not_night_run"
     },
     {
       "id": "S3-SERVER-SYSTEMD-AUTOSTART-PREP",
@@ -183,7 +272,7 @@
         "没有执行 sudo / systemd / /opt 操作"
       ],
       "next_task": "S3-SERVER-SYSTEMD-AUTOSTART-PREP",
-      "status": "current"
+      "status": "current_requires_daytime_user_authorization_not_night_run"
     },
     {
       "order": 2,
@@ -880,20 +969,27 @@
     "S3-SERVER-INDEPENDENT-DEPLOY-PREP",
     "S3-WORKSPACE-CREATE-MINIMAL",
     "REPO-HYGIENE-V0.2.0-CLOSEOUT",
-    "S3-S4-AI-ROADMAP-REBUILD"
+    "S3-S4-AI-ROADMAP-REBUILD",
+    "REPO-GOVERNANCE-NIGHT-RUN-ARCHIVE-V0.2"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
       "AGENTS.md",
       "docs/planning/current.md",
       ".agent-state/handoff.json",
-      "docs/planning/backlog.md",
       "git status --short",
       "git log --oneline -5",
       "当前任务直接相关文件"
     ],
+    "conditional_inputs": [
+      "docs/planning/backlog.md：完整队列、任务新增 / 重排 / 改名时读取",
+      "docs/planning/decisions.md：阶段切换、长期规则变化或技术拍板时读取",
+      "docs/archive/v0.2-closeout/：仅 v0.2.0 前历史背景、专项实现追溯或归档审计时读取",
+      "apps/server/deploy/*：仅服务器部署任务且用户已确认边界后读取"
+    ],
     "claiming_rule": "只允许从 pending_task_queue 中认领第一个依赖满足且未完成的原子任务；当前为 S3-SERVER-USER-DIR-DEPLOY-VERIFY。",
     "recommended_next": "S3-SERVER-USER-DIR-DEPLOY-VERIFY",
+    "night_run_gate": "blocked_for_current_next_task: S3-SERVER-USER-DIR-DEPLOY-VERIFY requires real server, SSH/upload/write/start/port confirmation and must wait for daytime user authorization.",
     "selection_order": [
       "先安全部署",
       "再 operability / data safety",
@@ -907,23 +1003,27 @@
       ".agent-state/handoff.json",
       "docs/planning/backlog.md",
       "docs/planning/decisions.md",
-      "apps/server/deploy/README.md",
-      "apps/server/deploy/install-layout.md",
-      "apps/server/deploy/env.example",
-      "apps/server/deploy/probeflash.service.template",
-      "apps/desktop/package.json",
-      "apps/desktop/scripts/verify-handoff-json.mts",
+      ".agents/skills/planning/SKILL.md",
+      ".agents/skills/task-execution/SKILL.md",
+      ".agents/skills/task-verification/SKILL.md",
+      "S3 API contract draft（移动前审计，现位于 archive）",
+      "S3 SQLite schema draft（移动前审计，现位于 archive）",
+      "S3 server unreachable strategy（移动前审计，现位于 archive）",
+      "rg 引用检查（移动前）",
       "git status --short",
-      "git log --oneline -10"
+      "git log --oneline -12"
     ]
   },
   "verification_expectations": {
-    "planning_only_this_round": [
+    "docs_governance_this_round": [
+      "移动前后 rg 引用检查",
+      "archive 文件存在且可读",
       "git diff --check",
       "python3 解析 .agent-state/handoff.json",
       "cd apps/desktop && npm run verify:handoff",
       "git status --short"
     ],
+    "skipped_for_docs_only_reason": "本轮只改 docs / planning / skills / handoff，不改功能代码、package、server API 或 desktop UI；按用户要求无需跑 typecheck / build / verify:all。",
     "code_or_package_changes": [
       "如果后续任务修改 package 或业务代码，必须额外跑 typecheck / build / verify:all"
     ],
@@ -936,6 +1036,7 @@
   },
   "risks": [
     "真实服务器部署仍未完成，不得标记 completed。",
+    "夜跑 / 无人值守模式不得执行当前服务器部署任务；必须等用户白天确认 SSH / 上传 / 写入路径 / 启动进程 / 端口边界。",
     "下一轮如果用户未授权 SSH / 上传 / 启动进程，只能输出阻塞点，不能自行部署。",
     "服务器系统 Node v10.19.0 不能运行当前 backend；必须使用独立 Node runtime。",
     "80 端口由 filebrowser 占用，ProbeFlash 必须使用 4100，不得影响既有服务。",
@@ -943,7 +1044,9 @@
     "code context 第一阶段只能处理用户显式提供的 bundle，不允许服务器任意扫描路径。"
   ],
   "notes": [
-    "本轮只重建 planning / backlog / handoff / decisions，不写功能代码，不开始真实服务器部署。",
+    "Night Run / Unattended Mode 已建立：夜跑只允许 repo-local、可自动验证、可回滚任务；真实服务器 / sudo / systemd / /opt / 80/443 / 外部账号 / API key / 删除或迁移数据 / 产品拍板必须停止。",
+    "v0.2.0 前历史专项输入已归档到 docs/archive/v0.2-closeout/；archive 不属于默认事实源，只在历史追溯、专项实现背景或归档审计时读取。",
+    "当前下一任务仍是 S3-SERVER-USER-DIR-DEPLOY-VERIFY，但它需要用户白天确认 SSH、上传、写入路径、启动进程与 4100 端口边界，不能夜跑。",
     "旧弱化文档 docs/planning/handoff.md、docs/planning/roadmap.md、docs/planning/architecture.md、.agent-state/progress.md、.agent-state/session-log.md 禁止恢复。",
     "部署安全分层固定为 /home/hurricane/probeflash no-sudo 验证 -> systemd prep -> 用户授权后 systemd verify -> release update / rollback -> S4 data safety。",
     "旧 apps/server/deploy/* 中的 /opt 材料只能作为参考输入；当前下一任务不得把 /opt 当作第一部署目标。",

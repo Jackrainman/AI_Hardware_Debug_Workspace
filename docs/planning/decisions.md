@@ -154,3 +154,12 @@
 - 原因：draft-only 能保留用户确认权，explicit bundle 能避免服务器任意扫仓库路径、读取 secrets 或自动执行命令，同时仍能支撑后续 AI 排查建议。
 - 放弃方案：一上来接 RAG / embedding；浏览器保存 API key；AI 直接写库；server 任意读取项目路径；默认扫全仓库；自动运行构建或测试命令。
 - 影响与后续动作：`AI-READY-*` 必须先于 `AI-ASSIST-*`；`CODE-CONTEXT-BUNDLE-CLI` 必须先于任何 repo connector；repo connector 只作为 bundle MVP 后的后续评估项。
+
+
+## D-013：建立夜跑安全执行范式并归档 v0.2 前历史文档
+- 日期：2026-04-26
+- 背景：v0.2.0 release 已完成，本地 HTTP + SQLite 主链路可用；下一主线是服务器用户目录部署验证，但该任务涉及 SSH、上传、真实服务器写入、启动进程与端口边界，不能在用户不在线时硬跑。与此同时，v0.2 前 API / SQLite / 不可达策略草案已被实现吸收，继续放在 `docs/planning/` 会让后续 AI 误读为当前输入。
+- 决策：建立 Night Run / Unattended Mode。夜跑只允许 repo-local、可自动验证、可回滚任务；遇到服务器、sudo、systemd、外部账号、API key、路径 / 权限 / 端口确认、删除 / 迁移数据、产品拍板或无法本地验证的问题必须停止并留下 handoff。将 v0.2 前历史专项输入移动到 `docs/archive/v0.2-closeout/`，默认读取链不再包含 archive。
+- 原因：把无人值守能力限制在安全边界内，避免误操作服务器或真实数据；同时让 `docs/planning/` 继续只承载当前战况、候选池与长期拍板，降低上下文重置后的误读风险。
+- 放弃方案：夜跑继续推进真实服务器部署；把历史草案留在 `docs/planning/`；删除历史文档；恢复已硬删除的弱化 handoff / roadmap / architecture 文档。
+- 影响与后续动作：`AGENTS.md`、`current.md`、`backlog.md`、`.agent-state/handoff.json` 与相关 skills 必须保留夜跑边界；当前下一任务仍是 `S3-SERVER-USER-DIR-DEPLOY-VERIFY`，但只能在用户白天确认 SSH / 上传 / 写入路径 / 启动进程 / 4100 端口边界后执行。

@@ -7,7 +7,8 @@
 
 ## 2. Workspace Rules
 - `docs/product/` 只放产品定义、用户场景、领域语言、数据模型与长期能力方向。
-- `docs/planning/` 只放当前战况、候选池、长期拍板与专项实现输入。
+- `docs/planning/` 只放当前战况、候选池与长期拍板；v0.2.0 前已经完成或过期的历史专项输入放入 `docs/archive/v0.2-closeout/`。
+- `docs/archive/v0.2-closeout/` 只放 v0.2.0 closeout 前历史文档；AI 不应默认读取，除非任务明确命中历史背景、专项实现追溯或归档审计。
 - `.agent-state/` 只放上下文重置所需的机读状态；当前唯一机读状态文件是 `.agent-state/handoff.json`。
 - `.debug_workspace/` 只放调试运行数据与归档。
 - `.agents/skills/` 只放可执行流程规则；一个 skill 只做一件事。
@@ -41,7 +42,7 @@
   - `docs/planning/decisions.md`：阶段切换、长期规则变化、技术争议或需要核对长期拍板时读取。
   - `docs/product/产品介绍.md`：改产品定义、页面结构、领域模型、用户场景或领域语言时读取。
   - `README.md`：对外展示、快速开始、比赛/演示口径变更时读取；它不是内部事实源，不进入默认内部读取链。
-  - `docs/planning/s3-api-contract.md`、`docs/planning/s3-sqlite-schema-draft.md`、`docs/planning/s3-server-unreachable-strategy.md`：仅在任务命中对应 API、SQLite 或服务器不可达策略实现时读取。
+  - `docs/archive/v0.2-closeout/`：仅在任务命中 v0.2.0 前历史背景、API / SQLite / 不可达策略追溯或归档审计时读取；不得作为当前默认事实源。
 - 选择下一任务时优先判断：当前 mode、阶段目标、completion gate 是否闭合、依赖是否满足、是否遵守“本地 WSL 最小闭环先于服务器部署验证”、planning 与实际是否脱节、是否最有利于验收演示。
 - 如果 `current.md` 前沿窗口不再匹配真实阶段，先更新 `current.md` / `.agent-state/handoff.json`，再执行任务。
 - 禁止凭旧计划机械顺推；禁止同时推进两个原子任务。
@@ -98,10 +99,8 @@
   - `docs/product/产品介绍.md`：产品定义、场景、数据模型、领域语言、长期能力方向；不承担当前战况职责，不默认读取。
 - **对外保留**：
   - `README.md`：对外门面、快速开始、展示口径、当前限制；不是内部事实源，不默认读取。
-- **专项实现输入**：
-  - `docs/planning/s3-api-contract.md`：S3 HTTP API 契约输入，命中后端/API adapter 任务时读取。
-  - `docs/planning/s3-sqlite-schema-draft.md`：S3 SQLite schema 输入，命中 SQLite storage 任务时读取。
-  - `docs/planning/s3-server-unreachable-strategy.md`：服务器不可达策略输入，命中相关前端/adapter 任务时读取。
+- **历史归档**：
+  - `docs/archive/v0.2-closeout/`：v0.2.0 前已完成 / 过期专项输入。默认不读；只有任务明确需要历史 API / SQLite / 不可达策略背景、release closeout 追溯或归档审计时才读。
 - **已完成任务历史**：以 `git log` 与 `.agent-state/handoff.json.completed_atomic_tasks` 为主，不在 `current.md` / `backlog.md` 重复维护长已完成列表。
 - **禁止**：在多个文档里并行维护“当前战况 / 已完成列表 / 上一轮详述”；弱化文档已硬删除，不得恢复。
 
@@ -117,13 +116,17 @@
   - `README.md`：产品对外口径、快速开始、阶段口径、演示说明发生变化时。
 - **防膨胀约束**：单轮 planning sync 优先修改已有段落，不新增同义新段；若某段描述只是在重复 `backlog.md` / `decisions.md` / `git log` / `.agent-state/handoff.json`，必须删减或改为引用；非长期规则不得写入 `AGENTS.md`；非长期决策不得写入 `decisions.md`。
 
-## 15. Overnight / Unattended Boundaries（夜跑 / 无人值守边界）
-- 允许方向：文档对齐、`.agent-state/handoff.json` 对齐、verify 脚本补齐、低风险异味扫描、单个原子任务内的 S3 服务器化最小改动（仍受 §5 安全改动限制）。
-- S3 阶段禁止方向：AI runtime 接入、RAG/embedding、权限系统、Electron / preload / IPC、大规模 UI 重构、复杂统计、多任务并行推进、未完成 `S3-ARCH-*` 三个缝合任务前直接把 HTTP 硬塞进组件、未完成 `S3-LOCAL-END-TO-END-VERIFY` 前直接开做服务器部署验证。
-- 每轮仍遵守 §6 / §7：只一个原子任务在执行、完成前必须跑最小验证 + planning sync + 单任务 commit；夜跑不允许跳过。
+## 15. Night Run / Unattended Mode（夜跑 / 无人值守模式）
+- 定义：当用户不在线、明确要求夜跑、或任务需要无人值守执行时，AI 只能执行 repo-local、可自动验证、可回滚的原子任务；遇到外部系统、权限、服务器、真实数据或产品拍板问题必须停止并留下 handoff。
+- 允许任务：docs / planning 整理、`.agent-state/handoff.json` 对齐、本地代码功能、本地 verify 脚本、单元测试 / smoke 脚本、backup / export 本地功能、AI-ready UI / prompt schema、code context bundle CLI、小型局部重构。
+- 禁止任务：SSH 到服务器写入、`sudo`、`systemd`、写 `/opt`、操作 80/443 端口、真实服务器部署、GitHub release / tag 删除、数据库 destructive migration、删除用户数据、修改真实生产数据、大规模 UI 重构、引入大型框架、需要用户拍板的产品方向、任何无法本地自动验证的任务。
+- 停止条件：`git status --short` 不干净且无法归类；typecheck / build / verify 失败且不能在当前任务边界内修复；需要 SSH / `sudo` / `systemd` / 外部账号 / API key；需要用户确认路径、权限、端口、账号或密钥；涉及真实服务器；涉及删除或迁移数据；planning 与代码冲突且无法判断谁 stale；任务边界不清；连续两次修复验证仍失败；命令出现权限错误、网络错误或端口冲突且无法确定原因。
+- 提交规则：每个原子任务单独 commit；提交前必须验证；提交后 `git status --short` 必须为空；不允许 push，除非用户明确要求；不允许改 tag / release；不允许进入下一个任务前留下脏工作区。
+- 输出要求：夜跑结束必须输出已完成任务、每个任务 commit、验证结果、未完成任务、阻塞点、下一步最小动作、是否需要用户白天介入。
+- 服务器任务规则：`S3-SERVER-USER-DIR-DEPLOY-VERIFY`、`S3-SERVER-SYSTEMD-AUTOSTART-PREP`、`S3-SERVER-SYSTEMD-AUTOSTART-VERIFY` 与任何真实服务器部署 / systemd / sudo 任务都不能夜跑；当前下一任务仍是 `S3-SERVER-USER-DIR-DEPLOY-VERIFY`，必须等用户白天确认 SSH、上传、写入路径、启动进程与端口边界后才可执行。
 
 ## 16. Verification Matrix（验证矩阵）
-- **必跑**（每轮都要跑，除非用户明确免除）：
+- **必跑**（每轮都要跑，除非用户明确免除；docs / planning / skills-only 治理任务可按任务要求改跑文档专用最小验证，但必须在 handoff / 汇报说明未跑 typecheck、build、verify:all 的原因）：
   - `npm run typecheck`（在 `apps/desktop` 下）。
   - `npm run build`（在 `apps/desktop` 下）。
   - `git diff --check`（不限目录）。

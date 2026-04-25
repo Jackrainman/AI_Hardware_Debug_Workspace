@@ -1,10 +1,10 @@
 # S3 SQLite Schema Draft
 
-> 状态：草案。用于后续 `S3-SQLITE-STORAGE` 实现前统一表、外键、索引和版本边界；本文件不创建数据库、不写迁移脚本。
+> 归档状态：v0.2.0 前专项输入，SQLite schema 已由本地 HTTP + SQLite 主链路实现吸收。默认事实源不再读取本文件；仅在追溯历史 schema 草案或排查 v0.2 前实现背景时读取。
 
 ## 1. 设计目标
 
-- 支撑 `docs/planning/s3-api-contract.md` 中的最小 API。
+- 支撑已归档的 `docs/archive/v0.2-closeout/s3-api-contract.md` 中的最小 API。
 - 以 `workspace_id` 作为所有业务实体的归属边界。
 - 保持当前前端实体 schema 兼容：IssueCard / InvestigationRecord / ArchiveDocument / ErrorEntry 原样作为 JSON payload 保存。
 - 优先可调试、可读回、可恢复，不在 S3 准备期引入复杂投影表。

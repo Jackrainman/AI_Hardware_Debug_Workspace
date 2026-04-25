@@ -1,6 +1,6 @@
 # S3 Server Unreachable Strategy
 
-> 状态：策略草案（已对齐当前代码里的 `storage-feedback.ts` 命名与连接状态模型）。本文件用于约束后续 HTTP storage adapter 与统一错误出口的接法；本轮不直接实现 UI、不做离线队列。
+> 归档状态：v0.2.0 前专项输入，服务器不可达策略已被当前 HTTP adapter、统一 storage error / connection state 与本地 smoke 验证吸收。默认事实源不再读取本文件；仅在追溯历史不可达策略或排查 v0.2 前实现背景时读取。
 
 ## 1. 目标
 
