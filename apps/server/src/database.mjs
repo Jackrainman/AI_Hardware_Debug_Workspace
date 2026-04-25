@@ -10,6 +10,15 @@ export const DEFAULT_WORKSPACE = {
   isDefault: true,
 };
 
+export function normalizeDefaultWorkspace(overrides = {}) {
+  return {
+    ...DEFAULT_WORKSPACE,
+    ...overrides,
+    description: overrides.description ?? DEFAULT_WORKSPACE.description,
+    isDefault: true,
+  };
+}
+
 function assertObject(payload, message) {
   if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
     const error = new Error(message);
@@ -144,7 +153,8 @@ function createStorageError(message, code = "STORAGE_ERROR") {
   return error;
 }
 
-export function createProbeFlashDatabase(dbPath) {
+export function createProbeFlashDatabase(dbPath, options = {}) {
+  const defaultWorkspace = normalizeDefaultWorkspace(options.defaultWorkspace);
   mkdirSync(dirname(dbPath), { recursive: true });
   const db = new DatabaseSync(dbPath);
   db.exec(`
@@ -240,13 +250,23 @@ export function createProbeFlashDatabase(dbPath) {
   `).run(String(SCHEMA_VERSION), now);
 
   db.prepare(`
+    UPDATE workspaces
+    SET is_default = 0, updated_at = ?
+    WHERE id <> ? AND is_default = 1
+  `).run(now, defaultWorkspace.id);
+
+  db.prepare(`
     INSERT INTO workspaces (id, name, description, is_default, created_at, updated_at)
     VALUES (?, ?, ?, 1, ?, ?)
-    ON CONFLICT(id) DO UPDATE SET updated_at = excluded.updated_at
+    ON CONFLICT(id) DO UPDATE SET
+      name = excluded.name,
+      description = excluded.description,
+      is_default = 1,
+      updated_at = excluded.updated_at
   `).run(
-    DEFAULT_WORKSPACE.id,
-    DEFAULT_WORKSPACE.name,
-    DEFAULT_WORKSPACE.description,
+    defaultWorkspace.id,
+    defaultWorkspace.name,
+    defaultWorkspace.description,
     now,
     now,
   );

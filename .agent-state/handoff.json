@@ -19,19 +19,19 @@
     "verification_expectations": "object - 当前阶段默认验证矩阵与按任务加严要求",
     "environment_facts": "object - 当前已确认的服务器与本机环境事实"
   },
-  "timestamp": "2026-04-25T11:11:31+08:00",
+  "timestamp": "2026-04-25T13:22:20+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "S3",
   "current_stage_name": "存储迁移与服务器化",
   "current_stage_goal": "把 D1 的浏览器 SPA + window.localStorage 演示版迁移为战队局域网可访问、服务端长期存储的版本；当前先走“架构缝合 -> WSL 本地最小闭环 -> 服务器独立部署验证”。",
   "primary_track": "s3_local_first_then_independent_server_deploy",
   "deferred_track": "ai_rag_permissions_electron_multi_workspace",
-  "current_atomic_task": "S3-SERVER-INDEPENDENT-DEPLOY-PREP",
+  "current_atomic_task": "S3-SERVER-INDEPENDENT-DEPLOY-VERIFY",
   "storage_strategy": {
     "current_truth": "apps/desktop 浏览器 runtime 已切到 HTTP storage adapter；Node / 无 window 的 verify 环境保留 localStorage repository 兼容旧 verify。/api 相对路径、Vite proxy、统一 storage error / connection state 与 backend scaffold 已接通；S3-LOCAL-END-TO-END-VERIFY 已通过，issue -> record -> closeout -> archive/error-entry/archived issue 可从 SQLite 读回。",
-    "next_closure": "只为服务器独立部署做准备，锁定独立 runtime / 目录 / 端口 / systemd service 与部署材料；不要开始服务器部署验证。",
+    "next_closure": "S3-SERVER-INDEPENDENT-DEPLOY-PREP 已完成；下一步只在人工确认边界后执行 S3-SERVER-INDEPENDENT-DEPLOY-VERIFY，把独立 runtime / 目录 / 端口 / systemd service 方案部署到服务器并验证 LAN + SQLite + 80 端口旁路。",
     "local_first_route": "完成 S3-ARCH-* 三个缝合任务后，在 WSL 本地跑通最小 backend + SQLite + HTTP adapter。",
-    "server_route_after_local": "S3-LOCAL-END-TO-END-VERIFY 已完成；下一步先做服务器独立部署准备，再做服务器独立部署验证。",
+    "server_route_after_local": "S3-LOCAL-END-TO-END-VERIFY 与 S3-SERVER-INDEPENDENT-DEPLOY-PREP 已完成；下一步是服务器独立部署验证。",
     "silent_fallback_policy": "禁止用 localStorage silent fallback 冒充服务器成功；失败态必须显式暴露。"
   },
   "access_strategy": {
@@ -46,54 +46,33 @@
   },
   "frontier_tasks": [
     {
-      "id": "S3-SERVER-INDEPENDENT-DEPLOY-PREP",
-      "track": "s3_local_first_then_independent_server_deploy",
-      "goal": "只为服务器独立部署做准备，规划独立 runtime / 目录 / 端口 / systemd service。",
-      "scope": [
-        "明确独立 runtime / 目录 / 端口",
-        "准备 service unit / 启停脚本 / 环境变量模板",
-        "保持不影响现有 80 端口服务"
-      ],
-      "non_goals": [
-        "不做服务器验证",
-        "不升级系统 Node",
-        "不抢占 80 端口"
-      ],
-      "depends_on": [
-        "S3-LOCAL-END-TO-END-VERIFY"
-      ],
-      "verification": [
-        "文档 / 路径 / service unit / 启动脚本一致性检查",
-        "脚本语法 / 引用 / 路径级验证",
-        "git diff --check",
-        "cd apps/desktop && npm run verify:handoff"
-      ],
-      "status": "ready_to_claim_now"
-    },
-    {
       "id": "S3-SERVER-INDEPENDENT-DEPLOY-VERIFY",
       "track": "s3_local_first_then_independent_server_deploy",
-      "goal": "将本地已验证方案部署到服务器独立端口，由 systemd 拉起，并验证局域网设备可访问且不影响既有 Web 服务。",
+      "goal": "将本地已验证方案与已准备的独立部署材料部署到服务器独立端口，由 systemd 拉起，并验证 LAN 访问、SQLite 持久化与 80 端口旁路。",
       "scope": [
-        "部署到独立目录 / 独立端口 / 独立 service",
-        "验证 LAN 访问与 SQLite 持久化",
-        "确认现有 80 端口服务不受影响"
+        "按 apps/server/deploy/ 材料执行独立部署验证",
+        "验证独立 runtime / 独立目录 / 独立端口 / 独立 systemd service",
+        "验证局域网访问、SQLite 重启读回、旧 80 服务不受影响"
       ],
       "non_goals": [
         "不抢占 80 端口",
-        "不修改现有服务依赖的系统 Node",
-        "不顺手做 .local / 反向代理美化"
+        "不升级系统 Node",
+        "不顺手做 .local / 反向代理美化",
+        "未获人工确认前不执行真实服务器操作"
       ],
       "depends_on": [
         "S3-SERVER-INDEPENDENT-DEPLOY-PREP"
       ],
       "verification": [
-        "systemctl status / journalctl",
-        "127.0.0.1 与 192.168.2.2 访问检查",
-        "重启后 SQLite 数据读回",
-        "80 端口旧服务旁路验证"
+        "systemctl status probeflash.service / journalctl -u probeflash.service",
+        "curl http://127.0.0.1:4100/api/health（服务器本机）",
+        "curl http://192.168.2.2:4100/api/health 或等价局域网检查",
+        "局域网设备访问 smoke",
+        "服务重启后 SQLite 数据仍可读回",
+        "确认 80 端口既有服务不受影响",
+        "失败时执行回滚并确认旧服务仍正常"
       ],
-      "status": "queued_after_deploy_prep"
+      "status": "ready_to_claim_now"
     }
   ],
   "s3_task_breakdown": {
@@ -162,7 +141,8 @@
     "S3-ARCH-UNIFIED-STORAGE-ERROR-STATE",
     "S3-LOCAL-BACKEND-SCAFFOLD",
     "S3-LOCAL-HTTP-STORAGE-ADAPTER",
-    "S3-LOCAL-END-TO-END-VERIFY"
+    "S3-LOCAL-END-TO-END-VERIFY",
+    "S3-SERVER-INDEPENDENT-DEPLOY-PREP"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -181,10 +161,10 @@
       "是否坚持独立 runtime / 独立端口 / 独立 systemd service，且不升级服务器全局 Node",
       "是否保持默认读取集合最小，不把 README / 产品介绍 / decisions 重新塞回默认必读"
     ],
-    "claiming_rule": "只允许从 pending_task_queue 中认领第一个“依赖已满足且未完成”的原子任务；禁止发散式自找任务。",
-    "recommended_next": "S3-SERVER-INDEPENDENT-DEPLOY-PREP",
-    "after_current_complete": "S3-SERVER-INDEPENDENT-DEPLOY-VERIFY",
-    "output_rule": "下一轮先读默认最小事实源，再读服务器独立部署准备直接相关文件；严格按 current.md 与 pending_task_queue 中的当前任务拆解执行，只准备独立部署材料，不开始服务器部署验证。",
+    "claiming_rule": "只允许从 pending_task_queue 中认领第一个“依赖已满足且未完成”的原子任务；当前只剩 S3-SERVER-INDEPENDENT-DEPLOY-VERIFY。",
+    "recommended_next": "S3-SERVER-INDEPENDENT-DEPLOY-VERIFY",
+    "after_current_complete": null,
+    "output_rule": "下一轮先读默认最小事实源与 apps/server/deploy/*；真实部署前必须人工确认 SSH / 登录方式 / sudo 边界 / 服务账号 / /opt/probeflash 权限 / 4100 端口 / 独立 Node runtime / systemd service 操作许可。未确认时不得部署。",
     "conditional_inputs": {
       "docs/planning/backlog.md": "需要完整剩余队列、详细任务拆解、或队列新增/移除/改名/重排时读取。",
       "docs/planning/decisions.md": "长期规则变化、阶段拍板变化、技术争议或需要核对长期决策时读取。",
@@ -196,22 +176,23 @@
     }
   },
   "risks": [
-    "下一轮是服务器独立部署准备，容易越界成真实服务器部署；必须只准备独立 runtime / 目录 / 端口 / systemd service 材料，不上服务器执行验证。",
-    "在当前 Codex 执行环境中，任何需要监听 127.0.0.1 的 server-backed verify 都会在沙箱内报 listen EPERM；后续这类验证需继续使用无沙箱执行。",
-    "服务器环境事实（80 端口占用、系统 Node v10.19.0、systemd 可用等）本轮未在仓库内复验；进入部署类任务前必须再次现场确认。"
+    "下一轮是真实服务器独立部署验证，必须先获得人工确认边界；不得默认 SSH / sudo / 上传 / systemd 操作已授权。",
+    "服务器系统 Node v10.19.0 不能运行当前 node:sqlite backend；必须使用 /opt/probeflash/runtime/node/bin/node，推荐 Node 24 LTS 或 Node 22 LTS >=22.13.0。",
+    "80 端口已有服务必须旁路保护；ProbeFlash 默认使用 4100 端口，不做反向代理 / .local 美化。",
+    "若后续执行环境出现 listen EPERM，必须标注为环境限制并改用允许监听的执行方式；不得伪造 server-backed verify 通过。"
   ],
   "notes": [
     "默认读取链仍然只保留 AGENTS/current/handoff/git status/git log/任务相关文件；README、产品介绍、decisions 都不回到默认必读集合。",
     "S3 当前路线已固定为：先 S3-ARCH-* 架构缝合，再 WSL 本地最小闭环，再服务器独立部署验证。",
+    "S3-SERVER-INDEPENDENT-DEPLOY-PREP 已完成：apps/server/deploy/ 提供 env.example、probeflash.service.template、install-layout.md、README.md；本轮未实际部署到服务器。",
+    "apps/server 支持 PROBEFLASH_HOST / PORT / DB_PATH / LOG_DIR / WORKSPACE_ID / WORKSPACE_NAME；默认本地行为保持 127.0.0.1:4100 + apps/server/.runtime + workspace-26-r1。",
+    "部署 runtime 必须独立放在 /opt/probeflash/runtime/node/；systemd ExecStart 必须指向该绝对路径，不得使用系统 Node。",
     "前端浏览器 runtime 已切到 HTTP storage adapter；Node / 无 window 的 verify 环境继续走 localStorage compatibility，仅用于既有 verify 脚本。",
-    "本地联调连接方案已落地并固定：前端请求 /api，经 Vite proxy 转发到 127.0.0.1:4100；独立部署仍按 192.168.2.2:<port> 理解。",
-    "S3-LOCAL-END-TO-END-VERIFY 已通过：任务级脚本已证明 issue -> record -> closeout -> archive/error-entry/archived issue 可经 HTTP + SQLite 读回，失败态不会 silent fallback。",
-    "当前 Codex 沙箱内对 127.0.0.1 监听会触发 listen EPERM；server-backed verify 需要无沙箱执行。",
     "不得把 localStorage silent fallback 冒充服务器成功；失败态必须显式可见。"
   ],
   "s3_prep_task_pool": {
     "recommended_order": [],
-    "ordering_note": "五个 S3-PREP 仓库内准备任务均已完成；当前主线改为 S3-ARCH-* -> S3-LOCAL-* -> S3-SERVER-INDEPENDENT-*。",
+    "ordering_note": "五个 S3-PREP 仓库内准备任务与 S3-SERVER-INDEPENDENT-DEPLOY-PREP 均已完成；当前主线只剩 S3-SERVER-INDEPENDENT-DEPLOY-VERIFY。",
     "tasks": {
       "S3-PREP-WORKSPACE-FOUNDATION": {
         "goal": "引入默认共用工作区基础逻辑，并预留后续增加工作区路径。",
@@ -278,7 +259,7 @@
       }
     }
   },
-  "current_focus": "基于已通过的本地 HTTP + SQLite 闭环，准备服务器独立部署所需的 runtime / 目录 / 端口 / systemd service 材料；本轮不开始服务器部署验证。",
+  "current_focus": "S3-SERVER-INDEPENDENT-DEPLOY-PREP 已完成；当前收敛点切换为 S3-SERVER-INDEPENDENT-DEPLOY-VERIFY。下一轮需要真实服务器环境和人工确认边界后，按 apps/server/deploy/ 材料执行独立部署验证。",
   "environment_facts": {
     "server": {
       "os": "Ubuntu 20.04.6 LTS",
@@ -301,93 +282,41 @@
   "pending_task_queue": [
     {
       "order": 1,
-      "id": "S3-SERVER-INDEPENDENT-DEPLOY-PREP",
-      "goal": "只为服务器独立部署做准备，规划独立 runtime / 目录 / 端口 / systemd service，不碰系统全局 Node。",
-      "input_boundary": [
-        "已验证的 WSL 本地方案",
-        "docs/planning/current.md",
-        ".agent-state/handoff.json",
-        "docs/planning/backlog.md",
-        "apps/server/package.json",
-        "apps/server/src/server.mjs",
-        "新增的部署脚本 / service unit / 环境变量模板（优先集中在 apps/server/deploy/ 与 apps/server/scripts/）"
-      ],
-      "implementation_steps": [
-        "锁定独立 runtime 方案：使用独立 Node 24 运行时，不依赖服务器系统 Node 10.19.0。",
-        "锁定独立目录：应用目录、数据目录、日志目录、runtime 目录相互清晰，不污染现有服务。",
-        "锁定独立端口：明确 ProbeFlash 服务监听的非 80 端口，并记录选择依据。",
-        "锁定独立 systemd service：service name、WorkingDirectory、Environment、ExecStart、Restart 策略。",
-        "补齐最小部署材料：安装/更新脚本、service unit、环境变量模板、目录说明。",
-        "记录执行前置条件：登录用户、sudo 边界、目标路径权限、开放端口/防火墙要求、runtime 获取方式。",
-        "先在仓库内完成语法 / 路径 / 引用级验证，不提前上服务器。"
-      ],
-      "expected_change_points": [
-        "apps/server/package.json（如需补部署脚本入口）",
-        "apps/server/deploy/*",
-        "apps/server/scripts/*",
-        "docs/planning/current.md",
-        ".agent-state/handoff.json",
-        "docs/planning/backlog.md"
-      ],
-      "non_goals": [
-        "不上服务器执行真实部署",
-        "不升级系统 Node",
-        "不抢占 80 端口",
-        "不改现有 Web 服务 / 反向代理 / .local"
-      ],
-      "verification": [
-        "git diff --check",
-        "若新增 shell 脚本：至少 bash -n",
-        "若新增 systemd unit：至少做路径 / 字段 / 依赖检查；环境可用时再做 systemd-analyze verify",
-        "读回确认端口、工作目录、数据目录、日志目录、runtime 路径在所有文档 / 脚本中一致",
-        "cd apps/desktop && npm run verify:handoff"
-      ],
-      "definition_of_done": [
-        "独立 runtime / 目录 / 端口 / service 方案明确且可执行",
-        "部署所需输入信息列全，不再靠临场拍脑袋",
-        "仓库内的部署材料位置、命名、职责清晰",
-        "S3-SERVER-INDEPENDENT-DEPLOY-VERIFY 依赖解除"
-      ],
-      "depends_on": [
-        "S3-LOCAL-END-TO-END-VERIFY"
-      ],
-      "next_task": "S3-SERVER-INDEPENDENT-DEPLOY-VERIFY",
-      "claim_after": "S3-LOCAL-END-TO-END-VERIFY",
-      "status": "current"
-    },
-    {
-      "order": 2,
       "id": "S3-SERVER-INDEPENDENT-DEPLOY-VERIFY",
-      "goal": "将本地已验证方案部署到服务器独立端口，由 systemd 拉起，并验证局域网设备可访问且不影响既有 Web 服务。",
+      "goal": "将本地已验证方案与已准备的独立部署材料部署到服务器独立端口，由 systemd 拉起，并验证局域网设备可访问、SQLite 数据可持续、现有 80 端口服务不受影响。",
       "input_boundary": [
-        "服务器独立部署方案",
+        "apps/server/deploy/README.md",
+        "apps/server/deploy/install-layout.md",
+        "apps/server/deploy/env.example",
+        "apps/server/deploy/probeflash.service.template",
         "本地已验证产物",
         "目标服务器 192.168.2.2",
-        "部署脚本 / service unit / runtime 包 / 应用产物"
+        "人工确认的 SSH / 登录方式 / sudo 边界 / 服务账号 / 4100 端口使用许可"
       ],
       "implementation_steps": [
-        "将 runtime + 应用产物复制到独立目录，不覆盖现有 Web 服务目录。",
-        "安装 / 更新 systemd service，执行 daemon-reload、enable、start 或等价流程。",
-        "在服务器本机验证：服务监听预定独立端口，/api/health 返回 ok。",
-        "在局域网设备验证：192.168.2.2:<port> 可访问，主路径仍落到服务器 SQLite。",
-        "验证 systemctl restart 后服务恢复，SQLite 数据仍可读回。",
-        "验证 80 端口既有服务不受影响。",
-        "若失败，按预先定义的回滚边界撤回新 service / 新目录变更，不影响旧服务。"
+        "部署前人工确认：SSH / 登录方式、sudo 边界、服务账号与 group、/opt/probeflash 创建权限、4100 端口可用性、是否允许安装独立 Node runtime、是否允许新增并启动 probeflash.service。",
+        "确认服务器事实：80 端口仍由旧服务占用、系统 Node 仍不改、systemd 可用、独立 runtime 路径可用。",
+        "按 apps/server/deploy/install-layout.md 准备独立目录、release、shared data/log/env、runtime 与 current symlink。",
+        "按 env.example 写入 /opt/probeflash/shared/env/probeflash.env，按 service template 渲染真实 unit。",
+        "只启动独立 probeflash.service，验证 /api/health、SQLite 创建 / 重启读回、日志、LAN 访问与旧 80 服务旁路。",
+        "若失败，按部署材料中的回滚边界只停用新 service / 回退 current symlink，不动旧 80 服务和系统 Node。"
       ],
       "expected_change_points": [
-        "仓库内通常只会补 deployment notes / planning sync / 必要的 deploy 脚本修补",
-        "真实部署动作发生在服务器文件系统与 systemd 环境，不在仓库内伪造“已部署完成”"
+        "真实部署动作发生在服务器文件系统与 systemd 环境",
+        "仓库内通常只会补 deployment notes / planning sync / 必要的 deploy 材料修补",
+        "不得在仓库内伪造已部署完成"
       ],
       "non_goals": [
         "不抢占 80 端口",
         "不修改现有服务依赖的系统 Node",
         "不把 localStorage 演示版说成服务器化完成",
-        "不顺手做 .local / 反向代理美化"
+        "不顺手做 .local / 反向代理美化",
+        "未获人工确认前不默认执行 SSH / sudo / 上传 / systemd 操作"
       ],
       "verification": [
-        "systemctl status <service> / journalctl -u <service>",
-        "curl http://127.0.0.1:<port>/api/health（服务器本机）",
-        "curl http://192.168.2.2:<port>/api/health 或等价局域网检查",
+        "systemctl status probeflash.service / journalctl -u probeflash.service",
+        "curl http://127.0.0.1:4100/api/health（服务器本机）",
+        "curl http://192.168.2.2:4100/api/health 或等价局域网检查",
         "局域网设备访问 smoke",
         "服务重启后 SQLite 数据仍可读回",
         "确认 80 端口既有服务不受影响",
@@ -396,7 +325,7 @@
       "definition_of_done": [
         "局域网设备可通过独立端口访问 ProbeFlash",
         "服务端长期存储生效并可跨服务重启读回",
-        "既有服务不受影响",
+        "既有 80 端口服务不受影响",
         "S3 服务器独立部署最小闭环成立"
       ],
       "depends_on": [
@@ -404,7 +333,7 @@
       ],
       "next_task": null,
       "claim_after": "S3-SERVER-INDEPENDENT-DEPLOY-PREP",
-      "status": "pending"
+      "status": "current"
     }
   ],
   "verification_expectations": {
@@ -430,6 +359,33 @@
       "确认 systemd service 可拉起且日志可读",
       "确认既有 80 端口 Web 服务不受影响",
       "确认局域网访问与重启后读回"
+    ]
+  },
+  "deploy_prep_artifacts": {
+    "status": "completed",
+    "actual_server_deploy_executed": false,
+    "paths": [
+      "apps/server/deploy/README.md",
+      "apps/server/deploy/install-layout.md",
+      "apps/server/deploy/env.example",
+      "apps/server/deploy/probeflash.service.template"
+    ],
+    "server_env_supported": [
+      "PROBEFLASH_HOST",
+      "PROBEFLASH_PORT",
+      "PROBEFLASH_DB_PATH",
+      "PROBEFLASH_LOG_DIR",
+      "PROBEFLASH_WORKSPACE_ID",
+      "PROBEFLASH_WORKSPACE_NAME"
+    ],
+    "next_requires_manual_confirmation": [
+      "SSH / 登录方式",
+      "sudo 边界",
+      "服务账号与 group",
+      "/opt/probeflash 创建权限",
+      "4100 端口可用性",
+      "独立 Node runtime 安装方式",
+      "新增并启动 probeflash.service 的许可"
     ]
   }
 }

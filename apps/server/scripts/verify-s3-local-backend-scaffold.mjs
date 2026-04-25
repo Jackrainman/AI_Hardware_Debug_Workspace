@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -53,6 +53,9 @@ try {
   }
   if (workspaces.data.items[0].id !== "workspace-26-r1") {
     fail("default workspace id mismatch", workspaces.data.items);
+  }
+  if (workspaces.data.items[0].name !== "26年 R1") {
+    fail("default workspace name mismatch", workspaces.data.items);
   }
 
   const issuePayload = {
@@ -158,4 +161,56 @@ try {
   console.log("[S3-LOCAL-BACKEND-SCAFFOLD verify] PASS: SQLite schema and inserted row are readable from db file");
 } finally {
   await server.close();
+}
+
+const deployWorkdir = mkdtempSync(join(tmpdir(), "probeflash-server-deploy-env-"));
+const deployDbPath = join(deployWorkdir, "custom.sqlite");
+const deployLogDir = join(deployWorkdir, "logs");
+
+const previousDeployEnv = {
+  PROBEFLASH_HOST: process.env.PROBEFLASH_HOST,
+  PROBEFLASH_PORT: process.env.PROBEFLASH_PORT,
+  PROBEFLASH_DB_PATH: process.env.PROBEFLASH_DB_PATH,
+  PROBEFLASH_LOG_DIR: process.env.PROBEFLASH_LOG_DIR,
+  PROBEFLASH_WORKSPACE_ID: process.env.PROBEFLASH_WORKSPACE_ID,
+  PROBEFLASH_WORKSPACE_NAME: process.env.PROBEFLASH_WORKSPACE_NAME,
+};
+
+process.env.PROBEFLASH_HOST = "127.0.0.1";
+process.env.PROBEFLASH_PORT = "0";
+process.env.PROBEFLASH_DB_PATH = deployDbPath;
+process.env.PROBEFLASH_LOG_DIR = deployLogDir;
+process.env.PROBEFLASH_WORKSPACE_ID = "workspace-deploy-smoke";
+process.env.PROBEFLASH_WORKSPACE_NAME = "部署验证工作区";
+
+let deployServer;
+try {
+  deployServer = await startProbeFlashServer();
+} finally {
+  for (const [key, value] of Object.entries(previousDeployEnv)) {
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
+}
+
+try {
+  const deployWorkspacesResponse = await fetch(`${deployServer.baseUrl}/api/workspaces`);
+  const deployWorkspaces = await deployWorkspacesResponse.json();
+  if (
+    !deployWorkspacesResponse.ok ||
+    deployWorkspaces.ok !== true ||
+    deployWorkspaces.data.items[0]?.id !== "workspace-deploy-smoke" ||
+    deployWorkspaces.data.items[0]?.name !== "部署验证工作区"
+  ) {
+    fail("deploy env workspace override should seed the configured workspace", deployWorkspaces);
+  }
+  if (!existsSync(deployDbPath) || !existsSync(deployLogDir)) {
+    fail("deploy env db path and log dir should be created", { deployDbPath, deployLogDir });
+  }
+  console.log("[S3-LOCAL-BACKEND-SCAFFOLD verify] PASS: deploy env db/log/workspace values are honored");
+} finally {
+  await deployServer.close();
 }

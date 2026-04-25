@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "node src/server.mjs",
     "start": "node src/server.mjs",
-    "verify:s3-local-backend-scaffold": "node scripts/verify-s3-local-backend-scaffold.mjs"
+    "verify:s3-local-backend-scaffold": "node scripts/verify-s3-local-backend-scaffold.mjs",
+    "verify:deploy-prep": "node scripts/verify-deploy-prep.mjs"
   }
 }

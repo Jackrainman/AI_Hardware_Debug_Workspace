@@ -3,7 +3,7 @@ import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { createProbeFlashDatabase } from "./database.mjs";
+import { DEFAULT_WORKSPACE, createProbeFlashDatabase } from "./database.mjs";
 
 const SERVER_SRC_DIR = dirname(fileURLToPath(import.meta.url));
 const SERVER_APP_DIR = resolve(SERVER_SRC_DIR, "..");
@@ -86,8 +86,18 @@ function getConfig(overrides = {}) {
   const port =
     overrides.port ??
     (process.env.PROBEFLASH_PORT ? Number(process.env.PROBEFLASH_PORT) : 4100);
+  const defaultWorkspace = {
+    id: overrides.workspaceId ?? process.env.PROBEFLASH_WORKSPACE_ID ?? DEFAULT_WORKSPACE.id,
+    name: overrides.workspaceName ?? process.env.PROBEFLASH_WORKSPACE_NAME ?? DEFAULT_WORKSPACE.name,
+    description: DEFAULT_WORKSPACE.description,
+    isDefault: true,
+  };
+  const logDir = overrides.logDir ?? process.env.PROBEFLASH_LOG_DIR;
   mkdirSync(dirname(dbPath), { recursive: true });
-  return { dbPath, host, port };
+  if (logDir) {
+    mkdirSync(logDir, { recursive: true });
+  }
+  return { dbPath, host, port, defaultWorkspace, logDir };
 }
 
 function createRequestHandler({ store, storeInitError }) {
@@ -225,12 +235,12 @@ function createRequestHandler({ store, storeInitError }) {
 }
 
 export async function startProbeFlashServer(overrides = {}) {
-  const { dbPath, host, port } = getConfig(overrides);
+  const { dbPath, host, port, defaultWorkspace, logDir } = getConfig(overrides);
   let store = null;
   let storeInitError = null;
 
   try {
-    store = createProbeFlashDatabase(dbPath);
+    store = createProbeFlashDatabase(dbPath, { defaultWorkspace });
   } catch (error) {
     storeInitError = error instanceof Error ? error : new Error(String(error));
   }
@@ -259,6 +269,7 @@ export async function startProbeFlashServer(overrides = {}) {
   return {
     baseUrl,
     dbPath,
+    logDir,
     close: async () => {
       await new Promise((resolvePromise, rejectPromise) => {
         server.close((error) => (error ? rejectPromise(error) : resolvePromise()));
@@ -274,4 +285,7 @@ if (directRun) {
   const server = await startProbeFlashServer();
   console.log(`[probeflash-server] listening on ${server.baseUrl}`);
   console.log(`[probeflash-server] sqlite db ${server.dbPath}`);
+  if (server.logDir) {
+    console.log(`[probeflash-server] log dir ${server.logDir}`);
+  }
 }
