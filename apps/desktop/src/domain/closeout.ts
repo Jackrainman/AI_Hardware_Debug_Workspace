@@ -52,6 +52,11 @@ function normalizeInput(input: CloseoutInput): CloseoutInput {
   };
 }
 
+function derivePrevention(input: CloseoutInput): string {
+  if (input.prevention.length > 0) return input.prevention;
+  return `Prevent recurrence by adding this resolution to the debug checklist: ${input.resolution}`;
+}
+
 function failureFromIssue(prefix: string, issue: { path: (string | number)[]; message: string }): CloseoutFailure {
   return {
     ok: false,
@@ -152,17 +157,22 @@ export function buildCloseoutFromIssue(
   rawInput: CloseoutInput,
   opts: CloseoutOptions,
 ): CloseoutResult {
-  const input = normalizeInput(rawInput);
+  const normalizedInput = normalizeInput(rawInput);
 
   if (issueCard.status === "archived") {
     return { ok: false, reason: "issue is already archived", path: ["status"] };
   }
-  if (input.rootCause.length === 0) {
+  if (normalizedInput.rootCause.length === 0) {
     return { ok: false, reason: "rootCause is required", path: ["rootCause"] };
   }
-  if (input.resolution.length === 0) {
+  if (normalizedInput.resolution.length === 0) {
     return { ok: false, reason: "resolution is required", path: ["resolution"] };
   }
+
+  const input: CloseoutInput = {
+    ...normalizedInput,
+    prevention: derivePrevention(normalizedInput),
+  };
 
   const sortedRecords = [...records].sort((a, b) =>
     a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0,

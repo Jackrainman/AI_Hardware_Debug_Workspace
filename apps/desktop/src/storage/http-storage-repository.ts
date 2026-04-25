@@ -48,6 +48,7 @@ import {
   createTimeoutReadError,
   createTimeoutWriteError,
   createUnexpectedWriteError,
+  createValidationFailed,
   storageWriteOk,
   type StorageEntity,
   type StorageReadError,
@@ -646,14 +647,26 @@ export function createHttpStorageRepository(
         }
       },
       async save(entry: ErrorEntry): Promise<StorageWriteResult> {
+        const parsed = ErrorEntrySchema.safeParse(entry);
+        if (!parsed.success) {
+          return {
+            ok: false,
+            error: createValidationFailed(
+              "error_entry",
+              entry.id,
+              parsed.error.issues,
+              createOnlineConnection(new Date().toISOString(), "HTTP write blocked by local schema validation"),
+            ),
+          };
+        }
         return performWrite(
           () =>
             client.request(`${basePath}/error-entries`, {
               method: "POST",
-              body: JSON.stringify(entry),
+              body: JSON.stringify(parsed.data),
             }),
           "error_entry",
-          entry.id,
+          parsed.data.id,
         );
       },
     },

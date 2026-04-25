@@ -11,6 +11,7 @@ import {
   buildInvestigationRecordFromIntake,
   defaultInvestigationIntakeOptions,
 } from "../src/domain/investigation-intake.ts";
+import { ErrorEntrySchema, type ErrorEntry } from "../src/domain/schemas/error-entry.ts";
 import type { IssueCard } from "../src/domain/schemas/issue-card.ts";
 import { createHttpStorageClient, type HttpStorageRequestError } from "../src/storage/http-storage-client.ts";
 import {
@@ -131,11 +132,12 @@ function installLocalStorageTrap() {
   };
 }
 
-async function expectNoLocalStorageFallback(label: string, action: () => Promise<void>) {
+async function expectNoLocalStorageFallback<T>(label: string, action: () => Promise<T>): Promise<T> {
   const trap = installLocalStorageTrap();
   try {
-    await action();
+    const result = await action();
     assert(trap.calls.length === 0, `${label} should not touch localStorage fallback`, trap.calls);
+    return result;
   } finally {
     trap.restore();
   }
@@ -185,6 +187,7 @@ function readCount(db: DatabaseSync, table: string): number {
 }
 
 async function verifyMainPath(repository: StorageRepository, dbPath: string) {
+  const expectedPrevention = "Add the handshake condition to the bring-up checklist.";
   const issue = buildIssueFixture(
     "issue-s3-local-e2e-main-0001",
     "Local HTTP SQLite E2E main path",
@@ -220,7 +223,7 @@ async function verifyMainPath(repository: StorageRepository, dbPath: string) {
       category: "bringup",
       rootCause: "Handshake wait condition was never satisfied.",
       resolution: "Initialized the wait condition before boot handshake.",
-      prevention: "Add the handshake condition to the bring-up checklist.",
+      prevention: expectedPrevention,
     },
     {
       repository,
@@ -233,6 +236,13 @@ async function verifyMainPath(repository: StorageRepository, dbPath: string) {
     },
   );
   assert(closeout.ok, "closeout orchestrator should succeed over HTTP + SQLite", closeout);
+  const parsedErrorEntry = ErrorEntrySchema.safeParse(closeout.errorEntry);
+  assert(parsedErrorEntry.success, "closeout should generate a schema-valid error entry", parsedErrorEntry);
+  assert(
+    closeout.errorEntry.prevention === expectedPrevention,
+    "closeout error entry should carry prevention text",
+    closeout.errorEntry,
+  );
   assert(
     closeout.completedWrites.join(",") === "archive_document,error_entry,issue_card",
     "closeout should report all persisted entities",
@@ -253,10 +263,12 @@ async function verifyMainPath(repository: StorageRepository, dbPath: string) {
     "error entry list should not report readError",
     errorEntryList.readError,
   );
+  const savedErrorEntry = errorEntryList.valid.find((entry) => entry.id === closeout.errorEntry.id);
+  assert(savedErrorEntry !== undefined, "error entry list should include closeout error entry", errorEntryList.valid);
   assert(
-    errorEntryList.valid.some((entry) => entry.id === closeout.errorEntry.id),
-    "error entry list should include closeout error entry",
-    errorEntryList.valid,
+    savedErrorEntry.prevention === expectedPrevention,
+    "error entry readback should preserve prevention",
+    savedErrorEntry,
   );
 
   const archivedIssue = await repository.issueCards.load(issue.id);
@@ -297,16 +309,64 @@ async function verifyMainPath(repository: StorageRepository, dbPath: string) {
       "sqlite archive payload should include rendered investigation timeline",
       archiveRow,
     );
+    const errorEntryPayload = errorEntryRow ? (JSON.parse(errorEntryRow.payload_json) as ErrorEntry) : null;
     assert(
-      errorEntryRow?.source_issue_id === issue.id && errorEntryRow.error_code === "DBG-20260425-201",
-      "sqlite error entry row should reference archived issue",
-      errorEntryRow,
+      errorEntryRow?.source_issue_id === issue.id &&
+        errorEntryRow.error_code === "DBG-20260425-201" &&
+        errorEntryPayload?.prevention === expectedPrevention,
+      "sqlite error entry row should reference archived issue and preserve prevention",
+      { errorEntryRow, errorEntryPayload },
     );
   } finally {
     db.close();
   }
 
   return { issue, record, closeout };
+}
+
+async function verifyMissingPreventionValidation(
+  repository: StorageRepository,
+  dbPath: string,
+  main: Awaited<ReturnType<typeof verifyMainPath>>,
+) {
+  const dbBefore = new DatabaseSync(dbPath);
+  const beforeCount = readCount(dbBefore, "error_entries");
+  dbBefore.close();
+
+  const { prevention: _omitted, ...entryWithoutPrevention } = main.closeout.errorEntry;
+  const invalidEntry = {
+    ...entryWithoutPrevention,
+    id: "error-entry-s3-local-e2e-missing-prevention-0001",
+    errorCode: "DBG-20260425-299",
+  } as unknown as ErrorEntry;
+
+  await expectNoLocalStorageFallback("missing prevention error-entry validation", async () => {
+    const saved = await repository.errorEntries.save(invalidEntry);
+    assert(!saved.ok, "error entry without prevention should fail before HTTP write", saved);
+    assert(saved.error.code === "validation_failed", "missing prevention should map to validation_failed", saved);
+    assert(
+      saved.error.issues.some((issue) => issue.path.join(".") === "prevention"),
+      "missing prevention validation should point at prevention",
+      saved.error.issues,
+    );
+    const feedback = storageWriteErrorToFeedback("closeout", "closeout", saved.error);
+    assert(
+      feedback.connectionState.state === "online",
+      "HTTP validation_failed feedback should not display localStorage demo mode",
+      feedback,
+    );
+  });
+
+  const dbAfter = new DatabaseSync(dbPath);
+  try {
+    assert(
+      readCount(dbAfter, "error_entries") === beforeCount,
+      "missing prevention should not insert an error entry",
+      { beforeCount, afterCount: readCount(dbAfter, "error_entries") },
+    );
+  } finally {
+    dbAfter.close();
+  }
 }
 
 async function verifyConflictAndValidation(
@@ -581,7 +641,10 @@ try {
   });
   assert(health.ok, "local backend health should be ok before E2E", health);
 
-  const main = await verifyMainPath(repository, dbPath);
+  const main = await expectNoLocalStorageFallback("main HTTP SQLite E2E", async () =>
+    verifyMainPath(repository, dbPath),
+  );
+  await verifyMissingPreventionValidation(repository, dbPath, main);
   await verifyConflictAndValidation(repository, server.baseUrl, main);
   await verifyCloseoutPartialFailure(repository, dbPath);
   await verifyServerUnreachable();
@@ -601,6 +664,7 @@ try {
 
   console.log("[S3-LOCAL-END-TO-END verify] PASS: issue -> record -> closeout uses HTTP adapter and SQLite readback");
   console.log("[S3-LOCAL-END-TO-END verify] PASS: archive document, error entry, and archived issue are readable from SQLite");
+  console.log("[S3-LOCAL-END-TO-END verify] PASS: error entry prevention is required and validated before HTTP write");
   console.log("[S3-LOCAL-END-TO-END verify] PASS: validation, bad request, conflict, 500, 503, timeout, and server_unreachable fail visibly");
   console.log("[S3-LOCAL-END-TO-END verify] PASS: closeout partial failure preserves completedWrites without localStorage fallback");
 } finally {

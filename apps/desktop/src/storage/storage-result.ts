@@ -189,6 +189,7 @@ export function createValidationFailed(
   entity: StorageEntity,
   target: string,
   issues: ZodIssue[],
+  connection?: StorageErrorConnection,
 ): StorageWriteError {
   return {
     kind: "validation_failed",
@@ -197,6 +198,7 @@ export function createValidationFailed(
     target,
     message: `${entity} schema validation failed before write`,
     issues,
+    connection,
   };
 }
 

@@ -11,8 +11,11 @@ import {
   closeoutFailureToFeedback,
   createServerUnreachableStorageFeedbackError,
   createValidationStorageFeedbackError,
+  describeStorageConnectionState,
   formatStorageFeedbackError,
+  storageWriteErrorToFeedback,
 } from "../src/storage/storage-feedback.ts";
+import { createOnlineConnection, createValidationFailed } from "../src/storage/storage-result.ts";
 
 function fail(reason: string, detail?: unknown): never {
   console.error(`[S3-ARCH-UNIFIED-STORAGE-ERROR-STATE verify] FAIL: ${reason}`);
@@ -32,6 +35,23 @@ if (validation.code !== "validation_failed" || validation.retryable !== false) {
 }
 if (validation.connectionState.state !== "local_ready") {
   fail("local validation failure should keep local_ready connection state", validation);
+}
+
+const httpValidation = storageWriteErrorToFeedback(
+  "closeout",
+  "closeout",
+  createValidationFailed(
+    "error_entry",
+    "error-entry-http-validation",
+    [],
+    createOnlineConnection("2026-04-23T18:00:00+08:00", "HTTP write blocked by local schema validation"),
+  ),
+);
+if (httpValidation.connectionState.state !== "online") {
+  fail("HTTP validation_failed should keep server connection state online", httpValidation);
+}
+if (describeStorageConnectionState(httpValidation.connectionState).includes("浏览器本地存储")) {
+  fail("HTTP validation_failed banner should not claim localStorage demo mode", httpValidation);
 }
 
 const unreachable = createServerUnreachableStorageFeedbackError(
@@ -88,6 +108,7 @@ for (const legacyTestId of [
 }
 
 console.log("[S3-ARCH-UNIFIED-STORAGE-ERROR-STATE verify] PASS: validation_failed unified into shared error model");
+console.log("[S3-ARCH-UNIFIED-STORAGE-ERROR-STATE verify] PASS: HTTP validation_failed does not show localStorage demo mode");
 console.log("[S3-ARCH-UNIFIED-STORAGE-ERROR-STATE verify] PASS: server_unreachable unified into shared connection state");
 console.log("[S3-ARCH-UNIFIED-STORAGE-ERROR-STATE verify] PASS: closeout partial failure keeps completedWrites");
 console.log("[S3-ARCH-UNIFIED-STORAGE-ERROR-STATE verify] PASS: App.tsx exposes one unified storage-feedback-banner");
