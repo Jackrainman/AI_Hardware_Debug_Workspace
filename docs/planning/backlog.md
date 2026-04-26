@@ -1,317 +1,164 @@
 # 待办池（Backlog）
 
-> Backlog 只存**未开做候选与串行认领队列**。当前唯一主线任务看 `docs/planning/current.md`；机读顺序、依赖、验证要求与详细执行边界看 `.agent-state/handoff.json.pending_task_queue`。v0.2.0 前历史专项输入已移入 `docs/archive/v0.2-closeout/`，默认不读。
+> Backlog 只存未开做候选、节奏队列和任务池。每个任务的完整字段见 `docs/planning/product-roadmap.md`；当前唯一执行窗口见 `docs/planning/current.md`；机读队列见 `.agent-state/handoff.json`。
 
-## 当前阶段与总路线
-- 当前版本：v0.2.0 release。
-- 当前真实状态：本地 HTTP + SQLite 主链路、workspace 创建与切换、issue / investigation record / closeout / archive / error-entry 主路径、本地 release smoke、release static web serve 方案 B（`apps/server` + `PROBEFLASH_STATIC_DIR` 单端口 `4100`）、S4 version / health / backup / restore dry-run、AI-ready prompt/schema、AI-ready closeout draft panel 已完成；真实服务器 release 部署、systemd 自启、服务器 LAN 持久化验证、真实 AI、仓库代码上下文分析均未完成。
-- 总路线：先 release tarball 服务器安全部署，再 operability / data safety 的服务器复验，再 AI-ready 产品边界，再最小真实 AI 草稿，最后 code context bundle 与代码上下文 AI 分析。
-- 服务器部署安全分层：优先从 GitHub Release 下载固定版本资产并校验 `SHA256SUMS.txt`，解压到 `/home/hurricane/probeflash/releases/vX.Y.Z`，用 `current` symlink 切换版本，`shared/data` / `shared/env` / `shared/logs` 与 `runtime/node` 不随 release 删除；不把服务器当开发 checkout，不以服务器 `git pull` 作为主部署方式。no-sudo release 用户目录验证通过后，才准备 `probeflash.service`；用户授权后才写 `/etc/systemd/system/probeflash.service` 并验证 systemd；最后才考虑 `/opt`、反向代理、`.local` 或 80/443 美化。
+## 当前路线
+- 当前版本基座：v0.2.x 本地 HTTP + SQLite + release 可部署基座。
+- 路线图事实源：`docs/planning/product-roadmap.md`。
+- 当前目标：近期 1 周先让部署可用、数据安全、可观测；2-4 周做搜索、AI-ready、code context bundle；1-2 月进入真实 AI、知识库和架构拆分。
+- 当前 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 AI provider/API key。
 
 ## 认领规则
-1. AI 只能从下列队列中认领 **第一个依赖已满足且未完成** 的原子任务。
-2. 每次只允许一个任务处于执行中；完成前必须做最小验证、planning sync、单任务 commit。
-3. 若发现队列顺序、依赖或约束与真实仓库状态脱节，先修 `current.md` / `handoff.json` / 本文件，再继续。
-4. 服务器任务不得默认 SSH / sudo / 上传 / systemd 已授权；涉及真实服务器动作前必须先由用户确认。
-5. AI 任务不得跳过 AI-ready；真实 AI 只返回草稿，不自动写库；code context 只分析用户显式提供的 bundle。
-6. `pending_task_queue` 只保留剩余未完成任务；已完成任务只保留在 `.agent-state/handoff.json.completed_atomic_tasks` 中。
-7. 夜跑 / 无人值守模式只能执行 repo-local、可自动验证、可回滚任务；遇到真实服务器、SSH、sudo、systemd、外部账号、API key、删除 / 迁移数据或用户拍板问题必须停止。
-8. `docs/archive/v0.2-closeout/` 只在需要 v0.2 前历史背景、专项实现追溯或归档审计时读取，不作为默认认领输入。
+1. 每次只认领一个原子任务，完成前必须最小验证、planning sync、单任务 commit。
+2. 白天主线优先 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`，但该任务需要用户确认真实服务器边界。
+3. 无服务器授权或夜跑时，只能从 `Night-safe pool` 认领第一个依赖已满足、repo-local、可自动验证、可回滚的任务。
+4. 真实 AI 任务在用户确认 provider、API key/server env、timeout 与 mock/test provider 边界前均保持 blocked。
+5. Code context 先做 explicit bundle，不允许 server 任意扫描仓库路径。
+6. 需要产品方向、数据保留、taxonomy、repo connector、权限/RAG 等拍板时，任务保持 `decision-needed`。
 
-## 石山代码审计技术债队列
+## 近期 1 周任务（最多 8 个）
+目标：部署可用、数据安全、可观测。
 
-> 来源：最新石山代码审计结论摘要。本仓库未检索到审计报告原文；当前按用户给定摘要与现有 planning / deploy 材料复核落盘。以下任务按审计优先级排列；除本轮实际完成项外，不标记 completed。
+| 顺序 | 任务 ID | 类型 | P | 备注 |
+|---|---|---|---|---|
+| 1 | DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY | blocked | P0 | 需要用户白天确认服务器边界 |
+| 2 | DEP-02-STATIC-DIST-SERVER-PATH-VERIFY | day-only | P0 | 依赖 DEP-01 服务运行 |
+| 3 | DEP-03-VERSION-ENDPOINT-SERVER-VERIFY | day-only | P0 | 依赖 DEP-01 |
+| 4 | DEP-04-HEALTH-STATUS-SERVER-VERIFY | day-only | P0 | 依赖 DEP-01 |
+| 5 | DATA-01-SQLITE-BACKUP-SERVER-PATH-VERIFY | day-only | P0 | 依赖 DEP-01 |
+| 6 | DATA-03-RESTORE-DRY-RUN-SERVER-PATH-VERIFY | day-only | P0 | 依赖 DATA-01 |
+| 7 | DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN | night-safe | P0 | 无服务器授权时优先认领 |
+| 8 | DATA-04-INTEGRITY-CHECK | night-safe | P0 | 数据安全夜跑候选 |
 
-### 1. TECH-DEBT-DEPLOY-DOC-CLARITY
-- **状态**：completed_this_round。
-- **目标**：让 `apps/server/deploy/*` 与当前真实部署路线一致：先 release tarball first 的 `/home/hurricane/probeflash` no-sudo 用户目录部署验证，再进入后续授权 systemd；`/opt/probeflash` 只能作为 later / formal install / optional hardening。
-- **风险来源**：旧 deploy 文档、env 示例、service 模板和 `verify-deploy-prep` 以 `/opt/probeflash` / systemd 为第一路线，可能诱导 AI 或人工在未授权时 sudo、写 `/opt`、使用系统 Node 或误碰 80。
-- **不做项**：不 SSH；不上传；不 sudo；不写 systemd；不改 server 业务代码；不改 API；不实际部署；不升级系统 Node；不占 80。
-- **验证要求**：`cd apps/server && npm run verify:deploy-prep`；`git diff --check`；读回 `README.md` / `install-layout.md` / `env.example` / `probeflash.service.template` 确认 release tarball no-sudo user-dir 路线清楚。
-- **是否 night-safe**：是，docs / deploy prep repo-local，已完成。
-- **是否需要用户白天确认**：否；真实部署仍需要用户白天确认。
+## 近期 2-4 周任务（最多 12 个）
+目标：搜索、AI-ready、code context bundle。
 
-### 2. TECH-DEBT-SERVER-SCHEMA-CONTRACT
-- **状态**：completed_this_round。
-- **目标**：补齐 `apps/server/src/database.mjs` 的写入 payload contract，使 server 接收的 IssueCard / InvestigationRecord / ArchiveDocument / ErrorEntry 不弱于前端 zod schema，避免 POST 成功但前端读回 invalid。
-- **风险来源**：`database.mjs` 集中承载 schema、初始化、读写映射与部分业务约束；此前 normalize payload 校验弱于前端 schema，可能接受脏数据并写入 SQLite。
-- **不做项**：不做大规模数据库重构；不做破坏性 migration；不迁移真实服务器数据；不改 UI；不引入 ORM；不把历史草案恢复为当前事实源。
-- **验证结果**：已新增 `npm run verify:server-schema-contract`，覆盖 invalid issue.status / severity / workspace mismatch / datetime / repoSnapshot、invalid record、invalid archive、invalid errorCode / prevention / datetime 与 valid 写入读回；既有 backend scaffold、deploy prep、backup/export、restore dry-run 验证保持通过。
-- **是否 night-safe**：是，已完成；未触碰真实服务器或真实数据。
-- **是否需要用户白天确认**：否，除非任务升级为真实数据迁移或服务器操作。
+| 顺序 | 任务 ID | 类型 | P |
+|---|---|---|---|
+| 1 | CORE-01-QUICK-ISSUE-CREATE | night-safe | P1 |
+| 2 | CORE-04-RECORD-TIMELINE-POLISH | night-safe | P1 |
+| 3 | CORE-05-CLOSEOUT-UX-POLISH | night-safe | P1 |
+| 4 | SEARCH-01-BASIC-FULL-TEXT-SEARCH | night-safe | P1 |
+| 5 | SEARCH-02-FILTERS | night-safe | P1 |
+| 6 | SEARCH-04-TAGS | night-safe | P1 |
+| 7 | SEARCH-05-ERROR-CODE-TAXONOMY | decision-needed | P1 |
+| 8 | SEARCH-07-SIMILAR-ISSUES-LITE | night-safe | P2 |
+| 9 | AIREADY-05-DRAFT-HISTORY | night-safe | P1 |
+| 10 | AIREADY-06-DRAFT-DIFF | night-safe | P1 |
+| 11 | CODECTX-01-BUNDLE-CLI | night-safe | P1 |
+| 12 | CODECTX-02-SECRETS-PROTECTION | night-safe | P1 |
 
-### 3. TECH-DEBT-STORAGE-ERROR-CONTRACT
-- **状态**：completed_this_round。
-- **目标**：统一 HTTP runtime 下 storage error / connection state / storage feedback 的语义，避免已走 HTTP + SQLite 时仍显示 localStorage 状态或 silent fallback。
-- **风险来源**：前端仍保留 localStorage 兼容 / verify 路径，storage feedback 文案和状态来源若混用，会误导部署验收与服务器不可达判断。
-- **不做项**：不重做业务数据流；不移除必要 localStorage 兼容路径；不新增复杂监控；不做大 UI 重构；不把服务器不可达伪装为本地成功。
-- **验证结果**：已让 HTTP adapter 的 404 / 409 / 4xx / 5xx feedback 携带 online/degraded/unreachable connection state；App 在 HTTP runtime 下会把 local_ready 校验反馈归一到当前 HTTP 连接态；`verify:s3-arch-unified-storage-error-state` 与 `verify:s3-local-http-storage-adapter` 已覆盖。
-- **是否 night-safe**：是，已完成；repo-local 且未触碰真实服务器。
-- **是否需要用户白天确认**：否。
+## 中期 1-2 月任务（最多 12 个）
+目标：真实 AI、知识库、架构拆分。
 
-### 4. TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY
-- **状态**：pending_night_safe_candidate。
-- **目标**：审计并收敛 closeout 多步写入的原子性、失败恢复与读回验证边界，避免 archive / error-entry / issue 状态部分成功后留下不一致。
-- **风险来源**：closeout 链路横跨前端 orchestration、HTTP adapter、server storage、SQLite 写入和 archive/error-entry 生成；失败恢复策略若不一致，会影响调试闭环可信度。
-- **不做项**：不做大规模重构；不改业务 schema 语义；不自动删除用户数据；不把 AI 草稿当事实；不恢复文件写盘旧主线。
-- **验证要求**：覆盖成功 closeout、archive/error-entry 写入失败、issue 状态更新失败、读回验证失败等路径；失败必须可见且不标记 archived；`git diff --check`；相关 closeout / server verify 通过。
-- **是否 night-safe**：是，前提是使用临时本地 DB / fixture，不触碰真实服务器数据。
-- **是否需要用户白天确认**：否，除非涉及真实数据修复或 schema migration。
+| 顺序 | 任务 ID | 类型 | P |
+|---|---|---|---|
+| 1 | REALAI-01-PROVIDER-ABSTRACTION | blocked | P1 |
+| 2 | REALAI-02-SERVER-ENV-API-KEY-BOUNDARY | blocked | P1 |
+| 3 | REALAI-03-TIMEOUT-ERROR-STATE | blocked | P1 |
+| 4 | REALAI-04-POLISH-CLOSEOUT | blocked | P1 |
+| 5 | REALAI-05-SUMMARIZE-RECORDS | blocked | P1 |
+| 6 | REALAI-06-SUGGEST-PREVENTION | blocked | P1 |
+| 7 | CODECTX-04-ATTACH-BUNDLE-TO-ISSUE | night-safe | P1 |
+| 8 | CODECTX-05-BUNDLE-VIEWER | night-safe | P1 |
+| 9 | CODECTX-07-AI-ANALYZE-EXPLICIT-BUNDLE | blocked | P2 |
+| 10 | SEARCH-03-ARCHIVE-REVIEW-PAGE | night-safe | P1 |
+| 11 | TECH-07-APP-TSX-MINIMAL-SPLIT | night-safe | P2 |
+| 12 | TECH-09-SERVER-ROUTE-SPLIT | night-safe | P2 |
 
-### 5. TECH-DEBT-PLANNING-QUEUE-SIGNAL
-- **状态**：completed_this_round。
-- **目标**：消除 `current.md` / `handoff.json` / backlog 中“当前唯一任务”与 blocked / night-safe 并行任务的冲突，防止 AI 越过服务器主线直接进入真实 AI。
-- **风险来源**：`current_atomic_task` 曾指向 `AI-ASSIST-POLISH-CLOSEOUT-MINIMAL`，但服务器部署主线仍是 `S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY blocked_by_user_confirmation`；真实 AI 又依赖 API key/provider/server env 用户确认。
-- **不做项**：不重排为大路线图；不删除服务器任务；不把 blocked 任务标 completed；不把真实 AI 标 started；不恢复旧文档。
-- **验证要求**：`cd apps/desktop && npm run verify:handoff`；`python3 -m json.tool .agent-state/handoff.json >/dev/null`；`git diff --check`；读回确认白天主线与夜跑候选分离。
-- **是否 night-safe**：是，docs / planning / handoff repo-local，已完成。
-- **是否需要用户白天确认**：否；白天服务器部署主线本身仍需要用户确认。
+## 长期方向
+- 团队级多项目知识库与轻量权限。
+- 串口日志、CAN 报文、ROS topic、截图 / 照片 / 波形附件接入。
+- repo connector allowlist 成熟后，再评估轻量索引、RAG 或 embedding。
+- 归档报告 PDF/HTML 导出和周报 / 复盘报告生成。
+- 模块级高频故障模式统计与预防清单。
+- 更完整的局域网部署体验：反向代理、`.local`、HTTPS、美化域名。
 
-### 6. TECH-DEBT-SKILL-RUNTIME-ALIGNMENT
-- **状态**：completed_this_round。
-- **目标**：让 debug closeout skill 明确当前主链路是 HTTP + SQLite；文件写盘 / `.debug_workspace` 不属于当前运行路径；closeout 必须经 repository/server path 验证。
-- **风险来源**：旧 skill 仍按 `archiveDir` / `errorTableDir` 文件写盘描述 closeout，可能诱导 AI 绕过当前 HTTP + SQLite 主链路直接写 archive/error table 文件。
-- **不做项**：不新增 skill；不改业务代码；不改 schema；不恢复 `.debug_workspace` 为运行主线；不把文件写盘说成当前已接入。
-- **验证要求**：`git diff --check`；读回 skill 与 `AGENTS.md` / `current.md` 不冲突；若改 skill，确认 HTTP + SQLite / repository/server path 是主口径。
-- **是否 night-safe**：是，skills-only repo-local，已完成。
-- **是否需要用户白天确认**：否。
+## Night-safe pool
+- DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN
+- DEP-09-LOGS-DIAGNOSTICS-BUNDLE
+- DATA-02-JSON-EXPORT-HARDEN
+- DATA-04-INTEGRITY-CHECK
+- DATA-05-PARTIAL-CLOSEOUT-RECOVERY
+- DATA-08-REPAIR-TASK-GENERATION
+- CORE-01-QUICK-ISSUE-CREATE
+- CORE-02-WORKSPACE-UX-IMPROVEMENTS
+- CORE-03-RECENT-ISSUE-REOPEN
+- CORE-04-RECORD-TIMELINE-POLISH
+- CORE-05-CLOSEOUT-UX-POLISH
+- CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS
+- CORE-07-ARCHIVE-FILTERS
+- CORE-08-ERROR-ENTRY-TAGS
+- CORE-09-DEMO-SEED-IMPORT
+- SEARCH-01-BASIC-FULL-TEXT-SEARCH
+- SEARCH-02-FILTERS
+- SEARCH-03-ARCHIVE-REVIEW-PAGE
+- SEARCH-04-TAGS
+- SEARCH-07-SIMILAR-ISSUES-LITE
+- SEARCH-08-SEARCH-RESULT-LINKING
+- SEARCH-09-RECURRENCE-PROMPT
+- AIREADY-02-PROMPT-SCHEMA-VERSIONING
+- AIREADY-03-GOLDEN-DRAFT-FIXTURES
+- AIREADY-05-DRAFT-HISTORY
+- AIREADY-06-DRAFT-DIFF
+- AIREADY-07-APPLY-SAFETY
+- AIREADY-08-MOCK-PROVIDER
+- AIREADY-09-NO-API-KEY-UX
+- AIREADY-10-PROMPT-PREVIEW-EXPORT
+- CODECTX-01-BUNDLE-CLI
+- CODECTX-02-SECRETS-PROTECTION
+- CODECTX-03-BUNDLE-SCHEMA-FIXTURES
+- CODECTX-04-ATTACH-BUNDLE-TO-ISSUE
+- CODECTX-05-BUNDLE-VIEWER
+- CODECTX-06-BUNDLE-SIZE-ERROR-HANDLING
+- TECH-01-CLOSEOUT-ATOMICITY-DESIGN
+- TECH-02-CLOSEOUT-ATOMICITY-RECOVERY
+- TECH-03-WORKSPACEID-CONSISTENCY-LATER
+- TECH-04-VERIFY-HELPERS
+- TECH-05-VERIFY-TMP-CLEANUP
+- TECH-06-SMOKE-FIXTURE-CONSOLIDATION
+- TECH-07-APP-TSX-MINIMAL-SPLIT
+- TECH-08-HTTP-REPOSITORY-SPLIT
+- TECH-09-SERVER-ROUTE-SPLIT
+- TECH-10-DATABASE-MODULE-SPLIT
 
-### 7. TECH-DEBT-APP-SPLIT-MINIMAL
-- **状态**：pending。
-- **目标**：围绕 `apps/desktop/src/App.tsx` 做最小拆分或边界收敛，降低 UI、业务编排、storage state、closeout flow 和 deploy status 混在单文件导致的回归风险。
-- **风险来源**：`App.tsx` 是当前最大前端石山之一，后续修 storage feedback、AI draft、closeout 失败态时容易互相踩踏。
-- **不做项**：不做大 UI 重构；不改视觉系统；不引入组件库；不改业务语义；不顺手接真实 AI；不迁移到 Electron / fs / IPC。
-- **验证要求**：保持主流程 smoke；相关 desktop verify、typecheck、build 通过；人工或脚本确认 issue / record / closeout / archive 主路径不回归。
-- **是否 night-safe**：是，前提是小步 repo-local、自动验证可覆盖。
-- **是否需要用户白天确认**：否，除非要改产品交互方向。
+## Day-only pool
+- DEP-02-STATIC-DIST-SERVER-PATH-VERIFY
+- DEP-03-VERSION-ENDPOINT-SERVER-VERIFY
+- DEP-04-HEALTH-STATUS-SERVER-VERIFY
+- DEP-05-SYSTEMD-AUTOSTART-PREP
+- DATA-01-SQLITE-BACKUP-SERVER-PATH-VERIFY
+- DATA-03-RESTORE-DRY-RUN-SERVER-PATH-VERIFY
 
-### 8. TECH-DEBT-VERIFY-HELPERS
-- **状态**：pending_night_safe_candidate。
-- **目标**：补齐高风险路径的 verify helper，减少每轮靠人工 grep / 读文档确认部署、storage、closeout、handoff 口径。
-- **风险来源**：当前 verify 覆盖较多主路径，但审计指出 deploy docs、planning queue、skill runtime、storage feedback 等一致性仍依赖人工阅读，容易在上下文重置后漂移。
-- **不做项**：不引入大型测试框架；不做慢速端到端套件；不依赖真实服务器；不写网络外部调用；不把 verify 变成部署动作。
-- **验证要求**：新增 helper 必须 repo-local、确定性、失败信息可读；纳入相应 npm script 或文档说明；`git diff --check`；相关 verify 通过。若用户希望先加固 release / deploy / handoff 校验，可在 `TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY` 后或作为验证基础设施 followup 认领。
-- **是否 night-safe**：是。
-- **是否需要用户白天确认**：否。
+## Blocked by external
+- DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY
+- DEP-06-SYSTEMD-AUTOSTART-VERIFY
+- DEP-08-RELEASE-UPDATE-ROLLBACK-VERIFY
+- REALAI-01-PROVIDER-ABSTRACTION
+- REALAI-02-SERVER-ENV-API-KEY-BOUNDARY
+- REALAI-03-TIMEOUT-ERROR-STATE
+- REALAI-04-POLISH-CLOSEOUT
+- REALAI-05-SUMMARIZE-RECORDS
+- REALAI-06-SUGGEST-PREVENTION
+- REALAI-07-USER-REVIEW-BEFORE-APPLY
+- REALAI-08-AI-DRAFT-AUDIT-METADATA
+- REALAI-09-REAL-PROVIDER-OPT-IN-SMOKE
+- CODECTX-07-AI-ANALYZE-EXPLICIT-BUNDLE
 
-### 9. TECH-DEBT-VERIFY-TMP-CLEANUP
-- **状态**：pending。
-- **目标**：清理 / 规范 verify 临时目录、临时 DB、日志与 backup fixture 的生命周期，避免测试残留污染后续判断。
-- **风险来源**：多条 verify / backup / restore / smoke 路径会创建临时 DB、导出文件或日志；残留物若不清楚，容易误判真实部署数据或污染 git 状态。
-- **不做项**：不删除用户数据；不删除真实服务器文件；不清理 release asset；不做破坏性 migration；不把 cleanup 脚本指向生产路径。
-- **验证要求**：verify 运行前后 git status 可解释；临时目录路径明确且限定在 repo-local runtime/tmp；cleanup dry-run 或断言覆盖；`git diff --check`。
-- **是否 night-safe**：是，前提是只触碰 repo-local 临时路径。
-- **是否需要用户白天确认**：否，除非涉及真实服务器或用户数据路径。
-
-## 近期 release-based 部署任务
-
-### 1. S3-SERVER-RELEASE-DOWNLOAD-PLAN
-- **目标**：明确服务器如何获得固定版本 GitHub Release assets，并校验 `SHA256SUMS.txt`。
-- **状态**：documented_this_round；这是 repo-local 计划项，不执行下载、不上传、不 SSH。
-- **前置依赖**：v0.2.0 release assets 已发布；本地 release smoke 已通过。
-- **输入文件**：`apps/server/deploy/*`、release asset 名称、目标服务器事实、`SHA256SUMS.txt`。
-- **允许改动**：deploy docs、planning、handoff、必要的 deploy 静态校验。
-- **明确不做**：不触碰 GitHub release assets；不改 tag；不上传服务器；不执行真实下载；不 SSH；不 sudo；不写 `/home/hurricane/probeflash`。
-- **验证要求**：deploy docs 必须写清 `probeflash-web-v0.2.0.tar.gz`、`probeflash-server-v0.2.0.tar.gz`、`probeflash-dev-tools-v0.2.0.tar.gz`、`SHA256SUMS.txt`、SHA256 校验与“不用服务器 git pull”。
-- **完成定义**：后续 AI 和用户能按 release tarball 路线准备下载 / 上传与校验，而不会把服务器当开发 checkout。
-- **下一个任务**：`S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY`。
-
-### 2. S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY
-- **目标**：在服务器 `/home/hurricane/probeflash` 下使用 release tarball 完成 v0.2.0 no-sudo 用户目录部署验证。
-- **前置依赖**：`S3-SERVER-RELEASE-DOWNLOAD-PLAN` 已写清；v0.2.0 release assets 已生成并完成本地 smoke；本地 HTTP + SQLite E2E 已完成；服务器事实已确认；用户授权 SSH / 下载或上传 / 在 `/home/hurricane` 写入 / 启动临时进程 / 使用 4100。
-- **夜跑状态**：`blocked_by_user_confirmation` + `blocked_by_user_time`；必须等用户白天确认真实服务器边界后执行。
-- **输入文件**：`AGENTS.md`、`docs/planning/current.md`、`.agent-state/handoff.json`、本文件、v0.2.0 release assets、`SHA256SUMS.txt`、`apps/server/deploy/*`、目标服务器 `192.168.2.2`。
-- **允许改动**：服务器 `/home/hurricane/probeflash/releases/v0.2.0`、`/home/hurricane/probeflash/current`、`/home/hurricane/probeflash/runtime/node`、`/home/hurricane/probeflash/shared/data`、`/home/hurricane/probeflash/shared/logs`、`/home/hurricane/probeflash/shared/env`；仓库内仅 planning sync 或必要 deployment note。
-- **明确不做**：不在服务器上 `git pull`；不 sudo；不 systemd；不写 `/opt`；不碰 80；不升级系统 Node；不使用系统 Node v10；不影响 filebrowser / vnt-cli / docker / Portainer；不做反向代理 / `.local`。
-- **验证要求**：校验 `SHA256SUMS.txt`；确认 `current -> releases/v0.2.0`；`curl http://127.0.0.1:4100/api/health`；`curl http://192.168.2.2:4100/api/health`；创建 workspace / issue；停止重启后读回；确认 `/home/hurricane/probeflash/shared/data/probeflash.sqlite` 存在且由 ProbeFlash 使用；确认 filebrowser:80 仍正常。
-- **完成定义**：ProbeFlash 从固定 release 资产运行；4100 可本机与 LAN 访问；SQLite 重启后可读回；`shared/data` / `shared/env` / `shared/logs` 不随 release 删除；filebrowser:80 不受影响；没有执行 sudo / systemd / `/opt` / 服务器 `git pull`。
-- **下一个任务**：`S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN` 或 `S3-SERVER-SYSTEMD-AUTOSTART-PREP`，由 deploy verify 结果决定。
-
-### 3. S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN
-- **状态**：completed。
-- **目标**：明确 web dist 如何服务，以及 `/api` 如何与 backend 共存。
-- **前置依赖**：v0.2.0 web release smoke 已证明临时静态服务器 + `/api` proxy 可行。
-- **夜跑状态**：completed_repo_local；未启动真实服务器。
-- **输入文件**：`apps/server/deploy/*`、本地 release smoke 结论、`apps/server/src/server.mjs`、`apps/server/package.json`。
-- **允许改动**：server 可选静态 dist 服务、deploy docs、README、planning、handoff、repo-local verify；不改业务 API / UI。
-- **明确不做**：不碰 80；不做 nginx / Caddy / 反向代理；不做 `.local`；不公网暴露；不 SSH；不 systemd。
-- **方案结论**：采用方案 B；`apps/server` 在 `PROBEFLASH_STATIC_DIR=/home/hurricane/probeflash/current/dist` 时，同一 `4100` 端口服务 release `dist` 与现有 `/api`。方案 A 保留为历史 smoke / fallback；方案 C 不推荐。
-- **验证结果**：新增 `npm run verify:release-static-web-serve`，覆盖 `/` 返回 index、`/api/health` 返回 JSON、missing SPA route 返回 index、missing asset 返回 404、未设置 `PROBEFLASH_STATIC_DIR` 时保持 API-only 404。
-- **完成定义**：后续服务器验证知道 web dist 的服务方式与 API 边界，不会误把 backend health 当成完整 LAN Web UI 验证；真实服务器部署仍未完成。
-- **下一个任务**：`S3-SERVER-RELEASE-UPDATE-FLOW`。
-
-### 4. S3-SERVER-RELEASE-UPDATE-FLOW
-- **目标**：定义后续 v0.2.1 / v0.3.0 如何从 release tarball 更新和回滚，而不是用 `git pull` 作为主部署方式。
-- **前置依赖**：release 用户目录布局已确定；实际验证部分依赖 `S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY` 完成。
-- **夜跑状态**：repo-local plan 可夜跑；真实更新 / rollback 验证必须等服务器 release deploy 完成。
-- **输入文件**：v0.2.0 release assets、后续 release tarball 约定、服务器 `/home/hurricane/probeflash` 布局、systemd service、`apps/server/deploy/*`。
-- **允许改动**：部署文档 / 脚本；planning sync；服务器侧 `releases/vX.Y.Z` 与 `current` symlink 只在用户授权部署时允许。
-- **明确不做**：不把 `shared/data` 放进 release 目录；不删除 DB；不依赖服务器 `git pull`；不碰 80；不升级系统 Node；不做公网发布。
-- **验证要求**：下载新 release；校验 SHA256；解压到 `releases/vX.Y.Z`；切换 `current` symlink；restart；health check；DB 保留；回滚到上一个 release。
-- **完成定义**：有可重复的 release tarball 更新流程；失败可回滚；服务版本与 DB 持久化可验证。
-- **下一个任务**：`S3-SERVER-SYSTEMD-AUTOSTART-PREP`。
-
-### 5. S3-SERVER-SYSTEMD-AUTOSTART-PREP
-- **目标**：在 no-sudo release 部署验证成功后，准备与 `/home/hurricane/probeflash` release 布局一致的 `probeflash.service`。
-- **前置依赖**：`S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY` 完成；用户目录 runtime / current / shared 路径已由真实 release 部署验证。
-- **夜跑状态**：`blocked_by_external_dependency_after_release_user_dir_verify`；等待真实服务器用户目录 release 部署验证完成，不能在夜跑中越过该事实。
-- **输入文件**：`apps/server/deploy/probeflash.service.template`、`apps/server/deploy/env.example`、用户目录部署记录、systemd 事实、filebrowser.service 已知风格。
-- **允许改动**：planning 文件；必要时更新 `apps/server/deploy/*` 的模板 / 示例以匹配 release 用户目录部署，但不得改 server 业务逻辑。
-- **明确不做**：不执行真正 `systemctl`；不写 `/etc/systemd/system/probeflash.service`；不 sudo；不占 80；不用 root 跑 ProbeFlash；不切 `/opt`。
-- **验证要求**：unit 内容静态检查；确认 `User=hurricane`、`Group=hurricane`、`WorkingDirectory=/home/hurricane/probeflash/current/apps/server`、`EnvironmentFile=/home/hurricane/probeflash/shared/env/probeflash.env`、`ExecStart=/home/hurricane/probeflash/runtime/node/bin/node src/server.mjs`、`Restart=always`、`RestartSec=3s`；如环境允许，对临时 unit 文件运行 `systemd-analyze verify` 或等价静态检查。
-- **完成定义**：`probeflash.service` 草案可被用户审阅；路径均指向 release-based `/home/hurricane/probeflash`；未执行 sudo / systemctl；下一轮可在用户授权后安装验证。
-- **下一个任务**：`S3-SERVER-SYSTEMD-AUTOSTART-VERIFY`。
-
-### 6. S3-SERVER-SYSTEMD-AUTOSTART-VERIFY
-- **目标**：用户授权后安装并验证 `probeflash.service` 开机自启。
-- **前置依赖**：`S3-SERVER-SYSTEMD-AUTOSTART-PREP` 完成；用户明确授权 sudo、写 `/etc/systemd/system/probeflash.service`、执行 daemon-reload / enable / start / status。
-- **夜跑状态**：`blocked_by_user_confirmation`；涉及 sudo、systemd 与 `/etc/systemd/system` 写入，夜跑不可执行。
-- **输入文件**：已审阅的 `probeflash.service`、`/home/hurricane/probeflash/shared/env/probeflash.env`、用户目录 release 部署结果、sudo 授权边界。
-- **允许改动**：服务器 `/etc/systemd/system/probeflash.service`；systemd unit enable/start 状态；仓库 planning sync。
-- **明确不做**：未确认前不 sudo；不改 filebrowser / vnt-cli / docker / Portainer；不占 80；不升级系统 Node；不迁移到 `/opt`；不做反向代理 / `.local`。
-- **验证要求**：写 unit 前复述并确认路径；`systemctl daemon-reload`、`systemctl enable probeflash`、`systemctl start probeflash`、`systemctl status probeflash`；`journalctl -u probeflash`；`curl http://127.0.0.1:4100/api/health`；`curl http://192.168.2.2:4100/api/health`；restart 或 reboot 后读回；确认 filebrowser:80 正常。
-- **完成定义**：ProbeFlash 由 systemd 以 `hurricane:hurricane` 拉起并可开机自启；服务日志可诊断；SQLite 数据保留；旧服务不受影响。
-- **下一个任务**：服务器 release 更新 / rollback 实测或 S4 服务器路径复验，由 planning 重新判断。
-
-## 中期任务队列
-
-### 5. S4-DATA-BACKUP-EXPORT
-- **目标**：提供 SQLite 备份 / 导出机制，保证运行中不破坏 DB。
-- **前置依赖**：`S4-OPERABILITY-HEALTH-STATUS` 完成；本地 SQLite 主链路可用。真实服务器持久化路径稳定后需复用同一命令验证服务器路径。
-- **夜跑状态**：completed；已新增 `npm run backup:export` 与 `npm run verify:s4-data-backup-export`，可生成 timestamped SQLite backup 与 JSON export。
-- **输入文件**：`/home/hurricane/probeflash/shared/data/probeflash.sqlite`、server storage 代码、SQLite schema、部署路径约定。
-- **允许改动**：server-side 备份脚本或 npm script；导出 JSON 的最小工具；部署文档；planning sync。
-- **明确不做**：不做云同步；不做增量备份系统；不在运行中直接复制半写入 DB 而不校验；不备份 secrets；不改业务 schema 语义。
-- **验证要求**：生成带时间戳的 SQLite backup；生成 JSON export；备份文件可列出；运行中执行不破坏主 DB；执行后 health 与主流程仍正常。
-- **完成定义**：有明确命令生成 timestamped backup 与 JSON export；备份位置与保留边界清楚；不会破坏运行中 DB。
-- **下一个任务**：`S4-DATA-RESTORE-DRY-RUN`。
-
-### 6. S4-DATA-RESTORE-DRY-RUN
-- **目标**：验证备份能恢复到临时 DB 并读回关键实体。
-- **前置依赖**：`S4-DATA-BACKUP-EXPORT` 完成。
-- **夜跑状态**：completed；已新增 `npm run restore:dry-run` 与 `npm run verify:s4-data-restore-dry-run`，只恢复到临时 DB，不覆盖生产 DB，可本地自动验证。
-- **输入文件**：timestamped SQLite backup、JSON export、SQLite schema、server storage 读路径。
-- **允许改动**：restore dry-run script、验证脚本、部署文档、planning sync。
-- **明确不做**：不覆盖生产 DB；不自动执行真实恢复；不删除原备份；不在未确认情况下停服务。
-- **验证要求**：从备份恢复到临时 DB；读取 workspace / issue / record / archive / error-entry；校验计数或样例 ID；dry-run 完成后生产 DB 未改动。
-- **完成定义**：备份可被独立恢复并读回；恢复流程可演练；生产数据安全不受影响。
-- **下一个任务**：`AI-READY-PROMPT-TEMPLATE-SYSTEM`。
-
-### 7. S4-OPERABILITY-HEALTH-STATUS
-- **目标**：提供更清楚的 server status / storage status / version info，便于部署后诊断。
-- **前置依赖**：`S4-RELEASE-VERSION-ENDPOINT` 完成；本地 HTTP + SQLite 主链路可用。
-- **夜跑状态**：completed；已增强 `/api/health` 的 server/storage/workspace/release 可诊断状态，并在前端统一 banner 展示摘要。
-- **输入文件**：`apps/server/src/*`、server health endpoint、storage adapter、部署 env、前端连接状态 UI。
-- **允许改动**：server health/status endpoint；前端最小状态展示；verify 脚本；planning sync。
-- **明确不做**：不做复杂监控平台；不做权限系统；不暴露 secrets / 绝对敏感路径；不做公网可观测性。
-- **验证要求**：health/status 返回 server ready、storage ready、DB path class 或 redacted path、workspace seed、错误状态；前端可显示可理解状态；断 DB 或错误 env 时状态可诊断。
-- **完成定义**：部署后能一眼确认 server/storage 是否正常；失败态有明确错误，不 silent fallback。
-- **下一个任务**：`S4-DATA-BACKUP-EXPORT`。
-
-### 8. S4-RELEASE-VERSION-ENDPOINT
-- **目标**：让 server `/api/health` 或 version endpoint 返回版本、commit、release tag，便于确认服务器跑的是哪版。
-- **前置依赖**：本地 HTTP + SQLite 主链路可用；不依赖真实服务器部署结果。
-- **夜跑状态**：completed；已新增 `/api/version` 与 `/api/health.data.release`，并接入 `npm run verify:s4-release-version-endpoint`。
-- **输入文件**：release metadata、package version、git commit / tag 注入方式、server health endpoint、deploy flow。
-- **允许改动**：server version metadata 读取；release packaging metadata；verify 脚本；planning sync。
-- **明确不做**：不读取 `.git` 作为服务器运行时必需依赖；不暴露 secrets；不引入复杂 release registry。
-- **验证要求**：本地与服务器 health/version 能返回 version、commit、release tag；release 更新后值变化；回滚后值对应旧 release。
-- **完成定义**：部署验证可通过 endpoint 确认实际运行版本；release update / rollback 可被版本信息佐证。
-- **下一个任务**：`AI-READY-PROMPT-TEMPLATE-SYSTEM`。
-
-## AI-ready 任务队列
-
-### 9. AI-READY-PROMPT-TEMPLATE-SYSTEM
-- **目标**：沉淀 prompt template 与输入输出 schema，为后续 AI 接入准备边界，但不调用模型。
-- **前置依赖**：`S4-DATA-RESTORE-DRY-RUN` 完成；server / storage / version 可诊断，备份与恢复演练已完成。
-- **夜跑状态**：completed；已新增 `src/ai/prompt-templates.ts` 与 `npm run verify:ai-ready-prompt-template-system`，只落地 deterministic 模板 / schema，不调用外部模型，不需要 API key。
-- **输入文件**：domain schemas、issue / record / closeout 数据结构、closeout UI、后续 AI 草稿需求。
-- **允许改动**：prompt template 模块、`PromptInput` / `PromptOutput` 类型或 schema、规则模板测试、文档、planning sync。
-- **明确不做**：不保存 API key；不调用外部 AI；不新增 provider SDK；不做 RAG / embedding；不自动写库。
-- **验证要求**：`polish_closeout`、`summarize_records`、`suggest_prevention` 模板可生成确定性输入；schema 校验覆盖必填字段和无效输出；现有 closeout 流程不回归。
-- **完成定义**：AI 草稿输入输出边界清楚；模板可被规则生成器和未来 server AI provider 复用；无外部调用。
-- **下一个任务**：`AI-READY-CLOSEOUT-DRAFT-PANEL`。
-
-### 10. AI-READY-CLOSEOUT-DRAFT-PANEL
-- **目标**：在 closeout 流程里增加“草稿辅助面板”，先用规则模板生成草稿。
-- **前置依赖**：`AI-READY-PROMPT-TEMPLATE-SYSTEM` 完成。
-- **夜跑状态**：completed；已新增本地规则草稿生成器、closeout 表单草稿面板与 `npm run verify:ai-ready-closeout-draft-panel`，不调用外部 AI，不自动写库。
-- **输入文件**：closeout UI、issue / records / closeout input、prompt template schema、existing closeout orchestration。
-- **允许改动**：前端 closeout panel、规则草稿生成器、UI smoke / verify 脚本、planning sync。
-- **明确不做**：不调用外部 AI；不自动写入；不改变原 closeout 必填规则；不做 RAG / embedding；不保存 API key。
-- **验证要求**：规则生成问题描述优化、根因总结草稿、解决方案草稿、预防建议草稿；用户可复制或应用；closeout 原路径不回归；UI smoke 通过。
-- **完成定义**：用户能在 closeout 旁看到可解释草稿，并手动复制 / 应用；主流程仍由用户确认写库。
-- **下一个任务**：`AI-ASSIST-POLISH-CLOSEOUT-MINIMAL`。
-
-### 11. AI-ASSIST-POLISH-CLOSEOUT-MINIMAL
-- **目标**：接入真实 AI 的最小措辞优化，只返回 closeout 草稿。
-- **前置依赖**：`AI-READY-CLOSEOUT-DRAFT-PANEL` 完成；server 可安全持有 env；prompt schema 已稳定。
-- **夜跑状态**：`blocked_by_external_dependency_api_key_after_ai_ready`；需要用户确认真实 AI provider、API key/server env、timeout 与 mock/test provider 边界，夜跑不可执行。
-- **输入文件**：server env、server API、prompt templates、closeout draft panel、error state UI。
-- **允许改动**：server-side AI provider 最薄 adapter、server env 文档、前端请求草稿接口、timeout / error state、verify 脚本、planning sync。
-- **明确不做**：browser 不持有 API key；AI 不直接写库；AI 失败不阻断 closeout；不做 RAG / embedding；不做多 provider 复杂抽象；不把草稿当事实结论。
-- **验证要求**：无 API key 时主流程正常并显示配置缺失；mock / test provider 返回草稿；timeout / provider error 有可见状态；用户确认后才应用；closeout 原路径不回归。
-- **完成定义**：真实 AI 能生成措辞优化草稿；安全边界在 server；失败可降级到手写 / 规则草稿。
-- **下一个任务**：`AI-ASSIST-SUGGEST-PREVENTION`。
-
-### 12. AI-ASSIST-SUGGEST-PREVENTION
-- **目标**：基于 issue + records + resolution 生成预防建议草稿。
-- **前置依赖**：`AI-ASSIST-POLISH-CLOSEOUT-MINIMAL` 完成。
-- **输入文件**：issue / records / resolution 数据、`suggest_prevention` prompt、AI provider adapter、closeout draft panel。
-- **允许改动**：预防建议草稿 prompt、server draft endpoint 扩展、前端草稿展示、verify 脚本、planning sync。
-- **明确不做**：不自动写 `ErrorEntry.prevention`；不把 AI 建议标记为事实；不做 RAG / embedding；不扫描代码仓库。
-- **验证要求**：有 records / 无 records / provider 失败三类路径；草稿可复制或应用；`ErrorEntry.prevention` 非空规则仍由用户确认路径保证。
-- **完成定义**：AI 可辅助生成预防建议草稿，用户确认后才能进入 closeout 数据。
-- **下一个任务**：`CODE-CONTEXT-BUNDLE-CLI`。
-
-## AI 代码上下文任务队列
-
-### 13. CODE-CONTEXT-BUNDLE-CLI
-- **目标**：提供本地 CLI / script，让用户在 WSL 项目目录生成可上传或粘贴到 ProbeFlash 的 code context bundle。
-- **前置依赖**：`AI-ASSIST-SUGGEST-PREVENTION` 完成，AI 草稿边界已验证；不依赖服务器扫描仓库。
-- **输入文件**：目标仓库路径、git CLI 输出、用户 allowlist 文件、build/typecheck/verify 输出、错误日志。
-- **允许改动**：本仓库中的 dev tool / script、bundle schema、文档、verify 脚本、planning sync。
-- **明确不做**：server 不任意读取用户仓库；默认不包含 `.env` / secrets / `node_modules` / `.git`；不自动执行破坏性命令；不上传到外部 AI；不做 RAG / embedding。
-- **验证要求**：bundle 包含 repo name、branch、git status、git diff --stat、git log -n、file tree 摘要、用户指定文件内容、build/typecheck/verify 输出、错误日志；大文件跳过；allowlist 生效；输出 markdown 或 json。
-- **完成定义**：用户可在本地显式生成可审阅 bundle；默认安全排除敏感路径；输出可被 ProbeFlash 后续附加。
-- **下一个任务**：`CODE-CONTEXT-ATTACH-TO-ISSUE`。
-
-### 14. CODE-CONTEXT-ATTACH-TO-ISSUE
-- **目标**：ProbeFlash issue 支持附加 code context bundle，并显示摘要。
-- **前置依赖**：`CODE-CONTEXT-BUNDLE-CLI` 完成。
-- **输入文件**：code context bundle schema、IssueCard / InvestigationRecord schema、server storage/API、frontend issue detail UI。
-- **允许改动**：作为 InvestigationRecord 或独立 CodeContext entity 的最小 schema/API/UI；摘要展示；verify 脚本；planning sync。
-- **明确不做**：不让 server 扫描任意路径；不自动执行命令；不解析 secrets；不影响现有 issue / record / closeout 主路径。
-- **验证要求**：可附加 bundle；可显示 repo / branch / status / diff stat / selected files 摘要；主路径不回归；bundle 过大或 schema 错误有可见错误。
-- **完成定义**：用户显式提供的 code context 能被安全挂到问题上，且不会改变原有调试闭环。
-- **下一个任务**：`AI-ASSIST-ANALYZE-CODE-CONTEXT`。
-
-### 15. AI-ASSIST-ANALYZE-CODE-CONTEXT
-- **目标**：AI 基于用户提供的 code context bundle 分析可能原因和下一步排查。
-- **前置依赖**：`CODE-CONTEXT-ATTACH-TO-ISSUE` 完成；最小 AI draft adapter 已完成。
-- **输入文件**：issue、records、attached code context bundle、AI prompt templates、server AI adapter。
-- **允许改动**：code context analysis prompt、server draft endpoint、前端 hypothesis / next steps 草稿 UI、verify 脚本、planning sync。
-- **明确不做**：只分析用户显式提供的内容；不扫描服务器文件系统；不自动执行命令；不直接写 InvestigationRecord；不做 RAG / embedding。
-- **验证要求**：AI 输出 hypothesis / next steps 草稿；用户确认后才能转成记录；provider 失败不影响 issue 主路径；bundle 缺失时有清楚空状态。
-- **完成定义**：AI 能基于显式 bundle 给出可审阅排查方向，且所有入库动作仍由用户确认。
-- **下一个任务**：`CODE-CONTEXT-REPO-CONNECTOR-LATER`。
-
-### 16. CODE-CONTEXT-REPO-CONNECTOR-LATER
-- **目标**：在 bundle MVP 验证后，再评估只读 repo connector。
-- **前置依赖**：`AI-ASSIST-ANALYZE-CODE-CONTEXT` 完成，并确认 bundle 方式不足以满足常用场景。
-- **输入文件**：bundle 使用反馈、权限边界设计、allowlist paths、server deployment constraints、secret 排除规则。
-- **允许改动**：设计文档、最小只读 connector spike、权限 / allowlist 校验、verify 脚本、planning sync。
-- **明确不做**：不默认扫全仓库；不读取 secrets；不越过 allowlist；不自动执行命令；不做写操作；不绕过用户确认。
-- **验证要求**：allowlist 生效；禁读 `.env` / secrets / `node_modules` / `.git`；大文件跳过；审计日志可说明读取了哪些路径；关闭 connector 后主流程不受影响。
-- **完成定义**：只读 repo connector 的安全边界被验证，且仍以用户授权和 allowlist 为前提。
-- **下一个任务**：待 planning 重新评估。
+## Decision-needed
+- DATA-06-BACKUP-RETENTION-POLICY
+- DATA-07-RESTORE-APPLY-RUNBOOK
+- SEARCH-05-ERROR-CODE-TAXONOMY
+- SEARCH-06-TAG-HYGIENE-MERGE
+- CODECTX-08-REPO-CONNECTOR-LATER-ALLOWLIST
+- CODECTX-09-CONNECTOR-AUDIT-DENYLIST
+- 长期是否做权限系统、多队伍协作、RAG/embedding、硬件日志自动接入。
 
 ## 当前先不做
 - 不把真实服务器部署标记为 completed。
-- 不在夜跑 / 无人值守模式下执行 `S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY` 或任何真实服务器任务。
-- 不把 AI-ready / AI assist / code context 写成已实现。
-- 不让服务器直接扫描任意仓库路径。
+- 不在夜跑 / 无人值守模式下执行真实服务器、SSH、sudo、systemd、API key 或外部账号任务。
+- 不把 AI-ready 等同于真实 AI 已接入。
+- 不让 server 默认扫描任意仓库路径。
 - 不引入 RAG / embedding 作为第一步。
 - 不做权限系统、账号体系、多租户、复杂协同或公网暴露。
 - 不做 Electron / preload / fs / IPC，不把 `.debug_workspace` 文件写盘当作当前主线。
-- 不做大 UI 重构，不改变已通过 smoke 的主流程，除非当前原子任务明确要求最小适配。

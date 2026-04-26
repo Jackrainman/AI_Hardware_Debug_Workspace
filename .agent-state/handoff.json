@@ -6,92 +6,77 @@
     "current_stage_goal": "string - 当前阶段目标",
     "primary_track": "string - 当前优先链路",
     "deferred_track": "string - 当前降级但保留的链路",
-    "current_atomic_task": "string - 当前唯一可认领原子任务",
+    "current_atomic_task": "string - 当前唯一白天主线原子任务",
     "frontier_tasks": "object[] - 当前前沿任务窗口，最多 3 个",
-    "pending_task_queue": "object[] - 已拆好的串行原子任务队列，按认领顺序排列",
-    "completed_atomic_tasks": "string[] - 已完成原子任务 ID 列表，按时间顺序",
+    "pending_task_queue": "object[] - 近期可认领队列，按推荐顺序排列",
+    "completed_atomic_tasks": "string[] - 路线图相关已完成原子任务 ID 列表",
     "next_task_selection_basis": "object - 下一任务选择依据",
     "risks": "string[] - 当前已知风险",
     "night_run_mode": "object - 夜跑 / 无人值守安全执行边界",
     "archive_state": "object - v0.2.0 前历史文档归档状态与读取条件",
-    "notes": "string[] - 长期性约束与下一轮必须保留的关键说明"
+    "notes": "string[] - 下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-04-26T15:18:23+08:00",
+  "timestamp": "2026-04-26T19:09:12+08:00",
   "current_mode": "server_storage_migration",
-  "current_stage": "S3",
-  "current_stage_name": "服务器安全部署",
-  "current_stage_goal": "基于 v0.2.0 已完成的本地 HTTP + SQLite 主链路与 release static web serve 方案 B，白天主线优先使用 GitHub Release tarball 在 Ubuntu 20.04 服务器完成 /home/hurricane/probeflash no-sudo 用户目录部署验证；无服务器授权时只能执行 repo-local、可自动验证的 night-safe 候选；真实 AI/API key 任务保持 blocked。",
-  "primary_track": "release_tarball_server_deploy_mainline",
-  "deferred_track": "repo_local_night_safe_tech_debt_before_real_ai_or_code_context",
-  "current_atomic_task": "S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY",
-  "roadmap_tracks": {
-    "A_S3_Server_Deployment_Line": [
-      "S3-SERVER-RELEASE-DOWNLOAD-PLAN",
-      "S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY",
-      "S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN",
-      "S3-SERVER-RELEASE-UPDATE-FLOW",
-      "S3-SERVER-SYSTEMD-AUTOSTART-PREP",
-      "S3-SERVER-SYSTEMD-AUTOSTART-VERIFY"
-    ],
-    "B_S4_Operability_Data_Safety_Line": [
-      "S4-RELEASE-VERSION-ENDPOINT",
-      "S4-OPERABILITY-HEALTH-STATUS",
-      "S4-DATA-BACKUP-EXPORT",
-      "S4-DATA-RESTORE-DRY-RUN"
-    ],
-    "C_AI_Ready_Product_Line": [
-      "AI-READY-PROMPT-TEMPLATE-SYSTEM",
-      "AI-READY-CLOSEOUT-DRAFT-PANEL",
-      "AI-ASSIST-POLISH-CLOSEOUT-MINIMAL",
-      "AI-ASSIST-SUGGEST-PREVENTION"
-    ],
-    "D_AI_Code_Context_Line": [
-      "CODE-CONTEXT-BUNDLE-CLI",
-      "CODE-CONTEXT-ATTACH-TO-ISSUE",
-      "AI-ASSIST-ANALYZE-CODE-CONTEXT",
-      "CODE-CONTEXT-REPO-CONNECTOR-LATER"
-    ]
-  },
+  "current_stage": "R1",
+  "current_stage_name": "长期产品路线图执行启动",
+  "current_stage_goal": "从 v0.2.x 本地 HTTP + SQLite + release 可部署基座出发，按 8 条产品主线推进；近期 P0 仍是部署可用、数据安全、可观测。",
+  "primary_track": "Deployment / Operability + Data Safety P0",
+  "deferred_track": "Real AI、repo connector、RAG/embedding、权限系统和硬件自动接入均后置到依赖满足或用户拍板后。",
+  "current_atomic_task": "DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY",
+  "roadmap_document": "docs/planning/product-roadmap.md",
+  "roadmap_tracks": [
+    {
+      "id": "Deployment / Operability",
+      "goal": "服务器稳定运行、可更新、可诊断。"
+    },
+    {
+      "id": "Data Safety",
+      "goal": "数据不丢、可备份、可恢复。"
+    },
+    {
+      "id": "Core Debug Workflow",
+      "goal": "现场记录和结案更快、更顺。"
+    },
+    {
+      "id": "Search / Knowledge Base",
+      "goal": "历史问题能找回、能复用。"
+    },
+    {
+      "id": "AI-ready Workflow",
+      "goal": "先把 AI 草稿流和 prompt schema 做稳，不依赖真实 API。"
+    },
+    {
+      "id": "Real AI Assistance",
+      "goal": "真实 AI 帮助优化措辞、总结排查、建议预防。"
+    },
+    {
+      "id": "Code Context Analysis",
+      "goal": "AI 能基于用户显式提供的代码上下文分析问题。"
+    },
+    {
+      "id": "Technical Debt / Architecture",
+      "goal": "避免越跑越石山。"
+    }
+  ],
   "release_state": {
-    "version": "v0.2.0",
+    "version_base": "v0.2.x",
     "local_http_sqlite_mainline_completed": true,
     "workspace_create_and_switch_completed": true,
     "issue_record_closeout_archive_error_entry_main_path_completed": true,
-    "local_release_smoke_completed": true,
-    "server_deployment_method": "release_tarball_first",
-    "server_deploy_uses_git_pull": false,
-    "release_static_web_serve_completed": true,
-    "release_static_web_serve_mode": "方案 B：apps/server reads PROBEFLASH_STATIC_DIR and serves release dist plus existing /api on single port 4100; unset PROBEFLASH_STATIC_DIR keeps API-only mode for local Vite dev.",
-    "release_assets": [
-      "probeflash-web-v0.2.0.tar.gz",
-      "probeflash-server-v0.2.0.tar.gz",
-      "probeflash-dev-tools-v0.2.0.tar.gz",
-      "SHA256SUMS.txt"
-    ],
-    "server_deploy_completed": false,
+    "error_entry_prevention_non_empty_fix_completed": true,
+    "release_tarball_deploy_planning_completed": true,
+    "server_can_serve_dist_and_api_same_port_completed": true,
+    "ai_ready_prompt_templates_completed": true,
+    "rule_based_closeout_draft_panel_completed": true,
+    "server_schema_contract_completed": true,
+    "http_feedback_contract_completed": true,
+    "restore_dry_run_completed": true,
+    "night_run_rules_completed": true,
+    "v0_2_history_docs_archived": true,
+    "real_server_release_user_dir_deploy_verify_completed": false,
     "systemd_autostart_completed": false,
-    "ai_features_completed": false,
-    "code_context_analysis_completed": false,
-    "version_endpoint_completed": true,
-    "operability_health_status_completed": true,
-    "data_backup_export_completed": true,
-    "data_restore_dry_run_completed": true,
-    "ai_ready_prompt_template_system_completed": true,
-    "ai_ready_closeout_draft_panel_completed": true,
-    "local_release_smoke": [
-      "web dist 可被 127.0.0.1:4173 托管",
-      "4173 的 /api 可代理到 127.0.0.1:4100",
-      "4100 后端可返回 sqlite ready",
-      "停掉后端后 4173/api 返回 proxy_error，无 fake data / silent fallback"
-    ],
-    "release_static_web_serve_verify": [
-      "PROBEFLASH_STATIC_DIR=/home/hurricane/probeflash/current/dist is the intended release dist path",
-      "/ returns index.html from dist",
-      "/api/health remains JSON on the same 4100 process",
-      "missing SPA route returns index.html",
-      "missing asset returns 404",
-      "unset PROBEFLASH_STATIC_DIR keeps API-only behavior"
-    ]
+    "real_ai_provider_api_key_completed": false
   },
   "environment_facts": {
     "server": {
@@ -101,15 +86,10 @@
       "os": "Ubuntu 20.04.6 LTS",
       "systemd": "available",
       "port_80": "occupied_by_filebrowser",
-      "filebrowser_service": "enabled, User=hurricane, ExecStart=sh /home/hurricane/filebrowser/start.sh, Restart=always",
-      "vnt_cli_service": "enabled but root-based, not a template for ProbeFlash",
-      "containerd_service": "enabled",
-      "portainer": "Docker container, restart policy always, ports 8000/9443",
-      "sudo": "hurricane is in sudo group but sudo requires password",
-      "writable_first_target": "/home/hurricane",
-      "opt_policy": "/opt belongs to root and is not the first deployment target",
       "system_node": "v10.19.0, must not be used or upgraded for ProbeFlash",
-      "probeflash_port": "4100 currently not seen listening and is suitable",
+      "probeflash_port": "4100",
+      "writable_first_target": "/home/hurricane",
+      "formal_deploy_root": "/home/hurricane/probeflash",
       "do_not_affect": [
         "filebrowser",
         "vnt-cli",
@@ -118,1035 +98,266 @@
       ]
     }
   },
-  "deployment_strategy": {
-    "preferred_method": "GitHub Release tarball deployment first; server-side git checkout / git pull is not the formal deployment path.",
-    "release_asset_flow": "Download or upload fixed release assets, verify SHA256SUMS.txt, unpack under /home/hurricane/probeflash/releases/vX.Y.Z, switch current symlink, set PROBEFLASH_STATIC_DIR=/home/hurricane/probeflash/current/dist, then start with independent Node runtime.",
-    "directory_layout": "/home/hurricane/probeflash/{releases,current,shared/{data,logs,env},runtime/node}",
-    "persistent_paths": [
-      "/home/hurricane/probeflash/shared/data",
-      "/home/hurricane/probeflash/shared/logs",
-      "/home/hurricane/probeflash/shared/env",
-      "/home/hurricane/probeflash/runtime/node"
-    ],
-    "layer_1": "no-sudo release tarball user directory deploy under /home/hurricane/probeflash",
-    "layer_2": "prepare probeflash.service matching release user-dir layout without executing systemctl",
-    "layer_3": "after explicit user sudo authorization and release deploy verify, install and verify systemd autostart",
-    "later": "only after the above consider /opt, reverse proxy, .local or 80/443 beautification"
-  },
-  "execution_lanes": {
-    "blocked_mainline_task": {
-      "id": "S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY",
-      "status": "blocked_by_user_confirmation_and_time",
+  "frontier_tasks": [
+    {
+      "id": "DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY",
+      "legacy_id": "S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY",
+      "track": "Deployment / Operability",
+      "goal": "在服务器 /home/hurricane/probeflash 下使用 GitHub Release tarball 完成 no-sudo 用户目录部署验证。",
+      "status": "blocked",
+      "priority": "P0",
+      "lane": "blocked_by_external",
+      "night_safe": false,
+      "ai_unattended_run": false,
       "requires_user_confirmation": [
         "SSH login method",
         "release asset download or upload method",
         "permission to write /home/hurricane/probeflash",
         "permission to start a temporary user-owned process",
         "permission to use port 4100"
-      ],
-      "night_safe": false
-    },
-    "next_night_safe_candidate": {
-      "id": "TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY",
-      "status": "pending_night_safe_candidate",
-      "requires_user_confirmation": [],
-      "night_safe": true
-    },
-    "blocked_external_task": {
-      "id": "AI-ASSIST-POLISH-CLOSEOUT-MINIMAL",
-      "status": "blocked_by_external_dependency_api_key_after_ai_ready",
-      "requires_user_confirmation": [
-        "AI provider",
-        "server env API key boundary",
-        "timeout policy",
-        "mock/test provider boundary"
-      ],
-      "night_safe": false
-    }
-  },
-  "audit_tech_debt_state": {
-    "source": "Latest stone-code audit summary provided by user; no audit report source file was found in repo search.",
-    "completed_this_round": [
-      "TECH-DEBT-DEPLOY-DOC-CLARITY",
-      "TECH-DEBT-PLANNING-QUEUE-SIGNAL",
-      "TECH-DEBT-SKILL-RUNTIME-ALIGNMENT",
-      "TECH-DEBT-SERVER-SCHEMA-CONTRACT",
-      "TECH-DEBT-STORAGE-ERROR-CONTRACT"
-    ],
-    "pending_priority_order": [
-      "TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY",
-      "TECH-DEBT-VERIFY-HELPERS",
-      "TECH-DEBT-APP-SPLIT-MINIMAL",
-      "TECH-DEBT-VERIFY-TMP-CLEANUP"
-    ]
-  },
-  "repo_local_night_safe_task_queue": [
-    {
-      "order": 1,
-      "id": "TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY",
-      "status": "pending_night_safe_candidate",
-      "requires_user_confirmation": false
+      ]
     },
     {
-      "order": 2,
-      "id": "TECH-DEBT-VERIFY-HELPERS",
-      "status": "pending_night_safe_candidate",
-      "requires_user_confirmation": false
+      "id": "DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN",
+      "track": "Deployment / Operability",
+      "goal": "设计 release update / rollback runbook。",
+      "status": "pending",
+      "priority": "P0",
+      "lane": "night-safe",
+      "night_safe": true,
+      "ai_unattended_run": true,
+      "requires_user_confirmation": []
     },
     {
-      "order": 3,
-      "id": "TECH-DEBT-APP-SPLIT-MINIMAL",
-      "status": "pending_after_closeout_recovery",
-      "requires_user_confirmation": false
-    },
-    {
-      "order": 4,
-      "id": "TECH-DEBT-VERIFY-TMP-CLEANUP",
-      "status": "pending_after_verify_helpers",
-      "requires_user_confirmation": false
-    }
-  ],
-  "night_run_mode": {
-    "policy": "Night run / unattended mode may only execute repo-local, automatically verifiable and rollback-friendly atomic tasks. External systems, real servers, privileged operations, destructive data operations and product decisions must stop with handoff.",
-    "allowed_task_classes": [
-      "docs / planning 整理",
-      ".agent-state/handoff.json 对齐",
-      "本地代码功能",
-      "本地 verify 脚本",
-      "单元测试 / smoke 脚本",
-      "backup / export 本地功能",
-      "AI-ready UI / prompt schema",
-      "code context bundle CLI",
-      "小型局部重构"
-    ],
-    "forbidden_actions": [
-      "SSH 到服务器写入",
-      "sudo",
-      "systemd",
-      "写 /opt",
-      "操作 80/443 端口",
-      "真实服务器部署",
-      "GitHub release 删除 / tag 删除",
-      "数据库 destructive migration",
-      "删除用户数据",
-      "修改真实生产数据",
-      "大规模 UI 重构",
-      "引入大型框架",
-      "需要用户拍板的产品方向",
-      "任何无法本地自动验证的任务"
-    ],
-    "stop_conditions": [
-      "git status --short 不干净且无法归类",
-      "typecheck / build / verify 失败且不能在当前任务边界内修复",
-      "需要 SSH / sudo / systemd / 外部账号 / API key",
-      "需要用户确认路径、权限、端口、账号或密钥",
-      "涉及真实服务器",
-      "涉及删除或迁移数据",
-      "planning 与代码冲突且无法判断谁 stale",
-      "任务边界不清",
-      "连续两次修复验证仍失败",
-      "命令出现权限错误、网络错误或端口冲突但无法确定原因"
-    ],
-    "commit_rules": [
-      "每个原子任务单独 commit",
-      "提交前必须验证",
-      "提交后 git status --short 必须为空",
-      "不允许 push，除非用户明确要求",
-      "不允许改 tag / release",
-      "不允许进入下一个任务前留下脏工作区"
-    ],
-    "required_end_report": [
-      "已完成任务",
-      "每个任务 commit",
-      "验证结果",
-      "未完成任务",
-      "阻塞点",
-      "下一步最小动作",
-      "是否需要用户白天介入"
-    ],
-    "server_task_policy": "S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY、S3-SERVER-SYSTEMD-AUTOSTART-PREP、S3-SERVER-SYSTEMD-AUTOSTART-VERIFY 与任何真实服务器 / systemd / sudo 任务都不能夜跑；必须等用户白天确认 SSH、release 下载或上传、写入路径、启动进程与端口边界。"
-  },
-  "archive_state": {
-    "directory": "docs/archive/v0.2-closeout/",
-    "default_read_policy": "Do not read archive by default. Read only for v0.2.0 前历史背景、专项实现追溯、API / SQLite / 不可达策略背景、release closeout 追溯或归档审计。",
-    "archived_documents": [
-      {
-        "path": "docs/archive/v0.2-closeout/s3-api-contract.md",
-        "reason": "S3 HTTP API 契约草案已被 apps/server、SQLite 主链路和 HTTP adapter 实现吸收。"
-      },
-      {
-        "path": "docs/archive/v0.2-closeout/s3-sqlite-schema-draft.md",
-        "reason": "SQLite schema 草案已被本地 SQLite storage 实现吸收。"
-      },
-      {
-        "path": "docs/archive/v0.2-closeout/s3-server-unreachable-strategy.md",
-        "reason": "服务器不可达策略已被 HTTP adapter、统一 storage feedback 与本地 smoke 验证吸收。"
-      }
-    ],
-    "current_default_fact_sources": [
-      "AGENTS.md",
-      "docs/planning/current.md",
-      "docs/planning/backlog.md",
-      ".agent-state/handoff.json",
-      "docs/product/产品介绍.md（仅产品定义 / 领域语言命中时）",
-      "README.md（仅对外展示 / 快速开始 / release 口径命中时）"
-    ]
-  },
-  "frontier_tasks": [
-    {
-      "id": "S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY",
-      "track": "A_S3_Server_Deployment_Line",
-      "goal": "在服务器 /home/hurricane/probeflash 下使用 GitHub Release tarball 完成 v0.2.0 no-sudo 用户目录部署验证。",
-      "depends_on": [
-        "v0.2.0 release assets 已生成并本地 smoke 通过",
-        "release 下载 / 上传与 SHA256 校验计划已写入 deploy docs",
-        "用户授权 SSH / release 下载或上传 / 在 /home/hurricane/probeflash 写入并启动临时进程",
-        "用户确认 4100 端口边界"
-      ],
-      "status": "blocked_by_user_confirmation_and_time",
-      "lane": "blocked_daytime_mainline",
-      "night_safe": false
-    },
-    {
-      "id": "TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY",
-      "track": "Audit_Tech_Debt_Line",
-      "goal": "审计并收敛 closeout 多步写入的原子性、失败恢复与读回验证边界。",
-      "depends_on": [
-        "TECH-DEBT-STORAGE-ERROR-CONTRACT"
-      ],
-      "status": "pending_night_safe_candidate",
-      "lane": "repo_local_night_safe",
-      "night_safe": true
-    },
-    {
-      "id": "TECH-DEBT-VERIFY-HELPERS",
-      "track": "Audit_Tech_Debt_Line",
-      "goal": "补齐高风险路径的 repo-local verify helper，减少 deploy / handoff / storage 口径靠人工阅读漂移。",
-      "depends_on": [
-        "S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN"
-      ],
-      "status": "pending_night_safe_candidate",
-      "lane": "repo_local_night_safe",
-      "night_safe": true
+      "id": "DATA-04-INTEGRITY-CHECK",
+      "track": "Data Safety",
+      "goal": "增加 SQLite 数据完整性检查。",
+      "status": "pending",
+      "priority": "P0",
+      "lane": "night-safe",
+      "night_safe": true,
+      "ai_unattended_run": true,
+      "requires_user_confirmation": []
     }
   ],
   "pending_task_queue": [
     {
       "order": 1,
-      "id": "S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY",
-      "track": "A_S3_Server_Deployment_Line",
-      "goal": "在服务器 /home/hurricane/probeflash 下使用 GitHub Release tarball 完成 v0.2.0 no-sudo 用户目录部署验证，确认独立 Node runtime、4100 端口、SQLite 持久化、release 解压布局与 filebrowser:80 旁路都成立。",
+      "id": "DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY",
+      "track": "Deployment / Operability",
+      "status": "blocked",
+      "priority": "P0",
+      "classification": "blocked",
       "depends_on": [
-        "S3-SERVER-RELEASE-DOWNLOAD-PLAN 已写清",
-        "v0.2.0 release assets 已生成并本地测试",
-        "本地 HTTP + SQLite E2E 已通过",
-        "服务器事实已确认",
-        "用户明确允许 SSH 到 hurricane@192.168.2.2、下载或上传 release assets、在 /home/hurricane 下写入文件并启动临时进程"
-      ],
-      "input_files": [
-        "AGENTS.md",
-        "docs/planning/current.md",
-        ".agent-state/handoff.json",
-        "docs/planning/backlog.md",
-        "v0.2.0 release assets",
-        "SHA256SUMS.txt",
-        "apps/server/deploy/* 作为参考输入",
-        "目标服务器 192.168.2.2"
-      ],
-      "allowed_changes": [
-        "服务器 /home/hurricane/probeflash/releases/v0.2.0",
-        "服务器 /home/hurricane/probeflash/current",
-        "服务器 /home/hurricane/probeflash/runtime/node",
-        "服务器 /home/hurricane/probeflash/shared/data",
-        "服务器 /home/hurricane/probeflash/shared/logs",
-        "服务器 /home/hurricane/probeflash/shared/env",
-        "仓库内仅 planning sync 或必要 deployment note"
-      ],
-      "non_goals": [
-        "不在服务器上 git pull",
-        "不 sudo",
-        "不 systemd",
-        "不写 /opt",
-        "不碰 80",
-        "不升级系统 Node",
-        "不使用系统 Node v10",
-        "不影响 filebrowser / vnt-cli / docker / Portainer",
-        "不做反向代理 / .local"
-      ],
-      "verification": [
-        "校验 SHA256SUMS.txt",
-        "确认 current -> releases/v0.2.0",
-        "确认 PROBEFLASH_STATIC_DIR=/home/hurricane/probeflash/current/dist",
-        "curl http://127.0.0.1:4100/",
-        "curl http://127.0.0.1:4100/api/health",
-        "curl http://192.168.2.2:4100/",
-        "curl http://192.168.2.2:4100/api/health",
-        "missing SPA route 返回 index.html",
-        "创建 workspace / issue",
-        "停止重启后读回",
-        "确认 /home/hurricane/probeflash/shared/data/probeflash.sqlite 被使用",
-        "确认 filebrowser:80 仍正常"
-      ],
-      "definition_of_done": [
-        "ProbeFlash 从固定 release 资产运行",
-        "ProbeFlash 使用独立 Node runtime 在用户目录运行",
-        "4100 可本机与 LAN 访问 Web UI 和 /api",
-        "SQLite 重启后可读回",
-        "shared/data、shared/env、shared/logs 不随 release 删除",
-        "filebrowser:80 不受影响",
-        "没有执行 sudo / systemd / /opt / 服务器 git pull 操作"
-      ],
-      "next_task": "S3-SERVER-RELEASE-UPDATE-FLOW or S3-SERVER-SYSTEMD-AUTOSTART-PREP after planning review",
-      "status": "blocked_by_user_confirmation_and_time"
+        "v0.2.x release assets and SHA256SUMS.txt",
+        "user confirms SSH, upload/download, /home/hurricane/probeflash write, temporary process start and 4100 boundary"
+      ]
     },
     {
       "order": 2,
-      "id": "S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN",
-      "track": "A_S3_Server_Deployment_Line",
-      "goal": "明确 web dist 如何服务，以及 /api 如何与 backend 共存；已采用方案 B：apps/server 在 PROBEFLASH_STATIC_DIR 设置时同一 4100 端口服务 dist 与现有 /api。",
+      "id": "DEP-02-STATIC-DIST-SERVER-PATH-VERIFY",
+      "track": "Deployment / Operability",
+      "status": "pending_after_DEP-01",
+      "priority": "P0",
+      "classification": "day-only",
       "depends_on": [
-        "v0.2.0 web release smoke 已证明临时静态服务器 + /api proxy 可行"
-      ],
-      "input_files": [
-        "apps/server/deploy/*",
-        "本地 release smoke 结论",
-        "apps/server/src/server.mjs",
-        "apps/server/package.json",
-        "dev-start.sh",
-        "README.md"
-      ],
-      "allowed_changes": [
-        "planning 文件",
-        "apps/server 可选静态 dist 服务",
-        "apps/server/deploy/* 的 web dist 服务说明",
-        "repo-local 静态 serve verify"
-      ],
-      "non_goals": [
-        "不 SSH",
-        "不 sudo",
-        "不占 80",
-        "不做 nginx / Caddy / 反向代理",
-        "不做 .local",
-        "不公网暴露",
-        "不改业务 API / UI",
-        "不改 SQLite schema"
-      ],
-      "verification": [
-        "git diff --check",
-        "cd apps/server && npm run verify:s3-local-backend-scaffold",
-        "cd apps/server && npm run verify:deploy-prep",
-        "cd apps/server && npm run verify:release-static-web-serve",
-        "cd apps/desktop && npm run typecheck",
-        "cd apps/desktop && npm run build",
-        "cd apps/desktop && npm run verify:handoff",
-        "cd apps/desktop && npm run verify:all",
-        "python3 -m json.tool .agent-state/handoff.json >/dev/null"
-      ],
-      "definition_of_done": [
-        "后续服务器验证知道 web dist 的服务方式与 API 边界",
-        "不会误把 backend health 当成完整 LAN Web UI 验证",
-        "PROBEFLASH_STATIC_DIR unset 时保持 API-only / Vite dev proxy 兼容",
-        "未触碰真实服务器"
-      ],
-      "next_task": "S3-SERVER-RELEASE-UPDATE-FLOW",
-      "status": "completed"
+        "DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY"
+      ]
     },
     {
       "order": 3,
-      "id": "S3-SERVER-RELEASE-UPDATE-FLOW",
-      "track": "A_S3_Server_Deployment_Line",
-      "goal": "定义后续 v0.2.1 / v0.3.0 如何从 release tarball 更新和回滚，而不是用 git pull 作为主部署方式。",
+      "id": "DEP-03-VERSION-ENDPOINT-SERVER-VERIFY",
+      "track": "Deployment / Operability",
+      "status": "pending_after_DEP-01",
+      "priority": "P0",
+      "classification": "day-only",
       "depends_on": [
-        "release 用户目录布局已确定",
-        "真实更新 / rollback 验证依赖 S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY 完成"
-      ],
-      "input_files": [
-        "v0.2.0 release assets",
-        "后续 release tarball 约定",
-        "服务器 /home/hurricane/probeflash 布局",
-        "apps/server/deploy/*"
-      ],
-      "allowed_changes": [
-        "部署文档 / 脚本",
-        "planning sync",
-        "服务器 releases/vX.Y.Z 目录与 current symlink 只在用户授权部署时允许"
-      ],
-      "non_goals": [
-        "不把 shared/data 放进 release 目录",
-        "不删除 DB",
-        "不依赖服务器 git pull",
-        "不占 80",
-        "不升级系统 Node",
-        "不做公网发布"
-      ],
-      "verification": [
-        "下载新 release",
-        "校验 SHA256SUMS.txt",
-        "解压到 releases/vX.Y.Z",
-        "切换 current symlink",
-        "restart",
-        "health check",
-        "DB 保留",
-        "回滚到上一个 release"
-      ],
-      "definition_of_done": [
-        "有可重复的 release tarball 更新流程",
-        "失败可回滚",
-        "服务版本与 DB 持久化可验证"
-      ],
-      "next_task": "S3-SERVER-SYSTEMD-AUTOSTART-PREP",
-      "status": "pending_repo_local_plan_then_blocked_by_server_verify"
+        "DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY"
+      ]
     },
     {
       "order": 4,
-      "id": "S3-SERVER-SYSTEMD-AUTOSTART-PREP",
-      "track": "A_S3_Server_Deployment_Line",
-      "goal": "在 no-sudo release 部署验证成功后，准备与 /home/hurricane/probeflash release 布局一致的 probeflash.service。",
+      "id": "DEP-04-HEALTH-STATUS-SERVER-VERIFY",
+      "track": "Deployment / Operability",
+      "status": "pending_after_DEP-01",
+      "priority": "P0",
+      "classification": "day-only",
       "depends_on": [
-        "S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY"
-      ],
-      "input_files": [
-        "apps/server/deploy/probeflash.service.template",
-        "apps/server/deploy/env.example",
-        "用户目录 release 部署记录",
-        "systemd 事实",
-        "filebrowser.service 已知风格"
-      ],
-      "allowed_changes": [
-        "planning 文件",
-        "必要时更新 apps/server/deploy/* 的模板 / 示例以匹配 release 用户目录部署"
-      ],
-      "non_goals": [
-        "不执行真正 systemctl",
-        "不写 /etc/systemd/system/probeflash.service",
-        "不 sudo",
-        "不碰 80",
-        "不用 root 跑 ProbeFlash",
-        "不切 /opt"
-      ],
-      "verification": [
-        "unit 内容静态检查",
-        "确认 User=hurricane",
-        "确认 Group=hurricane",
-        "确认 WorkingDirectory=/home/hurricane/probeflash/current/apps/server",
-        "确认 EnvironmentFile=/home/hurricane/probeflash/shared/env/probeflash.env",
-        "确认 ExecStart=/home/hurricane/probeflash/runtime/node/bin/node src/server.mjs",
-        "确认 Restart=always 与 RestartSec=3s",
-        "如环境允许，对临时 unit 文件运行 systemd-analyze verify 或等价静态检查"
-      ],
-      "definition_of_done": [
-        "probeflash.service 草案可被用户审阅",
-        "路径均指向 release-based /home/hurricane/probeflash",
-        "未执行 sudo / systemctl",
-        "下一轮可在用户授权后安装验证"
-      ],
-      "next_task": "S3-SERVER-SYSTEMD-AUTOSTART-VERIFY",
-      "status": "blocked_by_external_dependency_after_release_user_dir_verify"
+        "DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY"
+      ]
     },
     {
       "order": 5,
-      "id": "S3-SERVER-SYSTEMD-AUTOSTART-VERIFY",
-      "track": "A_S3_Server_Deployment_Line",
-      "goal": "用户授权后安装并验证 probeflash.service 开机自启。",
+      "id": "DATA-01-SQLITE-BACKUP-SERVER-PATH-VERIFY",
+      "track": "Data Safety",
+      "status": "pending_after_DEP-01",
+      "priority": "P0",
+      "classification": "day-only",
       "depends_on": [
-        "S3-SERVER-SYSTEMD-AUTOSTART-PREP",
-        "用户明确授权 sudo、写 /etc/systemd/system/probeflash.service、执行 daemon-reload / enable / start / status"
-      ],
-      "input_files": [
-        "已审阅的 probeflash.service",
-        "/home/hurricane/probeflash/shared/env/probeflash.env",
-        "用户目录 release 部署结果",
-        "sudo 授权边界"
-      ],
-      "allowed_changes": [
-        "服务器 /etc/systemd/system/probeflash.service",
-        "systemd unit enable/start 状态",
-        "仓库 planning sync"
-      ],
-      "non_goals": [
-        "未确认前不 sudo",
-        "不改 filebrowser / vnt-cli / docker / Portainer",
-        "不占 80",
-        "不升级系统 Node",
-        "不迁移到 /opt",
-        "不做反向代理 / .local"
-      ],
-      "verification": [
-        "写 unit 前复述并确认路径",
-        "systemctl daemon-reload",
-        "systemctl enable probeflash",
-        "systemctl start probeflash",
-        "systemctl status probeflash",
-        "journalctl -u probeflash",
-        "curl http://127.0.0.1:4100/api/health",
-        "curl http://192.168.2.2:4100/api/health",
-        "restart 或 reboot 后读回",
-        "确认 filebrowser:80 正常"
-      ],
-      "definition_of_done": [
-        "ProbeFlash 由 systemd 以 hurricane:hurricane 拉起并可开机自启",
-        "服务日志可诊断",
-        "SQLite 数据保留",
-        "旧服务不受影响"
-      ],
-      "next_task": "server release update / rollback verification or S4 server-path re-verification after planning review",
-      "status": "blocked_by_user_confirmation"
-    },
-    {
-      "order": 5,
-      "id": "S4-DATA-BACKUP-EXPORT",
-      "track": "B_S4_Operability_Data_Safety_Line",
-      "goal": "提供 SQLite 备份 / 导出机制，保证运行中不破坏 DB。",
-      "depends_on": [
-        "S4-OPERABILITY-HEALTH-STATUS"
-      ],
-      "input_files": [
-        "/home/hurricane/probeflash/shared/data/probeflash.sqlite",
-        "server storage 代码",
-        "SQLite schema",
-        "部署路径约定"
-      ],
-      "allowed_changes": [
-        "server-side 备份脚本或 npm script",
-        "导出 JSON 的最小工具",
-        "部署文档",
-        "planning sync"
-      ],
-      "non_goals": [
-        "不做云同步",
-        "不做增量备份系统",
-        "不在运行中直接复制半写入 DB 而不校验",
-        "不备份 secrets",
-        "不改业务 schema 语义"
-      ],
-      "verification": [
-        "生成带时间戳的 SQLite backup",
-        "生成 JSON export",
-        "备份文件可列出",
-        "运行中执行不破坏主 DB",
-        "执行后 health 与主流程仍正常"
-      ],
-      "definition_of_done": [
-        "有明确命令生成 timestamped backup 与 JSON export",
-        "备份位置与保留边界清楚",
-        "不会破坏运行中 DB"
-      ],
-      "next_task": "S4-DATA-RESTORE-DRY-RUN",
-      "status": "completed"
+        "DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY"
+      ]
     },
     {
       "order": 6,
-      "id": "S4-DATA-RESTORE-DRY-RUN",
-      "track": "B_S4_Operability_Data_Safety_Line",
-      "goal": "验证备份能恢复到临时 DB 并读回关键实体。",
+      "id": "DATA-03-RESTORE-DRY-RUN-SERVER-PATH-VERIFY",
+      "track": "Data Safety",
+      "status": "pending_after_DATA-01",
+      "priority": "P0",
+      "classification": "day-only",
       "depends_on": [
-        "S4-DATA-BACKUP-EXPORT"
-      ],
-      "input_files": [
-        "timestamped SQLite backup",
-        "JSON export",
-        "SQLite schema",
-        "server storage 读路径"
-      ],
-      "allowed_changes": [
-        "restore dry-run script",
-        "验证脚本",
-        "部署文档",
-        "planning sync"
-      ],
-      "non_goals": [
-        "不覆盖生产 DB",
-        "不自动执行真实恢复",
-        "不删除原备份",
-        "不在未确认情况下停服务"
-      ],
-      "verification": [
-        "从备份恢复到临时 DB",
-        "读取 workspace / issue / record / archive / error-entry",
-        "校验计数或样例 ID",
-        "dry-run 完成后生产 DB 未改动"
-      ],
-      "definition_of_done": [
-        "备份可被独立恢复并读回",
-        "恢复流程可演练",
-        "生产数据安全不受影响"
-      ],
-      "next_task": "AI-READY-PROMPT-TEMPLATE-SYSTEM",
-      "status": "completed"
+        "DATA-01-SQLITE-BACKUP-SERVER-PATH-VERIFY"
+      ]
     },
     {
       "order": 7,
-      "id": "S4-OPERABILITY-HEALTH-STATUS",
-      "track": "B_S4_Operability_Data_Safety_Line",
-      "goal": "提供更清楚的 server status / storage status / version info，便于部署后诊断。",
+      "id": "DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN",
+      "track": "Deployment / Operability",
+      "status": "pending_night_safe",
+      "priority": "P0",
+      "classification": "night-safe",
       "depends_on": [
-        "S4-RELEASE-VERSION-ENDPOINT"
-      ],
-      "input_files": [
-        "apps/server/src/*",
-        "server health endpoint",
-        "storage adapter",
-        "部署 env",
-        "前端连接状态 UI"
-      ],
-      "allowed_changes": [
-        "server health/status endpoint",
-        "前端最小状态展示",
-        "verify 脚本",
-        "planning sync"
-      ],
-      "non_goals": [
-        "不做复杂监控平台",
-        "不做权限系统",
-        "不暴露 secrets / 绝对敏感路径",
-        "不做公网可观测性"
-      ],
-      "verification": [
-        "health/status 返回 server ready、storage ready、版本或 workspace 信息",
-        "前端可显示可理解状态",
-        "断 DB 或错误 env 时状态可诊断"
-      ],
-      "definition_of_done": [
-        "部署后能一眼确认 server/storage 是否正常",
-        "失败态有明确错误，不 silent fallback"
-      ],
-      "next_task": "S4-DATA-BACKUP-EXPORT",
-      "status": "completed"
+        "existing release tarball deployment docs"
+      ]
     },
     {
       "order": 8,
-      "id": "S4-RELEASE-VERSION-ENDPOINT",
-      "track": "B_S4_Operability_Data_Safety_Line",
-      "goal": "让 server /api/health 或 version endpoint 返回版本、commit、release tag，便于确认服务器跑的是哪版。",
+      "id": "DATA-04-INTEGRITY-CHECK",
+      "track": "Data Safety",
+      "status": "pending_night_safe",
+      "priority": "P0",
+      "classification": "night-safe",
       "depends_on": [
-        "本地 HTTP + SQLite 主链路可用"
-      ],
-      "input_files": [
-        "release metadata",
-        "package version",
-        "git commit / tag 注入方式",
-        "server health endpoint",
-        "deploy flow"
-      ],
-      "allowed_changes": [
-        "server version metadata 读取",
-        "release packaging metadata",
-        "verify 脚本",
-        "planning sync"
-      ],
-      "non_goals": [
-        "不读取 .git 作为服务器运行时必需依赖",
-        "不暴露 secrets",
-        "不引入复杂 release registry"
-      ],
-      "verification": [
-        "本地与服务器 health/version 能返回 version、commit、release tag",
-        "release 更新后值变化",
-        "回滚后值对应旧 release"
-      ],
-      "definition_of_done": [
-        "部署验证可通过 endpoint 确认实际运行版本",
-        "release update / rollback 可被版本信息佐证"
-      ],
-      "next_task": "S4-OPERABILITY-HEALTH-STATUS",
-      "status": "completed"
-    },
-    {
-      "order": 9,
-      "id": "AI-READY-PROMPT-TEMPLATE-SYSTEM",
-      "track": "C_AI_Ready_Product_Line",
-      "goal": "沉淀 prompt template 与输入输出 schema，为后续 AI 接入准备边界，但不调用模型。",
-      "depends_on": [
-        "S4-DATA-RESTORE-DRY-RUN"
-      ],
-      "input_files": [
-        "domain schemas",
-        "issue / record / closeout 数据结构",
-        "closeout UI",
-        "后续 AI 草稿需求"
-      ],
-      "allowed_changes": [
-        "prompt template 模块",
-        "PromptInput / PromptOutput 类型或 schema",
-        "规则模板测试",
-        "文档",
-        "planning sync"
-      ],
-      "non_goals": [
-        "不保存 API key",
-        "不调用外部 AI",
-        "不新增 provider SDK",
-        "不做 RAG / embedding",
-        "不自动写库"
-      ],
-      "verification": [
-        "polish_closeout / summarize_records / suggest_prevention 模板可生成确定性输入",
-        "schema 校验覆盖必填字段和无效输出",
-        "现有 closeout 流程不回归"
-      ],
-      "definition_of_done": [
-        "AI 草稿输入输出边界清楚",
-        "模板可被规则生成器和未来 server AI provider 复用",
-        "无外部调用"
-      ],
-      "next_task": "AI-READY-CLOSEOUT-DRAFT-PANEL",
-      "status": "completed"
-    },
-    {
-      "order": 10,
-      "id": "AI-READY-CLOSEOUT-DRAFT-PANEL",
-      "track": "C_AI_Ready_Product_Line",
-      "goal": "在 closeout 流程里增加草稿辅助面板，先用规则模板生成草稿。",
-      "depends_on": [
-        "AI-READY-PROMPT-TEMPLATE-SYSTEM"
-      ],
-      "input_files": [
-        "closeout UI",
-        "issue / records / closeout input",
-        "prompt template schema",
-        "existing closeout orchestration"
-      ],
-      "allowed_changes": [
-        "前端 closeout panel",
-        "规则草稿生成器",
-        "UI smoke / verify 脚本",
-        "planning sync"
-      ],
-      "non_goals": [
-        "不调用外部 AI",
-        "不自动写入",
-        "不改变原 closeout 必填规则",
-        "不做 RAG / embedding",
-        "不保存 API key"
-      ],
-      "verification": [
-        "规则生成问题描述优化、根因总结草稿、解决方案草稿、预防建议草稿",
-        "用户可复制或应用",
-        "closeout 原路径不回归",
-        "UI smoke 通过"
-      ],
-      "definition_of_done": [
-        "用户能在 closeout 旁看到可解释草稿，并手动复制 / 应用",
-        "主流程仍由用户确认写库"
-      ],
-      "next_task": "AI-ASSIST-POLISH-CLOSEOUT-MINIMAL",
-      "status": "completed"
-    },
-    {
-      "order": 11,
-      "id": "AI-ASSIST-POLISH-CLOSEOUT-MINIMAL",
-      "track": "C_AI_Ready_Product_Line",
-      "goal": "接入真实 AI 的最小措辞优化，只返回 closeout 草稿。",
-      "depends_on": [
-        "AI-READY-CLOSEOUT-DRAFT-PANEL",
-        "用户确认真实 AI provider、API key/server env、timeout 与 mock/test provider 边界"
-      ],
-      "input_files": [
-        "server env",
-        "server API",
-        "prompt templates",
-        "closeout draft panel",
-        "error state UI"
-      ],
-      "allowed_changes": [
-        "server-side AI provider 最薄 adapter",
-        "server env 文档",
-        "前端请求草稿接口",
-        "timeout / error state",
-        "verify 脚本",
-        "planning sync"
-      ],
-      "non_goals": [
-        "browser 不持有 API key",
-        "AI 不直接写库",
-        "AI 失败不阻断 closeout",
-        "不做 RAG / embedding",
-        "不做多 provider 复杂抽象",
-        "不把草稿当事实结论"
-      ],
-      "verification": [
-        "无 API key 时主流程正常并显示配置缺失",
-        "mock / test provider 返回草稿",
-        "timeout / provider error 有可见状态",
-        "用户确认后才应用",
-        "closeout 原路径不回归"
-      ],
-      "definition_of_done": [
-        "真实 AI 能生成措辞优化草稿",
-        "安全边界在 server",
-        "失败可降级到手写 / 规则草稿"
-      ],
-      "next_task": "AI-ASSIST-SUGGEST-PREVENTION",
-      "status": "blocked_by_external_dependency_api_key_after_ai_ready"
-    },
-    {
-      "order": 12,
-      "id": "AI-ASSIST-SUGGEST-PREVENTION",
-      "track": "C_AI_Ready_Product_Line",
-      "goal": "基于 issue + records + resolution 生成预防建议草稿。",
-      "depends_on": [
-        "AI-ASSIST-POLISH-CLOSEOUT-MINIMAL"
-      ],
-      "input_files": [
-        "issue / records / resolution 数据",
-        "suggest_prevention prompt",
-        "AI provider adapter",
-        "closeout draft panel"
-      ],
-      "allowed_changes": [
-        "预防建议草稿 prompt",
-        "server draft endpoint 扩展",
-        "前端草稿展示",
-        "verify 脚本",
-        "planning sync"
-      ],
-      "non_goals": [
-        "不自动写 ErrorEntry.prevention",
-        "不把 AI 建议标记为事实",
-        "不做 RAG / embedding",
-        "不扫描代码仓库"
-      ],
-      "verification": [
-        "有 records / 无 records / provider 失败三类路径",
-        "草稿可复制或应用",
-        "ErrorEntry.prevention 非空规则仍由用户确认路径保证"
-      ],
-      "definition_of_done": [
-        "AI 可辅助生成预防建议草稿",
-        "用户确认后才能进入 closeout 数据"
-      ],
-      "next_task": "CODE-CONTEXT-BUNDLE-CLI",
-      "status": "pending_after_minimal_ai"
-    },
-    {
-      "order": 13,
-      "id": "CODE-CONTEXT-BUNDLE-CLI",
-      "track": "D_AI_Code_Context_Line",
-      "goal": "提供本地 CLI / script，让用户在 WSL 项目目录生成可上传或粘贴到 ProbeFlash 的 code context bundle。",
-      "depends_on": [
-        "AI-ASSIST-SUGGEST-PREVENTION"
-      ],
-      "input_files": [
-        "目标仓库路径",
-        "git CLI 输出",
-        "用户 allowlist 文件",
-        "build/typecheck/verify 输出",
-        "错误日志"
-      ],
-      "allowed_changes": [
-        "本仓库中的 dev tool / script",
-        "bundle schema",
-        "文档",
-        "verify 脚本",
-        "planning sync"
-      ],
-      "non_goals": [
-        "server 不任意读取用户仓库",
-        "默认不包含 .env / secrets / node_modules / .git",
-        "不自动执行破坏性命令",
-        "不上传到外部 AI",
-        "不做 RAG / embedding"
-      ],
-      "verification": [
-        "bundle 包含 repo name、branch、git status、git diff --stat、git log -n、file tree 摘要、用户指定文件内容、build/typecheck/verify 输出、错误日志",
-        "大文件跳过",
-        "allowlist 生效",
-        "输出 markdown 或 json"
-      ],
-      "definition_of_done": [
-        "用户可在本地显式生成可审阅 bundle",
-        "默认安全排除敏感路径",
-        "输出可被 ProbeFlash 后续附加"
-      ],
-      "next_task": "CODE-CONTEXT-ATTACH-TO-ISSUE",
-      "status": "pending"
-    },
-    {
-      "order": 14,
-      "id": "CODE-CONTEXT-ATTACH-TO-ISSUE",
-      "track": "D_AI_Code_Context_Line",
-      "goal": "ProbeFlash issue 支持附加 code context bundle，并显示摘要。",
-      "depends_on": [
-        "CODE-CONTEXT-BUNDLE-CLI"
-      ],
-      "input_files": [
-        "code context bundle schema",
-        "IssueCard / InvestigationRecord schema",
-        "server storage/API",
-        "frontend issue detail UI"
-      ],
-      "allowed_changes": [
-        "作为 InvestigationRecord 或独立 CodeContext entity 的最小 schema/API/UI",
-        "摘要展示",
-        "verify 脚本",
-        "planning sync"
-      ],
-      "non_goals": [
-        "不让 server 扫描任意路径",
-        "不自动执行命令",
-        "不解析 secrets",
-        "不影响现有 issue / record / closeout 主路径"
-      ],
-      "verification": [
-        "可附加 bundle",
-        "可显示 repo / branch / status / diff stat / selected files 摘要",
-        "主路径不回归",
-        "bundle 过大或 schema 错误有可见错误"
-      ],
-      "definition_of_done": [
-        "用户显式提供的 code context 能被安全挂到问题上",
-        "不会改变原有调试闭环"
-      ],
-      "next_task": "AI-ASSIST-ANALYZE-CODE-CONTEXT",
-      "status": "pending"
-    },
-    {
-      "order": 15,
-      "id": "AI-ASSIST-ANALYZE-CODE-CONTEXT",
-      "track": "D_AI_Code_Context_Line",
-      "goal": "AI 基于用户提供的 code context bundle 分析可能原因和下一步排查。",
-      "depends_on": [
-        "CODE-CONTEXT-ATTACH-TO-ISSUE",
-        "AI-ASSIST-POLISH-CLOSEOUT-MINIMAL"
-      ],
-      "input_files": [
-        "issue",
-        "records",
-        "attached code context bundle",
-        "AI prompt templates",
-        "server AI adapter"
-      ],
-      "allowed_changes": [
-        "code context analysis prompt",
-        "server draft endpoint",
-        "前端 hypothesis / next steps 草稿 UI",
-        "verify 脚本",
-        "planning sync"
-      ],
-      "non_goals": [
-        "只分析用户显式提供的内容",
-        "不扫描服务器文件系统",
-        "不自动执行命令",
-        "不直接写 InvestigationRecord",
-        "不做 RAG / embedding"
-      ],
-      "verification": [
-        "AI 输出 hypothesis / next steps 草稿",
-        "用户确认后才能转成记录",
-        "provider 失败不影响 issue 主路径",
-        "bundle 缺失时有清楚空状态"
-      ],
-      "definition_of_done": [
-        "AI 能基于显式 bundle 给出可审阅排查方向",
-        "所有入库动作仍由用户确认"
-      ],
-      "next_task": "CODE-CONTEXT-REPO-CONNECTOR-LATER",
-      "status": "pending"
-    },
-    {
-      "order": 16,
-      "id": "CODE-CONTEXT-REPO-CONNECTOR-LATER",
-      "track": "D_AI_Code_Context_Line",
-      "goal": "在 bundle MVP 验证后，再评估只读 repo connector。",
-      "depends_on": [
-        "AI-ASSIST-ANALYZE-CODE-CONTEXT",
-        "确认 bundle 方式不足以满足常用场景"
-      ],
-      "input_files": [
-        "bundle 使用反馈",
-        "权限边界设计",
-        "allowlist paths",
-        "server deployment constraints",
-        "secret 排除规则"
-      ],
-      "allowed_changes": [
-        "设计文档",
-        "最小只读 connector spike",
-        "权限 / allowlist 校验",
-        "verify 脚本",
-        "planning sync"
-      ],
-      "non_goals": [
-        "不默认扫全仓库",
-        "不读取 secrets",
-        "不越过 allowlist",
-        "不自动执行命令",
-        "不做写操作",
-        "不绕过用户确认"
-      ],
-      "verification": [
-        "allowlist 生效",
-        "禁读 .env / secrets / node_modules / .git",
-        "大文件跳过",
-        "审计日志可说明读取了哪些路径",
-        "关闭 connector 后主流程不受影响"
-      ],
-      "definition_of_done": [
-        "只读 repo connector 的安全边界被验证",
-        "仍以用户授权和 allowlist 为前提"
-      ],
-      "next_task": null,
-      "status": "pending"
+        "HTTP + SQLite schema and local fixture path"
+      ]
     }
   ],
+  "execution_cadence": {
+    "one_week_goal": "部署可用、数据安全、可观测。",
+    "one_week_tasks": [
+      "DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY",
+      "DEP-02-STATIC-DIST-SERVER-PATH-VERIFY",
+      "DEP-03-VERSION-ENDPOINT-SERVER-VERIFY",
+      "DEP-04-HEALTH-STATUS-SERVER-VERIFY",
+      "DATA-01-SQLITE-BACKUP-SERVER-PATH-VERIFY",
+      "DATA-03-RESTORE-DRY-RUN-SERVER-PATH-VERIFY",
+      "DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN",
+      "DATA-04-INTEGRITY-CHECK"
+    ],
+    "two_to_four_week_goal": "搜索、AI-ready、code context bundle。",
+    "two_to_four_week_tasks": [
+      "CORE-01-QUICK-ISSUE-CREATE",
+      "CORE-04-RECORD-TIMELINE-POLISH",
+      "CORE-05-CLOSEOUT-UX-POLISH",
+      "SEARCH-01-BASIC-FULL-TEXT-SEARCH",
+      "SEARCH-02-FILTERS",
+      "SEARCH-04-TAGS",
+      "SEARCH-05-ERROR-CODE-TAXONOMY",
+      "SEARCH-07-SIMILAR-ISSUES-LITE",
+      "AIREADY-05-DRAFT-HISTORY",
+      "AIREADY-06-DRAFT-DIFF",
+      "CODECTX-01-BUNDLE-CLI",
+      "CODECTX-02-SECRETS-PROTECTION"
+    ],
+    "one_to_two_month_goal": "真实 AI、知识库、架构拆分。",
+    "one_to_two_month_tasks": [
+      "REALAI-01-PROVIDER-ABSTRACTION",
+      "REALAI-02-SERVER-ENV-API-KEY-BOUNDARY",
+      "REALAI-03-TIMEOUT-ERROR-STATE",
+      "REALAI-04-POLISH-CLOSEOUT",
+      "REALAI-05-SUMMARIZE-RECORDS",
+      "REALAI-06-SUGGEST-PREVENTION",
+      "CODECTX-04-ATTACH-BUNDLE-TO-ISSUE",
+      "CODECTX-05-BUNDLE-VIEWER",
+      "CODECTX-07-AI-ANALYZE-EXPLICIT-BUNDLE",
+      "SEARCH-03-ARCHIVE-REVIEW-PAGE",
+      "TECH-07-APP-TSX-MINIMAL-SPLIT",
+      "TECH-09-SERVER-ROUTE-SPLIT"
+    ]
+  },
+  "night_safe_pool": [
+    "DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN",
+    "DEP-09-LOGS-DIAGNOSTICS-BUNDLE",
+    "DATA-02-JSON-EXPORT-HARDEN",
+    "DATA-04-INTEGRITY-CHECK",
+    "DATA-05-PARTIAL-CLOSEOUT-RECOVERY",
+    "DATA-08-REPAIR-TASK-GENERATION",
+    "CORE-01-QUICK-ISSUE-CREATE",
+    "CORE-02-WORKSPACE-UX-IMPROVEMENTS",
+    "CORE-03-RECENT-ISSUE-REOPEN",
+    "CORE-04-RECORD-TIMELINE-POLISH",
+    "CORE-05-CLOSEOUT-UX-POLISH",
+    "CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS",
+    "CORE-07-ARCHIVE-FILTERS",
+    "CORE-08-ERROR-ENTRY-TAGS",
+    "CORE-09-DEMO-SEED-IMPORT",
+    "SEARCH-01-BASIC-FULL-TEXT-SEARCH",
+    "SEARCH-02-FILTERS",
+    "SEARCH-03-ARCHIVE-REVIEW-PAGE",
+    "SEARCH-04-TAGS",
+    "SEARCH-07-SIMILAR-ISSUES-LITE",
+    "SEARCH-08-SEARCH-RESULT-LINKING",
+    "SEARCH-09-RECURRENCE-PROMPT",
+    "AIREADY-02-PROMPT-SCHEMA-VERSIONING",
+    "AIREADY-03-GOLDEN-DRAFT-FIXTURES",
+    "AIREADY-05-DRAFT-HISTORY",
+    "AIREADY-06-DRAFT-DIFF",
+    "AIREADY-07-APPLY-SAFETY",
+    "AIREADY-08-MOCK-PROVIDER",
+    "AIREADY-09-NO-API-KEY-UX",
+    "AIREADY-10-PROMPT-PREVIEW-EXPORT",
+    "CODECTX-01-BUNDLE-CLI",
+    "CODECTX-02-SECRETS-PROTECTION",
+    "CODECTX-03-BUNDLE-SCHEMA-FIXTURES",
+    "CODECTX-04-ATTACH-BUNDLE-TO-ISSUE",
+    "CODECTX-05-BUNDLE-VIEWER",
+    "CODECTX-06-BUNDLE-SIZE-ERROR-HANDLING",
+    "TECH-01-CLOSEOUT-ATOMICITY-DESIGN",
+    "TECH-02-CLOSEOUT-ATOMICITY-RECOVERY",
+    "TECH-03-WORKSPACEID-CONSISTENCY-LATER",
+    "TECH-04-VERIFY-HELPERS",
+    "TECH-05-VERIFY-TMP-CLEANUP",
+    "TECH-06-SMOKE-FIXTURE-CONSOLIDATION",
+    "TECH-07-APP-TSX-MINIMAL-SPLIT",
+    "TECH-08-HTTP-REPOSITORY-SPLIT",
+    "TECH-09-SERVER-ROUTE-SPLIT",
+    "TECH-10-DATABASE-MODULE-SPLIT"
+  ],
+  "day_only_pool": [
+    "DEP-02-STATIC-DIST-SERVER-PATH-VERIFY",
+    "DEP-03-VERSION-ENDPOINT-SERVER-VERIFY",
+    "DEP-04-HEALTH-STATUS-SERVER-VERIFY",
+    "DEP-05-SYSTEMD-AUTOSTART-PREP",
+    "DATA-01-SQLITE-BACKUP-SERVER-PATH-VERIFY",
+    "DATA-03-RESTORE-DRY-RUN-SERVER-PATH-VERIFY"
+  ],
+  "blocked_by_external": [
+    "DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY",
+    "DEP-06-SYSTEMD-AUTOSTART-VERIFY",
+    "DEP-08-RELEASE-UPDATE-ROLLBACK-VERIFY",
+    "REALAI-01-PROVIDER-ABSTRACTION",
+    "REALAI-02-SERVER-ENV-API-KEY-BOUNDARY",
+    "REALAI-03-TIMEOUT-ERROR-STATE",
+    "REALAI-04-POLISH-CLOSEOUT",
+    "REALAI-05-SUMMARIZE-RECORDS",
+    "REALAI-06-SUGGEST-PREVENTION",
+    "REALAI-07-USER-REVIEW-BEFORE-APPLY",
+    "REALAI-08-AI-DRAFT-AUDIT-METADATA",
+    "REALAI-09-REAL-PROVIDER-OPT-IN-SMOKE",
+    "CODECTX-07-AI-ANALYZE-EXPLICIT-BUNDLE"
+  ],
+  "decision_needed": [
+    "DATA-06-BACKUP-RETENTION-POLICY",
+    "DATA-07-RESTORE-APPLY-RUNBOOK",
+    "SEARCH-05-ERROR-CODE-TAXONOMY",
+    "SEARCH-06-TAG-HYGIENE-MERGE",
+    "CODECTX-08-REPO-CONNECTOR-LATER-ALLOWLIST",
+    "CODECTX-09-CONNECTOR-AUDIT-DENYLIST",
+    "长期是否做权限系统、多队伍协作、RAG/embedding、硬件日志自动接入"
+  ],
   "completed_atomic_tasks": [
-    "A1_setup_planning_and_handoff_workspace",
-    "A2_rewrite_agents_md",
-    "A3_rewrite_readme_md",
-    "A4_restructure_skills",
-    "A5_final_verification_and_handoff",
-    "S1-A1_bootstrap_desktop_shell",
-    "W-R1_workflow_paradigm_refactor",
-    "W-L1_wsl_linux_baseline_hygiene",
-    "W-L2_wsl_linux_residual_cleanup",
-    "W-L3_wsl_runtime_baseline_verification",
-    "D-005_schema_validation_library_decision",
-    "S1-A2_schema_validation_scaffold_with_zod",
-    "S1-A3_local_storage_min_loop_with_localstorage",
-    "D-007_defer_electron_shell_close_s1",
-    "S2-A1_issue_card_intake_minimal_form",
-    "S2-A2_issue_card_list_view",
-    "M-1_fix_typecheck_script",
-    "S2-A3_investigation_record_append",
-    "S2-A4_closeout_error_entry_archive_document",
-    "S2-CLOSEOUT-DOCS_sync_stage_status_docs",
-    "D1-RULES-REALIGN_delivery_priority_dual_track_docs",
-    "D1-UI-V0-CN-SHELL-POLISH",
-    "D1-UI-V1-VISUAL-HIERARCHY",
-    "D1-DEMO-PATH-MIN-CN",
-    "D1-MAINLINE-WIRE-CONNECT",
-    "D1-README-AGENTS-PACKAGING",
-    "D1-ARCHIVE-PANEL-FIX",
-    "D1-ARCHIVE-PERSIST-INDEX",
-    "D1-LAYOUT-HEADER-ARCHIVE-ENTRY",
-    "D1-FLOW-GUIDE-REMOVE",
-    "D1-DOCS-CONSOLIDATE",
-    "D1-BRAND-UNIFY-PROBEFLASH",
-    "D1-IA-PLANNING-SYNC",
-    "D1-IA-LEFT-ISSUE-RAIL",
-    "D1-IA-CREATE-ENTRY-MODES",
-    "D1-IA-CLOSEOUT-HEADER-ACTION",
-    "D1-ISSUE-RAIL-INITIAL-AUTO-LOAD",
-    "D1-IA-ISSUE-RAIL-CREATE-ACTION",
-    "TEST-TOOLING-ADD-PLAYWRIGHT",
-    "D1-MAINLINE-BROWSER-SMOKE",
-    "REPO-HYGIENE-IGNORE-PERSONAL-AI-TRACES",
-    "S3-ENTRY-PLANNING",
-    "S3-PREP-FRONTIER-EXPANSION",
-    "S3-PREP-WORKSPACE-FOUNDATION-A1",
-    "S3-PREP-STORAGE-ADAPTER-ABSTRACTION-A2A3A4",
-    "S3-PREP-API-CONTRACT-DRAFT-A1A2",
-    "S3-PREP-SQLITE-SCHEMA-DRAFT-A1A2A3A4",
-    "S3-PREP-SERVER-UNREACHABLE-HANDLING-A1A2A3",
-    "DOCS-HYGIENE-HARD-DELETE-WEAK-DOCS",
-    "S3-PLANNING-WSL-FIRST-REALIGN",
-    "S3-ARCH-ASYNC-STORAGE-PORT",
-    "S3-ARCH-CLOSEOUT-ORCHESTRATOR",
-    "S3-ARCH-UNIFIED-STORAGE-ERROR-STATE",
     "S3-LOCAL-BACKEND-SCAFFOLD",
     "S3-LOCAL-HTTP-STORAGE-ADAPTER",
     "S3-LOCAL-END-TO-END-VERIFY",
-    "S3-SERVER-INDEPENDENT-DEPLOY-PREP",
     "S3-WORKSPACE-CREATE-MINIMAL",
     "REPO-HYGIENE-V0.2.0-CLOSEOUT",
     "S3-S4-AI-ROADMAP-REBUILD",
@@ -1163,7 +374,8 @@
     "TECH-DEBT-SERVER-SCHEMA-CONTRACT",
     "TECH-DEBT-STORAGE-ERROR-CONTRACT",
     "S3-SERVER-RELEASE-DEPLOYMENT-PLANNING-REALIGN",
-    "S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN"
+    "S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN",
+    "PRODUCT-ROADMAP-REBUILD-FROM-VISION"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -1175,101 +387,85 @@
       "当前任务直接相关文件"
     ],
     "conditional_inputs": [
-      "docs/planning/backlog.md：完整队列、任务新增 / 重排 / 改名时读取",
-      "docs/planning/decisions.md：阶段切换、长期规则变化或技术拍板时读取",
-      "docs/archive/v0.2-closeout/：仅 v0.2.0 前历史背景、专项实现追溯或归档审计时读取",
-      "apps/server/deploy/*：服务器部署 docs / deploy prep / 用户确认边界后读取"
+      "docs/planning/product-roadmap.md：完整路线图、任务字段、节奏、任务池",
+      "docs/planning/backlog.md：候选池、节奏队列、任务池",
+      "docs/planning/decisions.md：阶段切换、长期规则变化或技术拍板",
+      "README.md：对外展示 / 快速开始 / release 口径变化",
+      "docs/product/产品介绍.md：产品定义 / 领域语言变化",
+      "docs/archive/v0.2-closeout/：仅 v0.2.0 前历史背景、专项追溯或归档审计"
     ],
-    "claiming_rule": "白天主线只认领 current_atomic_task=S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY，且必须先获得用户确认 release 下载或上传、SSH、写入路径、启动进程与 4100 边界；夜跑 / 无人值守若无服务器授权，只能从 repo_local_night_safe_task_queue / backlog 中认领第一个依赖已满足、repo-local、可自动验证、可回滚的任务；真实 AI/API key 任务不得作为 unattended current task。",
-    "recommended_next": "S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY",
-    "recommended_next_status": "blocked_by_user_confirmation_and_time",
-    "next_night_safe_candidate": "TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY",
-    "night_run_gate": "blocked_for_mainline_server_task; S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN is completed. Next night-safe candidate: TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY; TECH-DEBT-VERIFY-HELPERS is also acceptable if the user wants verification infrastructure first. AI-ASSIST-POLISH-CLOSEOUT-MINIMAL remains blocked_by_external_dependency_api_key_after_ai_ready and must not be selected unattended.",
-    "selection_order": [
-      "白天优先等待用户确认 S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY 的 SSH / release 下载或上传 / 写入 / 启动进程 / 4100 边界",
-      "无服务器授权时只扫描 repo-local night-safe 候选；release 静态 Web 服务方案已完成，不得启动真实服务器",
-      "TECH-DEBT-SERVER-SCHEMA-CONTRACT、TECH-DEBT-STORAGE-ERROR-CONTRACT、S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN 已完成；TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY 是下一技术债 night-safe 候选，TECH-DEBT-VERIFY-HELPERS 可作为验证基础设施候选",
-      "真实 AI/API key 任务保持 blocked，直到用户确认 provider 与 server env 边界",
-      "code context 继续等待真实 AI 和 bundle 前置条件"
+    "recommended_next_daytime": "DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY",
+    "recommended_next_daytime_status": "blocked_until_user_confirms_server_boundaries",
+    "recommended_next_night_safe": "DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN",
+    "alternative_night_safe": "DATA-04-INTEGRITY-CHECK",
+    "selection_rule": "白天有用户参与时优先执行 DEP-01；无服务器授权或夜跑时不得部署，只能从 night_safe_pool 选择第一个依赖满足的任务。真实 AI/API key 和 systemd/sudo 任务不得 unattended。"
+  },
+  "night_run_mode": {
+    "policy": "Night run / unattended mode may only execute repo-local, automatically verifiable and rollback-friendly atomic tasks. External systems, real servers, privileged operations, destructive data operations and product decisions must stop with handoff.",
+    "allowed_task_classes": [
+      "docs / planning 整理",
+      ".agent-state/handoff.json 对齐",
+      "本地代码功能",
+      "本地 verify 脚本",
+      "backup / export 本地功能",
+      "AI-ready UI / prompt schema",
+      "code context bundle CLI",
+      "小型局部重构"
     ],
-    "inputs_read_this_round": [
-      "AGENTS.md",
-      "docs/planning/current.md",
-      "docs/planning/backlog.md",
-      ".agent-state/handoff.json",
-      "apps/server/deploy/README.md",
-      "apps/server/deploy/install-layout.md",
-      "apps/server/deploy/env.example",
-      "apps/server/deploy/probeflash.service.template",
-      "apps/server/scripts/verify-deploy-prep.mjs",
-      "apps/server/scripts/verify-release-static-web-serve.mjs",
-      "apps/server/src/server.mjs",
-      "apps/server/src/database.mjs",
-      "apps/server/package.json",
-      "README.md",
-      "dev-start.sh",
-      "git status --short",
-      "git log --oneline -10"
-    ]
+    "forbidden_actions": [
+      "SSH 到服务器写入",
+      "sudo",
+      "systemd",
+      "写 /opt",
+      "操作 80/443 端口",
+      "真实服务器部署",
+      "GitHub release 删除 / tag 删除",
+      "数据库 destructive migration",
+      "删除用户数据",
+      "修改真实生产数据",
+      "引入大型框架",
+      "需要用户拍板的产品方向",
+      "真实 AI provider / API key 接入"
+    ],
+    "stop_conditions": [
+      "git status --short 不干净且无法归类",
+      "typecheck / build / verify 失败且不能在当前任务边界内修复",
+      "需要 SSH / sudo / systemd / 外部账号 / API key",
+      "需要用户确认路径、权限、端口、账号或密钥",
+      "涉及真实服务器",
+      "涉及删除或迁移数据",
+      "planning 与代码冲突且无法判断谁 stale",
+      "任务边界不清",
+      "连续两次修复验证仍失败"
+    ],
+    "server_task_policy": "DEP-01、DEP-06、DEP-08 与任何真实服务器 / systemd / sudo 任务都不能夜跑。"
+  },
+  "archive_state": {
+    "directory": "docs/archive/v0.2-closeout/",
+    "default_read_policy": "Do not read archive by default. Read only for v0.2.0 前历史背景、专项实现追溯、API / SQLite / 不可达策略背景、release closeout 追溯或归档审计。"
   },
   "verification_expectations": {
-    "release_static_web_serve_task_this_round": [
+    "this_round_planning_only": [
       "git diff --check",
-      "cd apps/server && npm run verify:s3-local-backend-scaffold",
-      "cd apps/server && npm run verify:deploy-prep",
-      "cd apps/server && npm run verify:release-static-web-serve",
-      "cd apps/desktop && npm run typecheck",
-      "cd apps/desktop && npm run build",
+      "python3 -m json.tool .agent-state/handoff.json >/dev/null",
       "cd apps/desktop && npm run verify:handoff",
-      "cd apps/desktop && npm run verify:all",
-      "python3 -m json.tool .agent-state/handoff.json >/dev/null"
+      "git status --short"
     ],
-    "code_or_package_changes": [
-      "本轮修改 apps/server/src/server.mjs 与 apps/server/package.json，因此必须跑 server scaffold/deploy/static verify 与 desktop typecheck/build/verify:all"
-    ],
-    "server_deploy_tasks": [
-      "部署前确认人工授权边界",
-      "确认 PROBEFLASH_STATIC_DIR 指向 /home/hurricane/probeflash/current/dist",
-      "确认 / 与 /api/health 同端口可访问",
-      "确认独立端口监听",
-      "确认 SQLite 持久化与读回",
-      "确认既有 80 端口服务不受影响"
+    "not_required_this_round": [
+      "typecheck/build/verify:all：本轮未修改业务代码、server/desktop src 或 package scripts"
     ]
   },
   "risks": [
-    "真实服务器部署仍未完成，不得标记 completed。",
-    "夜跑 / 无人值守模式不得执行当前服务器部署任务；必须等用户白天确认 SSH / release 下载或上传 / 写入路径 / 启动进程 / 端口边界。",
-    "下一轮如果用户未授权 SSH / release 下载或上传 / 启动进程，只能输出阻塞点，不能自行部署。",
-    "服务器系统 Node v10.19.0 不能运行当前 backend；必须使用独立 Node runtime。",
-    "80 端口由 filebrowser 占用，ProbeFlash 必须使用 4100，不得影响既有服务。",
-    "release static web serve 已在仓库内完成，但真实服务器上的 http://192.168.2.2:4100/ 与 /api/health 仍需等用户授权部署后验证。",
-    "白天主线 current_atomic_task 是 S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY，但状态 blocked_by_user_confirmation_and_time；不得误标 completed。",
-    "服务器不作为开发 checkout；不得把服务器 git pull 当作正式部署方式。",
-    "夜跑可选任务只能来自 repo_local_night_safe_task_queue；不得把真实 AI/API key 或服务器任务选成 unattended current task。",
-    "AI-ready prompt/schema 与 closeout 草稿面板已完成，但真实 AI、code context 分析都只是规划队列，不是已实现功能。",
-    "code context 第一阶段只能处理用户显式提供的 bundle，不允许服务器任意扫描路径。",
-    "S4-RELEASE-VERSION-ENDPOINT、S4-OPERABILITY-HEALTH-STATUS、S4-DATA-BACKUP-EXPORT、S4-DATA-RESTORE-DRY-RUN 已在本地完成；服务器实际运行版本、健康状态、备份与恢复演练仍需等真实部署后验证。"
+    "真实服务器 release 用户目录部署验证仍未完成，不得标记 completed。",
+    "systemd 自启依赖 DEP-01 和用户 sudo/systemd 授权，不得夜跑。",
+    "真实 AI provider/API key 仍 blocked；AI-ready 不等于真实 AI 已接入。",
+    "Code context 第一阶段只能处理用户显式提供的 bundle，不允许 server 任意扫描路径。",
+    "路线图较长，current.md 只允许保留最多 3 个前沿候选，完整字段必须回到 product-roadmap.md。"
   ],
   "notes": [
-    "Night Run / Unattended Mode 已建立：夜跑只允许 repo-local、可自动验证、可回滚任务；真实服务器 / sudo / systemd / /opt / 80/443 / 外部账号 / API key / 删除或迁移数据 / 产品拍板必须停止。",
-    "v0.2.0 前历史专项输入已归档到 docs/archive/v0.2-closeout/；archive 不属于默认事实源，只在历史追溯、专项实现背景或归档审计时读取。",
-    "当前白天主线是 S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY，需要用户确认 SSH、release 下载或上传、写入 /home/hurricane/probeflash、启动临时进程与 4100 端口边界，不能夜跑。",
-    "部署路线改为 release tarball first：固定 GitHub Release assets + SHA256SUMS.txt 校验 + releases/vX.Y.Z + current symlink + PROBEFLASH_STATIC_DIR=/home/hurricane/probeflash/current/dist + shared/data/env/logs 持久目录；服务器 git pull 只可作为开发 / 调试方式。",
-    "TECH-DEBT-SERVER-SCHEMA-CONTRACT 已完成：server 写入侧 invalid payload 返回 422 VALIDATION_ERROR，valid payload 仍可写入并读回。",
-    "TECH-DEBT-STORAGE-ERROR-CONTRACT 已完成：HTTP runtime 的 storage feedback 不再误显 localStorage 状态，localStorage 兼容路径仍保留。",
-    "S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN 已完成：推荐方案 B，apps/server 在 PROBEFLASH_STATIC_DIR 设置时同一 4100 端口服务 dist 与现有 /api；未设置时保持 API-only / Vite dev proxy 兼容。",
-    "当前夜跑可选队列从 TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY 开始；若优先补验证基础设施，也可选择 TECH-DEBT-VERIFY-HELPERS。真实服务器任务仍不能夜跑。",
-    "旧弱化文档 docs/planning/handoff.md、docs/planning/roadmap.md、docs/planning/architecture.md、.agent-state/progress.md、.agent-state/session-log.md 禁止恢复。",
-    "部署安全分层固定为 release tarball no-sudo 用户目录验证 -> release update flow -> systemd prep -> 用户授权后 systemd verify；/opt 只能作为 later / formal install / optional hardening。",
-    "apps/server/deploy/* 已改为 release tarball first：env、layout、service template、static web serve 说明和 verify-deploy-prep 都不得把 /opt 或服务器 git pull 当作当前第一部署目标。",
-    "S4-RELEASE-VERSION-ENDPOINT 已完成：server 暴露 /api/version，并在 /api/health.data.release 返回 version、commit、releaseTag；metadata 由 env/override/package version 提供，不依赖运行时 .git。",
-    "S4-OPERABILITY-HEALTH-STATUS 已完成：/api/health 返回 server/storage/workspace/release 可诊断状态，DB 路径只暴露 class/file name，前端统一存储 banner 展示摘要。",
-    "S4-DATA-BACKUP-EXPORT 已完成：npm run backup:export 可生成 timestamped SQLite backup 与 JSON export；默认不覆盖源 DB，不导出绝对源路径。",
-    "S4-DATA-RESTORE-DRY-RUN 已完成：npm run restore:dry-run 可把 SQLite backup 复制到临时 DB，通过 server storage 读回 workspace / issue / record / archive / error-entry，并可校验 JSON export 计数；默认删除临时 DB，不覆盖生产 DB。",
-    "AI-READY-PROMPT-TEMPLATE-SYSTEM 已完成：src/ai/prompt-templates.ts 提供 polish_closeout / summarize_records / suggest_prevention deterministic prompt 输入、AiDraftOutput schema 与本地 verify；不调用外部模型。",
-    "AI-READY-CLOSEOUT-DRAFT-PANEL 已完成：closeout 表单内提供本地规则草稿面板，可生成并套用根因 / 结论 / 预防草稿；不调用外部模型，不自动写库。",
-    "AI-ASSIST-POLISH-CLOSEOUT-MINIMAL 需要用户确认真实 AI provider、API key/server env、timeout 和 mock/test provider 边界；不得作为无人值守 current task。",
-    "AI 路线固定为 prompt/schema 与规则草稿先行，真实 AI 只返回草稿，API key 只在 server env，失败不影响主流程。",
-    "代码上下文路线固定为 bundle MVP 先行，repo connector 仅作为后续评估项，且必须 allowlist 与禁读 secrets。"
+    "PRODUCT-ROADMAP-REBUILD-FROM-VISION 已完成为 planning-only 任务：新增 docs/planning/product-roadmap.md，并同步 current/backlog/decisions/handoff。",
+    "下一轮若用户白天可参与服务器操作，最适合认领 DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY。",
+    "下一轮若无服务器授权或夜跑，最适合认领 DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN；DATA-04-INTEGRITY-CHECK 是数据安全方向备选。",
+    "本轮没有修改业务代码、server/desktop src、package scripts，没有服务器部署，没有接真实 AI API。"
   ]
 }

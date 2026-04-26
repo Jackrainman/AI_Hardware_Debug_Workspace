@@ -172,3 +172,12 @@
 - 原因：release 包部署可重复、可校验、可回滚，能避免服务器源码树漂移、误用系统 Node v10、误删持久数据或把开发态 checkout 当成生产部署；`current` symlink + `releases/` + `shared/` 能把版本切换和数据持久化拆开。
 - 放弃方案：服务器上长期 `git checkout` / `git pull`；把 `shared/data` 放进 release 目录；未校验 SHA256 直接运行；直接写 `/opt`；直接 systemd；抢占 80；升级服务器全局 Node。
 - 影响与后续动作：旧 `S3-SERVER-USER-DIR-DEPLOY-VERIFY` 拆分为 `S3-SERVER-RELEASE-DOWNLOAD-PLAN`、`S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY`、`S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN`、`S3-SERVER-RELEASE-UPDATE-FLOW` 与后置 `S3-SERVER-SYSTEMD-AUTOSTART-PREP`。当前真实部署任务是 `S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY`，状态保持 `blocked_by_user_confirmation` + `blocked_by_user_time` + not night-safe。
+
+
+## D-015：长期路线图重建为 8 条产品主线
+- 日期：2026-04-26
+- 背景：ProbeFlash 已具备 v0.2.x 本地 HTTP + SQLite + release 可部署基座，但后续规划仍容易在服务器部署、AI-ready、真实 AI、代码上下文和技术债之间互相挤压。用户要求从“最好用的战队调试问题闭环软件”愿景出发，重建长期产品路线图，并区分 night-safe / day-only / blocked / decision-needed。
+- 决策：新增 `docs/planning/product-roadmap.md` 作为长期产品路线图事实源，把后续演进拆为 8 条主线：Deployment / Operability、Data Safety、Core Debug Workflow、Search / Knowledge Base、AI-ready Workflow、Real AI Assistance、Code Context Analysis、Technical Debt / Architecture。每个大任务和小任务都必须带目标、用户价值、依赖、允许修改、不做项、验证方式、完成定义、执行类型、优先级和 AI unattended 适配性。
+- 原因：8 条主线能同时保留长期愿景和当前执行边界；近期仍先做部署可用、数据安全、可观测，避免在真实服务器未验证、API key 未确认时抢跑真实 AI 或 repo connector。
+- 放弃方案：继续维护只围绕 S3/S4/AI 的短队列；把 AI/RAG/权限/代码扫描提前塞进当前入口；在多个 planning 文档里重复维护长篇当前战况。
+- 影响与后续动作：`current.md` 只保留当前 P0 执行窗口和 3 个前沿候选；`backlog.md` 保存节奏队列与任务池；`.agent-state/handoff.json` 保存机器可读的下一任务选择依据。下一轮白天主线仍是 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`；无服务器授权时优先认领 `DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN`。
