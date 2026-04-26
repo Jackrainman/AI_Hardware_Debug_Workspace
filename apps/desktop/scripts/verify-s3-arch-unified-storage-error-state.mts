@@ -93,6 +93,13 @@ if (!formattedPartial.includes("已完成=归档摘要")) {
 }
 
 const appSource = readFileSync(resolve(process.cwd(), "src", "App.tsx"), "utf8");
+if (
+  !appSource.includes("normalizeStorageFeedbackForRuntime") ||
+  !appSource.includes('STORAGE_REPOSITORY_RUNTIME !== "http"') ||
+  !appSource.includes('error.connectionState.state !== "local_ready"')
+) {
+  fail("App.tsx should normalize local_ready feedback away from localStorage in HTTP runtime");
+}
 const bannerMatches = appSource.match(/data-testid=\"storage-feedback-banner\"/g) ?? [];
 if (bannerMatches.length !== 1) {
   fail("App.tsx should expose exactly one unified storage-feedback-banner", bannerMatches);
@@ -111,4 +118,5 @@ console.log("[S3-ARCH-UNIFIED-STORAGE-ERROR-STATE verify] PASS: validation_faile
 console.log("[S3-ARCH-UNIFIED-STORAGE-ERROR-STATE verify] PASS: HTTP validation_failed does not show localStorage demo mode");
 console.log("[S3-ARCH-UNIFIED-STORAGE-ERROR-STATE verify] PASS: server_unreachable unified into shared connection state");
 console.log("[S3-ARCH-UNIFIED-STORAGE-ERROR-STATE verify] PASS: closeout partial failure keeps completedWrites");
+console.log("[S3-ARCH-UNIFIED-STORAGE-ERROR-STATE verify] PASS: HTTP runtime does not display localStorage for local validation feedback");
 console.log("[S3-ARCH-UNIFIED-STORAGE-ERROR-STATE verify] PASS: App.tsx exposes one unified storage-feedback-banner");

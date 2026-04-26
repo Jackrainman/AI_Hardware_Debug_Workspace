@@ -177,7 +177,12 @@ function mapRequestErrorToReadError(
       return createTimeoutReadError(entity, target, error.message, error.checkedAt);
     case "http_error":
       if (error.status === 404 || error.code === "NOT_FOUND") {
-        return createNotFoundReadError(entity, target, error.message);
+        return createNotFoundReadError(
+          entity,
+          target,
+          error.message,
+          createOnlineConnection(error.checkedAt),
+        );
       }
       return createReadFailed(
         entity,
@@ -185,7 +190,7 @@ function mapRequestErrorToReadError(
         error.message,
         error.status >= 500 || error.code === "SERVICE_UNAVAILABLE"
           ? createDegradedConnection(error.message, error.checkedAt)
-          : undefined,
+          : createOnlineConnection(error.checkedAt),
       );
     case "invalid_envelope":
       return createReadFailed(
@@ -222,10 +227,10 @@ function mapRequestErrorToWriteError(
         );
       }
       if (error.status === 409 || error.code === "CONFLICT") {
-        return createConflictWriteError(entity, target, error.message);
+        return createConflictWriteError(entity, target, error.message, createOnlineConnection(error.checkedAt));
       }
       if (error.status === 404 || error.code === "NOT_FOUND") {
-        return createNotFoundWriteError(entity, target, error.message);
+        return createNotFoundWriteError(entity, target, error.message, createOnlineConnection(error.checkedAt));
       }
       return createUnexpectedWriteError(
         entity,
@@ -233,7 +238,7 @@ function mapRequestErrorToWriteError(
         error.message,
         error.status >= 500 || error.code === "SERVICE_UNAVAILABLE"
           ? createDegradedConnection(error.message, error.checkedAt)
-          : undefined,
+          : createOnlineConnection(error.checkedAt),
       );
     case "invalid_envelope":
       return createUnexpectedWriteError(
@@ -479,12 +484,6 @@ export function createHttpStorageRepository(
           return { ok: true, card: parsed.data };
         } catch (error) {
           if (isRequestError(error)) {
-            if (
-              (error.type === "http_error" && (error.status === 404 || error.code === "NOT_FOUND")) ||
-              (error.type === "http_error" && error.code === "NOT_FOUND")
-            ) {
-              return { ok: false, error: { kind: "not_found", id } };
-            }
             return {
               ok: false,
               error: mapRequestErrorToReadError("issue_card", id, error),

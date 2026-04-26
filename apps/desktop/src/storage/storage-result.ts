@@ -175,6 +175,7 @@ export function createNotFoundReadError(
   entity: StorageEntity,
   target: string,
   reason: string,
+  connection?: StorageErrorConnection,
 ): StorageReadError {
   return {
     kind: "read_failed",
@@ -182,6 +183,7 @@ export function createNotFoundReadError(
     entity,
     target,
     message: reason,
+    connection,
   };
 }
 
@@ -285,6 +287,7 @@ export function createConflictWriteError(
   entity: StorageEntity,
   target: string,
   reason: string,
+  connection?: StorageErrorConnection,
 ): StorageWriteError {
   return {
     kind: "conflict",
@@ -292,6 +295,7 @@ export function createConflictWriteError(
     entity,
     target,
     message: reason,
+    connection,
   };
 }
 
@@ -299,6 +303,7 @@ export function createNotFoundWriteError(
   entity: StorageEntity,
   target: string,
   reason: string,
+  connection?: StorageErrorConnection,
 ): StorageWriteError {
   return {
     kind: "not_found",
@@ -306,6 +311,7 @@ export function createNotFoundWriteError(
     entity,
     target,
     message: reason,
+    connection,
   };
 }
 

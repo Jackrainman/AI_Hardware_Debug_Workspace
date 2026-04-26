@@ -41,16 +41,16 @@
 - **是否需要用户白天确认**：否，除非任务升级为真实数据迁移或服务器操作。
 
 ### 3. TECH-DEBT-STORAGE-ERROR-CONTRACT
-- **状态**：pending_night_safe_candidate。
+- **状态**：completed_this_round。
 - **目标**：统一 HTTP runtime 下 storage error / connection state / storage feedback 的语义，避免已走 HTTP + SQLite 时仍显示 localStorage 状态或 silent fallback。
 - **风险来源**：前端仍保留 localStorage 兼容 / verify 路径，storage feedback 文案和状态来源若混用，会误导部署验收与服务器不可达判断。
 - **不做项**：不重做业务数据流；不移除必要 localStorage 兼容路径；不新增复杂监控；不做大 UI 重构；不把服务器不可达伪装为本地成功。
-- **验证要求**：覆盖 HTTP ready、HTTP proxy error / server down、localStorage 兼容路径三类状态；确认 UI 文案不把 HTTP runtime 说成 localStorage；`git diff --check`；相关 desktop verify 通过。
-- **是否 night-safe**：是，repo-local 且可自动验证。
+- **验证结果**：已让 HTTP adapter 的 404 / 409 / 4xx / 5xx feedback 携带 online/degraded/unreachable connection state；App 在 HTTP runtime 下会把 local_ready 校验反馈归一到当前 HTTP 连接态；`verify:s3-arch-unified-storage-error-state` 与 `verify:s3-local-http-storage-adapter` 已覆盖。
+- **是否 night-safe**：是，已完成；repo-local 且未触碰真实服务器。
 - **是否需要用户白天确认**：否。
 
 ### 4. TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY
-- **状态**：pending。
+- **状态**：pending_night_safe_candidate。
 - **目标**：审计并收敛 closeout 多步写入的原子性、失败恢复与读回验证边界，避免 archive / error-entry / issue 状态部分成功后留下不一致。
 - **风险来源**：closeout 链路横跨前端 orchestration、HTTP adapter、server storage、SQLite 写入和 archive/error-entry 生成；失败恢复策略若不一致，会影响调试闭环可信度。
 - **不做项**：不做大规模重构；不改业务 schema 语义；不自动删除用户数据；不把 AI 草稿当事实；不恢复文件写盘旧主线。

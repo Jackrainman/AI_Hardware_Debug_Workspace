@@ -1741,9 +1741,23 @@ export default function App() {
   const [isProjectEntryOpen, setIsProjectEntryOpen] = useState<boolean>(false);
   const [activeIssueId, setActiveIssueId] = useState<string | null>(null);
 
+  const normalizeStorageFeedbackForRuntime = (error: StorageFeedbackError): StorageFeedbackError => {
+    if (STORAGE_REPOSITORY_RUNTIME !== "http" || error.connectionState.state !== "local_ready") {
+      return error;
+    }
+    return {
+      ...error,
+      connectionState:
+        storageConnectionState.state === "local_ready"
+          ? createOnlineStorageConnectionState()
+          : storageConnectionState,
+    };
+  };
+
   const reportStorageError = (error: StorageFeedbackError) => {
-    setStorageConnectionState(error.connectionState);
-    setStorageFeedbackError(error);
+    const normalizedError = normalizeStorageFeedbackForRuntime(error);
+    setStorageConnectionState(normalizedError.connectionState);
+    setStorageFeedbackError(normalizedError);
   };
 
   const clearStorageFeedback = () => {

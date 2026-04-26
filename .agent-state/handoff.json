@@ -16,7 +16,7 @@
     "archive_state": "object - v0.2.0 前历史文档归档状态与读取条件",
     "notes": "string[] - 长期性约束与下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-04-26T12:59:16+08:00",
+  "timestamp": "2026-04-26T13:04:05+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "S3",
   "current_stage_name": "服务器安全部署",
@@ -118,7 +118,7 @@
       "night_safe": false
     },
     "next_night_safe_candidate": {
-      "id": "TECH-DEBT-STORAGE-ERROR-CONTRACT",
+      "id": "TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY",
       "status": "pending_night_safe_candidate",
       "requires_user_confirmation": [],
       "night_safe": true
@@ -141,10 +141,10 @@
       "TECH-DEBT-DEPLOY-DOC-CLARITY",
       "TECH-DEBT-PLANNING-QUEUE-SIGNAL",
       "TECH-DEBT-SKILL-RUNTIME-ALIGNMENT",
-      "TECH-DEBT-SERVER-SCHEMA-CONTRACT"
+      "TECH-DEBT-SERVER-SCHEMA-CONTRACT",
+      "TECH-DEBT-STORAGE-ERROR-CONTRACT"
     ],
     "pending_priority_order": [
-      "TECH-DEBT-STORAGE-ERROR-CONTRACT",
       "TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY",
       "TECH-DEBT-APP-SPLIT-MINIMAL",
       "TECH-DEBT-VERIFY-HELPERS",
@@ -154,30 +154,24 @@
   "repo_local_night_safe_task_queue": [
     {
       "order": 1,
-      "id": "TECH-DEBT-STORAGE-ERROR-CONTRACT",
+      "id": "TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY",
       "status": "pending_night_safe_candidate",
       "requires_user_confirmation": false
     },
     {
       "order": 2,
-      "id": "TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY",
-      "status": "pending_after_storage_error_contract",
-      "requires_user_confirmation": false
-    },
-    {
-      "order": 3,
       "id": "TECH-DEBT-APP-SPLIT-MINIMAL",
       "status": "pending_after_closeout_recovery",
       "requires_user_confirmation": false
     },
     {
-      "order": 4,
+      "order": 3,
       "id": "TECH-DEBT-VERIFY-HELPERS",
       "status": "pending_after_app_split",
       "requires_user_confirmation": false
     },
     {
-      "order": 5,
+      "order": 4,
       "id": "TECH-DEBT-VERIFY-TMP-CLEANUP",
       "status": "pending_after_verify_helpers",
       "requires_user_confirmation": false
@@ -284,24 +278,24 @@
       "night_safe": false
     },
     {
-      "id": "TECH-DEBT-STORAGE-ERROR-CONTRACT",
-      "track": "Audit_Tech_Debt_Line",
-      "goal": "统一 HTTP runtime 下 storage error / connection state / feedback 语义，避免误显 localStorage 状态。",
-      "depends_on": [
-        "TECH-DEBT-SERVER-SCHEMA-CONTRACT"
-      ],
-      "status": "pending_night_safe_candidate",
-      "lane": "repo_local_night_safe",
-      "night_safe": true
-    },
-    {
       "id": "TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY",
       "track": "Audit_Tech_Debt_Line",
       "goal": "审计并收敛 closeout 多步写入的原子性、失败恢复与读回验证边界。",
       "depends_on": [
         "TECH-DEBT-STORAGE-ERROR-CONTRACT"
       ],
-      "status": "pending_after_storage_error_contract",
+      "status": "pending_night_safe_candidate",
+      "lane": "repo_local_night_safe",
+      "night_safe": true
+    },
+    {
+      "id": "TECH-DEBT-APP-SPLIT-MINIMAL",
+      "track": "Audit_Tech_Debt_Line",
+      "goal": "围绕 apps/desktop/src/App.tsx 做最小拆分或边界收敛，降低回归风险。",
+      "depends_on": [
+        "TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY"
+      ],
+      "status": "pending_after_closeout_recovery",
       "lane": "repo_local_night_safe",
       "night_safe": true
     }
@@ -1071,7 +1065,8 @@
     "TECH-DEBT-DEPLOY-DOC-CLARITY",
     "TECH-DEBT-PLANNING-QUEUE-SIGNAL",
     "TECH-DEBT-SKILL-RUNTIME-ALIGNMENT",
-    "TECH-DEBT-SERVER-SCHEMA-CONTRACT"
+    "TECH-DEBT-SERVER-SCHEMA-CONTRACT",
+    "TECH-DEBT-STORAGE-ERROR-CONTRACT"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -1091,12 +1086,12 @@
     "claiming_rule": "白天主线只认领 current_atomic_task=S3-SERVER-USER-DIR-DEPLOY-VERIFY，且必须先获得用户确认；夜跑 / 无人值守若无服务器授权，只能从 repo_local_night_safe_task_queue / backlog 中认领第一个依赖已满足、repo-local、可自动验证、可回滚的技术债任务；真实 AI/API key 任务不得作为 unattended current task。",
     "recommended_next": "S3-SERVER-USER-DIR-DEPLOY-VERIFY",
     "recommended_next_status": "blocked_by_user_confirmation",
-    "next_night_safe_candidate": "TECH-DEBT-STORAGE-ERROR-CONTRACT",
-    "night_run_gate": "blocked_for_mainline_server_task; night_safe_candidate_available: TECH-DEBT-STORAGE-ERROR-CONTRACT. AI-ASSIST-POLISH-CLOSEOUT-MINIMAL remains blocked_by_external_dependency_api_key_after_ai_ready and must not be selected unattended.",
+    "next_night_safe_candidate": "TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY",
+    "night_run_gate": "blocked_for_mainline_server_task; night_safe_candidate_available: TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY. AI-ASSIST-POLISH-CLOSEOUT-MINIMAL remains blocked_by_external_dependency_api_key_after_ai_ready and must not be selected unattended.",
     "selection_order": [
       "白天优先等待用户确认 S3-SERVER-USER-DIR-DEPLOY-VERIFY 的 SSH / 上传 / 写入 / 启动进程 / 4100 边界",
       "无服务器授权时只扫描 repo-local night-safe 技术债候选",
-      "TECH-DEBT-SERVER-SCHEMA-CONTRACT 已完成；TECH-DEBT-STORAGE-ERROR-CONTRACT 是下一 night-safe 候选",
+      "TECH-DEBT-SERVER-SCHEMA-CONTRACT 与 TECH-DEBT-STORAGE-ERROR-CONTRACT 已完成；TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY 是下一 night-safe 候选",
       "真实 AI/API key 任务保持 blocked，直到用户确认 provider 与 server env 边界",
       "code context 继续等待真实 AI 和 bundle 前置条件"
     ],
@@ -1104,37 +1099,32 @@
       "AGENTS.md",
       "docs/planning/current.md",
       "docs/planning/backlog.md",
-      "docs/planning/decisions.md",
       ".agent-state/handoff.json",
-      "apps/server/src/database.mjs",
-      "apps/server/src/server.mjs",
-      "apps/server/package.json",
-      "apps/server/scripts/*",
-      "apps/desktop/src/domain/schemas/issue-card.ts",
-      "apps/desktop/src/domain/schemas/investigation-record.ts",
-      "apps/desktop/src/domain/schemas/archive-document.ts",
-      "apps/desktop/src/domain/schemas/error-entry.ts",
-      "apps/desktop/src/domain/schemas/repo-snapshot.ts",
+      "apps/desktop/src/App.tsx",
+      "apps/desktop/src/storage/storage-result.ts",
+      "apps/desktop/src/storage/storage-feedback.ts",
+      "apps/desktop/src/storage/http-storage-client.ts",
       "apps/desktop/src/storage/http-storage-repository.ts",
-      "apps/desktop/scripts/verify-s3-local-end-to-end.mts",
+      "apps/desktop/src/storage/storage-repository.ts",
+      "apps/desktop/scripts/verify-s3-arch-unified-storage-error-state.mts",
+      "apps/desktop/scripts/verify-s3-local-http-storage-adapter.mts",
+      "apps/desktop/scripts/verify-s4-operability-health-status.mts",
       "apps/desktop/package.json",
       "git status --short",
-      "git log --oneline -10"
+      "git log --oneline -5"
     ]
   },
   "verification_expectations": {
-    "code_schema_contract_task_this_round": [
+    "storage_error_contract_task_this_round": [
       "git diff --check",
       "python3 -m json.tool .agent-state/handoff.json >/dev/null",
       "cd apps/desktop && npm run verify:handoff",
       "cd apps/desktop && npm run typecheck",
       "cd apps/desktop && npm run build",
+      "cd apps/desktop && npm run verify:s3-arch-unified-storage-error-state",
+      "cd apps/desktop && npm run verify:s3-local-http-storage-adapter",
       "cd apps/desktop && npm run verify:all",
-      "cd apps/server && npm run verify:s3-local-backend-scaffold",
-      "cd apps/server && npm run verify:deploy-prep",
-      "cd apps/server && npm run verify:server-schema-contract",
-      "cd apps/server && npm run verify:s4-data-backup-export",
-      "cd apps/server && npm run verify:s4-data-restore-dry-run"
+      "cd apps/server && npm run verify:deploy-prep"
     ],
     "code_or_package_changes": [
       "如果后续任务修改 package 或业务代码，必须额外跑 typecheck / build / verify:all"
@@ -1163,7 +1153,8 @@
     "v0.2.0 前历史专项输入已归档到 docs/archive/v0.2-closeout/；archive 不属于默认事实源，只在历史追溯、专项实现背景或归档审计时读取。",
     "当前白天主线是 S3-SERVER-USER-DIR-DEPLOY-VERIFY，需要用户确认 SSH、上传、写入 /home/hurricane/probeflash、启动临时进程与 4100 端口边界，不能夜跑。",
     "TECH-DEBT-SERVER-SCHEMA-CONTRACT 已完成：server 写入侧 invalid payload 返回 422 VALIDATION_ERROR，valid payload 仍可写入并读回。",
-    "当前夜跑可选队列从 TECH-DEBT-STORAGE-ERROR-CONTRACT 开始；它只能在 repo-local、自动验证、可回滚边界内执行。",
+    "TECH-DEBT-STORAGE-ERROR-CONTRACT 已完成：HTTP runtime 的 storage feedback 不再误显 localStorage 状态，localStorage 兼容路径仍保留。",
+    "当前夜跑可选队列从 TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY 开始；它只能在 repo-local、自动验证、可回滚边界内执行。",
     "旧弱化文档 docs/planning/handoff.md、docs/planning/roadmap.md、docs/planning/architecture.md、.agent-state/progress.md、.agent-state/session-log.md 禁止恢复。",
     "部署安全分层固定为 /home/hurricane/probeflash no-sudo 验证 -> systemd prep -> 用户授权后 systemd verify -> release update / rollback；/opt 只能作为 later / formal install / optional hardening。",
     "apps/server/deploy/* 已改为 user-dir first：env、layout、service template 和 verify-deploy-prep 都不得把 /opt 当作当前第一部署目标。",

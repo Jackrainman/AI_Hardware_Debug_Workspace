@@ -14,6 +14,7 @@ import {
 import { createHttpStorageRepository, checkHttpStorageHealth } from "../src/storage/http-storage-repository.ts";
 import {
   healthCheckErrorToFeedback,
+  loadIssueCardFailureToFeedback,
   storageReadErrorToFeedback,
   storageWriteErrorToFeedback,
 } from "../src/storage/storage-feedback.ts";
@@ -221,8 +222,24 @@ try {
     "closeout",
     conflictSave.error,
   );
-  if (conflictFeedback.code !== "conflict" || conflictFeedback.retryable !== false) {
+  if (
+    conflictFeedback.code !== "conflict" ||
+    conflictFeedback.retryable !== false ||
+    conflictFeedback.connectionState.state !== "online"
+  ) {
     fail("conflict should bridge to non-retryable unified feedback", conflictFeedback);
+  }
+
+  const missingIssue = await repository.issueCards.load("issue-http-adapter-missing");
+  if (missingIssue.ok) {
+    fail("missing HTTP issue should not load", missingIssue);
+  }
+  const missingIssueFeedback = loadIssueCardFailureToFeedback("issue_detail", missingIssue.error);
+  if (
+    missingIssueFeedback.code !== "not_found" ||
+    missingIssueFeedback.connectionState.state !== "online"
+  ) {
+    fail("HTTP 404 issue load should not display localStorage state", missingIssueFeedback);
   }
 
   const unreachablePort = await reserveClosedPort();
@@ -350,6 +367,7 @@ try {
   console.log("[S3-LOCAL-HTTP-STORAGE-ADAPTER verify] PASS: server_unreachable maps to unified unreachable feedback without localStorage fallback");
   console.log("[S3-LOCAL-HTTP-STORAGE-ADAPTER verify] PASS: timeout maps to degraded timeout feedback");
   console.log("[S3-LOCAL-HTTP-STORAGE-ADAPTER verify] PASS: conflict and 503 paths bridge into unified feedback model");
+  console.log("[S3-LOCAL-HTTP-STORAGE-ADAPTER verify] PASS: HTTP 404/409 feedback stays in server runtime state");
   console.log("[S3-LOCAL-HTTP-STORAGE-ADAPTER verify] PASS: vite /api proxy is pinned to http://127.0.0.1:4100");
 } finally {
   await server.close();
