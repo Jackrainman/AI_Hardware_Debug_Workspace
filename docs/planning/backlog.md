@@ -32,16 +32,16 @@
 - **是否需要用户白天确认**：否；真实部署仍需要用户白天确认。
 
 ### 2. TECH-DEBT-SERVER-SCHEMA-CONTRACT
-- **状态**：pending。
-- **目标**：为 `apps/server/src/database.mjs` 的 SQLite schema、API 返回结构和迁移边界补最小契约说明 / 验证，降低后续 server 改动破坏历史数据和 HTTP adapter 的风险。
-- **风险来源**：`database.mjs` 集中承载 schema、初始化、读写映射与部分业务约束；当前缺少独立 schema contract / migration smoke，后续改动容易出现字段漂移或读回不一致。
+- **状态**：completed_this_round。
+- **目标**：补齐 `apps/server/src/database.mjs` 的写入 payload contract，使 server 接收的 IssueCard / InvestigationRecord / ArchiveDocument / ErrorEntry 不弱于前端 zod schema，避免 POST 成功但前端读回 invalid。
+- **风险来源**：`database.mjs` 集中承载 schema、初始化、读写映射与部分业务约束；此前 normalize payload 校验弱于前端 schema，可能接受脏数据并写入 SQLite。
 - **不做项**：不做大规模数据库重构；不做破坏性 migration；不迁移真实服务器数据；不改 UI；不引入 ORM；不把历史草案恢复为当前事实源。
-- **验证要求**：补充或复用 repo-local server verify，覆盖创建 / 读回 workspace、issue、record、archive、error-entry；校验 schema 字段与 HTTP adapter 期望一致；`git diff --check`；涉及代码时按验证矩阵跑 typecheck / build / relevant verify。
-- **是否 night-safe**：是，前提是只改 repo-local 契约 / verify / 最小 server 代码且不触碰真实数据。
+- **验证结果**：已新增 `npm run verify:server-schema-contract`，覆盖 invalid issue.status / severity / workspace mismatch / datetime / repoSnapshot、invalid record、invalid archive、invalid errorCode / prevention / datetime 与 valid 写入读回；既有 backend scaffold、deploy prep、backup/export、restore dry-run 验证保持通过。
+- **是否 night-safe**：是，已完成；未触碰真实服务器或真实数据。
 - **是否需要用户白天确认**：否，除非任务升级为真实数据迁移或服务器操作。
 
 ### 3. TECH-DEBT-STORAGE-ERROR-CONTRACT
-- **状态**：pending。
+- **状态**：pending_night_safe_candidate。
 - **目标**：统一 HTTP runtime 下 storage error / connection state / storage feedback 的语义，避免已走 HTTP + SQLite 时仍显示 localStorage 状态或 silent fallback。
 - **风险来源**：前端仍保留 localStorage 兼容 / verify 路径，storage feedback 文案和状态来源若混用，会误导部署验收与服务器不可达判断。
 - **不做项**：不重做业务数据流；不移除必要 localStorage 兼容路径；不新增复杂监控；不做大 UI 重构；不把服务器不可达伪装为本地成功。

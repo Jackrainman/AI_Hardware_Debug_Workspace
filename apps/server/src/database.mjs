@@ -11,6 +11,23 @@ export const DEFAULT_WORKSPACE = {
   isDefault: true,
 };
 
+const ISSUE_SEVERITIES = new Set(["low", "medium", "high", "critical"]);
+const ISSUE_STATUSES = new Set(["open", "investigating", "resolved", "archived", "needs_manual_review"]);
+const INVESTIGATION_RECORD_TYPES = new Set([
+  "observation",
+  "hypothesis",
+  "action",
+  "result",
+  "conclusion",
+  "note",
+]);
+const CHANGED_FILE_STATUSES = new Set(["added", "modified", "deleted", "renamed", "untracked"]);
+const ARCHIVE_GENERATED_BY = new Set(["ai", "manual", "hybrid"]);
+const ARCHIVE_FILE_NAME_PATTERN = /^\d{4}-\d{2}-\d{2}_[a-z0-9-]+\.md$/;
+const ERROR_CODE_PATTERN = /^DBG-\d{8}-\d{3}$/;
+const DATETIME_WITH_OFFSET_PATTERN =
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-](\d{2}):(\d{2}))$/;
+
 function classifyDbPath(dbPath) {
   const normalized = dbPath.replaceAll("\\", "/");
   if (normalized.includes("/.runtime/")) return "app_runtime";
@@ -28,20 +45,139 @@ export function normalizeDefaultWorkspace(overrides = {}) {
   };
 }
 
+function createValidationError(message) {
+  const error = new Error(message);
+  error.code = "VALIDATION_ERROR";
+  return error;
+}
+
 function assertObject(payload, message) {
   if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
-    const error = new Error(message);
-    error.code = "VALIDATION_ERROR";
-    throw error;
+    throw createValidationError(message);
   }
 }
 
-function assertString(value, fieldName) {
-  if (typeof value !== "string" || value.trim().length === 0) {
-    const error = new Error(`${fieldName} is required`);
-    error.code = "VALIDATION_ERROR";
-    throw error;
+function assertString(value, fieldName, options = {}) {
+  if (typeof value !== "string") {
+    throw createValidationError(`${fieldName} must be a string`);
   }
+  if (options.allowEmpty !== true && value.trim().length === 0) {
+    throw createValidationError(`${fieldName} is required`);
+  }
+}
+
+function assertBoolean(value, fieldName) {
+  if (typeof value !== "boolean") {
+    throw createValidationError(`${fieldName} must be a boolean`);
+  }
+}
+
+function assertEnum(value, fieldName, allowed) {
+  assertString(value, fieldName);
+  if (!allowed.has(value)) {
+    throw createValidationError(`${fieldName} must be one of ${Array.from(allowed).join(", ")}`);
+  }
+}
+
+function assertArray(value, fieldName) {
+  if (!Array.isArray(value)) {
+    throw createValidationError(`${fieldName} must be an array`);
+  }
+}
+
+function assertStringArray(value, fieldName) {
+  assertArray(value, fieldName);
+  value.forEach((item, index) => {
+    assertString(item, `${fieldName}[${index}]`, { allowEmpty: true });
+  });
+}
+
+function assertDatetime(value, fieldName) {
+  assertString(value, fieldName);
+  const match = DATETIME_WITH_OFFSET_PATTERN.exec(value);
+  if (!match) {
+    throw createValidationError(`${fieldName} must be an ISO datetime with timezone offset`);
+  }
+
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText, offsetText, offsetHourText, offsetMinuteText] =
+    match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const second = Number(secondText);
+  const offsetHour = offsetHourText === undefined ? 0 : Number(offsetHourText);
+  const offsetMinute = offsetMinuteText === undefined ? 0 : Number(offsetMinuteText);
+  const calendar = new Date(Date.UTC(year, month - 1, day));
+  const validDate =
+    calendar.getUTCFullYear() === year &&
+    calendar.getUTCMonth() === month - 1 &&
+    calendar.getUTCDate() === day;
+  const validTime =
+    hour >= 0 &&
+    hour <= 23 &&
+    minute >= 0 &&
+    minute <= 59 &&
+    second >= 0 &&
+    second <= 59 &&
+    offsetHour >= 0 &&
+    offsetHour <= 23 &&
+    offsetMinute >= 0 &&
+    offsetMinute <= 59;
+  if (!validDate || !validTime || Number.isNaN(Date.parse(value))) {
+    throw createValidationError(`${fieldName} must be a valid ISO datetime with timezone offset`);
+  }
+  if (offsetText !== "Z" && (offsetHourText === undefined || offsetMinuteText === undefined)) {
+    throw createValidationError(`${fieldName} must include timezone offset`);
+  }
+}
+
+function assertWorkspaceAlias(workspaceId, payload, entityName) {
+  if (payload.workspaceId === undefined) return;
+  assertString(payload.workspaceId, `${entityName}.workspaceId`);
+  if (payload.workspaceId !== workspaceId) {
+    throw createValidationError(`${entityName}.workspaceId must match workspaceId`);
+  }
+}
+
+function assertProjectIdMatchesWorkspace(workspaceId, payload, entityName) {
+  assertString(payload.projectId, `${entityName}.projectId`);
+  if (payload.projectId !== workspaceId) {
+    throw createValidationError(`${entityName}.projectId must match workspaceId`);
+  }
+  assertWorkspaceAlias(workspaceId, payload, entityName);
+}
+
+function assertChangedFile(value, fieldName) {
+  assertObject(value, `${fieldName} must be an object`);
+  assertString(value.path, `${fieldName}.path`);
+  assertEnum(value.status, `${fieldName}.status`, CHANGED_FILE_STATUSES);
+}
+
+function assertRecentCommit(value, fieldName) {
+  assertObject(value, `${fieldName} must be an object`);
+  assertString(value.hash, `${fieldName}.hash`);
+  assertString(value.author, `${fieldName}.author`, { allowEmpty: true });
+  assertString(value.message, `${fieldName}.message`, { allowEmpty: true });
+  assertDatetime(value.timestamp, `${fieldName}.timestamp`);
+}
+
+function assertRepoSnapshot(value, fieldName) {
+  assertObject(value, `${fieldName} must be an object`);
+  assertString(value.branch, `${fieldName}.branch`);
+  assertString(value.headCommitHash, `${fieldName}.headCommitHash`);
+  assertString(value.headCommitMessage, `${fieldName}.headCommitMessage`, { allowEmpty: true });
+  assertBoolean(value.hasUncommittedChanges, `${fieldName}.hasUncommittedChanges`);
+  assertArray(value.changedFiles, `${fieldName}.changedFiles`);
+  value.changedFiles.forEach((item, index) => {
+    assertChangedFile(item, `${fieldName}.changedFiles[${index}]`);
+  });
+  assertArray(value.recentCommits, `${fieldName}.recentCommits`);
+  value.recentCommits.forEach((item, index) => {
+    assertRecentCommit(item, `${fieldName}.recentCommits[${index}]`);
+  });
+  assertDatetime(value.capturedAt, `${fieldName}.capturedAt`);
 }
 
 function normalizeWorkspacePayload(payload) {
@@ -76,42 +212,25 @@ function isUniqueConstraintError(error) {
   return error && typeof error === "object" && String(error.message).includes("UNIQUE");
 }
 
-function assertArray(value, fieldName) {
-  if (!Array.isArray(value)) {
-    const error = new Error(`${fieldName} must be an array`);
-    error.code = "VALIDATION_ERROR";
-    throw error;
-  }
-}
-
 function normalizeIssuePayload(workspaceId, payload) {
   assertObject(payload, "issue payload must be an object");
   assertString(payload.id, "issue.id");
-  assertString(payload.projectId, "issue.projectId");
+  assertProjectIdMatchesWorkspace(workspaceId, payload, "issue");
   assertString(payload.title, "issue.title");
-  assertString(payload.severity, "issue.severity");
-  assertString(payload.status, "issue.status");
-  assertString(payload.createdAt, "issue.createdAt");
-  assertString(payload.updatedAt, "issue.updatedAt");
-
-  if (payload.projectId !== workspaceId) {
-    const error = new Error("issue.projectId must match workspaceId");
-    error.code = "VALIDATION_ERROR";
-    throw error;
-  }
-
-  payload.relatedFiles ??= [];
-  payload.relatedCommits ??= [];
-  payload.relatedHistoricalIssueIds ??= [];
-  payload.tags ??= [];
-  payload.suspectedDirections ??= [];
-  payload.suggestedActions ??= [];
-  assertArray(payload.relatedFiles, "issue.relatedFiles");
-  assertArray(payload.relatedCommits, "issue.relatedCommits");
-  assertArray(payload.relatedHistoricalIssueIds, "issue.relatedHistoricalIssueIds");
-  assertArray(payload.tags, "issue.tags");
-  assertArray(payload.suspectedDirections, "issue.suspectedDirections");
-  assertArray(payload.suggestedActions, "issue.suggestedActions");
+  assertString(payload.rawInput, "issue.rawInput", { allowEmpty: true });
+  assertString(payload.normalizedSummary, "issue.normalizedSummary", { allowEmpty: true });
+  assertString(payload.symptomSummary, "issue.symptomSummary", { allowEmpty: true });
+  assertStringArray(payload.suspectedDirections, "issue.suspectedDirections");
+  assertStringArray(payload.suggestedActions, "issue.suggestedActions");
+  assertEnum(payload.status, "issue.status", ISSUE_STATUSES);
+  assertEnum(payload.severity, "issue.severity", ISSUE_SEVERITIES);
+  assertStringArray(payload.tags, "issue.tags");
+  assertRepoSnapshot(payload.repoSnapshot, "issue.repoSnapshot");
+  assertStringArray(payload.relatedFiles, "issue.relatedFiles");
+  assertStringArray(payload.relatedCommits, "issue.relatedCommits");
+  assertStringArray(payload.relatedHistoricalIssueIds, "issue.relatedHistoricalIssueIds");
+  assertDatetime(payload.createdAt, "issue.createdAt");
+  assertDatetime(payload.updatedAt, "issue.updatedAt");
 
   return payload;
 }
@@ -120,17 +239,20 @@ function normalizeRecordPayload(workspaceId, issueId, payload) {
   assertObject(payload, "record payload must be an object");
   assertString(payload.id, "record.id");
   assertString(payload.issueId, "record.issueId");
-  assertString(payload.type, "record.type");
-  assertString(payload.createdAt, "record.createdAt");
-  if (payload.issueId !== issueId) {
-    const error = new Error("record.issueId must match path issueId");
-    error.code = "VALIDATION_ERROR";
-    throw error;
+  assertWorkspaceAlias(workspaceId, payload, "record");
+  if (payload.projectId !== undefined) {
+    assertProjectIdMatchesWorkspace(workspaceId, payload, "record");
   }
-  payload.linkedFiles ??= [];
-  payload.linkedCommits ??= [];
-  assertArray(payload.linkedFiles, "record.linkedFiles");
-  assertArray(payload.linkedCommits, "record.linkedCommits");
+  assertEnum(payload.type, "record.type", INVESTIGATION_RECORD_TYPES);
+  assertString(payload.rawText, "record.rawText", { allowEmpty: true });
+  assertString(payload.polishedText, "record.polishedText", { allowEmpty: true });
+  assertStringArray(payload.aiExtractedSignals, "record.aiExtractedSignals");
+  assertStringArray(payload.linkedFiles, "record.linkedFiles");
+  assertStringArray(payload.linkedCommits, "record.linkedCommits");
+  assertDatetime(payload.createdAt, "record.createdAt");
+  if (payload.issueId !== issueId) {
+    throw createValidationError("record.issueId must match path issueId");
+  }
   return {
     ...payload,
     workspaceId,
@@ -140,47 +262,38 @@ function normalizeRecordPayload(workspaceId, issueId, payload) {
 function normalizeArchivePayload(workspaceId, payload) {
   assertObject(payload, "archive payload must be an object");
   assertString(payload.issueId, "archive.issueId");
-  assertString(payload.projectId, "archive.projectId");
+  assertProjectIdMatchesWorkspace(workspaceId, payload, "archive");
   assertString(payload.fileName, "archive.fileName");
-  assertString(payload.filePath, "archive.filePath");
-  assertString(payload.generatedAt, "archive.generatedAt");
-  assertString(payload.markdownContent, "archive.markdownContent");
-  if (payload.projectId !== workspaceId) {
-    const error = new Error("archive.projectId must match workspaceId");
-    error.code = "VALIDATION_ERROR";
-    throw error;
+  if (!ARCHIVE_FILE_NAME_PATTERN.test(payload.fileName)) {
+    throw createValidationError("archive.fileName must match YYYY-MM-DD_<slug>.md");
   }
+  assertString(payload.filePath, "archive.filePath");
+  assertString(payload.markdownContent, "archive.markdownContent", { allowEmpty: true });
+  assertEnum(payload.generatedBy, "archive.generatedBy", ARCHIVE_GENERATED_BY);
+  assertDatetime(payload.generatedAt, "archive.generatedAt");
   return payload;
 }
 
 function normalizeErrorEntryPayload(workspaceId, payload) {
   assertObject(payload, "errorEntry payload must be an object");
-  for (const field of [
-    "id",
-    "projectId",
-    "sourceIssueId",
-    "errorCode",
-    "title",
-    "category",
-    "symptom",
-    "rootCause",
-    "resolution",
-    "prevention",
-    "archiveFilePath",
-    "createdAt",
-    "updatedAt",
-  ]) {
-    assertString(payload[field], `errorEntry.${field}`);
+  assertString(payload.id, "errorEntry.id");
+  assertProjectIdMatchesWorkspace(workspaceId, payload, "errorEntry");
+  assertString(payload.sourceIssueId, "errorEntry.sourceIssueId");
+  assertString(payload.errorCode, "errorEntry.errorCode");
+  if (!ERROR_CODE_PATTERN.test(payload.errorCode)) {
+    throw createValidationError("errorEntry.errorCode must match DBG-YYYYMMDD-NNN");
   }
-  if (payload.projectId !== workspaceId) {
-    const error = new Error("errorEntry.projectId must match workspaceId");
-    error.code = "VALIDATION_ERROR";
-    throw error;
-  }
-  payload.relatedFiles ??= [];
-  payload.relatedCommits ??= [];
-  assertArray(payload.relatedFiles, "errorEntry.relatedFiles");
-  assertArray(payload.relatedCommits, "errorEntry.relatedCommits");
+  assertString(payload.title, "errorEntry.title");
+  assertString(payload.category, "errorEntry.category", { allowEmpty: true });
+  assertString(payload.symptom, "errorEntry.symptom", { allowEmpty: true });
+  assertString(payload.rootCause, "errorEntry.rootCause", { allowEmpty: true });
+  assertString(payload.resolution, "errorEntry.resolution", { allowEmpty: true });
+  assertString(payload.prevention, "errorEntry.prevention");
+  assertStringArray(payload.relatedFiles, "errorEntry.relatedFiles");
+  assertStringArray(payload.relatedCommits, "errorEntry.relatedCommits");
+  assertString(payload.archiveFilePath, "errorEntry.archiveFilePath");
+  assertDatetime(payload.createdAt, "errorEntry.createdAt");
+  assertDatetime(payload.updatedAt, "errorEntry.updatedAt");
   return payload;
 }
 

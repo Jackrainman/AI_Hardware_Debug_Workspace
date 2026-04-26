@@ -83,7 +83,9 @@ try {
     id: "record-backup-export-0001",
     issueId: issue.id,
     type: "observation",
-    note: "Backup export verify record.",
+    rawText: "Backup export verify record.",
+    polishedText: "Backup export verify record.",
+    aiExtractedSignals: [],
     linkedFiles: [],
     linkedCommits: [],
     createdAt: now,
@@ -97,10 +99,11 @@ try {
   const archive = {
     issueId: issue.id,
     projectId: WORKSPACE_ID,
-    fileName: "issue-backup-export-0001.md",
-    filePath: ".debug_workspace/archive/issue-backup-export-0001.md",
-    generatedAt: now,
+    fileName: "2026-04-26_issue-backup-export-0001.md",
+    filePath: ".debug_workspace/archive/2026-04-26_issue-backup-export-0001.md",
     markdownContent: "# Backup export verify\n",
+    generatedBy: "manual",
+    generatedAt: now,
   };
   await requestJson(`${server.baseUrl}/api/workspaces/${WORKSPACE_ID}/archives`, {
     method: "POST",
@@ -112,7 +115,7 @@ try {
     id: "error-entry-backup-export-0001",
     projectId: WORKSPACE_ID,
     sourceIssueId: issue.id,
-    errorCode: "DBG-BACKUP-0001",
+    errorCode: "DBG-20260426-001",
     title: "Backup export verify entry",
     category: "验证",
     symptom: "backup/export smoke",
@@ -151,7 +154,7 @@ try {
   if (
     exported.source.dbFileName !== "probeflash.sqlite" ||
     exported.counts.archives !== 1 ||
-    exported.errorEntries[0]?.errorCode !== "DBG-BACKUP-0001"
+    exported.errorEntries[0]?.errorCode !== "DBG-20260426-001"
   ) {
     fail("JSON export should include redacted source and domain payloads", exported);
   }
