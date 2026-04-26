@@ -31,6 +31,7 @@ import {
   checkHttpStorageHealth,
   createStorageRepository,
   type CreateWorkspaceResult,
+  type HttpStorageHealthStatus,
   type IssueCardListResult,
   type LoadIssueCardResult,
   type InvestigationRecordListResult,
@@ -134,10 +135,28 @@ function DemoHint() {
 function StorageStatusBanner({
   connectionState,
   error,
+  healthStatus,
 }: {
   connectionState: StorageConnectionState;
   error: StorageFeedbackError | null;
+  healthStatus: HttpStorageHealthStatus | null;
 }) {
+  const healthDetail = healthStatus
+    ? [
+        healthStatus.serverReady ? "服务就绪" : "服务未就绪",
+        `${healthStatus.storageKind} ${healthStatus.storageReady ? "就绪" : "未就绪"}`,
+        healthStatus.dbPathClass ? `DB=${healthStatus.dbPathClass}` : null,
+        healthStatus.defaultWorkspaceName
+          ? `默认项目=${healthStatus.defaultWorkspaceName}`
+          : null,
+        healthStatus.releaseVersion
+          ? `版本=${healthStatus.releaseVersion} / ${healthStatus.releaseTag ?? "no tag"}`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : null;
+
   return (
     <section
       className={`storage-feedback-banner${error === null ? "" : " storage-feedback-banner-error"}`}
@@ -157,6 +176,11 @@ function StorageStatusBanner({
             : "当前通过 HTTP 连接服务器存储；若服务异常、超时或写入失败，会统一显示在这里。"
           : formatStorageFeedbackError(error)}
       </p>
+      {healthDetail && error === null ? (
+        <p className="storage-feedback-detail" data-testid="storage-health-detail">
+          {healthDetail}
+        </p>
+      ) : null}
     </section>
   );
 }
@@ -1601,6 +1625,9 @@ export default function App() {
   const [storageFeedbackError, setStorageFeedbackError] = useState<StorageFeedbackError | null>(
     null,
   );
+  const [storageHealthStatus, setStorageHealthStatus] = useState<HttpStorageHealthStatus | null>(
+    null,
+  );
   const [workspaceRepository, setWorkspaceRepository] = useState<StorageRepository>(() =>
     createStorageRepository({ workspaceId: DEFAULT_WORKSPACE_ID }),
   );
@@ -1687,10 +1714,12 @@ export default function App() {
         return;
       }
       if (!result.ok) {
+        setStorageHealthStatus(null);
         reportStorageError(healthCheckErrorToFeedback(result.error));
         return;
       }
       setStorageConnectionState(createOnlineStorageConnectionState(result.checkedAt));
+      setStorageHealthStatus(result.status);
       setStorageFeedbackError(null);
     };
     void checkConnection();
@@ -1785,6 +1814,7 @@ export default function App() {
       <StorageStatusBanner
         connectionState={storageConnectionState}
         error={storageFeedbackError}
+        healthStatus={storageHealthStatus}
       />
       <main className="app-main">
         <section className="pane" data-pane="issue">

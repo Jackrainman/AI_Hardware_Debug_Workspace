@@ -27,27 +27,27 @@
 - 夜跑 / 无人值守模式只能执行 repo-local、可自动验证、可回滚任务；任何 SSH、上传、真实服务器、sudo、systemd、`/opt`、80/443 或需用户拍板事项都必须停止并留下 handoff。
 
 ## 当前唯一主线原子任务（下一轮只认领这个）
-- **S4-OPERABILITY-HEALTH-STATUS**
-  - 目标：在已具备 release metadata 的基础上，增强本地 server health/status 诊断信息，让部署前后的 server / storage 状态更容易判读。
-  - 前置依赖：`S4-RELEASE-VERSION-ENDPOINT` 已完成；本地 HTTP + SQLite 主链路可在 WSL 自动验证；不依赖真实服务器部署结果。
-  - 输入文件 / 环境：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`docs/planning/backlog.md`、`apps/server/src/*`、server health endpoint、前端连接状态 UI 与相关 verify 脚本。
-  - 允许改动：server health/status endpoint；前端最小状态展示；verify 脚本；planning sync。
-  - 明确不做：不 SSH；不 sudo；不 systemd；不写 `/opt`；不占 80/443；不做复杂监控平台；不暴露 secrets；不做公网可观测性。
-  - 夜跑边界：repo-local、可自动验证、可回滚；失败不会破坏 v0.2.0 release 状态。
-  - 验证要求：`apps/server` 相关 verify；`cd apps/desktop && npm run typecheck`；`npm run build`；`npm run verify:handoff`；`npm run verify:all`；`git diff --check`。
-  - 完成定义：部署前后可一眼确认 server/storage 是否正常；失败态有明确错误，不 silent fallback；release metadata 仍可用于确认运行版本。
-  - 下一个任务：`S4-DATA-BACKUP-EXPORT`。
+- **S4-DATA-BACKUP-EXPORT**
+  - 目标：提供 repo-local SQLite backup / JSON export 命令，保证运行中不破坏主 DB，并为后续服务器路径复用同一机制。
+  - 前置依赖：`S4-OPERABILITY-HEALTH-STATUS` 已完成；本地 SQLite 主链路可用；不依赖真实服务器部署结果。
+  - 输入文件 / 环境：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`docs/planning/backlog.md`、`apps/server/src/*`、SQLite schema、server npm scripts 与验证脚本。
+  - 允许改动：server-side 备份脚本或 npm script；导出 JSON 的最小工具；verify 脚本；planning sync。
+  - 明确不做：不 SSH；不 sudo；不 systemd；不写 `/opt`；不删除 / 覆盖主 DB；不备份 secrets；不做云同步或增量备份系统；不改业务 schema 语义。
+  - 夜跑边界：repo-local、可自动验证、可回滚；仅操作临时测试 DB 或显式传入的 DB 路径，失败不会破坏 v0.2.0 release 状态。
+  - 验证要求：`apps/server` 相关 backup/export verify；`cd apps/desktop && npm run typecheck`；`npm run build`；`npm run verify:handoff`；`npm run verify:all`；`git diff --check`。
+  - 完成定义：有明确命令生成 timestamped SQLite backup 与 JSON export；备份位置与保留边界清楚；运行后 health 与主流程仍正常；不会破坏运行中 DB。
+  - 下一个任务：`S4-DATA-RESTORE-DRY-RUN`。
 
 ## 当前前沿任务窗口（最多 3 个候选）
 - **S3-SERVER-USER-DIR-DEPLOY-VERIFY**
   - 状态：`blocked_by_user_confirmation`；仅在用户白天确认 SSH / 上传 / 写入路径 / 启动进程 / 4100 端口边界后可执行，夜跑不可执行。
   - 选择理由：服务器真实部署未完成，但 `/opt` 与 systemd 需要更高权限；先用 `/home/hurricane/probeflash` 验证同一 runtime / DB / 端口方案，风险最小。
-- **S4-OPERABILITY-HEALTH-STATUS**
-  - 状态：当前第一个可并行 night-safe 任务；等待下一轮认领。
-  - 选择理由：不依赖真实服务器结果，可基于本地 HTTP + SQLite 主链路验证，且能增强后续服务器部署可诊断性。
 - **S4-DATA-BACKUP-EXPORT**
-  - 状态：等待 `S4-OPERABILITY-HEALTH-STATUS` 完成后可夜跑。
+  - 状态：当前第一个可并行 night-safe 任务；等待下一轮认领。
   - 选择理由：备份 / 导出应在健康状态可诊断后执行，仍属于 repo-local 数据安全能力。
+- **S4-DATA-RESTORE-DRY-RUN**
+  - 状态：等待 `S4-DATA-BACKUP-EXPORT` 完成后可夜跑。
+  - 选择理由：恢复演练必须只写临时 DB，不覆盖生产 DB，可本地自动验证。
 
 ## 剩余完整 pending queue（按执行顺序）
 1. `S3-SERVER-USER-DIR-DEPLOY-VERIFY`：blocked_by_user_confirmation
@@ -55,8 +55,8 @@
 3. `S3-SERVER-SYSTEMD-AUTOSTART-VERIFY`：blocked_by_user_confirmation
 4. `S3-SERVER-RELEASE-UPDATE-FLOW`：blocked_by_external_dependency
 5. `S4-RELEASE-VERSION-ENDPOINT`：completed
-6. `S4-OPERABILITY-HEALTH-STATUS`：current_night_safe
-7. `S4-DATA-BACKUP-EXPORT`：pending_after_operability
+6. `S4-OPERABILITY-HEALTH-STATUS`：completed
+7. `S4-DATA-BACKUP-EXPORT`：current_night_safe
 8. `S4-DATA-RESTORE-DRY-RUN`：pending_after_backup
 9. `AI-READY-PROMPT-TEMPLATE-SYSTEM`：pending_after_s4_data_safety
 10. `AI-READY-CLOSEOUT-DRAFT-PANEL`：pending_after_prompt_template
@@ -68,7 +68,7 @@
 16. `CODE-CONTEXT-REPO-CONNECTOR-LATER`：pending_after_user_feedback
 
 ## 下一步最小可执行动作
-- 下一轮夜跑默认先认领 `S4-OPERABILITY-HEALTH-STATUS`。
+- 下一轮夜跑默认先认领 `S4-DATA-BACKUP-EXPORT`。
 - 认领前必须重新读取默认事实源 + `docs/planning/backlog.md`，确认 `S3-*` 服务器任务仍保持 blocked 且未被误标 completed。
 - 真实服务器操作前必须获得用户确认：SSH 登录方式、上传方式、是否允许在 `/home/hurricane/probeflash` 写入、是否允许启动临时进程、是否允许用 4100 端口。
 - 若用户未授权 SSH / 上传 / 启动进程，不得自行部署；夜跑继续扫描后续 repo-local、可自动验证、可回滚任务。

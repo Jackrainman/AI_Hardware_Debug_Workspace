@@ -108,6 +108,26 @@ function getConfig(overrides = {}) {
   };
 }
 
+function serverStatus() {
+  return {
+    ready: true,
+    runtime: "node_http",
+    apiBasePath: "/api",
+  };
+}
+
+function storageInitFailureDetails(releaseMetadata) {
+  return {
+    release: releaseMetadata,
+    server: serverStatus(),
+    storage: {
+      kind: "sqlite",
+      ready: false,
+      error: "init_failed",
+    },
+  };
+}
+
 function createRequestHandler({ store, storeInitError, releaseMetadata }) {
   return async (req, res) => {
     const url = new URL(req.url ?? "/", "http://127.0.0.1");
@@ -139,11 +159,11 @@ function createRequestHandler({ store, storeInitError, releaseMetadata }) {
               message: storeInitError.message,
               operation: "health",
               retryable: true,
-              details: { release: releaseMetadata },
+              details: storageInitFailureDetails(releaseMetadata),
             },
           });
         }
-        return ok(res, { ...store.health(), release: releaseMetadata });
+        return ok(res, { ...store.health(), server: serverStatus(), release: releaseMetadata });
       }
 
       ensureStorageReady(store);

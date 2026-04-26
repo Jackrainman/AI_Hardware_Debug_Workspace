@@ -69,7 +69,7 @@
 ### 5. S4-DATA-BACKUP-EXPORT
 - **目标**：提供 SQLite 备份 / 导出机制，保证运行中不破坏 DB。
 - **前置依赖**：`S4-OPERABILITY-HEALTH-STATUS` 完成；本地 SQLite 主链路可用。真实服务器持久化路径稳定后需复用同一命令验证服务器路径。
-- **夜跑状态**：`pending_after_operability`；repo-local 备份 / 导出可在健康诊断完成后夜跑，不依赖真实服务器部署结果。
+- **夜跑状态**：`current_night_safe`；repo-local 备份 / 导出可夜跑，不依赖真实服务器部署结果。
 - **输入文件**：`/home/hurricane/probeflash/shared/data/probeflash.sqlite`、server storage 代码、SQLite schema、部署路径约定。
 - **允许改动**：server-side 备份脚本或 npm script；导出 JSON 的最小工具；部署文档；planning sync。
 - **明确不做**：不做云同步；不做增量备份系统；不在运行中直接复制半写入 DB 而不校验；不备份 secrets；不改业务 schema 语义。
@@ -91,13 +91,13 @@
 ### 7. S4-OPERABILITY-HEALTH-STATUS
 - **目标**：提供更清楚的 server status / storage status / version info，便于部署后诊断。
 - **前置依赖**：`S4-RELEASE-VERSION-ENDPOINT` 完成；本地 HTTP + SQLite 主链路可用。
-- **夜跑状态**：`current_night_safe`；repo-local，可自动验证，不依赖真实服务器、LAN、systemd 或生产数据。
+- **夜跑状态**：completed；已增强 `/api/health` 的 server/storage/workspace/release 可诊断状态，并在前端统一 banner 展示摘要。
 - **输入文件**：`apps/server/src/*`、server health endpoint、storage adapter、部署 env、前端连接状态 UI。
 - **允许改动**：server health/status endpoint；前端最小状态展示；verify 脚本；planning sync。
 - **明确不做**：不做复杂监控平台；不做权限系统；不暴露 secrets / 绝对敏感路径；不做公网可观测性。
 - **验证要求**：health/status 返回 server ready、storage ready、DB path class 或 redacted path、workspace seed、错误状态；前端可显示可理解状态；断 DB 或错误 env 时状态可诊断。
 - **完成定义**：部署后能一眼确认 server/storage 是否正常；失败态有明确错误，不 silent fallback。
-- **下一个任务**：`S4-RELEASE-VERSION-ENDPOINT`。
+- **下一个任务**：`S4-DATA-BACKUP-EXPORT`。
 
 ### 8. S4-RELEASE-VERSION-ENDPOINT
 - **目标**：让 server `/api/health` 或 version endpoint 返回版本、commit、release tag，便于确认服务器跑的是哪版。
@@ -114,7 +114,7 @@
 
 ### 9. AI-READY-PROMPT-TEMPLATE-SYSTEM
 - **目标**：沉淀 prompt template 与输入输出 schema，为后续 AI 接入准备边界，但不调用模型。
-- **前置依赖**：`S4-RELEASE-VERSION-ENDPOINT` 完成；server / storage / version 可诊断。
+- **前置依赖**：`S4-DATA-RESTORE-DRY-RUN` 完成；server / storage / version 可诊断，备份与恢复演练已完成。
 - **输入文件**：domain schemas、issue / record / closeout 数据结构、closeout UI、后续 AI 草稿需求。
 - **允许改动**：prompt template 模块、`PromptInput` / `PromptOutput` 类型或 schema、规则模板测试、文档、planning sync。
 - **明确不做**：不保存 API key；不调用外部 AI；不新增 provider SDK；不做 RAG / embedding；不自动写库。

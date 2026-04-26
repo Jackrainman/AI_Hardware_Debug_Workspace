@@ -88,15 +88,38 @@ const WorkspaceCreateResponseSchema = z.object({
   workspace: WorkspaceSchema,
 });
 
+const ReleaseMetadataSchema = z.object({
+  version: z.string().min(1),
+  commit: z.string().min(1),
+  releaseTag: z.string().min(1),
+});
+
+const ServerStatusSchema = z.object({
+  ready: z.boolean(),
+  runtime: z.string().min(1).optional(),
+  apiBasePath: z.string().min(1).optional(),
+});
+
+const StorageStatusSchema = z.object({
+  kind: z.string().min(1),
+  ready: z.boolean(),
+  dbPathClass: z.string().min(1).optional(),
+  dbFileName: z.string().min(1).optional(),
+});
+
+const WorkspaceSeedSchema = z.object({
+  defaultWorkspaceId: z.string().min(1),
+  defaultWorkspaceName: z.string().min(1),
+  seeded: z.boolean(),
+});
+
 const HealthResponseSchema = z.object({
   status: z.string().min(1),
   serverTime: z.string().datetime({ offset: true }).optional(),
-  storage: z
-    .object({
-      kind: z.string().min(1),
-      ready: z.boolean(),
-    })
-    .optional(),
+  server: ServerStatusSchema.optional(),
+  storage: StorageStatusSchema.optional(),
+  workspace: WorkspaceSeedSchema.optional(),
+  release: ReleaseMetadataSchema.optional(),
 });
 
 export interface HttpStorageRepositoryOptions extends HttpStorageClientOptions {
@@ -104,8 +127,21 @@ export interface HttpStorageRepositoryOptions extends HttpStorageClientOptions {
 }
 
 export type HttpStorageHealthCheckResult =
-  | { ok: true; checkedAt: string }
+  | { ok: true; checkedAt: string; status: HttpStorageHealthStatus }
   | { ok: false; error: StorageReadError };
+
+export interface HttpStorageHealthStatus {
+  checkedAt: string;
+  serverReady: boolean;
+  storageReady: boolean;
+  storageKind: string;
+  dbPathClass?: string;
+  dbFileName?: string;
+  defaultWorkspaceId?: string;
+  defaultWorkspaceName?: string;
+  releaseVersion?: string;
+  releaseTag?: string;
+}
 
 function workspaceBasePath(workspaceId: string): string {
   return `/workspaces/${encodeURIComponent(workspaceId)}`;
@@ -690,20 +726,34 @@ export async function checkHttpStorageHealth(
         ),
       };
     }
-    if (parsed.data.storage && parsed.data.storage.ready !== true) {
+    const checkedAt = parsed.data.serverTime ?? new Date().toISOString();
+    const storageReady = parsed.data.storage?.ready === true;
+    if (!storageReady) {
       return {
         ok: false,
         error: createReadFailed(
           "issue_card",
           "/health",
           "server storage is not ready",
-          createDegradedConnection("server storage is not ready", new Date().toISOString()),
+          createDegradedConnection("server storage is not ready", checkedAt),
         ),
       };
     }
     return {
       ok: true,
-      checkedAt: parsed.data.serverTime ?? new Date().toISOString(),
+      checkedAt,
+      status: {
+        checkedAt,
+        serverReady: parsed.data.server?.ready ?? true,
+        storageReady,
+        storageKind: parsed.data.storage?.kind ?? "unknown",
+        dbPathClass: parsed.data.storage?.dbPathClass,
+        dbFileName: parsed.data.storage?.dbFileName,
+        defaultWorkspaceId: parsed.data.workspace?.defaultWorkspaceId,
+        defaultWorkspaceName: parsed.data.workspace?.defaultWorkspaceName,
+        releaseVersion: parsed.data.release?.version,
+        releaseTag: parsed.data.release?.releaseTag,
+      },
     };
   } catch (error) {
     if (isRequestError(error)) {

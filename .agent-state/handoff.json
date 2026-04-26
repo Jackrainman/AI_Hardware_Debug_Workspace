@@ -16,14 +16,14 @@
     "archive_state": "object - v0.2.0 前历史文档归档状态与读取条件",
     "notes": "string[] - 长期性约束与下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-04-26T02:07:59+08:00",
+  "timestamp": "2026-04-26T09:49:27+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "S3",
   "current_stage_name": "服务器安全部署",
   "current_stage_goal": "基于 v0.2.0 已完成的本地 HTTP + SQLite 主链路，先在 Ubuntu 20.04 服务器完成 no-sudo 用户目录部署验证，再进入 systemd 自启、operability / data safety、AI-ready、最小真实 AI 草稿与 code context bundle。",
   "primary_track": "safe_server_deploy_then_operability_then_ai_ready",
   "deferred_track": "real_ai_after_ai_ready_and_code_context_after_bundle_mvp",
-  "current_atomic_task": "S4-OPERABILITY-HEALTH-STATUS",
+  "current_atomic_task": "S4-DATA-BACKUP-EXPORT",
   "roadmap_tracks": {
     "A_S3_Server_Deployment_Line": [
       "S3-SERVER-USER-DIR-DEPLOY-VERIFY",
@@ -32,10 +32,10 @@
       "S3-SERVER-RELEASE-UPDATE-FLOW"
     ],
     "B_S4_Operability_Data_Safety_Line": [
-      "S4-DATA-BACKUP-EXPORT",
-      "S4-DATA-RESTORE-DRY-RUN",
+      "S4-RELEASE-VERSION-ENDPOINT",
       "S4-OPERABILITY-HEALTH-STATUS",
-      "S4-RELEASE-VERSION-ENDPOINT"
+      "S4-DATA-BACKUP-EXPORT",
+      "S4-DATA-RESTORE-DRY-RUN"
     ],
     "C_AI_Ready_Product_Line": [
       "AI-READY-PROMPT-TEMPLATE-SYSTEM",
@@ -61,6 +61,7 @@
     "ai_features_completed": false,
     "code_context_analysis_completed": false,
     "version_endpoint_completed": true,
+    "operability_health_status_completed": true,
     "local_release_smoke": [
       "web dist 可被 127.0.0.1:4173 托管",
       "4173 的 /api 可代理到 127.0.0.1:4100",
@@ -198,22 +199,22 @@
       "status": "blocked_by_user_confirmation"
     },
     {
-      "id": "S4-OPERABILITY-HEALTH-STATUS",
-      "track": "B_S4_Operability_Data_Safety_Line",
-      "goal": "提供更清楚的 server status / storage status / version info，便于部署后诊断。",
-      "depends_on": [
-        "S4-RELEASE-VERSION-ENDPOINT"
-      ],
-      "status": "current_night_safe"
-    },
-    {
       "id": "S4-DATA-BACKUP-EXPORT",
       "track": "B_S4_Operability_Data_Safety_Line",
       "goal": "提供 SQLite 备份 / 导出机制，保证运行中不破坏 DB。",
       "depends_on": [
         "S4-OPERABILITY-HEALTH-STATUS"
       ],
-      "status": "pending_after_operability"
+      "status": "current_night_safe"
+    },
+    {
+      "id": "S4-DATA-RESTORE-DRY-RUN",
+      "track": "B_S4_Operability_Data_Safety_Line",
+      "goal": "验证备份能恢复到临时 DB 并读回关键实体。",
+      "depends_on": [
+        "S4-DATA-BACKUP-EXPORT"
+      ],
+      "status": "pending_after_backup"
     }
   ],
   "pending_task_queue": [
@@ -453,7 +454,7 @@
         "不会破坏运行中 DB"
       ],
       "next_task": "S4-DATA-RESTORE-DRY-RUN",
-      "status": "pending_after_operability"
+      "status": "current_night_safe"
     },
     {
       "order": 6,
@@ -492,7 +493,7 @@
         "恢复流程可演练",
         "生产数据安全不受影响"
       ],
-      "next_task": "S4-OPERABILITY-HEALTH-STATUS",
+      "next_task": "AI-READY-PROMPT-TEMPLATE-SYSTEM",
       "status": "pending_after_backup"
     },
     {
@@ -532,7 +533,7 @@
         "失败态有明确错误，不 silent fallback"
       ],
       "next_task": "S4-DATA-BACKUP-EXPORT",
-      "status": "current_night_safe"
+      "status": "completed"
     },
     {
       "order": 8,
@@ -578,7 +579,7 @@
       "track": "C_AI_Ready_Product_Line",
       "goal": "沉淀 prompt template 与输入输出 schema，为后续 AI 接入准备边界，但不调用模型。",
       "depends_on": [
-        "S4-RELEASE-VERSION-ENDPOINT"
+        "S4-DATA-RESTORE-DRY-RUN"
       ],
       "input_files": [
         "domain schemas",
@@ -611,7 +612,7 @@
         "无外部调用"
       ],
       "next_task": "AI-READY-CLOSEOUT-DRAFT-PANEL",
-      "status": "pending"
+      "status": "pending_after_s4_data_safety"
     },
     {
       "order": 10,
@@ -971,7 +972,8 @@
     "REPO-HYGIENE-V0.2.0-CLOSEOUT",
     "S3-S4-AI-ROADMAP-REBUILD",
     "REPO-GOVERNANCE-NIGHT-RUN-ARCHIVE-V0.2",
-    "S4-RELEASE-VERSION-ENDPOINT"
+    "S4-RELEASE-VERSION-ENDPOINT",
+    "S4-OPERABILITY-HEALTH-STATUS"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -989,8 +991,8 @@
       "apps/server/deploy/*：仅服务器部署任务且用户已确认边界后读取"
     ],
     "claiming_rule": "夜跑模式下扫描 pending_task_queue / backlog：服务器、sudo、systemd、真实外部环境任务标 blocked 但不标 completed；随后认领第一个依赖已满足、repo-local、可自动验证、可回滚的 night-safe 任务。",
-    "recommended_next": "S4-OPERABILITY-HEALTH-STATUS",
-    "night_run_gate": "allowed_for_recommended_next: S4-OPERABILITY-HEALTH-STATUS is repo-local and depends only on completed S4-RELEASE-VERSION-ENDPOINT; S3 server tasks remain blocked_by_user_confirmation or blocked_by_external_dependency.",
+    "recommended_next": "S4-DATA-BACKUP-EXPORT",
+    "night_run_gate": "allowed_for_recommended_next: S4-DATA-BACKUP-EXPORT is repo-local and depends only on completed S4-OPERABILITY-HEALTH-STATUS; S3 server tasks remain blocked_by_user_confirmation or blocked_by_external_dependency.",
     "selection_order": [
       "夜跑先跳过并保留 blocked server tasks",
       "先完成可并行的 operability / data safety repo-local tasks",
@@ -1010,13 +1012,16 @@
       "apps/server/src/database.mjs",
       "apps/server/package.json",
       "apps/server/scripts/verify-s3-local-backend-scaffold.mjs",
+      "apps/server/scripts/verify-s4-operability-health-status.mjs",
+      "apps/desktop/scripts/verify-s4-operability-health-status.mts",
       "git status --short",
       "git log --oneline -10"
     ]
   },
   "verification_expectations": {
     "code_task_this_round": [
-      "cd apps/server && npm run verify:s4-release-version-endpoint",
+      "cd apps/server && npm run verify:s4-operability-health-status",
+      "cd apps/desktop && npm run verify:s4-operability-health-status",
       "git diff --check",
       "python3 解析 .agent-state/handoff.json",
       "cd apps/desktop && npm run typecheck",
@@ -1043,7 +1048,7 @@
     "80 端口由 filebrowser 占用，ProbeFlash 必须使用 4100，不得影响既有服务。",
     "AI-ready、真实 AI、code context 分析都只是规划队列，不是已实现功能。",
     "code context 第一阶段只能处理用户显式提供的 bundle，不允许服务器任意扫描路径。",
-    "S4-RELEASE-VERSION-ENDPOINT 已在本地完成；服务器实际运行版本仍需等真实部署后通过 endpoint 验证。"
+    "S4-RELEASE-VERSION-ENDPOINT 与 S4-OPERABILITY-HEALTH-STATUS 已在本地完成；服务器实际运行版本与健康状态仍需等真实部署后通过 endpoint 验证。"
   ],
   "notes": [
     "Night Run / Unattended Mode 已建立：夜跑只允许 repo-local、可自动验证、可回滚任务；真实服务器 / sudo / systemd / /opt / 80/443 / 外部账号 / API key / 删除或迁移数据 / 产品拍板必须停止。",
@@ -1053,6 +1058,7 @@
     "部署安全分层固定为 /home/hurricane/probeflash no-sudo 验证 -> systemd prep -> 用户授权后 systemd verify -> release update / rollback -> S4 data safety。",
     "旧 apps/server/deploy/* 中的 /opt 材料只能作为参考输入；当前下一任务不得把 /opt 当作第一部署目标。",
     "S4-RELEASE-VERSION-ENDPOINT 已完成：server 暴露 /api/version，并在 /api/health.data.release 返回 version、commit、releaseTag；metadata 由 env/override/package version 提供，不依赖运行时 .git。",
+    "S4-OPERABILITY-HEALTH-STATUS 已完成：/api/health 返回 server/storage/workspace/release 可诊断状态，DB 路径只暴露 class/file name，前端统一存储 banner 展示摘要。",
     "AI 路线固定为 prompt/schema 与规则草稿先行，真实 AI 只返回草稿，API key 只在 server env，失败不影响主流程。",
     "代码上下文路线固定为 bundle MVP 先行，repo connector 仅作为后续评估项，且必须 allowlist 与禁读 secrets。"
   ]

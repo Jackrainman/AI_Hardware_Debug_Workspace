@@ -17,6 +17,7 @@ import {
   checkHttpStorageHealth,
   createHttpStorageRepository,
   httpStorageRepository,
+  type HttpStorageHealthStatus,
 } from "./http-storage-repository.ts";
 import {
   listInvestigationRecordsByIssueId,
@@ -48,6 +49,7 @@ export type {
   StorageReadError,
   StorageWriteError,
   StorageWriteResult,
+  HttpStorageHealthStatus,
 };
 
 export type WorkspaceListInvalidEntry = {

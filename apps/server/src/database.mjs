@@ -1,6 +1,6 @@
 import { mkdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
-import { dirname } from "node:path";
+import { basename, dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
 export const SCHEMA_VERSION = 1;
@@ -10,6 +10,14 @@ export const DEFAULT_WORKSPACE = {
   description: "",
   isDefault: true,
 };
+
+function classifyDbPath(dbPath) {
+  const normalized = dbPath.replaceAll("\\", "/");
+  if (normalized.includes("/.runtime/")) return "app_runtime";
+  if (normalized.includes("/shared/data/")) return "deploy_shared_data";
+  if (normalized.includes("/tmp/")) return "temporary";
+  return "custom";
+}
 
 export function normalizeDefaultWorkspace(overrides = {}) {
   return {
@@ -345,6 +353,7 @@ export function createProbeFlashDatabase(dbPath, options = {}) {
       db.close();
     },
     health() {
+      const workspace = requireWorkspace(defaultWorkspace.id);
       return {
         status: "ok",
         serverTime: new Date().toISOString(),
@@ -352,7 +361,13 @@ export function createProbeFlashDatabase(dbPath, options = {}) {
         storage: {
           kind: "sqlite",
           ready: true,
-          dbPath,
+          dbPathClass: classifyDbPath(dbPath),
+          dbFileName: basename(dbPath),
+        },
+        workspace: {
+          defaultWorkspaceId: workspace.id,
+          defaultWorkspaceName: workspace.name,
+          seeded: true,
         },
       };
     },
