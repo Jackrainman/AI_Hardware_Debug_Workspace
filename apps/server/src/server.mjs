@@ -4,6 +4,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { DEFAULT_WORKSPACE, createProbeFlashDatabase } from "./database.mjs";
+import { getReleaseMetadata } from "./release-metadata.mjs";
 
 const SERVER_SRC_DIR = dirname(fileURLToPath(import.meta.url));
 const SERVER_APP_DIR = resolve(SERVER_SRC_DIR, "..");
@@ -97,10 +98,17 @@ function getConfig(overrides = {}) {
   if (logDir) {
     mkdirSync(logDir, { recursive: true });
   }
-  return { dbPath, host, port, defaultWorkspace, logDir };
+  return {
+    dbPath,
+    host,
+    port,
+    defaultWorkspace,
+    logDir,
+    releaseMetadata: getReleaseMetadata(overrides.releaseMetadata),
+  };
 }
 
-function createRequestHandler({ store, storeInitError }) {
+function createRequestHandler({ store, storeInitError, releaseMetadata }) {
   return async (req, res) => {
     const url = new URL(req.url ?? "/", "http://127.0.0.1");
     const method = req.method ?? "GET";
@@ -118,6 +126,10 @@ function createRequestHandler({ store, storeInitError }) {
     const workspaceDetailMatch = url.pathname.match(/^\/api\/workspaces\/([^/]+)$/);
 
     try {
+      if (url.pathname === "/api/version" && method === "GET") {
+        return ok(res, releaseMetadata);
+      }
+
       if (url.pathname === "/api/health" && method === "GET") {
         if (storeInitError) {
           return json(res, 503, {
@@ -127,11 +139,11 @@ function createRequestHandler({ store, storeInitError }) {
               message: storeInitError.message,
               operation: "health",
               retryable: true,
-              details: {},
+              details: { release: releaseMetadata },
             },
           });
         }
-        return ok(res, store.health());
+        return ok(res, { ...store.health(), release: releaseMetadata });
       }
 
       ensureStorageReady(store);
@@ -240,7 +252,7 @@ function createRequestHandler({ store, storeInitError }) {
 }
 
 export async function startProbeFlashServer(overrides = {}) {
-  const { dbPath, host, port, defaultWorkspace, logDir } = getConfig(overrides);
+  const { dbPath, host, port, defaultWorkspace, logDir, releaseMetadata } = getConfig(overrides);
   let store = null;
   let storeInitError = null;
 
@@ -250,7 +262,7 @@ export async function startProbeFlashServer(overrides = {}) {
     storeInitError = error instanceof Error ? error : new Error(String(error));
   }
 
-  const server = createServer(createRequestHandler({ store, storeInitError }));
+  const server = createServer(createRequestHandler({ store, storeInitError, releaseMetadata }));
 
   await new Promise((resolvePromise, rejectPromise) => {
     const handleError = (error) => {

@@ -27,52 +27,52 @@
 - 夜跑 / 无人值守模式只能执行 repo-local、可自动验证、可回滚任务；任何 SSH、上传、真实服务器、sudo、systemd、`/opt`、80/443 或需用户拍板事项都必须停止并留下 handoff。
 
 ## 当前唯一主线原子任务（下一轮只认领这个）
-- **S3-SERVER-USER-DIR-DEPLOY-VERIFY**
-  - 目标：在服务器 `/home/hurricane/probeflash` 下完成 v0.2.0 no-sudo 用户目录部署验证，确认独立 Node runtime、4100 端口、SQLite 持久化与 filebrowser:80 旁路都成立。
-  - 前置依赖：v0.2.0 release asset 已生成并本地测试；本地 HTTP + SQLite E2E 已通过；服务器事实已确认；用户明确允许 SSH 到 `hurricane@192.168.2.2` 并在 `/home/hurricane` 下写入文件。
-  - 输入文件 / 环境：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`docs/planning/backlog.md`、v0.2.0 release assets、`apps/server/deploy/*` 作为参考输入、目标服务器 `192.168.2.2`、人工确认的 SSH / 上传方式。
-  - 允许改动：服务器 `/home/hurricane/probeflash` 下的 release、runtime、shared data/log/env；仓库内只允许做 planning sync 或必要 deploy 文档修正，不能写业务功能。
-  - 明确不做：不 sudo；不 systemd；不写 `/opt`；不碰 80；不升级系统 Node；不使用系统 Node v10；不影响 filebrowser / vnt-cli / docker / Portainer；不做反向代理 / `.local`。
-  - 夜跑边界：本任务涉及真实服务器、SSH、上传、写入路径、启动进程与端口确认，不能在夜跑 / 无人值守模式中执行；必须等用户白天确认边界后再认领。
-  - 验证要求：`curl http://127.0.0.1:4100/api/health`；`curl http://192.168.2.2:4100/api/health`；创建 workspace / issue；停止重启后读回；确认 `http://192.168.2.2/` 上 filebrowser:80 仍正常；仓库侧运行 planning 类 completion gate。
-  - 完成定义：ProbeFlash 可在服务器用户目录下以独立 Node runtime 运行；SQLite 文件位于 `/home/hurricane/probeflash/shared/data/probeflash.sqlite` 且重启后可读回；LAN 可访问 4100；既有 80 端口服务不受影响；未执行任何 sudo / systemd / `/opt` 操作。
-  - 下一个任务：`S3-SERVER-SYSTEMD-AUTOSTART-PREP`。
+- **S4-OPERABILITY-HEALTH-STATUS**
+  - 目标：在已具备 release metadata 的基础上，增强本地 server health/status 诊断信息，让部署前后的 server / storage 状态更容易判读。
+  - 前置依赖：`S4-RELEASE-VERSION-ENDPOINT` 已完成；本地 HTTP + SQLite 主链路可在 WSL 自动验证；不依赖真实服务器部署结果。
+  - 输入文件 / 环境：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`docs/planning/backlog.md`、`apps/server/src/*`、server health endpoint、前端连接状态 UI 与相关 verify 脚本。
+  - 允许改动：server health/status endpoint；前端最小状态展示；verify 脚本；planning sync。
+  - 明确不做：不 SSH；不 sudo；不 systemd；不写 `/opt`；不占 80/443；不做复杂监控平台；不暴露 secrets；不做公网可观测性。
+  - 夜跑边界：repo-local、可自动验证、可回滚；失败不会破坏 v0.2.0 release 状态。
+  - 验证要求：`apps/server` 相关 verify；`cd apps/desktop && npm run typecheck`；`npm run build`；`npm run verify:handoff`；`npm run verify:all`；`git diff --check`。
+  - 完成定义：部署前后可一眼确认 server/storage 是否正常；失败态有明确错误，不 silent fallback；release metadata 仍可用于确认运行版本。
+  - 下一个任务：`S4-DATA-BACKUP-EXPORT`。
 
 ## 当前前沿任务窗口（最多 3 个候选）
 - **S3-SERVER-USER-DIR-DEPLOY-VERIFY**
-  - 状态：当前唯一可认领任务；仅在用户白天确认 SSH / 上传 / 写入路径 / 启动进程 / 4100 端口边界后可执行，夜跑不可执行。
+  - 状态：`blocked_by_user_confirmation`；仅在用户白天确认 SSH / 上传 / 写入路径 / 启动进程 / 4100 端口边界后可执行，夜跑不可执行。
   - 选择理由：服务器真实部署未完成，但 `/opt` 与 systemd 需要更高权限；先用 `/home/hurricane/probeflash` 验证同一 runtime / DB / 端口方案，风险最小。
-- **S3-SERVER-SYSTEMD-AUTOSTART-PREP**
-  - 状态：等待 `S3-SERVER-USER-DIR-DEPLOY-VERIFY` 完成。
-  - 选择理由：只有 no-sudo 跑通后，才值得准备与用户目录路径一致的 `probeflash.service`。
-- **S3-SERVER-SYSTEMD-AUTOSTART-VERIFY**
-  - 状态：等待用户授权 sudo，且等待 systemd unit 准备完成。
-  - 选择理由：自启验证必须明确授权写 `/etc/systemd/system/probeflash.service`，不能与 no-sudo 验证混在同一轮。
+- **S4-OPERABILITY-HEALTH-STATUS**
+  - 状态：当前第一个可并行 night-safe 任务；等待下一轮认领。
+  - 选择理由：不依赖真实服务器结果，可基于本地 HTTP + SQLite 主链路验证，且能增强后续服务器部署可诊断性。
+- **S4-DATA-BACKUP-EXPORT**
+  - 状态：等待 `S4-OPERABILITY-HEALTH-STATUS` 完成后可夜跑。
+  - 选择理由：备份 / 导出应在健康状态可诊断后执行，仍属于 repo-local 数据安全能力。
 
 ## 剩余完整 pending queue（按执行顺序）
-1. `S3-SERVER-USER-DIR-DEPLOY-VERIFY`
-2. `S3-SERVER-SYSTEMD-AUTOSTART-PREP`
-3. `S3-SERVER-SYSTEMD-AUTOSTART-VERIFY`
-4. `S3-SERVER-RELEASE-UPDATE-FLOW`
-5. `S4-DATA-BACKUP-EXPORT`
-6. `S4-DATA-RESTORE-DRY-RUN`
-7. `S4-OPERABILITY-HEALTH-STATUS`
-8. `S4-RELEASE-VERSION-ENDPOINT`
-9. `AI-READY-PROMPT-TEMPLATE-SYSTEM`
-10. `AI-READY-CLOSEOUT-DRAFT-PANEL`
-11. `AI-ASSIST-POLISH-CLOSEOUT-MINIMAL`
-12. `AI-ASSIST-SUGGEST-PREVENTION`
-13. `CODE-CONTEXT-BUNDLE-CLI`
-14. `CODE-CONTEXT-ATTACH-TO-ISSUE`
-15. `AI-ASSIST-ANALYZE-CODE-CONTEXT`
-16. `CODE-CONTEXT-REPO-CONNECTOR-LATER`
+1. `S3-SERVER-USER-DIR-DEPLOY-VERIFY`：blocked_by_user_confirmation
+2. `S3-SERVER-SYSTEMD-AUTOSTART-PREP`：blocked_by_external_dependency
+3. `S3-SERVER-SYSTEMD-AUTOSTART-VERIFY`：blocked_by_user_confirmation
+4. `S3-SERVER-RELEASE-UPDATE-FLOW`：blocked_by_external_dependency
+5. `S4-RELEASE-VERSION-ENDPOINT`：completed
+6. `S4-OPERABILITY-HEALTH-STATUS`：current_night_safe
+7. `S4-DATA-BACKUP-EXPORT`：pending_after_operability
+8. `S4-DATA-RESTORE-DRY-RUN`：pending_after_backup
+9. `AI-READY-PROMPT-TEMPLATE-SYSTEM`：pending_after_s4_data_safety
+10. `AI-READY-CLOSEOUT-DRAFT-PANEL`：pending_after_prompt_template
+11. `AI-ASSIST-POLISH-CLOSEOUT-MINIMAL`：blocked_by_external_dependency_api_key_after_ai_ready
+12. `AI-ASSIST-SUGGEST-PREVENTION`：pending_after_minimal_ai
+13. `CODE-CONTEXT-BUNDLE-CLI`：pending_after_ai_prevention
+14. `CODE-CONTEXT-ATTACH-TO-ISSUE`：pending_after_bundle_cli
+15. `AI-ASSIST-ANALYZE-CODE-CONTEXT`：pending_after_bundle_attach_and_ai_adapter
+16. `CODE-CONTEXT-REPO-CONNECTOR-LATER`：pending_after_user_feedback
 
 ## 下一步最小可执行动作
-- 下一轮默认先认领 `S3-SERVER-USER-DIR-DEPLOY-VERIFY`。
-- 认领前必须重新读取默认事实源 + `docs/planning/backlog.md` + `apps/server/deploy/*` + v0.2.0 release asset 状态。
+- 下一轮夜跑默认先认领 `S4-OPERABILITY-HEALTH-STATUS`。
+- 认领前必须重新读取默认事实源 + `docs/planning/backlog.md`，确认 `S3-*` 服务器任务仍保持 blocked 且未被误标 completed。
 - 真实服务器操作前必须获得用户确认：SSH 登录方式、上传方式、是否允许在 `/home/hurricane/probeflash` 写入、是否允许启动临时进程、是否允许用 4100 端口。
-- 若用户未授权 SSH / 上传 / 启动进程，不得自行部署；只输出阻塞点和需要确认的问题。
-- 若下一轮是夜跑 / 无人值守模式，不得认领当前服务器部署任务；应停止并说明需要用户白天介入。
+- 若用户未授权 SSH / 上传 / 启动进程，不得自行部署；夜跑继续扫描后续 repo-local、可自动验证、可回滚任务。
+- 若后续队列只剩服务器、sudo、systemd、真实 API key 或用户拍板任务，停止并说明需要用户白天介入。
 
 ## 下一任务选择流程
 1. 默认只读取：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`git status --short`、`git log --oneline -5`、当前任务直接相关文件。

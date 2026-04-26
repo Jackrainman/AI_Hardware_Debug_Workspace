@@ -23,7 +23,7 @@
 ### 1. S3-SERVER-USER-DIR-DEPLOY-VERIFY
 - **目标**：在服务器 `/home/hurricane/probeflash` 下完成 v0.2.0 no-sudo 用户目录部署验证。
 - **前置依赖**：v0.2.0 release asset 已生成并完成本地 smoke；本地 HTTP + SQLite E2E 已完成；服务器事实已确认；用户授权 SSH / 上传 / 在 `/home/hurricane` 写入。
-- **夜跑状态**：不可夜跑；必须等用户白天确认 SSH、上传方式、写入路径、启动进程与 4100 端口边界后执行。
+- **夜跑状态**：`blocked_by_user_confirmation`；必须等用户白天确认 SSH、上传方式、写入路径、启动进程与 4100 端口边界后执行。
 - **输入文件**：`AGENTS.md`、`docs/planning/current.md`、`.agent-state/handoff.json`、本文件、v0.2.0 release assets、`apps/server/deploy/*` 参考材料、目标服务器 `192.168.2.2`。
 - **允许改动**：服务器 `/home/hurricane/probeflash/releases`、`/home/hurricane/probeflash/current`、`/home/hurricane/probeflash/runtime/node`、`/home/hurricane/probeflash/shared/data`、`/home/hurricane/probeflash/shared/logs`、`/home/hurricane/probeflash/shared/env`；仓库内仅 planning sync 或必要 deployment note。
 - **明确不做**：不 sudo；不 systemd；不写 `/opt`；不碰 80；不升级系统 Node；不使用系统 Node v10；不影响 filebrowser / vnt-cli / docker / Portainer；不做反向代理 / `.local`。
@@ -34,6 +34,7 @@
 ### 2. S3-SERVER-SYSTEMD-AUTOSTART-PREP
 - **目标**：在 no-sudo 部署验证成功后，准备与 `/home/hurricane/probeflash` 布局一致的 `probeflash.service`。
 - **前置依赖**：`S3-SERVER-USER-DIR-DEPLOY-VERIFY` 完成；用户目录 runtime / current / shared 路径已确定。
+- **夜跑状态**：`blocked_by_external_dependency`；等待真实服务器用户目录部署验证完成，不能在夜跑中越过该事实。
 - **输入文件**：`apps/server/deploy/probeflash.service.template`、`apps/server/deploy/env.example`、用户目录部署记录、systemd 事实、filebrowser.service 已知风格。
 - **允许改动**：planning 文件；必要时更新 `apps/server/deploy/*` 的模板 / 示例以匹配用户目录部署，但不得改 server 业务逻辑。
 - **明确不做**：不执行真正 `systemctl`；不写 `/etc/systemd/system/probeflash.service`；不 sudo；不占 80；不用 root 跑 ProbeFlash；不切 `/opt`。
@@ -44,6 +45,7 @@
 ### 3. S3-SERVER-SYSTEMD-AUTOSTART-VERIFY
 - **目标**：用户授权后安装并验证 `probeflash.service` 开机自启。
 - **前置依赖**：`S3-SERVER-SYSTEMD-AUTOSTART-PREP` 完成；用户明确授权 sudo、写 `/etc/systemd/system/probeflash.service`、执行 daemon-reload / enable / start / status。
+- **夜跑状态**：`blocked_by_user_confirmation`；涉及 sudo、systemd 与 `/etc/systemd/system` 写入，夜跑不可执行。
 - **输入文件**：已审阅的 `probeflash.service`、`/home/hurricane/probeflash/shared/env/probeflash.env`、用户目录部署结果、sudo 授权边界。
 - **允许改动**：服务器 `/etc/systemd/system/probeflash.service`；systemd unit enable/start 状态；仓库 planning sync。
 - **明确不做**：未确认前不 sudo；不改 filebrowser / vnt-cli / docker / Portainer；不占 80；不升级系统 Node；不迁移到 `/opt`；不做反向代理 / `.local`。
@@ -56,6 +58,7 @@
 ### 4. S3-SERVER-RELEASE-UPDATE-FLOW
 - **目标**：定义并验证后续服务器如何从 release tarball 更新和回滚，而不是用 `git pull` 作为主部署方式。
 - **前置依赖**：`S3-SERVER-SYSTEMD-AUTOSTART-VERIFY` 完成。
+- **夜跑状态**：`blocked_by_external_dependency`；依赖真实服务器目录与 systemd 结果，当前不可夜跑。
 - **输入文件**：v0.2.0 release assets、后续 release tarball 约定、服务器 `/home/hurricane/probeflash` 布局、systemd service、`apps/server/deploy/*`。
 - **允许改动**：部署文档 / 脚本；服务器 `releases/vX.Y.Z` 目录与 `current` symlink；planning sync。
 - **明确不做**：不把 `shared/data` 放进 release 目录；不删除 DB；不依赖服务器 `git pull`；不碰 80；不升级系统 Node；不做公网发布。
@@ -65,7 +68,8 @@
 
 ### 5. S4-DATA-BACKUP-EXPORT
 - **目标**：提供 SQLite 备份 / 导出机制，保证运行中不破坏 DB。
-- **前置依赖**：`S3-SERVER-RELEASE-UPDATE-FLOW` 完成，服务器持久化路径稳定。
+- **前置依赖**：`S4-OPERABILITY-HEALTH-STATUS` 完成；本地 SQLite 主链路可用。真实服务器持久化路径稳定后需复用同一命令验证服务器路径。
+- **夜跑状态**：`pending_after_operability`；repo-local 备份 / 导出可在健康诊断完成后夜跑，不依赖真实服务器部署结果。
 - **输入文件**：`/home/hurricane/probeflash/shared/data/probeflash.sqlite`、server storage 代码、SQLite schema、部署路径约定。
 - **允许改动**：server-side 备份脚本或 npm script；导出 JSON 的最小工具；部署文档；planning sync。
 - **明确不做**：不做云同步；不做增量备份系统；不在运行中直接复制半写入 DB 而不校验；不备份 secrets；不改业务 schema 语义。
@@ -76,6 +80,7 @@
 ### 6. S4-DATA-RESTORE-DRY-RUN
 - **目标**：验证备份能恢复到临时 DB 并读回关键实体。
 - **前置依赖**：`S4-DATA-BACKUP-EXPORT` 完成。
+- **夜跑状态**：`pending_after_backup`；只恢复到临时 DB，不覆盖生产 DB，可本地自动验证。
 - **输入文件**：timestamped SQLite backup、JSON export、SQLite schema、server storage 读路径。
 - **允许改动**：restore dry-run script、验证脚本、部署文档、planning sync。
 - **明确不做**：不覆盖生产 DB；不自动执行真实恢复；不删除原备份；不在未确认情况下停服务。
@@ -85,7 +90,8 @@
 
 ### 7. S4-OPERABILITY-HEALTH-STATUS
 - **目标**：提供更清楚的 server status / storage status / version info，便于部署后诊断。
-- **前置依赖**：`S4-DATA-RESTORE-DRY-RUN` 完成。
+- **前置依赖**：`S4-RELEASE-VERSION-ENDPOINT` 完成；本地 HTTP + SQLite 主链路可用。
+- **夜跑状态**：`current_night_safe`；repo-local，可自动验证，不依赖真实服务器、LAN、systemd 或生产数据。
 - **输入文件**：`apps/server/src/*`、server health endpoint、storage adapter、部署 env、前端连接状态 UI。
 - **允许改动**：server health/status endpoint；前端最小状态展示；verify 脚本；planning sync。
 - **明确不做**：不做复杂监控平台；不做权限系统；不暴露 secrets / 绝对敏感路径；不做公网可观测性。
@@ -95,7 +101,8 @@
 
 ### 8. S4-RELEASE-VERSION-ENDPOINT
 - **目标**：让 server `/api/health` 或 version endpoint 返回版本、commit、release tag，便于确认服务器跑的是哪版。
-- **前置依赖**：`S4-OPERABILITY-HEALTH-STATUS` 完成。
+- **前置依赖**：本地 HTTP + SQLite 主链路可用；不依赖真实服务器部署结果。
+- **夜跑状态**：completed；已新增 `/api/version` 与 `/api/health.data.release`，并接入 `npm run verify:s4-release-version-endpoint`。
 - **输入文件**：release metadata、package version、git commit / tag 注入方式、server health endpoint、deploy flow。
 - **允许改动**：server version metadata 读取；release packaging metadata；verify 脚本；planning sync。
 - **明确不做**：不读取 `.git` 作为服务器运行时必需依赖；不暴露 secrets；不引入复杂 release registry。
