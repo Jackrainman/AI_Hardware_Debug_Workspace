@@ -10,6 +10,7 @@
 
 ## 本轮按已知事实重建后的状态
 - v0.2.0 release 已完成：本地 HTTP + SQLite 主链路、`/api` adapter、`apps/server`、SQLite schema/API、workspace 创建与切换、issue / record / closeout / archive / error-entry 主路径、`dev-start.sh`、本地 release smoke 均已完成。
+- S4 本地 operability / data safety 已完成：`/api/version`、增强 `/api/health`、`backup:export`、`restore:dry-run` 均已有本地自动验证；真实服务器路径仍需等部署后复验。
 - 本地 release smoke 已确认：web dist 可被 `127.0.0.1:4173` 托管；`4173/api` 可代理到 `127.0.0.1:4100`；`4100` 后端可返回 sqlite ready；停掉后端后 `4173/api` 返回 `proxy_error`，没有 fake data / silent fallback。
 - 真实服务器部署、systemd 开机自启、服务器 LAN 持久化验证、AI 功能、仓库代码上下文分析均未完成。
 - 目标服务器事实：`192.168.2.2` / `hurricane-server` / SSH 用户 `hurricane` / Ubuntu 20.04.6 LTS / systemd 可用；80 端口由 filebrowser 占用；系统 Node 为 `v10.19.0`，不能用于 ProbeFlash；`4100` 当前未见监听，适合 ProbeFlash。
@@ -27,27 +28,27 @@
 - 夜跑 / 无人值守模式只能执行 repo-local、可自动验证、可回滚任务；任何 SSH、上传、真实服务器、sudo、systemd、`/opt`、80/443 或需用户拍板事项都必须停止并留下 handoff。
 
 ## 当前唯一主线原子任务（下一轮只认领这个）
-- **S4-DATA-RESTORE-DRY-RUN**
-  - 目标：提供 restore dry-run 命令，把 SQLite backup 恢复到临时 DB 并读回关键实体，证明备份可演练且不覆盖主 DB。
-  - 前置依赖：`S4-DATA-BACKUP-EXPORT` 已完成；已有 timestamped SQLite backup / JSON export 机制；不依赖真实服务器部署结果。
-  - 输入文件 / 环境：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`docs/planning/backlog.md`、`apps/server/scripts/backup-export.mjs`、SQLite backup、JSON export、server storage 读路径。
-  - 允许改动：restore dry-run script、验证脚本、server npm script、planning sync。
-  - 明确不做：不 SSH；不 sudo；不 systemd；不写 `/opt`；不覆盖生产 DB；不自动执行真实恢复；不删除原备份；不在未确认情况下停服务。
-  - 夜跑边界：repo-local、可自动验证、可回滚；只写临时 DB 和验证输出，失败不会破坏 v0.2.0 release 状态。
-  - 验证要求：`apps/server` restore dry-run verify；`cd apps/desktop && npm run typecheck`；`npm run build`；`npm run verify:handoff`；`npm run verify:all`；`git diff --check`。
-  - 完成定义：备份可被独立恢复并读回 workspace / issue / record / archive / error-entry；恢复流程可演练；生产数据安全不受影响。
-  - 下一个任务：`AI-READY-PROMPT-TEMPLATE-SYSTEM`。
+- **AI-READY-PROMPT-TEMPLATE-SYSTEM**
+  - 目标：沉淀 prompt template 与输入输出 schema，为后续 AI 接入准备边界，但不调用模型。
+  - 前置依赖：`S4-DATA-RESTORE-DRY-RUN` 已完成；server / storage / version 可诊断，备份与恢复演练已完成。
+  - 输入文件 / 环境：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`docs/planning/backlog.md`、domain schemas、issue / record / closeout 数据结构、closeout UI、后续 AI 草稿需求。
+  - 允许改动：prompt template 模块、`PromptInput` / `PromptOutput` 类型或 schema、规则模板测试、必要文档、planning sync。
+  - 明确不做：不保存 API key；不调用外部 AI；不新增 provider SDK；不做 RAG / embedding；不自动写库。
+  - 夜跑边界：repo-local、可自动验证、可回滚；只落地 deterministic 模板 / schema，不依赖外部账号或真实模型。
+  - 验证要求：模板可确定性生成 `polish_closeout`、`summarize_records`、`suggest_prevention` 输入；schema 校验覆盖必填字段和无效输出；现有 closeout 流程不回归；`cd apps/desktop && npm run typecheck`；`npm run build`；`npm run verify:handoff`；`npm run verify:all`；`git diff --check`。
+  - 完成定义：AI 草稿输入输出边界清楚；模板可被规则生成器和未来 server AI provider 复用；无外部调用。
+  - 下一个任务：`AI-READY-CLOSEOUT-DRAFT-PANEL`。
 
 ## 当前前沿任务窗口（最多 3 个候选）
 - **S3-SERVER-USER-DIR-DEPLOY-VERIFY**
   - 状态：`blocked_by_user_confirmation`；仅在用户白天确认 SSH / 上传 / 写入路径 / 启动进程 / 4100 端口边界后可执行，夜跑不可执行。
   - 选择理由：服务器真实部署未完成，但 `/opt` 与 systemd 需要更高权限；先用 `/home/hurricane/probeflash` 验证同一 runtime / DB / 端口方案，风险最小。
-- **S4-DATA-RESTORE-DRY-RUN**
-  - 状态：当前第一个可并行 night-safe 任务；等待下一轮认领。
-  - 选择理由：恢复演练必须只写临时 DB，不覆盖生产 DB，可本地自动验证。
 - **AI-READY-PROMPT-TEMPLATE-SYSTEM**
-  - 状态：等待 `S4-DATA-RESTORE-DRY-RUN` 完成后可夜跑。
+  - 状态：当前第一个可并行 night-safe 任务；等待下一轮认领。
   - 选择理由：prompt/schema 不调用外部 AI，可在数据安全闭合后作为 AI-ready 本地能力推进。
+- **AI-READY-CLOSEOUT-DRAFT-PANEL**
+  - 状态：等待 `AI-READY-PROMPT-TEMPLATE-SYSTEM` 完成后可夜跑。
+  - 选择理由：规则草稿面板仍不调用外部 AI，但必须先有 prompt/schema 边界。
 
 ## 剩余完整 pending queue（按执行顺序）
 1. `S3-SERVER-USER-DIR-DEPLOY-VERIFY`：blocked_by_user_confirmation
@@ -57,8 +58,8 @@
 5. `S4-RELEASE-VERSION-ENDPOINT`：completed
 6. `S4-OPERABILITY-HEALTH-STATUS`：completed
 7. `S4-DATA-BACKUP-EXPORT`：completed
-8. `S4-DATA-RESTORE-DRY-RUN`：current_night_safe
-9. `AI-READY-PROMPT-TEMPLATE-SYSTEM`：pending_after_s4_data_safety
+8. `S4-DATA-RESTORE-DRY-RUN`：completed
+9. `AI-READY-PROMPT-TEMPLATE-SYSTEM`：current_night_safe
 10. `AI-READY-CLOSEOUT-DRAFT-PANEL`：pending_after_prompt_template
 11. `AI-ASSIST-POLISH-CLOSEOUT-MINIMAL`：blocked_by_external_dependency_api_key_after_ai_ready
 12. `AI-ASSIST-SUGGEST-PREVENTION`：pending_after_minimal_ai
@@ -68,7 +69,7 @@
 16. `CODE-CONTEXT-REPO-CONNECTOR-LATER`：pending_after_user_feedback
 
 ## 下一步最小可执行动作
-- 下一轮夜跑默认先认领 `S4-DATA-RESTORE-DRY-RUN`。
+- 下一轮夜跑默认先认领 `AI-READY-PROMPT-TEMPLATE-SYSTEM`。
 - 认领前必须重新读取默认事实源 + `docs/planning/backlog.md`，确认 `S3-*` 服务器任务仍保持 blocked 且未被误标 completed。
 - 真实服务器操作前必须获得用户确认：SSH 登录方式、上传方式、是否允许在 `/home/hurricane/probeflash` 写入、是否允许启动临时进程、是否允许用 4100 端口。
 - 若用户未授权 SSH / 上传 / 启动进程，不得自行部署；夜跑继续扫描后续 repo-local、可自动验证、可回滚任务。

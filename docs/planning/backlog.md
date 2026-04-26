@@ -4,7 +4,7 @@
 
 ## 当前阶段与总路线
 - 当前版本：v0.2.0 release。
-- 当前真实状态：本地 HTTP + SQLite 主链路、workspace 创建与切换、issue / investigation record / closeout / archive / error-entry 主路径、本地 release smoke 已完成；真实服务器部署、systemd 自启、服务器 LAN 持久化验证、AI、仓库代码上下文分析均未完成。
+- 当前真实状态：本地 HTTP + SQLite 主链路、workspace 创建与切换、issue / investigation record / closeout / archive / error-entry 主路径、本地 release smoke、S4 version / health / backup / restore dry-run 已完成；真实服务器部署、systemd 自启、服务器 LAN 持久化验证、AI、仓库代码上下文分析均未完成。
 - 总路线：先服务器安全部署，再 operability / data safety，再 AI-ready 产品边界，再最小真实 AI 草稿，最后 code context bundle 与代码上下文 AI 分析。
 - 服务器部署安全分层：先 `/home/hurricane/probeflash` no-sudo 验证；再准备 `probeflash.service`；用户授权后才写 `/etc/systemd/system/probeflash.service` 并验证 systemd；最后才考虑 `/opt`、反向代理、`.local` 或 80/443 美化。
 
@@ -80,7 +80,7 @@
 ### 6. S4-DATA-RESTORE-DRY-RUN
 - **目标**：验证备份能恢复到临时 DB 并读回关键实体。
 - **前置依赖**：`S4-DATA-BACKUP-EXPORT` 完成。
-- **夜跑状态**：`current_night_safe`；只恢复到临时 DB，不覆盖生产 DB，可本地自动验证。
+- **夜跑状态**：completed；已新增 `npm run restore:dry-run` 与 `npm run verify:s4-data-restore-dry-run`，只恢复到临时 DB，不覆盖生产 DB，可本地自动验证。
 - **输入文件**：timestamped SQLite backup、JSON export、SQLite schema、server storage 读路径。
 - **允许改动**：restore dry-run script、验证脚本、部署文档、planning sync。
 - **明确不做**：不覆盖生产 DB；不自动执行真实恢复；不删除原备份；不在未确认情况下停服务。
@@ -115,6 +115,7 @@
 ### 9. AI-READY-PROMPT-TEMPLATE-SYSTEM
 - **目标**：沉淀 prompt template 与输入输出 schema，为后续 AI 接入准备边界，但不调用模型。
 - **前置依赖**：`S4-DATA-RESTORE-DRY-RUN` 完成；server / storage / version 可诊断，备份与恢复演练已完成。
+- **夜跑状态**：`current_night_safe`；只落地 deterministic 模板 / schema，不调用外部模型，不需要 API key。
 - **输入文件**：domain schemas、issue / record / closeout 数据结构、closeout UI、后续 AI 草稿需求。
 - **允许改动**：prompt template 模块、`PromptInput` / `PromptOutput` 类型或 schema、规则模板测试、文档、planning sync。
 - **明确不做**：不保存 API key；不调用外部 AI；不新增 provider SDK；不做 RAG / embedding；不自动写库。
