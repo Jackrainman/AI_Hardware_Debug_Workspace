@@ -13,6 +13,8 @@ Current root: `/home/hurricane/probeflash`.
     v0.2.0/
       apps/server/
       dist/
+        index.html
+        assets/
       release metadata / package files as needed
   shared/
     data/
@@ -34,6 +36,7 @@ Current root: `/home/hurricane/probeflash`.
 
 - Release payload: `/home/hurricane/probeflash/releases/vX.Y.Z/`; `/home/hurricane/probeflash/current` is the symlink to the active release.
 - Release source: fixed GitHub Release assets such as `probeflash-web-v0.2.0.tar.gz`, `probeflash-server-v0.2.0.tar.gz`, `probeflash-dev-tools-v0.2.0.tar.gz`, verified with `SHA256SUMS.txt` before unpacking.
+- Web dist: `/home/hurricane/probeflash/current/dist`; set `PROBEFLASH_STATIC_DIR` to this path so `apps/server` serves the SPA and `/api` on single port `4100`.
 - SQLite data: `/home/hurricane/probeflash/shared/data/probeflash.sqlite`; WAL/SHM sidecar files stay in the same directory.
 - Logs: `/home/hurricane/probeflash/shared/logs/`; no-sudo verify may write process logs here, and later systemd can append stdout/stderr here.
 - Env: `/home/hurricane/probeflash/shared/env/probeflash.env`; copy from `apps/server/deploy/env.example`.
@@ -71,6 +74,15 @@ Release replacement must not delete or overwrite these paths:
 - `/home/hurricane/probeflash/shared/logs/`
 - `/home/hurricane/probeflash/shared/env/`
 - `/home/hurricane/probeflash/runtime/node/`
+
+## Web/API port rule
+
+Release deployment should use one no-sudo process on port `4100`:
+
+- `http://192.168.2.2:4100/` serves `current/dist/index.html`.
+- `http://192.168.2.2:4100/api/health` stays on the existing backend API contract.
+- Missing SPA routes fall back to `index.html`; missing asset files return 404.
+- Leave `PROBEFLASH_STATIC_DIR` unset for local Vite dev / API-only smoke so `dev-start.sh` still uses Vite on `5173` with `/api` proxying to `4100`.
 
 ## Later formal install option
 

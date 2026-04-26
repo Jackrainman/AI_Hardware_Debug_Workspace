@@ -4,7 +4,7 @@
 
 ## 当前阶段与总路线
 - 当前版本：v0.2.0 release。
-- 当前真实状态：本地 HTTP + SQLite 主链路、workspace 创建与切换、issue / investigation record / closeout / archive / error-entry 主路径、本地 release smoke、S4 version / health / backup / restore dry-run、AI-ready prompt/schema、AI-ready closeout draft panel 已完成；真实服务器 release 部署、systemd 自启、服务器 LAN 持久化验证、真实 AI、仓库代码上下文分析均未完成。
+- 当前真实状态：本地 HTTP + SQLite 主链路、workspace 创建与切换、issue / investigation record / closeout / archive / error-entry 主路径、本地 release smoke、release static web serve 方案 B（`apps/server` + `PROBEFLASH_STATIC_DIR` 单端口 `4100`）、S4 version / health / backup / restore dry-run、AI-ready prompt/schema、AI-ready closeout draft panel 已完成；真实服务器 release 部署、systemd 自启、服务器 LAN 持久化验证、真实 AI、仓库代码上下文分析均未完成。
 - 总路线：先 release tarball 服务器安全部署，再 operability / data safety 的服务器复验，再 AI-ready 产品边界，再最小真实 AI 草稿，最后 code context bundle 与代码上下文 AI 分析。
 - 服务器部署安全分层：优先从 GitHub Release 下载固定版本资产并校验 `SHA256SUMS.txt`，解压到 `/home/hurricane/probeflash/releases/vX.Y.Z`，用 `current` symlink 切换版本，`shared/data` / `shared/env` / `shared/logs` 与 `runtime/node` 不随 release 删除；不把服务器当开发 checkout，不以服务器 `git pull` 作为主部署方式。no-sudo release 用户目录验证通过后，才准备 `probeflash.service`；用户授权后才写 `/etc/systemd/system/probeflash.service` 并验证 systemd；最后才考虑 `/opt`、反向代理、`.local` 或 80/443 美化。
 
@@ -86,11 +86,11 @@
 - **是否需要用户白天确认**：否，除非要改产品交互方向。
 
 ### 8. TECH-DEBT-VERIFY-HELPERS
-- **状态**：pending。
+- **状态**：pending_night_safe_candidate。
 - **目标**：补齐高风险路径的 verify helper，减少每轮靠人工 grep / 读文档确认部署、storage、closeout、handoff 口径。
 - **风险来源**：当前 verify 覆盖较多主路径，但审计指出 deploy docs、planning queue、skill runtime、storage feedback 等一致性仍依赖人工阅读，容易在上下文重置后漂移。
 - **不做项**：不引入大型测试框架；不做慢速端到端套件；不依赖真实服务器；不写网络外部调用；不把 verify 变成部署动作。
-- **验证要求**：新增 helper 必须 repo-local、确定性、失败信息可读；纳入相应 npm script 或文档说明；`git diff --check`；相关 verify 通过。
+- **验证要求**：新增 helper 必须 repo-local、确定性、失败信息可读；纳入相应 npm script 或文档说明；`git diff --check`；相关 verify 通过。若用户希望先加固 release / deploy / handoff 校验，可在 `TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY` 后或作为验证基础设施 followup 认领。
 - **是否 night-safe**：是。
 - **是否需要用户白天确认**：否。
 
@@ -128,14 +128,16 @@
 - **下一个任务**：`S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN` 或 `S3-SERVER-SYSTEMD-AUTOSTART-PREP`，由 deploy verify 结果决定。
 
 ### 3. S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN
-- **目标**：明确 web dist 如何服务，以及 `/api` 如何代理到 backend。
+- **状态**：completed。
+- **目标**：明确 web dist 如何服务，以及 `/api` 如何与 backend 共存。
 - **前置依赖**：v0.2.0 web release smoke 已证明临时静态服务器 + `/api` proxy 可行。
-- **夜跑状态**：pending_repo_local_plan；可夜跑，但只能改仓库内 deploy docs / 静态计划，不启动真实服务器。
-- **输入文件**：`apps/server/deploy/*`、本地 release smoke 结论、后续可能的 `web-server.mjs` / Node 静态代理方案。
-- **允许改动**：deploy docs、planning、handoff；必要时补 repo-local verify，不改业务 API / UI。
+- **夜跑状态**：completed_repo_local；未启动真实服务器。
+- **输入文件**：`apps/server/deploy/*`、本地 release smoke 结论、`apps/server/src/server.mjs`、`apps/server/package.json`。
+- **允许改动**：server 可选静态 dist 服务、deploy docs、README、planning、handoff、repo-local verify；不改业务 API / UI。
 - **明确不做**：不碰 80；不做 nginx / Caddy / 反向代理；不做 `.local`；不公网暴露；不 SSH；不 systemd。
-- **验证要求**：文档必须区分 backend `4100` 与 web entry；如采用 Node 静态代理方案，需说明 `/api` 只代理到 `127.0.0.1:4100`，backend 停止时必须暴露 proxy error，不 silent fallback。
-- **完成定义**：后续服务器验证知道 web dist 的服务方式与 API proxy 边界，不会误把 backend health 当成完整 LAN Web UI 验证。
+- **方案结论**：采用方案 B；`apps/server` 在 `PROBEFLASH_STATIC_DIR=/home/hurricane/probeflash/current/dist` 时，同一 `4100` 端口服务 release `dist` 与现有 `/api`。方案 A 保留为历史 smoke / fallback；方案 C 不推荐。
+- **验证结果**：新增 `npm run verify:release-static-web-serve`，覆盖 `/` 返回 index、`/api/health` 返回 JSON、missing SPA route 返回 index、missing asset 返回 404、未设置 `PROBEFLASH_STATIC_DIR` 时保持 API-only 404。
+- **完成定义**：后续服务器验证知道 web dist 的服务方式与 API 边界，不会误把 backend health 当成完整 LAN Web UI 验证；真实服务器部署仍未完成。
 - **下一个任务**：`S3-SERVER-RELEASE-UPDATE-FLOW`。
 
 ### 4. S3-SERVER-RELEASE-UPDATE-FLOW

@@ -12,6 +12,7 @@
     "verify:s3-local-backend-scaffold": "node scripts/verify-s3-local-backend-scaffold.mjs",
     "verify:server-schema-contract": "node scripts/verify-server-schema-contract.mjs",
     "verify:deploy-prep": "node scripts/verify-deploy-prep.mjs",
+    "verify:release-static-web-serve": "node scripts/verify-release-static-web-serve.mjs",
     "verify:s4-release-version-endpoint": "node scripts/verify-s4-release-version-endpoint.mjs",
     "verify:s4-operability-health-status": "node scripts/verify-s4-operability-health-status.mjs",
     "verify:s4-data-backup-export": "node scripts/verify-s4-data-backup-export.mjs",

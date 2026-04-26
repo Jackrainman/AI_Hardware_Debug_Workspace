@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
-import { mkdirSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { createReadStream, mkdirSync } from "node:fs";
+import { stat } from "node:fs/promises";
+import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { DEFAULT_WORKSPACE, createProbeFlashDatabase } from "./database.mjs";
@@ -9,6 +10,23 @@ import { getReleaseMetadata } from "./release-metadata.mjs";
 const SERVER_SRC_DIR = dirname(fileURLToPath(import.meta.url));
 const SERVER_APP_DIR = resolve(SERVER_SRC_DIR, "..");
 export const DEFAULT_DB_PATH = resolve(SERVER_APP_DIR, ".runtime", "probeflash.local.sqlite");
+
+const STATIC_CONTENT_TYPES = new Map([
+  [".css", "text/css; charset=utf-8"],
+  [".gif", "image/gif"],
+  [".html", "text/html; charset=utf-8"],
+  [".ico", "image/x-icon"],
+  [".jpg", "image/jpeg"],
+  [".jpeg", "image/jpeg"],
+  [".js", "application/javascript; charset=utf-8"],
+  [".json", "application/json; charset=utf-8"],
+  [".map", "application/json; charset=utf-8"],
+  [".png", "image/png"],
+  [".svg", "image/svg+xml; charset=utf-8"],
+  [".txt", "text/plain; charset=utf-8"],
+  [".wasm", "application/wasm"],
+  [".webp", "image/webp"],
+]);
 
 function json(res, statusCode, payload) {
   res.writeHead(statusCode, {
@@ -32,6 +50,102 @@ function fail(res, statusCode, code, message, operation, retryable, details = {}
       details,
     },
   });
+}
+
+function text(res, statusCode, body, headers = {}) {
+  res.writeHead(statusCode, {
+    "content-type": "text/plain; charset=utf-8",
+    ...headers,
+  });
+  res.end(body);
+}
+
+function getStaticContentType(filePath) {
+  return STATIC_CONTENT_TYPES.get(extname(filePath).toLowerCase()) ?? "application/octet-stream";
+}
+
+function isPathInside(parentDir, candidatePath) {
+  const relativePath = relative(parentDir, candidatePath);
+  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
+}
+
+function decodeStaticPathname(pathname) {
+  try {
+    return decodeURIComponent(pathname);
+  } catch {
+    return null;
+  }
+}
+
+async function resolveStaticFile(staticDir, candidatePath) {
+  try {
+    const fileStat = await stat(candidatePath);
+    if (fileStat.isDirectory()) {
+      return resolveStaticFile(staticDir, join(candidatePath, "index.html"));
+    }
+    if (!fileStat.isFile()) return null;
+    if (!isPathInside(staticDir, candidatePath)) return null;
+    return { filePath: candidatePath, fileStat };
+  } catch (error) {
+    if (error?.code === "ENOENT" || error?.code === "ENOTDIR") return null;
+    throw error;
+  }
+}
+
+function sendStaticFile(req, res, filePath, fileStat) {
+  res.writeHead(200, {
+    "cache-control": "no-cache",
+    "content-length": fileStat.size,
+    "content-type": getStaticContentType(filePath),
+  });
+
+  if (req.method === "HEAD") {
+    res.end();
+    return;
+  }
+
+  const stream = createReadStream(filePath);
+  stream.on("error", (error) => {
+    if (!res.headersSent) {
+      text(res, 500, "static file read failed");
+      return;
+    }
+    res.destroy(error);
+  });
+  stream.pipe(res);
+}
+
+async function serveStaticRequest(req, res, url, staticDir) {
+  const method = req.method ?? "GET";
+  if (method !== "GET" && method !== "HEAD") {
+    return text(res, 405, "method not allowed", { allow: "GET, HEAD" });
+  }
+
+  const decodedPathname = decodeStaticPathname(url.pathname);
+  if (!decodedPathname || decodedPathname.includes("\0")) {
+    return text(res, 400, "bad static path");
+  }
+
+  const candidatePath = resolve(staticDir, `.${decodedPathname}`);
+  if (!isPathInside(staticDir, candidatePath)) {
+    return text(res, 403, "static path is outside configured dist directory");
+  }
+
+  const staticFile = await resolveStaticFile(staticDir, candidatePath);
+  if (staticFile) {
+    sendStaticFile(req, res, staticFile.filePath, staticFile.fileStat);
+    return;
+  }
+
+  if (!extname(decodedPathname)) {
+    const indexFile = await resolveStaticFile(staticDir, resolve(staticDir, "index.html"));
+    if (indexFile) {
+      sendStaticFile(req, res, indexFile.filePath, indexFile.fileStat);
+      return;
+    }
+  }
+
+  return text(res, 404, "static file not found");
 }
 
 function parseAppError(error, fallbackOperation) {
@@ -94,6 +208,8 @@ function getConfig(overrides = {}) {
     isDefault: true,
   };
   const logDir = overrides.logDir ?? process.env.PROBEFLASH_LOG_DIR;
+  const staticDirInput = overrides.staticDir ?? process.env.PROBEFLASH_STATIC_DIR;
+  const staticDir = staticDirInput ? resolve(staticDirInput) : undefined;
   mkdirSync(dirname(dbPath), { recursive: true });
   if (logDir) {
     mkdirSync(logDir, { recursive: true });
@@ -104,6 +220,7 @@ function getConfig(overrides = {}) {
     port,
     defaultWorkspace,
     logDir,
+    staticDir,
     releaseMetadata: getReleaseMetadata(overrides.releaseMetadata),
   };
 }
@@ -128,10 +245,20 @@ function storageInitFailureDetails(releaseMetadata) {
   };
 }
 
-function createRequestHandler({ store, storeInitError, releaseMetadata }) {
+function createRequestHandler({ store, storeInitError, staticDir, releaseMetadata }) {
   return async (req, res) => {
     const url = new URL(req.url ?? "/", "http://127.0.0.1");
     const method = req.method ?? "GET";
+    const isApiPath = url.pathname === "/api" || url.pathname.startsWith("/api/");
+
+    if (!isApiPath && staticDir) {
+      try {
+        return await serveStaticRequest(req, res, url, staticDir);
+      } catch {
+        return text(res, 500, "static serve failed");
+      }
+    }
+
     const issueListMatch = url.pathname.match(/^\/api\/workspaces\/([^/]+)\/issues$/);
     const issueDetailMatch = url.pathname.match(/^\/api\/workspaces\/([^/]+)\/issues\/([^/]+)$/);
     const recordListMatch = url.pathname.match(
@@ -272,7 +399,7 @@ function createRequestHandler({ store, storeInitError, releaseMetadata }) {
 }
 
 export async function startProbeFlashServer(overrides = {}) {
-  const { dbPath, host, port, defaultWorkspace, logDir, releaseMetadata } = getConfig(overrides);
+  const { dbPath, host, port, defaultWorkspace, logDir, staticDir, releaseMetadata } = getConfig(overrides);
   let store = null;
   let storeInitError = null;
 
@@ -282,7 +409,7 @@ export async function startProbeFlashServer(overrides = {}) {
     storeInitError = error instanceof Error ? error : new Error(String(error));
   }
 
-  const server = createServer(createRequestHandler({ store, storeInitError, releaseMetadata }));
+  const server = createServer(createRequestHandler({ store, storeInitError, staticDir, releaseMetadata }));
 
   await new Promise((resolvePromise, rejectPromise) => {
     const handleError = (error) => {
@@ -307,6 +434,7 @@ export async function startProbeFlashServer(overrides = {}) {
     baseUrl,
     dbPath,
     logDir,
+    staticDir,
     close: async () => {
       await new Promise((resolvePromise, rejectPromise) => {
         server.close((error) => (error ? rejectPromise(error) : resolvePromise()));
@@ -324,5 +452,8 @@ if (directRun) {
   console.log(`[probeflash-server] sqlite db ${server.dbPath}`);
   if (server.logDir) {
     console.log(`[probeflash-server] log dir ${server.logDir}`);
+  }
+  if (server.staticDir) {
+    console.log(`[probeflash-server] static dir ${server.staticDir}`);
   }
 }

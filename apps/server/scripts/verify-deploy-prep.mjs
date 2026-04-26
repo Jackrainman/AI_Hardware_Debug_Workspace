@@ -55,6 +55,7 @@ const env = Object.fromEntries(
 const expectedEnv = {
   PROBEFLASH_HOST: "0.0.0.0",
   PROBEFLASH_PORT: "4100",
+  PROBEFLASH_STATIC_DIR: "/home/hurricane/probeflash/current/dist",
   PROBEFLASH_DB_PATH: "/home/hurricane/probeflash/shared/data/probeflash.sqlite",
   PROBEFLASH_LOG_DIR: "/home/hurricane/probeflash/shared/logs",
   PROBEFLASH_WORKSPACE_ID: "workspace-26-r1",
@@ -69,7 +70,7 @@ for (const [key, expectedValue] of Object.entries(expectedEnv)) {
 
 const service = contents["probeflash.service.template"];
 const requiredServiceLines = [
-  "Description=ProbeFlash LAN storage server",
+  "Description=ProbeFlash LAN web/API server",
   "Use only after release tarball no-sudo verification under /home/hurricane/probeflash succeeds",
   "User=hurricane",
   "Group=hurricane",
@@ -105,6 +106,10 @@ for (const expected of [
   "/home/hurricane/probeflash/runtime/node",
   "/home/hurricane/probeflash/runtime/node/bin/node",
   "/home/hurricane/probeflash/shared/data/probeflash.sqlite",
+  "/home/hurricane/probeflash/current/dist",
+  "PROBEFLASH_STATIC_DIR",
+  "single port `4100`",
+  "Browser entry: `http://192.168.2.2:4100/`",
   "4100",
   "4173",
   "0.0.0.0",

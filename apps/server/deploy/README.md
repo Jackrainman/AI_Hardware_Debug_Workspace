@@ -7,10 +7,11 @@
 - Target server: `192.168.2.2`, Ubuntu 20.04.6 LTS, SSH user `hurricane`.
 - Deploy root: `/home/hurricane/probeflash`.
 - Runtime: `/home/hurricane/probeflash/runtime/node/bin/node`.
+- Web dist: `/home/hurricane/probeflash/current/dist`, served only when `PROBEFLASH_STATIC_DIR` points there.
 - Data file: `/home/hurricane/probeflash/shared/data/probeflash.sqlite`.
 - Env file: `/home/hurricane/probeflash/shared/env/probeflash.env`.
-- Port: `4100`; do not use or change port `80`.
-- Host: no-sudo LAN verify may bind `PROBEFLASH_HOST=0.0.0.0`, then test `http://192.168.2.2:4100/`.
+- Port: `4100` for both web UI and `/api`; do not use or change port `80`.
+- Host: no-sudo LAN verify may bind `PROBEFLASH_HOST=0.0.0.0`, then test `http://192.168.2.2:4100/` and `http://192.168.2.2:4100/api/health`.
 - Server system Node is `v10.19.0`; ProbeFlash must not use it and must not upgrade it.
 - No reverse proxy, `.local`, public exposure, permission system, Electron, AI/RAG, or existing web service changes in this phase.
 - Release assets for v0.2.0: `probeflash-web-v0.2.0.tar.gz`, `probeflash-server-v0.2.0.tar.gz`, `probeflash-dev-tools-v0.2.0.tar.gz`, `SHA256SUMS.txt`.
@@ -39,7 +40,7 @@ Current root: `/home/hurricane/probeflash/`.
   current -> /home/hurricane/probeflash/releases/v0.2.0/
   releases/v0.2.0/              # immutable unpacked release payload
     apps/server/
-    dist/
+    dist/                        # release web assets, served by apps/server when PROBEFLASH_STATIC_DIR points here
   shared/data/                  # SQLite db and WAL/SHM files
   shared/logs/                  # stdout/stderr or manual run logs
   shared/env/probeflash.env     # copied from env.example
@@ -47,6 +48,26 @@ Current root: `/home/hurricane/probeflash/`.
 ```
 
 Details are in `install-layout.md`.
+
+## Release web UI serving
+
+Recommended route for release tarball deployment is **single-process web/API serving**:
+
+- Start `apps/server` with `PROBEFLASH_PORT=4100` and `PROBEFLASH_STATIC_DIR=/home/hurricane/probeflash/current/dist`.
+- Browser entry: `http://192.168.2.2:4100/`.
+- API entry: `http://192.168.2.2:4100/api/health` and the existing `/api/*` contract.
+- `/api` is handled before static files; API routes are not changed and are not proxied.
+- Non-API `GET` / `HEAD` requests are served from the dist directory; missing SPA routes fall back to `index.html`.
+- Missing asset paths such as `/assets/missing.js` return 404 instead of falling back to `index.html`.
+- If `PROBEFLASH_STATIC_DIR` is unset, `apps/server` remains API-only; this preserves local `dev-start.sh` and Vite proxy mode.
+
+Comparison summary:
+
+| Option | Shape | Decision |
+|---|---|---|
+| A | backend on `4100`, separate Node static web proxy on `4173`, `/api` proxy to `4100` | Kept as historical smoke / fallback. Works no-sudo and avoids 80, but adds a second process and a proxy failure surface for later systemd. |
+| B | `apps/server` serves `/api` and `dist` on single port `4100` | Recommended. One process, no 80, no framework, easier systemd, no API contract change, release layout stays clear via `PROBEFLASH_STATIC_DIR`. |
+| C | only deploy backend; web remains on dev machine or future reverse proxy | Not recommended for release tarball verification because it does not prove LAN Web UI access from the server release. |
 
 ## Independent runtime strategy
 
@@ -69,12 +90,12 @@ Official references used for this prep:
 ## Port and host strategy
 
 - Do not use port `80`; it is already occupied by filebrowser.
-- Default API/storage server port: `4100` (`PROBEFLASH_PORT=4100`).
+- Default release web/API server port: `4100` (`PROBEFLASH_PORT=4100`).
 - No-sudo LAN verify may bind `PROBEFLASH_HOST=0.0.0.0`.
 - Local-only smoke can bind `PROBEFLASH_HOST=127.0.0.1`.
-- Temporary web/API split, if needed by a later verification task: reserve `4173` for a web entry and `4100` for API/storage. This is temporary only; do not call it a reverse proxy or `.local` solution.
+- Historical local smoke used `4173` as a temporary web entry and `4100` for API/storage. Release tarball deployment should now prefer single-port `4100` with `PROBEFLASH_STATIC_DIR`; keep `4173` only as a fallback diagnostic, not the formal route.
 
-Current `apps/server` service is the API/storage server. It does not claim that LAN web UI deployment is complete by itself; the deployment verification task must verify the selected web entry and API path truthfully.
+Current `apps/server` service is the API/storage server and can also serve the release `dist` when `PROBEFLASH_STATIC_DIR` is set. It does not claim that true server deployment is complete by itself; the deployment verification task must still verify the actual server entry, API path, SQLite persistence, restart behavior, and filebrowser:80 boundary truthfully.
 
 ## No-sudo deploy verify checklist
 
@@ -87,8 +108,9 @@ Do not run these steps from this docs-only prep. They are the intended checklist
 5. Put independent Node under `/home/hurricane/probeflash/runtime/node/` and verify `/home/hurricane/probeflash/runtime/node/bin/node --version`.
 6. Unpack the release into `/home/hurricane/probeflash/releases/v0.2.0/` and point `/home/hurricane/probeflash/current` to it.
 7. Copy `env.example` to `/home/hurricane/probeflash/shared/env/probeflash.env` and review host/port/db/workspace values.
-8. Start a temporary user-owned ProbeFlash process with the independent runtime; do not create a systemd service in this step.
-9. Verify `/api/health`, SQLite persistence, logs, restart behavior, LAN access, and the old port 80 service.
+8. Confirm `PROBEFLASH_STATIC_DIR=/home/hurricane/probeflash/current/dist` points at the unpacked web release.
+9. Start a temporary user-owned ProbeFlash process with the independent runtime; do not create a systemd service in this step.
+10. Verify `/`, `/api/health`, a missing SPA route, SQLite persistence, logs, restart behavior, LAN access, and the old port 80 service.
 
 ## Release update / rollback rule
 
@@ -114,6 +136,7 @@ The server currently reads these deployment env vars:
 
 - `PROBEFLASH_HOST`
 - `PROBEFLASH_PORT`
+- `PROBEFLASH_STATIC_DIR` (optional; set to `/home/hurricane/probeflash/current/dist` for release web serving)
 - `PROBEFLASH_DB_PATH`
 - `PROBEFLASH_LOG_DIR` (directory is created and logged; service stdout/stderr are controlled by the selected runtime method)
 - `PROBEFLASH_WORKSPACE_ID`

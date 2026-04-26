@@ -16,11 +16,11 @@
     "archive_state": "object - v0.2.0 前历史文档归档状态与读取条件",
     "notes": "string[] - 长期性约束与下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-04-26T14:47:21+08:00",
+  "timestamp": "2026-04-26T15:18:23+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "S3",
   "current_stage_name": "服务器安全部署",
-  "current_stage_goal": "基于 v0.2.0 已完成的本地 HTTP + SQLite 主链路，白天主线优先使用 GitHub Release tarball 在 Ubuntu 20.04 服务器完成 /home/hurricane/probeflash no-sudo 用户目录部署验证；无服务器授权时只能执行 repo-local、可自动验证的 night-safe 候选；真实 AI/API key 任务保持 blocked。",
+  "current_stage_goal": "基于 v0.2.0 已完成的本地 HTTP + SQLite 主链路与 release static web serve 方案 B，白天主线优先使用 GitHub Release tarball 在 Ubuntu 20.04 服务器完成 /home/hurricane/probeflash no-sudo 用户目录部署验证；无服务器授权时只能执行 repo-local、可自动验证的 night-safe 候选；真实 AI/API key 任务保持 blocked。",
   "primary_track": "release_tarball_server_deploy_mainline",
   "deferred_track": "repo_local_night_safe_tech_debt_before_real_ai_or_code_context",
   "current_atomic_task": "S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY",
@@ -60,6 +60,8 @@
     "local_release_smoke_completed": true,
     "server_deployment_method": "release_tarball_first",
     "server_deploy_uses_git_pull": false,
+    "release_static_web_serve_completed": true,
+    "release_static_web_serve_mode": "方案 B：apps/server reads PROBEFLASH_STATIC_DIR and serves release dist plus existing /api on single port 4100; unset PROBEFLASH_STATIC_DIR keeps API-only mode for local Vite dev.",
     "release_assets": [
       "probeflash-web-v0.2.0.tar.gz",
       "probeflash-server-v0.2.0.tar.gz",
@@ -81,6 +83,14 @@
       "4173 的 /api 可代理到 127.0.0.1:4100",
       "4100 后端可返回 sqlite ready",
       "停掉后端后 4173/api 返回 proxy_error，无 fake data / silent fallback"
+    ],
+    "release_static_web_serve_verify": [
+      "PROBEFLASH_STATIC_DIR=/home/hurricane/probeflash/current/dist is the intended release dist path",
+      "/ returns index.html from dist",
+      "/api/health remains JSON on the same 4100 process",
+      "missing SPA route returns index.html",
+      "missing asset returns 404",
+      "unset PROBEFLASH_STATIC_DIR keeps API-only behavior"
     ]
   },
   "environment_facts": {
@@ -110,7 +120,7 @@
   },
   "deployment_strategy": {
     "preferred_method": "GitHub Release tarball deployment first; server-side git checkout / git pull is not the formal deployment path.",
-    "release_asset_flow": "Download or upload fixed release assets, verify SHA256SUMS.txt, unpack under /home/hurricane/probeflash/releases/vX.Y.Z, switch current symlink, then start with independent Node runtime.",
+    "release_asset_flow": "Download or upload fixed release assets, verify SHA256SUMS.txt, unpack under /home/hurricane/probeflash/releases/vX.Y.Z, switch current symlink, set PROBEFLASH_STATIC_DIR=/home/hurricane/probeflash/current/dist, then start with independent Node runtime.",
     "directory_layout": "/home/hurricane/probeflash/{releases,current,shared/{data,logs,env},runtime/node}",
     "persistent_paths": [
       "/home/hurricane/probeflash/shared/data",
@@ -137,8 +147,8 @@
       "night_safe": false
     },
     "next_night_safe_candidate": {
-      "id": "S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN",
-      "status": "pending_repo_local_plan",
+      "id": "TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY",
+      "status": "pending_night_safe_candidate",
       "requires_user_confirmation": [],
       "night_safe": true
     },
@@ -165,21 +175,21 @@
     ],
     "pending_priority_order": [
       "TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY",
-      "TECH-DEBT-APP-SPLIT-MINIMAL",
       "TECH-DEBT-VERIFY-HELPERS",
+      "TECH-DEBT-APP-SPLIT-MINIMAL",
       "TECH-DEBT-VERIFY-TMP-CLEANUP"
     ]
   },
   "repo_local_night_safe_task_queue": [
     {
       "order": 1,
-      "id": "S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN",
-      "status": "pending_repo_local_plan",
+      "id": "TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY",
+      "status": "pending_night_safe_candidate",
       "requires_user_confirmation": false
     },
     {
       "order": 2,
-      "id": "TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY",
+      "id": "TECH-DEBT-VERIFY-HELPERS",
       "status": "pending_night_safe_candidate",
       "requires_user_confirmation": false
     },
@@ -191,12 +201,6 @@
     },
     {
       "order": 4,
-      "id": "TECH-DEBT-VERIFY-HELPERS",
-      "status": "pending_after_app_split",
-      "requires_user_confirmation": false
-    },
-    {
-      "order": 5,
       "id": "TECH-DEBT-VERIFY-TMP-CLEANUP",
       "status": "pending_after_verify_helpers",
       "requires_user_confirmation": false
@@ -304,22 +308,22 @@
       "night_safe": false
     },
     {
-      "id": "S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN",
-      "track": "A_S3_Server_Deployment_Line",
-      "goal": "明确 web dist 如何服务，以及 /api 如何代理到 backend；只做 repo-local 计划，不碰真实服务器。",
-      "depends_on": [
-        "v0.2.0 web release smoke 已证明临时静态服务器 + /api proxy 可行"
-      ],
-      "status": "pending_repo_local_plan",
-      "lane": "repo_local_night_safe",
-      "night_safe": true
-    },
-    {
       "id": "TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY",
       "track": "Audit_Tech_Debt_Line",
       "goal": "审计并收敛 closeout 多步写入的原子性、失败恢复与读回验证边界。",
       "depends_on": [
         "TECH-DEBT-STORAGE-ERROR-CONTRACT"
+      ],
+      "status": "pending_night_safe_candidate",
+      "lane": "repo_local_night_safe",
+      "night_safe": true
+    },
+    {
+      "id": "TECH-DEBT-VERIFY-HELPERS",
+      "track": "Audit_Tech_Debt_Line",
+      "goal": "补齐高风险路径的 repo-local verify helper，减少 deploy / handoff / storage 口径靠人工阅读漂移。",
+      "depends_on": [
+        "S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN"
       ],
       "status": "pending_night_safe_candidate",
       "lane": "repo_local_night_safe",
@@ -372,8 +376,12 @@
       "verification": [
         "校验 SHA256SUMS.txt",
         "确认 current -> releases/v0.2.0",
+        "确认 PROBEFLASH_STATIC_DIR=/home/hurricane/probeflash/current/dist",
+        "curl http://127.0.0.1:4100/",
         "curl http://127.0.0.1:4100/api/health",
+        "curl http://192.168.2.2:4100/",
         "curl http://192.168.2.2:4100/api/health",
+        "missing SPA route 返回 index.html",
         "创建 workspace / issue",
         "停止重启后读回",
         "确认 /home/hurricane/probeflash/shared/data/probeflash.sqlite 被使用",
@@ -382,32 +390,36 @@
       "definition_of_done": [
         "ProbeFlash 从固定 release 资产运行",
         "ProbeFlash 使用独立 Node runtime 在用户目录运行",
-        "4100 可本机与 LAN 访问",
+        "4100 可本机与 LAN 访问 Web UI 和 /api",
         "SQLite 重启后可读回",
         "shared/data、shared/env、shared/logs 不随 release 删除",
         "filebrowser:80 不受影响",
         "没有执行 sudo / systemd / /opt / 服务器 git pull 操作"
       ],
-      "next_task": "S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN or S3-SERVER-SYSTEMD-AUTOSTART-PREP after planning review",
+      "next_task": "S3-SERVER-RELEASE-UPDATE-FLOW or S3-SERVER-SYSTEMD-AUTOSTART-PREP after planning review",
       "status": "blocked_by_user_confirmation_and_time"
     },
     {
       "order": 2,
       "id": "S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN",
       "track": "A_S3_Server_Deployment_Line",
-      "goal": "明确 web dist 如何服务，以及 /api 如何代理到 backend；当前可先采用独立 Node 静态代理方案，不碰 80，不做反向代理。",
+      "goal": "明确 web dist 如何服务，以及 /api 如何与 backend 共存；已采用方案 B：apps/server 在 PROBEFLASH_STATIC_DIR 设置时同一 4100 端口服务 dist 与现有 /api。",
       "depends_on": [
         "v0.2.0 web release smoke 已证明临时静态服务器 + /api proxy 可行"
       ],
       "input_files": [
         "apps/server/deploy/*",
         "本地 release smoke 结论",
-        "后续可能的 web-server.mjs / Node 静态代理方案"
+        "apps/server/src/server.mjs",
+        "apps/server/package.json",
+        "dev-start.sh",
+        "README.md"
       ],
       "allowed_changes": [
         "planning 文件",
-        "必要时更新 apps/server/deploy/* 的 web dist 服务说明",
-        "必要时补 repo-local 静态校验"
+        "apps/server 可选静态 dist 服务",
+        "apps/server/deploy/* 的 web dist 服务说明",
+        "repo-local 静态 serve verify"
       ],
       "non_goals": [
         "不 SSH",
@@ -416,20 +428,28 @@
         "不做 nginx / Caddy / 反向代理",
         "不做 .local",
         "不公网暴露",
-        "不改业务 API / UI"
+        "不改业务 API / UI",
+        "不改 SQLite schema"
       ],
       "verification": [
-        "文档区分 backend 4100 与 web entry",
-        "/api 只代理到 127.0.0.1:4100",
-        "backend 停止时必须暴露 proxy error，不 silent fallback"
+        "git diff --check",
+        "cd apps/server && npm run verify:s3-local-backend-scaffold",
+        "cd apps/server && npm run verify:deploy-prep",
+        "cd apps/server && npm run verify:release-static-web-serve",
+        "cd apps/desktop && npm run typecheck",
+        "cd apps/desktop && npm run build",
+        "cd apps/desktop && npm run verify:handoff",
+        "cd apps/desktop && npm run verify:all",
+        "python3 -m json.tool .agent-state/handoff.json >/dev/null"
       ],
       "definition_of_done": [
-        "后续服务器验证知道 web dist 的服务方式与 API proxy 边界",
+        "后续服务器验证知道 web dist 的服务方式与 API 边界",
         "不会误把 backend health 当成完整 LAN Web UI 验证",
+        "PROBEFLASH_STATIC_DIR unset 时保持 API-only / Vite dev proxy 兼容",
         "未触碰真实服务器"
       ],
       "next_task": "S3-SERVER-RELEASE-UPDATE-FLOW",
-      "status": "pending_repo_local_plan"
+      "status": "completed"
     },
     {
       "order": 3,
@@ -1142,7 +1162,8 @@
     "TECH-DEBT-SKILL-RUNTIME-ALIGNMENT",
     "TECH-DEBT-SERVER-SCHEMA-CONTRACT",
     "TECH-DEBT-STORAGE-ERROR-CONTRACT",
-    "S3-SERVER-RELEASE-DEPLOYMENT-PLANNING-REALIGN"
+    "S3-SERVER-RELEASE-DEPLOYMENT-PLANNING-REALIGN",
+    "S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -1162,12 +1183,12 @@
     "claiming_rule": "白天主线只认领 current_atomic_task=S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY，且必须先获得用户确认 release 下载或上传、SSH、写入路径、启动进程与 4100 边界；夜跑 / 无人值守若无服务器授权，只能从 repo_local_night_safe_task_queue / backlog 中认领第一个依赖已满足、repo-local、可自动验证、可回滚的任务；真实 AI/API key 任务不得作为 unattended current task。",
     "recommended_next": "S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY",
     "recommended_next_status": "blocked_by_user_confirmation_and_time",
-    "next_night_safe_candidate": "S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN",
-    "night_run_gate": "blocked_for_mainline_server_task; night_safe_candidate_available: S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN, then TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY. AI-ASSIST-POLISH-CLOSEOUT-MINIMAL remains blocked_by_external_dependency_api_key_after_ai_ready and must not be selected unattended.",
+    "next_night_safe_candidate": "TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY",
+    "night_run_gate": "blocked_for_mainline_server_task; S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN is completed. Next night-safe candidate: TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY; TECH-DEBT-VERIFY-HELPERS is also acceptable if the user wants verification infrastructure first. AI-ASSIST-POLISH-CLOSEOUT-MINIMAL remains blocked_by_external_dependency_api_key_after_ai_ready and must not be selected unattended.",
     "selection_order": [
       "白天优先等待用户确认 S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY 的 SSH / release 下载或上传 / 写入 / 启动进程 / 4100 边界",
-      "无服务器授权时只扫描 repo-local night-safe 候选；release 静态 Web 服务方案计划可先做，但不得启动真实服务器",
-      "TECH-DEBT-SERVER-SCHEMA-CONTRACT 与 TECH-DEBT-STORAGE-ERROR-CONTRACT 已完成；TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY 是下一技术债 night-safe 候选",
+      "无服务器授权时只扫描 repo-local night-safe 候选；release 静态 Web 服务方案已完成，不得启动真实服务器",
+      "TECH-DEBT-SERVER-SCHEMA-CONTRACT、TECH-DEBT-STORAGE-ERROR-CONTRACT、S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN 已完成；TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY 是下一技术债 night-safe 候选，TECH-DEBT-VERIFY-HELPERS 可作为验证基础设施候选",
       "真实 AI/API key 任务保持 blocked，直到用户确认 provider 与 server env 边界",
       "code context 继续等待真实 AI 和 bundle 前置条件"
     ],
@@ -1176,31 +1197,40 @@
       "docs/planning/current.md",
       "docs/planning/backlog.md",
       ".agent-state/handoff.json",
-      "docs/planning/decisions.md",
       "apps/server/deploy/README.md",
       "apps/server/deploy/install-layout.md",
       "apps/server/deploy/env.example",
       "apps/server/deploy/probeflash.service.template",
       "apps/server/scripts/verify-deploy-prep.mjs",
+      "apps/server/scripts/verify-release-static-web-serve.mjs",
+      "apps/server/src/server.mjs",
+      "apps/server/src/database.mjs",
+      "apps/server/package.json",
       "README.md",
+      "dev-start.sh",
       "git status --short",
-      "git log --oneline -12"
+      "git log --oneline -10"
     ]
   },
   "verification_expectations": {
-    "release_deployment_planning_task_this_round": [
+    "release_static_web_serve_task_this_round": [
       "git diff --check",
-      "python3 -m json.tool .agent-state/handoff.json >/dev/null",
-      "cd apps/desktop && npm run verify:handoff",
+      "cd apps/server && npm run verify:s3-local-backend-scaffold",
       "cd apps/server && npm run verify:deploy-prep",
-      "git status --short"
+      "cd apps/server && npm run verify:release-static-web-serve",
+      "cd apps/desktop && npm run typecheck",
+      "cd apps/desktop && npm run build",
+      "cd apps/desktop && npm run verify:handoff",
+      "cd apps/desktop && npm run verify:all",
+      "python3 -m json.tool .agent-state/handoff.json >/dev/null"
     ],
     "code_or_package_changes": [
-      "如果后续任务修改 package 或业务代码，必须额外跑 typecheck / build / verify:all"
+      "本轮修改 apps/server/src/server.mjs 与 apps/server/package.json，因此必须跑 server scaffold/deploy/static verify 与 desktop typecheck/build/verify:all"
     ],
-    "docs_only_skip_reason": "本轮只改 docs / planning / deploy materials / deploy 静态校验，不改业务代码、API、UI 或 package scripts，因此不要求 typecheck / build / verify:all。",
     "server_deploy_tasks": [
       "部署前确认人工授权边界",
+      "确认 PROBEFLASH_STATIC_DIR 指向 /home/hurricane/probeflash/current/dist",
+      "确认 / 与 /api/health 同端口可访问",
       "确认独立端口监听",
       "确认 SQLite 持久化与读回",
       "确认既有 80 端口服务不受影响"
@@ -1212,6 +1242,7 @@
     "下一轮如果用户未授权 SSH / release 下载或上传 / 启动进程，只能输出阻塞点，不能自行部署。",
     "服务器系统 Node v10.19.0 不能运行当前 backend；必须使用独立 Node runtime。",
     "80 端口由 filebrowser 占用，ProbeFlash 必须使用 4100，不得影响既有服务。",
+    "release static web serve 已在仓库内完成，但真实服务器上的 http://192.168.2.2:4100/ 与 /api/health 仍需等用户授权部署后验证。",
     "白天主线 current_atomic_task 是 S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY，但状态 blocked_by_user_confirmation_and_time；不得误标 completed。",
     "服务器不作为开发 checkout；不得把服务器 git pull 当作正式部署方式。",
     "夜跑可选任务只能来自 repo_local_night_safe_task_queue；不得把真实 AI/API key 或服务器任务选成 unattended current task。",
@@ -1223,13 +1254,14 @@
     "Night Run / Unattended Mode 已建立：夜跑只允许 repo-local、可自动验证、可回滚任务；真实服务器 / sudo / systemd / /opt / 80/443 / 外部账号 / API key / 删除或迁移数据 / 产品拍板必须停止。",
     "v0.2.0 前历史专项输入已归档到 docs/archive/v0.2-closeout/；archive 不属于默认事实源，只在历史追溯、专项实现背景或归档审计时读取。",
     "当前白天主线是 S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY，需要用户确认 SSH、release 下载或上传、写入 /home/hurricane/probeflash、启动临时进程与 4100 端口边界，不能夜跑。",
-    "部署路线改为 release tarball first：固定 GitHub Release assets + SHA256SUMS.txt 校验 + releases/vX.Y.Z + current symlink + shared/data/env/logs 持久目录；服务器 git pull 只可作为开发 / 调试方式。",
+    "部署路线改为 release tarball first：固定 GitHub Release assets + SHA256SUMS.txt 校验 + releases/vX.Y.Z + current symlink + PROBEFLASH_STATIC_DIR=/home/hurricane/probeflash/current/dist + shared/data/env/logs 持久目录；服务器 git pull 只可作为开发 / 调试方式。",
     "TECH-DEBT-SERVER-SCHEMA-CONTRACT 已完成：server 写入侧 invalid payload 返回 422 VALIDATION_ERROR，valid payload 仍可写入并读回。",
     "TECH-DEBT-STORAGE-ERROR-CONTRACT 已完成：HTTP runtime 的 storage feedback 不再误显 localStorage 状态，localStorage 兼容路径仍保留。",
-    "当前夜跑可选队列从 S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN 开始；它只能做 repo-local 文档 / 计划，不启动真实服务器。后续技术债候选是 TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY。",
+    "S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN 已完成：推荐方案 B，apps/server 在 PROBEFLASH_STATIC_DIR 设置时同一 4100 端口服务 dist 与现有 /api；未设置时保持 API-only / Vite dev proxy 兼容。",
+    "当前夜跑可选队列从 TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY 开始；若优先补验证基础设施，也可选择 TECH-DEBT-VERIFY-HELPERS。真实服务器任务仍不能夜跑。",
     "旧弱化文档 docs/planning/handoff.md、docs/planning/roadmap.md、docs/planning/architecture.md、.agent-state/progress.md、.agent-state/session-log.md 禁止恢复。",
-    "部署安全分层固定为 release tarball no-sudo 用户目录验证 -> release static web serve plan / update flow -> systemd prep -> 用户授权后 systemd verify；/opt 只能作为 later / formal install / optional hardening。",
-    "apps/server/deploy/* 已改为 release tarball first：env、layout、service template 和 verify-deploy-prep 都不得把 /opt 或服务器 git pull 当作当前第一部署目标。",
+    "部署安全分层固定为 release tarball no-sudo 用户目录验证 -> release update flow -> systemd prep -> 用户授权后 systemd verify；/opt 只能作为 later / formal install / optional hardening。",
+    "apps/server/deploy/* 已改为 release tarball first：env、layout、service template、static web serve 说明和 verify-deploy-prep 都不得把 /opt 或服务器 git pull 当作当前第一部署目标。",
     "S4-RELEASE-VERSION-ENDPOINT 已完成：server 暴露 /api/version，并在 /api/health.data.release 返回 version、commit、releaseTag；metadata 由 env/override/package version 提供，不依赖运行时 .git。",
     "S4-OPERABILITY-HEALTH-STATUS 已完成：/api/health 返回 server/storage/workspace/release 可诊断状态，DB 路径只暴露 class/file name，前端统一存储 banner 展示摘要。",
     "S4-DATA-BACKUP-EXPORT 已完成：npm run backup:export 可生成 timestamped SQLite backup 与 JSON export；默认不覆盖源 DB，不导出绝对源路径。",

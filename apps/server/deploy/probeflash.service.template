@@ -3,7 +3,7 @@
 # Copy to /etc/systemd/system/probeflash.service only during S3-SERVER-SYSTEMD-AUTOSTART-VERIFY.
 
 [Unit]
-Description=ProbeFlash LAN storage server
+Description=ProbeFlash LAN web/API server
 After=network-online.target
 Wants=network-online.target
 
