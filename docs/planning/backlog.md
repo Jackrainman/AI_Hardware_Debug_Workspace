@@ -69,7 +69,7 @@
 ### 5. S4-DATA-BACKUP-EXPORT
 - **目标**：提供 SQLite 备份 / 导出机制，保证运行中不破坏 DB。
 - **前置依赖**：`S4-OPERABILITY-HEALTH-STATUS` 完成；本地 SQLite 主链路可用。真实服务器持久化路径稳定后需复用同一命令验证服务器路径。
-- **夜跑状态**：`current_night_safe`；repo-local 备份 / 导出可夜跑，不依赖真实服务器部署结果。
+- **夜跑状态**：completed；已新增 `npm run backup:export` 与 `npm run verify:s4-data-backup-export`，可生成 timestamped SQLite backup 与 JSON export。
 - **输入文件**：`/home/hurricane/probeflash/shared/data/probeflash.sqlite`、server storage 代码、SQLite schema、部署路径约定。
 - **允许改动**：server-side 备份脚本或 npm script；导出 JSON 的最小工具；部署文档；planning sync。
 - **明确不做**：不做云同步；不做增量备份系统；不在运行中直接复制半写入 DB 而不校验；不备份 secrets；不改业务 schema 语义。
@@ -80,13 +80,13 @@
 ### 6. S4-DATA-RESTORE-DRY-RUN
 - **目标**：验证备份能恢复到临时 DB 并读回关键实体。
 - **前置依赖**：`S4-DATA-BACKUP-EXPORT` 完成。
-- **夜跑状态**：`pending_after_backup`；只恢复到临时 DB，不覆盖生产 DB，可本地自动验证。
+- **夜跑状态**：`current_night_safe`；只恢复到临时 DB，不覆盖生产 DB，可本地自动验证。
 - **输入文件**：timestamped SQLite backup、JSON export、SQLite schema、server storage 读路径。
 - **允许改动**：restore dry-run script、验证脚本、部署文档、planning sync。
 - **明确不做**：不覆盖生产 DB；不自动执行真实恢复；不删除原备份；不在未确认情况下停服务。
 - **验证要求**：从备份恢复到临时 DB；读取 workspace / issue / record / archive / error-entry；校验计数或样例 ID；dry-run 完成后生产 DB 未改动。
 - **完成定义**：备份可被独立恢复并读回；恢复流程可演练；生产数据安全不受影响。
-- **下一个任务**：`S4-OPERABILITY-HEALTH-STATUS`。
+- **下一个任务**：`AI-READY-PROMPT-TEMPLATE-SYSTEM`。
 
 ### 7. S4-OPERABILITY-HEALTH-STATUS
 - **目标**：提供更清楚的 server status / storage status / version info，便于部署后诊断。
