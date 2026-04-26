@@ -11,6 +11,7 @@
 ## 本轮按已知事实重建后的状态
 - v0.2.0 release 已完成：本地 HTTP + SQLite 主链路、`/api` adapter、`apps/server`、SQLite schema/API、workspace 创建与切换、issue / record / closeout / archive / error-entry 主路径、`dev-start.sh`、本地 release smoke 均已完成。
 - S4 本地 operability / data safety 已完成：`/api/version`、增强 `/api/health`、`backup:export`、`restore:dry-run` 均已有本地自动验证；真实服务器路径仍需等部署后复验。
+- AI-ready prompt/schema 已完成：`polish_closeout`、`summarize_records`、`suggest_prevention` 的 deterministic prompt 输入与 `AiDraftOutput` schema 已落地；仍未调用外部 AI。
 - 本地 release smoke 已确认：web dist 可被 `127.0.0.1:4173` 托管；`4173/api` 可代理到 `127.0.0.1:4100`；`4100` 后端可返回 sqlite ready；停掉后端后 `4173/api` 返回 `proxy_error`，没有 fake data / silent fallback。
 - 真实服务器部署、systemd 开机自启、服务器 LAN 持久化验证、AI 功能、仓库代码上下文分析均未完成。
 - 目标服务器事实：`192.168.2.2` / `hurricane-server` / SSH 用户 `hurricane` / Ubuntu 20.04.6 LTS / systemd 可用；80 端口由 filebrowser 占用；系统 Node 为 `v10.19.0`，不能用于 ProbeFlash；`4100` 当前未见监听，适合 ProbeFlash。
@@ -28,27 +29,27 @@
 - 夜跑 / 无人值守模式只能执行 repo-local、可自动验证、可回滚任务；任何 SSH、上传、真实服务器、sudo、systemd、`/opt`、80/443 或需用户拍板事项都必须停止并留下 handoff。
 
 ## 当前唯一主线原子任务（下一轮只认领这个）
-- **AI-READY-PROMPT-TEMPLATE-SYSTEM**
-  - 目标：沉淀 prompt template 与输入输出 schema，为后续 AI 接入准备边界，但不调用模型。
-  - 前置依赖：`S4-DATA-RESTORE-DRY-RUN` 已完成；server / storage / version 可诊断，备份与恢复演练已完成。
-  - 输入文件 / 环境：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`docs/planning/backlog.md`、domain schemas、issue / record / closeout 数据结构、closeout UI、后续 AI 草稿需求。
-  - 允许改动：prompt template 模块、`PromptInput` / `PromptOutput` 类型或 schema、规则模板测试、必要文档、planning sync。
-  - 明确不做：不保存 API key；不调用外部 AI；不新增 provider SDK；不做 RAG / embedding；不自动写库。
-  - 夜跑边界：repo-local、可自动验证、可回滚；只落地 deterministic 模板 / schema，不依赖外部账号或真实模型。
-  - 验证要求：模板可确定性生成 `polish_closeout`、`summarize_records`、`suggest_prevention` 输入；schema 校验覆盖必填字段和无效输出；现有 closeout 流程不回归；`cd apps/desktop && npm run typecheck`；`npm run build`；`npm run verify:handoff`；`npm run verify:all`；`git diff --check`。
-  - 完成定义：AI 草稿输入输出边界清楚；模板可被规则生成器和未来 server AI provider 复用；无外部调用。
-  - 下一个任务：`AI-READY-CLOSEOUT-DRAFT-PANEL`。
+- **AI-READY-CLOSEOUT-DRAFT-PANEL**
+  - 目标：在 closeout 流程里增加“草稿辅助面板”，先用规则模板生成草稿。
+  - 前置依赖：`AI-READY-PROMPT-TEMPLATE-SYSTEM` 已完成；prompt input / output schema 已可验证；仍不调用外部 AI。
+  - 输入文件 / 环境：`AGENTS.md`、本文件、`.agent-state/handoff.json`、`docs/planning/backlog.md`、closeout UI、issue / records / closeout input、prompt template schema、existing closeout orchestration。
+  - 允许改动：前端 closeout panel、规则草稿生成器、UI smoke / verify 脚本、planning sync。
+  - 明确不做：不调用外部 AI；不自动写入；不改变原 closeout 必填规则；不做 RAG / embedding；不保存 API key。
+  - 夜跑边界：repo-local、可自动验证、可回滚；只生成可审阅草稿，所有入库仍走用户确认后的原 closeout 路径。
+  - 验证要求：规则生成问题描述优化、根因总结草稿、解决方案草稿、预防建议草稿；用户可复制或应用；closeout 原路径不回归；UI smoke 通过；`cd apps/desktop && npm run typecheck`；`npm run build`；`npm run verify:handoff`；`npm run verify:all`；`git diff --check`。
+  - 完成定义：用户能在 closeout 旁看到可解释草稿，并手动复制 / 应用；主流程仍由用户确认写库。
+  - 下一个任务：`AI-ASSIST-POLISH-CLOSEOUT-MINIMAL`。
 
 ## 当前前沿任务窗口（最多 3 个候选）
 - **S3-SERVER-USER-DIR-DEPLOY-VERIFY**
   - 状态：`blocked_by_user_confirmation`；仅在用户白天确认 SSH / 上传 / 写入路径 / 启动进程 / 4100 端口边界后可执行，夜跑不可执行。
   - 选择理由：服务器真实部署未完成，但 `/opt` 与 systemd 需要更高权限；先用 `/home/hurricane/probeflash` 验证同一 runtime / DB / 端口方案，风险最小。
-- **AI-READY-PROMPT-TEMPLATE-SYSTEM**
-  - 状态：当前第一个可并行 night-safe 任务；等待下一轮认领。
-  - 选择理由：prompt/schema 不调用外部 AI，可在数据安全闭合后作为 AI-ready 本地能力推进。
 - **AI-READY-CLOSEOUT-DRAFT-PANEL**
-  - 状态：等待 `AI-READY-PROMPT-TEMPLATE-SYSTEM` 完成后可夜跑。
+  - 状态：当前第一个可并行 night-safe 任务；等待下一轮认领。
   - 选择理由：规则草稿面板仍不调用外部 AI，但必须先有 prompt/schema 边界。
+- **AI-ASSIST-POLISH-CLOSEOUT-MINIMAL**
+  - 状态：`blocked_by_external_dependency_api_key_after_ai_ready`；必须等草稿面板完成且用户确认真实 AI/API key 边界后执行。
+  - 选择理由：真实 AI 只能在 AI-ready 与规则草稿闭合后进入，并且 API key 只允许在 server env。
 
 ## 剩余完整 pending queue（按执行顺序）
 1. `S3-SERVER-USER-DIR-DEPLOY-VERIFY`：blocked_by_user_confirmation
@@ -59,8 +60,8 @@
 6. `S4-OPERABILITY-HEALTH-STATUS`：completed
 7. `S4-DATA-BACKUP-EXPORT`：completed
 8. `S4-DATA-RESTORE-DRY-RUN`：completed
-9. `AI-READY-PROMPT-TEMPLATE-SYSTEM`：current_night_safe
-10. `AI-READY-CLOSEOUT-DRAFT-PANEL`：pending_after_prompt_template
+9. `AI-READY-PROMPT-TEMPLATE-SYSTEM`：completed
+10. `AI-READY-CLOSEOUT-DRAFT-PANEL`：current_night_safe
 11. `AI-ASSIST-POLISH-CLOSEOUT-MINIMAL`：blocked_by_external_dependency_api_key_after_ai_ready
 12. `AI-ASSIST-SUGGEST-PREVENTION`：pending_after_minimal_ai
 13. `CODE-CONTEXT-BUNDLE-CLI`：pending_after_ai_prevention
@@ -69,7 +70,7 @@
 16. `CODE-CONTEXT-REPO-CONNECTOR-LATER`：pending_after_user_feedback
 
 ## 下一步最小可执行动作
-- 下一轮夜跑默认先认领 `AI-READY-PROMPT-TEMPLATE-SYSTEM`。
+- 下一轮夜跑默认先认领 `AI-READY-CLOSEOUT-DRAFT-PANEL`。
 - 认领前必须重新读取默认事实源 + `docs/planning/backlog.md`，确认 `S3-*` 服务器任务仍保持 blocked 且未被误标 completed。
 - 真实服务器操作前必须获得用户确认：SSH 登录方式、上传方式、是否允许在 `/home/hurricane/probeflash` 写入、是否允许启动临时进程、是否允许用 4100 端口。
 - 若用户未授权 SSH / 上传 / 启动进程，不得自行部署；夜跑继续扫描后续 repo-local、可自动验证、可回滚任务。
