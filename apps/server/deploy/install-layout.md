@@ -1,12 +1,14 @@
-# ProbeFlash independent install layout
+# ProbeFlash install layout
 
-本文件只定义后续真实部署时推荐采用的目录布局；本轮不创建服务器目录、不上传文件、不执行 sudo。
+本文件定义当前真实部署验证采用的用户目录布局。当前任务不创建服务器目录、不上传文件、不执行 sudo、不安装 systemd。
 
-## Recommended layout
+## Current user-dir layout
+
+Current root: `/home/hurricane/probeflash`.
 
 ```text
-/opt/probeflash/
-  current -> /opt/probeflash/releases/<release-id>/
+/home/hurricane/probeflash/
+  current -> /home/hurricane/probeflash/releases/<release-id>/
   releases/
     <release-id>/
       apps/
@@ -32,31 +34,35 @@
 
 ## What goes where
 
-- App code: `/opt/probeflash/releases/<release-id>/`；`/opt/probeflash/current` 是指向当前 release 的 symlink。
-- SQLite data: `/opt/probeflash/shared/data/probeflash.sqlite`；WAL/SHM sidecar files stay in the same directory.
-- Logs: `/opt/probeflash/shared/logs/`；systemd 模板把 stdout/stderr 追加到该目录，同时可用 `journalctl -u probeflash` 查看。
-- Env: `/opt/probeflash/shared/env/probeflash.env`；由 `apps/server/deploy/env.example` 复制生成。
-- Node runtime: `/opt/probeflash/runtime/node/`；必须是独立 runtime，不使用 `/usr/bin/node`。
+- App code: `/home/hurricane/probeflash/releases/<release-id>/`; `/home/hurricane/probeflash/current` is the symlink to the active release.
+- SQLite data: `/home/hurricane/probeflash/shared/data/probeflash.sqlite`; WAL/SHM sidecar files stay in the same directory.
+- Logs: `/home/hurricane/probeflash/shared/logs/`; no-sudo verify may write process logs here, and later systemd can append stdout/stderr here.
+- Env: `/home/hurricane/probeflash/shared/env/probeflash.env`; copy from `apps/server/deploy/env.example`.
+- Node runtime: `/home/hurricane/probeflash/runtime/node/`; must be independent and must not use `/usr/bin/node`.
 
 ## Ownership and permissions
 
-建议创建专用服务账号，例如 `probeflash`（实际用户名由部署人确认，不在模板中写死）：
+No-sudo verify uses the existing `hurricane` user and stays under `/home/hurricane`:
 
-- `/opt/probeflash/releases/`：可由部署用户写入，服务账号只需读取。
-- `/opt/probeflash/current`：由部署流程更新 symlink，服务账号只需读取。
-- `/opt/probeflash/shared/data/`：服务账号必须可读写。
-- `/opt/probeflash/shared/logs/`：服务账号必须可写；若 systemd 以 root 打开 append 文件后降权，也仍建议保持服务账号可写，便于人工排查。
-- `/opt/probeflash/shared/env/probeflash.env`：服务账号可读，普通用户不可随意写。
-- `/opt/probeflash/runtime/node/`：服务账号只需读取和执行。
+- `/home/hurricane/probeflash/releases/`: writable by `hurricane` during upload / release unpack.
+- `/home/hurricane/probeflash/current`: updated by `hurricane` as a symlink.
+- `/home/hurricane/probeflash/shared/data/`: readable and writable by the ProbeFlash process.
+- `/home/hurricane/probeflash/shared/logs/`: writable by the ProbeFlash process.
+- `/home/hurricane/probeflash/shared/env/probeflash.env`: readable by the ProbeFlash process; keep it outside release directories.
+- `/home/hurricane/probeflash/runtime/node/`: readable and executable by the ProbeFlash process.
 
-最小建议：目录归属 `probeflash:probeflash`，env 文件 `0640`，data/logs 目录 `0750` 或按现场运维规范收紧。
+Minimum no-sudo expectation: files are owned by `hurricane:hurricane`. Do not introduce root-owned files in the user-dir verify step.
 
 ## current symlink rule
 
-发布新版本时先准备 `/opt/probeflash/releases/<new-release-id>/`，验证文件完整后再原子切换：
+Publish a release by preparing `/home/hurricane/probeflash/releases/<new-release-id>/`, then atomically switching the user-owned symlink:
 
 ```bash
-ln -sfn /opt/probeflash/releases/<new-release-id> /opt/probeflash/current
+ln -sfn /home/hurricane/probeflash/releases/<new-release-id> /home/hurricane/probeflash/current
 ```
 
-回滚时只把 `current` 指回上一个 release；不要删除 `/opt/probeflash/shared/data/`。
+Rollback only points `current` back to the previous release. Do not delete `/home/hurricane/probeflash/shared/data/`.
+
+## Later formal install option
+
+`/opt/probeflash` is a later / formal install / optional hardening path, not the current first step. Moving to `/opt` would require explicit sudo and ownership decisions, so it must happen only after user-dir no-sudo verification and user authorization.

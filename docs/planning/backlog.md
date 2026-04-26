@@ -18,6 +18,91 @@
 7. 夜跑 / 无人值守模式只能执行 repo-local、可自动验证、可回滚任务；遇到真实服务器、SSH、sudo、systemd、外部账号、API key、删除 / 迁移数据或用户拍板问题必须停止。
 8. `docs/archive/v0.2-closeout/` 只在需要 v0.2 前历史背景、专项实现追溯或归档审计时读取，不作为默认认领输入。
 
+## 石山代码审计技术债队列
+
+> 来源：最新石山代码审计结论摘要。本仓库未检索到审计报告原文；当前按用户给定摘要与现有 planning / deploy 材料复核落盘。以下任务按审计优先级排列；除本轮实际完成项外，不标记 completed。
+
+### 1. TECH-DEBT-DEPLOY-DOC-CLARITY
+- **状态**：completed_this_round。
+- **目标**：让 `apps/server/deploy/*` 与当前真实部署路线一致：先 `/home/hurricane/probeflash` no-sudo 用户目录部署验证，再进入后续授权 systemd；`/opt/probeflash` 只能作为 later / formal install / optional hardening。
+- **风险来源**：旧 deploy 文档、env 示例、service 模板和 `verify-deploy-prep` 以 `/opt/probeflash` / systemd 为第一路线，可能诱导 AI 或人工在未授权时 sudo、写 `/opt`、使用系统 Node 或误碰 80。
+- **不做项**：不 SSH；不上传；不 sudo；不写 systemd；不改 server 业务代码；不改 API；不实际部署；不升级系统 Node；不占 80。
+- **验证要求**：`cd apps/server && npm run verify:deploy-prep`；`git diff --check`；读回 `README.md` / `install-layout.md` / `env.example` / `probeflash.service.template` 确认 no-sudo user-dir 路线清楚。
+- **是否 night-safe**：是，docs / deploy prep repo-local，已完成。
+- **是否需要用户白天确认**：否；真实部署仍需要用户白天确认。
+
+### 2. TECH-DEBT-SERVER-SCHEMA-CONTRACT
+- **状态**：pending。
+- **目标**：为 `apps/server/src/database.mjs` 的 SQLite schema、API 返回结构和迁移边界补最小契约说明 / 验证，降低后续 server 改动破坏历史数据和 HTTP adapter 的风险。
+- **风险来源**：`database.mjs` 集中承载 schema、初始化、读写映射与部分业务约束；当前缺少独立 schema contract / migration smoke，后续改动容易出现字段漂移或读回不一致。
+- **不做项**：不做大规模数据库重构；不做破坏性 migration；不迁移真实服务器数据；不改 UI；不引入 ORM；不把历史草案恢复为当前事实源。
+- **验证要求**：补充或复用 repo-local server verify，覆盖创建 / 读回 workspace、issue、record、archive、error-entry；校验 schema 字段与 HTTP adapter 期望一致；`git diff --check`；涉及代码时按验证矩阵跑 typecheck / build / relevant verify。
+- **是否 night-safe**：是，前提是只改 repo-local 契约 / verify / 最小 server 代码且不触碰真实数据。
+- **是否需要用户白天确认**：否，除非任务升级为真实数据迁移或服务器操作。
+
+### 3. TECH-DEBT-STORAGE-ERROR-CONTRACT
+- **状态**：pending。
+- **目标**：统一 HTTP runtime 下 storage error / connection state / storage feedback 的语义，避免已走 HTTP + SQLite 时仍显示 localStorage 状态或 silent fallback。
+- **风险来源**：前端仍保留 localStorage 兼容 / verify 路径，storage feedback 文案和状态来源若混用，会误导部署验收与服务器不可达判断。
+- **不做项**：不重做业务数据流；不移除必要 localStorage 兼容路径；不新增复杂监控；不做大 UI 重构；不把服务器不可达伪装为本地成功。
+- **验证要求**：覆盖 HTTP ready、HTTP proxy error / server down、localStorage 兼容路径三类状态；确认 UI 文案不把 HTTP runtime 说成 localStorage；`git diff --check`；相关 desktop verify 通过。
+- **是否 night-safe**：是，repo-local 且可自动验证。
+- **是否需要用户白天确认**：否。
+
+### 4. TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY
+- **状态**：pending。
+- **目标**：审计并收敛 closeout 多步写入的原子性、失败恢复与读回验证边界，避免 archive / error-entry / issue 状态部分成功后留下不一致。
+- **风险来源**：closeout 链路横跨前端 orchestration、HTTP adapter、server storage、SQLite 写入和 archive/error-entry 生成；失败恢复策略若不一致，会影响调试闭环可信度。
+- **不做项**：不做大规模重构；不改业务 schema 语义；不自动删除用户数据；不把 AI 草稿当事实；不恢复文件写盘旧主线。
+- **验证要求**：覆盖成功 closeout、archive/error-entry 写入失败、issue 状态更新失败、读回验证失败等路径；失败必须可见且不标记 archived；`git diff --check`；相关 closeout / server verify 通过。
+- **是否 night-safe**：是，前提是使用临时本地 DB / fixture，不触碰真实服务器数据。
+- **是否需要用户白天确认**：否，除非涉及真实数据修复或 schema migration。
+
+### 5. TECH-DEBT-PLANNING-QUEUE-SIGNAL
+- **状态**：completed_this_round。
+- **目标**：消除 `current.md` / `handoff.json` / backlog 中“当前唯一任务”与 blocked / night-safe 并行任务的冲突，防止 AI 越过服务器主线直接进入真实 AI。
+- **风险来源**：`current_atomic_task` 曾指向 `AI-ASSIST-POLISH-CLOSEOUT-MINIMAL`，但服务器部署主线仍是 `S3-SERVER-USER-DIR-DEPLOY-VERIFY blocked_by_user_confirmation`；真实 AI 又依赖 API key/provider/server env 用户确认。
+- **不做项**：不重排为大路线图；不删除服务器任务；不把 blocked 任务标 completed；不把真实 AI 标 started；不恢复旧文档。
+- **验证要求**：`cd apps/desktop && npm run verify:handoff`；`python3 -m json.tool .agent-state/handoff.json >/dev/null`；`git diff --check`；读回确认白天主线与夜跑候选分离。
+- **是否 night-safe**：是，docs / planning / handoff repo-local，已完成。
+- **是否需要用户白天确认**：否；白天服务器部署主线本身仍需要用户确认。
+
+### 6. TECH-DEBT-SKILL-RUNTIME-ALIGNMENT
+- **状态**：completed_this_round。
+- **目标**：让 debug closeout skill 明确当前主链路是 HTTP + SQLite；文件写盘 / `.debug_workspace` 不属于当前运行路径；closeout 必须经 repository/server path 验证。
+- **风险来源**：旧 skill 仍按 `archiveDir` / `errorTableDir` 文件写盘描述 closeout，可能诱导 AI 绕过当前 HTTP + SQLite 主链路直接写 archive/error table 文件。
+- **不做项**：不新增 skill；不改业务代码；不改 schema；不恢复 `.debug_workspace` 为运行主线；不把文件写盘说成当前已接入。
+- **验证要求**：`git diff --check`；读回 skill 与 `AGENTS.md` / `current.md` 不冲突；若改 skill，确认 HTTP + SQLite / repository/server path 是主口径。
+- **是否 night-safe**：是，skills-only repo-local，已完成。
+- **是否需要用户白天确认**：否。
+
+### 7. TECH-DEBT-APP-SPLIT-MINIMAL
+- **状态**：pending。
+- **目标**：围绕 `apps/desktop/src/App.tsx` 做最小拆分或边界收敛，降低 UI、业务编排、storage state、closeout flow 和 deploy status 混在单文件导致的回归风险。
+- **风险来源**：`App.tsx` 是当前最大前端石山之一，后续修 storage feedback、AI draft、closeout 失败态时容易互相踩踏。
+- **不做项**：不做大 UI 重构；不改视觉系统；不引入组件库；不改业务语义；不顺手接真实 AI；不迁移到 Electron / fs / IPC。
+- **验证要求**：保持主流程 smoke；相关 desktop verify、typecheck、build 通过；人工或脚本确认 issue / record / closeout / archive 主路径不回归。
+- **是否 night-safe**：是，前提是小步 repo-local、自动验证可覆盖。
+- **是否需要用户白天确认**：否，除非要改产品交互方向。
+
+### 8. TECH-DEBT-VERIFY-HELPERS
+- **状态**：pending。
+- **目标**：补齐高风险路径的 verify helper，减少每轮靠人工 grep / 读文档确认部署、storage、closeout、handoff 口径。
+- **风险来源**：当前 verify 覆盖较多主路径，但审计指出 deploy docs、planning queue、skill runtime、storage feedback 等一致性仍依赖人工阅读，容易在上下文重置后漂移。
+- **不做项**：不引入大型测试框架；不做慢速端到端套件；不依赖真实服务器；不写网络外部调用；不把 verify 变成部署动作。
+- **验证要求**：新增 helper 必须 repo-local、确定性、失败信息可读；纳入相应 npm script 或文档说明；`git diff --check`；相关 verify 通过。
+- **是否 night-safe**：是。
+- **是否需要用户白天确认**：否。
+
+### 9. TECH-DEBT-VERIFY-TMP-CLEANUP
+- **状态**：pending。
+- **目标**：清理 / 规范 verify 临时目录、临时 DB、日志与 backup fixture 的生命周期，避免测试残留污染后续判断。
+- **风险来源**：多条 verify / backup / restore / smoke 路径会创建临时 DB、导出文件或日志；残留物若不清楚，容易误判真实部署数据或污染 git 状态。
+- **不做项**：不删除用户数据；不删除真实服务器文件；不清理 release asset；不做破坏性 migration；不把 cleanup 脚本指向生产路径。
+- **验证要求**：verify 运行前后 git status 可解释；临时目录路径明确且限定在 repo-local runtime/tmp；cleanup dry-run 或断言覆盖；`git diff --check`。
+- **是否 night-safe**：是，前提是只触碰 repo-local 临时路径。
+- **是否需要用户白天确认**：否，除非涉及真实服务器或用户数据路径。
+
 ## 近期 3 个任务
 
 ### 1. S3-SERVER-USER-DIR-DEPLOY-VERIFY

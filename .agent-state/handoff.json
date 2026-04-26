@@ -16,14 +16,14 @@
     "archive_state": "object - v0.2.0 前历史文档归档状态与读取条件",
     "notes": "string[] - 长期性约束与下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-04-26T10:36:08+08:00",
+  "timestamp": "2026-04-26T11:02:58+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "S3",
   "current_stage_name": "服务器安全部署",
-  "current_stage_goal": "基于 v0.2.0 已完成的本地 HTTP + SQLite 主链路，先在 Ubuntu 20.04 服务器完成 no-sudo 用户目录部署验证，再进入 systemd 自启、operability / data safety、AI-ready、最小真实 AI 草稿与 code context bundle。",
-  "primary_track": "safe_server_deploy_then_operability_then_ai_ready",
-  "deferred_track": "real_ai_after_ai_ready_and_code_context_after_bundle_mvp",
-  "current_atomic_task": "AI-ASSIST-POLISH-CLOSEOUT-MINIMAL",
+  "current_stage_goal": "基于 v0.2.0 已完成的本地 HTTP + SQLite 主链路，白天主线先在 Ubuntu 20.04 服务器完成 /home/hurricane/probeflash no-sudo 用户目录部署验证；无服务器授权时只能执行 repo-local、可自动验证的 night-safe 技术债候选；真实 AI/API key 任务保持 blocked。",
+  "primary_track": "safe_server_user_dir_deploy_mainline",
+  "deferred_track": "repo_local_night_safe_tech_debt_before_real_ai_or_code_context",
+  "current_atomic_task": "S3-SERVER-USER-DIR-DEPLOY-VERIFY",
   "roadmap_tracks": {
     "A_S3_Server_Deployment_Line": [
       "S3-SERVER-USER-DIR-DEPLOY-VERIFY",
@@ -104,6 +104,91 @@
     "layer_3": "after explicit user sudo authorization, install and verify systemd autostart",
     "later": "only after the above consider /opt, reverse proxy, .local or 80/443 beautification"
   },
+  "execution_lanes": {
+    "blocked_mainline_task": {
+      "id": "S3-SERVER-USER-DIR-DEPLOY-VERIFY",
+      "status": "blocked_by_user_confirmation",
+      "requires_user_confirmation": [
+        "SSH login method",
+        "upload method",
+        "permission to write /home/hurricane/probeflash",
+        "permission to start a temporary user-owned process",
+        "permission to use port 4100"
+      ],
+      "night_safe": false
+    },
+    "next_night_safe_candidate": {
+      "id": "TECH-DEBT-SERVER-SCHEMA-CONTRACT",
+      "status": "pending_night_safe_candidate",
+      "requires_user_confirmation": [],
+      "night_safe": true
+    },
+    "blocked_external_task": {
+      "id": "AI-ASSIST-POLISH-CLOSEOUT-MINIMAL",
+      "status": "blocked_by_external_dependency_api_key_after_ai_ready",
+      "requires_user_confirmation": [
+        "AI provider",
+        "server env API key boundary",
+        "timeout policy",
+        "mock/test provider boundary"
+      ],
+      "night_safe": false
+    }
+  },
+  "audit_tech_debt_state": {
+    "source": "Latest stone-code audit summary provided by user; no audit report source file was found in repo search.",
+    "completed_this_round": [
+      "TECH-DEBT-DEPLOY-DOC-CLARITY",
+      "TECH-DEBT-PLANNING-QUEUE-SIGNAL",
+      "TECH-DEBT-SKILL-RUNTIME-ALIGNMENT"
+    ],
+    "pending_priority_order": [
+      "TECH-DEBT-SERVER-SCHEMA-CONTRACT",
+      "TECH-DEBT-STORAGE-ERROR-CONTRACT",
+      "TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY",
+      "TECH-DEBT-APP-SPLIT-MINIMAL",
+      "TECH-DEBT-VERIFY-HELPERS",
+      "TECH-DEBT-VERIFY-TMP-CLEANUP"
+    ]
+  },
+  "repo_local_night_safe_task_queue": [
+    {
+      "order": 1,
+      "id": "TECH-DEBT-SERVER-SCHEMA-CONTRACT",
+      "status": "pending_night_safe_candidate",
+      "requires_user_confirmation": false
+    },
+    {
+      "order": 2,
+      "id": "TECH-DEBT-STORAGE-ERROR-CONTRACT",
+      "status": "pending_after_schema_contract",
+      "requires_user_confirmation": false
+    },
+    {
+      "order": 3,
+      "id": "TECH-DEBT-CLOSEOUT-ATOMICITY-RECOVERY",
+      "status": "pending_after_storage_error_contract",
+      "requires_user_confirmation": false
+    },
+    {
+      "order": 4,
+      "id": "TECH-DEBT-APP-SPLIT-MINIMAL",
+      "status": "pending_after_closeout_recovery",
+      "requires_user_confirmation": false
+    },
+    {
+      "order": 5,
+      "id": "TECH-DEBT-VERIFY-HELPERS",
+      "status": "pending_after_app_split",
+      "requires_user_confirmation": false
+    },
+    {
+      "order": 6,
+      "id": "TECH-DEBT-VERIFY-TMP-CLEANUP",
+      "status": "pending_after_verify_helpers",
+      "requires_user_confirmation": false
+    }
+  ],
   "night_run_mode": {
     "policy": "Night run / unattended mode may only execute repo-local, automatically verifiable and rollback-friendly atomic tasks. External systems, real servers, privileged operations, destructive data operations and product decisions must stop with handoff.",
     "allowed_task_classes": [
@@ -198,28 +283,34 @@
       "goal": "在服务器 /home/hurricane/probeflash 下完成 v0.2.0 no-sudo 用户目录部署验证。",
       "depends_on": [
         "v0.2.0 release asset 已生成并本地 smoke 通过",
-        "用户授权 SSH / 上传 / 在 /home/hurricane 写入"
+        "用户授权 SSH / 上传 / 在 /home/hurricane/probeflash 写入并启动临时进程",
+        "用户确认 4100 端口边界"
       ],
-      "status": "blocked_by_user_confirmation"
+      "status": "blocked_by_user_confirmation",
+      "lane": "blocked_daytime_mainline",
+      "night_safe": false
     },
     {
-      "id": "AI-ASSIST-POLISH-CLOSEOUT-MINIMAL",
-      "track": "C_AI_Ready_Product_Line",
-      "goal": "接入真实 AI 的最小措辞优化，只返回 closeout 草稿。",
+      "id": "TECH-DEBT-SERVER-SCHEMA-CONTRACT",
+      "track": "Audit_Tech_Debt_Line",
+      "goal": "为 apps/server/src/database.mjs 的 schema / API contract 补最小契约说明与验证。",
       "depends_on": [
-        "AI-READY-CLOSEOUT-DRAFT-PANEL",
-        "用户确认 server env API key / provider 边界"
+        "本轮 docs-only / planning signal 修复已完成"
       ],
-      "status": "blocked_by_external_dependency_api_key_after_ai_ready"
+      "status": "pending_night_safe_candidate",
+      "lane": "repo_local_night_safe",
+      "night_safe": true
     },
     {
-      "id": "AI-ASSIST-SUGGEST-PREVENTION",
-      "track": "C_AI_Ready_Product_Line",
-      "goal": "基于 issue + records + resolution 生成预防建议草稿。",
+      "id": "TECH-DEBT-STORAGE-ERROR-CONTRACT",
+      "track": "Audit_Tech_Debt_Line",
+      "goal": "统一 HTTP runtime 下 storage error / connection state / feedback 语义，避免误显 localStorage 状态。",
       "depends_on": [
-        "AI-ASSIST-POLISH-CLOSEOUT-MINIMAL"
+        "TECH-DEBT-SERVER-SCHEMA-CONTRACT"
       ],
-      "status": "pending_after_minimal_ai"
+      "status": "pending_after_schema_contract",
+      "lane": "repo_local_night_safe",
+      "night_safe": true
     }
   ],
   "pending_task_queue": [
@@ -665,7 +756,8 @@
       "track": "C_AI_Ready_Product_Line",
       "goal": "接入真实 AI 的最小措辞优化，只返回 closeout 草稿。",
       "depends_on": [
-        "AI-READY-CLOSEOUT-DRAFT-PANEL"
+        "AI-READY-CLOSEOUT-DRAFT-PANEL",
+        "用户确认真实 AI provider、API key/server env、timeout 与 mock/test provider 边界"
       ],
       "input_files": [
         "server env",
@@ -982,7 +1074,10 @@
     "S4-DATA-BACKUP-EXPORT",
     "S4-DATA-RESTORE-DRY-RUN",
     "AI-READY-PROMPT-TEMPLATE-SYSTEM",
-    "AI-READY-CLOSEOUT-DRAFT-PANEL"
+    "AI-READY-CLOSEOUT-DRAFT-PANEL",
+    "TECH-DEBT-DEPLOY-DOC-CLARITY",
+    "TECH-DEBT-PLANNING-QUEUE-SIGNAL",
+    "TECH-DEBT-SKILL-RUNTIME-ALIGNMENT"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -997,17 +1092,19 @@
       "docs/planning/backlog.md：完整队列、任务新增 / 重排 / 改名时读取",
       "docs/planning/decisions.md：阶段切换、长期规则变化或技术拍板时读取",
       "docs/archive/v0.2-closeout/：仅 v0.2.0 前历史背景、专项实现追溯或归档审计时读取",
-      "apps/server/deploy/*：仅服务器部署任务且用户已确认边界后读取"
+      "apps/server/deploy/*：服务器部署 docs / deploy prep / 用户确认边界后读取"
     ],
-    "claiming_rule": "夜跑模式下扫描 pending_task_queue / backlog：服务器、sudo、systemd、真实外部环境任务标 blocked 但不标 completed；随后认领第一个依赖已满足、repo-local、可自动验证、可回滚的 night-safe 任务。",
-    "recommended_next": "AI-ASSIST-POLISH-CLOSEOUT-MINIMAL",
-    "night_run_gate": "blocked_for_recommended_next: AI-ASSIST-POLISH-CLOSEOUT-MINIMAL requires user-confirmed real AI provider/API key/server env boundaries; S3 server tasks also remain blocked_by_user_confirmation or blocked_by_external_dependency.",
+    "claiming_rule": "白天主线只认领 current_atomic_task=S3-SERVER-USER-DIR-DEPLOY-VERIFY，且必须先获得用户确认；夜跑 / 无人值守若无服务器授权，只能从 repo_local_night_safe_task_queue / backlog 中认领第一个依赖已满足、repo-local、可自动验证、可回滚的技术债任务；真实 AI/API key 任务不得作为 unattended current task。",
+    "recommended_next": "S3-SERVER-USER-DIR-DEPLOY-VERIFY",
+    "recommended_next_status": "blocked_by_user_confirmation",
+    "next_night_safe_candidate": "TECH-DEBT-SERVER-SCHEMA-CONTRACT",
+    "night_run_gate": "blocked_for_mainline_server_task; night_safe_candidate_available: TECH-DEBT-SERVER-SCHEMA-CONTRACT. AI-ASSIST-POLISH-CLOSEOUT-MINIMAL remains blocked_by_external_dependency_api_key_after_ai_ready and must not be selected unattended.",
     "selection_order": [
-      "夜跑先跳过并保留 blocked server tasks",
-      "先完成可并行的 operability / data safety repo-local tasks",
-      "再 AI-ready",
-      "再最小真实 AI 草稿",
-      "最后 code context bundle 与代码上下文 AI 分析"
+      "白天优先等待用户确认 S3-SERVER-USER-DIR-DEPLOY-VERIFY 的 SSH / 上传 / 写入 / 启动进程 / 4100 边界",
+      "无服务器授权时只扫描 repo-local night-safe 技术债候选",
+      "TECH-DEBT-SERVER-SCHEMA-CONTRACT 先于 TECH-DEBT-STORAGE-ERROR-CONTRACT",
+      "真实 AI/API key 任务保持 blocked，直到用户确认 provider 与 server env 边界",
+      "code context 继续等待真实 AI 和 bundle 前置条件"
     ],
     "inputs_read_this_round": [
       "AGENTS.md",
@@ -1015,29 +1112,28 @@
       "docs/planning/backlog.md",
       "docs/planning/decisions.md",
       ".agent-state/handoff.json",
+      "apps/server/deploy/README.md",
+      "apps/server/deploy/install-layout.md",
+      "apps/server/deploy/env.example",
+      "apps/server/deploy/probeflash.service.template",
+      "apps/server/scripts/verify-deploy-prep.mjs",
+      ".agents/skills/debug-closeout/SKILL.md",
+      ".agents/skills/planning/SKILL.md",
       ".agents/skills/task-execution/SKILL.md",
-      "apps/desktop/src/App.tsx",
-      "apps/desktop/src/App.css",
-      "apps/desktop/src/ai/prompt-templates.ts",
-      "apps/desktop/src/ai/rule-closeout-draft.ts",
-      "apps/desktop/scripts/verify-ai-ready-closeout-draft-panel.mts",
-      "apps/desktop/package.json",
+      ".agents/skills/task-verification/SKILL.md",
       "git status --short",
-      "git log --oneline -5"
+      "git log --oneline -12"
     ]
   },
   "verification_expectations": {
-    "code_task_this_round": [
-      "cd apps/desktop && npm run verify:ai-ready-closeout-draft-panel",
-      "cd apps/desktop && npm run verify:ai-ready-prompt-template-system",
+    "docs_deploy_planning_skill_task_this_round": [
       "git diff --check",
-      "python3 解析 .agent-state/handoff.json",
-      "cd apps/desktop && npm run typecheck",
-      "cd apps/desktop && npm run build",
+      "python3 -m json.tool .agent-state/handoff.json >/dev/null",
       "cd apps/desktop && npm run verify:handoff",
-      "cd apps/desktop && npm run verify:all"
+      "cd apps/server && npm run verify:deploy-prep",
+      "read back deploy docs and planning signals"
     ],
-    "skipped_for_docs_only_reason": null,
+    "skipped_for_docs_only_reason": "本轮只改 planning / deploy docs / handoff / skill 文档与 deploy-prep 静态校验脚本；未改业务代码、schema、API 或 UI，因此不跑 typecheck / build / verify:all。",
     "code_or_package_changes": [
       "如果后续任务修改 package 或业务代码，必须额外跑 typecheck / build / verify:all"
     ],
@@ -1054,6 +1150,8 @@
     "下一轮如果用户未授权 SSH / 上传 / 启动进程，只能输出阻塞点，不能自行部署。",
     "服务器系统 Node v10.19.0 不能运行当前 backend；必须使用独立 Node runtime。",
     "80 端口由 filebrowser 占用，ProbeFlash 必须使用 4100，不得影响既有服务。",
+    "白天主线 current_atomic_task 是 S3-SERVER-USER-DIR-DEPLOY-VERIFY，但状态 blocked_by_user_confirmation；不得误标 completed。",
+    "夜跑可选任务只能来自 repo_local_night_safe_task_queue；不得把真实 AI/API key 或服务器任务选成 unattended current task。",
     "AI-ready prompt/schema 与 closeout 草稿面板已完成，但真实 AI、code context 分析都只是规划队列，不是已实现功能。",
     "code context 第一阶段只能处理用户显式提供的 bundle，不允许服务器任意扫描路径。",
     "S4-RELEASE-VERSION-ENDPOINT、S4-OPERABILITY-HEALTH-STATUS、S4-DATA-BACKUP-EXPORT、S4-DATA-RESTORE-DRY-RUN 已在本地完成；服务器实际运行版本、健康状态、备份与恢复演练仍需等真实部署后验证。"
@@ -1061,17 +1159,18 @@
   "notes": [
     "Night Run / Unattended Mode 已建立：夜跑只允许 repo-local、可自动验证、可回滚任务；真实服务器 / sudo / systemd / /opt / 80/443 / 外部账号 / API key / 删除或迁移数据 / 产品拍板必须停止。",
     "v0.2.0 前历史专项输入已归档到 docs/archive/v0.2-closeout/；archive 不属于默认事实源，只在历史追溯、专项实现背景或归档审计时读取。",
-    "S3-SERVER-USER-DIR-DEPLOY-VERIFY 需要用户白天确认 SSH、上传、写入路径、启动进程与 4100 端口边界，不能夜跑；夜跑可继续执行后续不依赖服务器结果的 repo-local 任务。",
+    "当前白天主线是 S3-SERVER-USER-DIR-DEPLOY-VERIFY，需要用户确认 SSH、上传、写入 /home/hurricane/probeflash、启动临时进程与 4100 端口边界，不能夜跑。",
+    "当前夜跑可选队列从 TECH-DEBT-SERVER-SCHEMA-CONTRACT 开始；它只能在 repo-local、自动验证、可回滚边界内执行。",
     "旧弱化文档 docs/planning/handoff.md、docs/planning/roadmap.md、docs/planning/architecture.md、.agent-state/progress.md、.agent-state/session-log.md 禁止恢复。",
-    "部署安全分层固定为 /home/hurricane/probeflash no-sudo 验证 -> systemd prep -> 用户授权后 systemd verify -> release update / rollback -> S4 data safety。",
-    "旧 apps/server/deploy/* 中的 /opt 材料只能作为参考输入；当前下一任务不得把 /opt 当作第一部署目标。",
+    "部署安全分层固定为 /home/hurricane/probeflash no-sudo 验证 -> systemd prep -> 用户授权后 systemd verify -> release update / rollback；/opt 只能作为 later / formal install / optional hardening。",
+    "apps/server/deploy/* 已改为 user-dir first：env、layout、service template 和 verify-deploy-prep 都不得把 /opt 当作当前第一部署目标。",
     "S4-RELEASE-VERSION-ENDPOINT 已完成：server 暴露 /api/version，并在 /api/health.data.release 返回 version、commit、releaseTag；metadata 由 env/override/package version 提供，不依赖运行时 .git。",
     "S4-OPERABILITY-HEALTH-STATUS 已完成：/api/health 返回 server/storage/workspace/release 可诊断状态，DB 路径只暴露 class/file name，前端统一存储 banner 展示摘要。",
     "S4-DATA-BACKUP-EXPORT 已完成：npm run backup:export 可生成 timestamped SQLite backup 与 JSON export；默认不覆盖源 DB，不导出绝对源路径。",
     "S4-DATA-RESTORE-DRY-RUN 已完成：npm run restore:dry-run 可把 SQLite backup 复制到临时 DB，通过 server storage 读回 workspace / issue / record / archive / error-entry，并可校验 JSON export 计数；默认删除临时 DB，不覆盖生产 DB。",
     "AI-READY-PROMPT-TEMPLATE-SYSTEM 已完成：src/ai/prompt-templates.ts 提供 polish_closeout / summarize_records / suggest_prevention deterministic prompt 输入、AiDraftOutput schema 与本地 verify；不调用外部模型。",
     "AI-READY-CLOSEOUT-DRAFT-PANEL 已完成：closeout 表单内提供本地规则草稿面板，可生成并套用根因 / 结论 / 预防草稿；不调用外部模型，不自动写库。",
-    "当前首个未完成任务 AI-ASSIST-POLISH-CLOSEOUT-MINIMAL 需要用户确认真实 AI provider、API key/server env、timeout 和 mock/test provider 边界；夜跑必须停止。",
+    "AI-ASSIST-POLISH-CLOSEOUT-MINIMAL 需要用户确认真实 AI provider、API key/server env、timeout 和 mock/test provider 边界；不得作为无人值守 current task。",
     "AI 路线固定为 prompt/schema 与规则草稿先行，真实 AI 只返回草稿，API key 只在 server env，失败不影响主流程。",
     "代码上下文路线固定为 bundle MVP 先行，repo connector 仅作为后续评估项，且必须 allowlist 与禁读 secrets。"
   ]

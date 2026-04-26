@@ -1,6 +1,6 @@
-# ProbeFlash independent service template.
-# Copy to /etc/systemd/system/probeflash.service only during S3-SERVER-INDEPENDENT-DEPLOY-VERIFY.
-# Replace {{PROBEFLASH_USER}} / {{PROBEFLASH_GROUP}} with the dedicated service account.
+# ProbeFlash later authorized systemd service template.
+# Use only after /home/hurricane/probeflash no-sudo verification succeeds and the user authorizes sudo/systemd.
+# Copy to /etc/systemd/system/probeflash.service only during S3-SERVER-SYSTEMD-AUTOSTART-VERIFY.
 
 [Unit]
 Description=ProbeFlash LAN storage server
@@ -9,25 +9,24 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User={{PROBEFLASH_USER}}
-Group={{PROBEFLASH_GROUP}}
-WorkingDirectory=/opt/probeflash/current/apps/server
-EnvironmentFile=/opt/probeflash/shared/env/probeflash.env
+User=hurricane
+Group=hurricane
+WorkingDirectory=/home/hurricane/probeflash/current/apps/server
+EnvironmentFile=/home/hurricane/probeflash/shared/env/probeflash.env
 Environment=NODE_ENV=production
-ExecStart=/opt/probeflash/runtime/node/bin/node /opt/probeflash/current/apps/server/src/server.mjs
-Restart=on-failure
-RestartSec=3
+ExecStart=/home/hurricane/probeflash/runtime/node/bin/node src/server.mjs
+Restart=always
+RestartSec=3s
 
 # Logs: journald still records unit output; these append files make handoff/debug copy easier.
-StandardOutput=append:/opt/probeflash/shared/logs/probeflash.log
-StandardError=append:/opt/probeflash/shared/logs/probeflash.err.log
+StandardOutput=append:/home/hurricane/probeflash/shared/logs/probeflash.log
+StandardError=append:/home/hurricane/probeflash/shared/logs/probeflash.err.log
 
 # Hardening: keep the app read-only except explicit shared writable paths.
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
-ProtectHome=true
-ReadWritePaths=/opt/probeflash/shared/data /opt/probeflash/shared/logs /opt/probeflash/shared/env
+ReadWritePaths=/home/hurricane/probeflash/shared/data /home/hurricane/probeflash/shared/logs /home/hurricane/probeflash/shared/env
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 
 [Install]

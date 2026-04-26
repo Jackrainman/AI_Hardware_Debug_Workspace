@@ -55,8 +55,8 @@ const env = Object.fromEntries(
 const expectedEnv = {
   PROBEFLASH_HOST: "0.0.0.0",
   PROBEFLASH_PORT: "4100",
-  PROBEFLASH_DB_PATH: "/opt/probeflash/shared/data/probeflash.sqlite",
-  PROBEFLASH_LOG_DIR: "/opt/probeflash/shared/logs",
+  PROBEFLASH_DB_PATH: "/home/hurricane/probeflash/shared/data/probeflash.sqlite",
+  PROBEFLASH_LOG_DIR: "/home/hurricane/probeflash/shared/logs",
   PROBEFLASH_WORKSPACE_ID: "workspace-26-r1",
   PROBEFLASH_WORKSPACE_NAME: "26年 R1",
 };
@@ -70,17 +70,18 @@ for (const [key, expectedValue] of Object.entries(expectedEnv)) {
 const service = contents["probeflash.service.template"];
 const requiredServiceLines = [
   "Description=ProbeFlash LAN storage server",
-  "User={{PROBEFLASH_USER}}",
-  "Group={{PROBEFLASH_GROUP}}",
-  "WorkingDirectory=/opt/probeflash/current/apps/server",
-  "EnvironmentFile=/opt/probeflash/shared/env/probeflash.env",
-  "ExecStart=/opt/probeflash/runtime/node/bin/node /opt/probeflash/current/apps/server/src/server.mjs",
-  "Restart=on-failure",
-  "RestartSec=3",
+  "Use only after /home/hurricane/probeflash no-sudo verification succeeds",
+  "User=hurricane",
+  "Group=hurricane",
+  "WorkingDirectory=/home/hurricane/probeflash/current/apps/server",
+  "EnvironmentFile=/home/hurricane/probeflash/shared/env/probeflash.env",
+  "ExecStart=/home/hurricane/probeflash/runtime/node/bin/node src/server.mjs",
+  "Restart=always",
+  "RestartSec=3s",
   "NoNewPrivileges=true",
   "PrivateTmp=true",
   "ProtectSystem=full",
-  "ReadWritePaths=/opt/probeflash/shared/data /opt/probeflash/shared/logs /opt/probeflash/shared/env",
+  "ReadWritePaths=/home/hurricane/probeflash/shared/data /home/hurricane/probeflash/shared/logs /home/hurricane/probeflash/shared/env",
 ];
 
 for (const line of requiredServiceLines) {
@@ -88,17 +89,21 @@ for (const line of requiredServiceLines) {
 }
 
 assertNotContains("probeflash.service.template", service, "/usr/bin/node");
-assertNotContains("probeflash.service.template", service, "node src/server.mjs");
+assertNotContains("probeflash.service.template", service, "WorkingDirectory=/opt/probeflash");
+assertNotContains("probeflash.service.template", service, "EnvironmentFile=/opt/probeflash");
+assertNotContains("probeflash.service.template", service, "ExecStart=/opt/probeflash");
+assertNotContains("probeflash.service.template", service, "ProtectHome=true");
 
 const allDocs = `${contents["README.md"]}\n${contents["install-layout.md"]}`;
 for (const expected of [
-  "/opt/probeflash/current",
-  "/opt/probeflash/releases/",
-  "/opt/probeflash/shared/data",
-  "/opt/probeflash/shared/logs",
-  "/opt/probeflash/shared/env",
-  "/opt/probeflash/runtime/node",
-  "/opt/probeflash/runtime/node/bin/node",
+  "/home/hurricane/probeflash/current",
+  "/home/hurricane/probeflash/releases/",
+  "/home/hurricane/probeflash/shared/data",
+  "/home/hurricane/probeflash/shared/logs",
+  "/home/hurricane/probeflash/shared/env",
+  "/home/hurricane/probeflash/runtime/node",
+  "/home/hurricane/probeflash/runtime/node/bin/node",
+  "/home/hurricane/probeflash/shared/data/probeflash.sqlite",
   "4100",
   "4173",
   "0.0.0.0",
@@ -106,17 +111,25 @@ for (const expected of [
   "192.168.2.2",
   "Node 24",
   "node:sqlite",
-  "systemctl stop probeflash.service",
-  "systemctl disable probeflash.service",
+  "no-sudo",
+  "not required for no-sudo verify",
+  "later / formal install / optional hardening",
+  "/opt/probeflash",
 ]) {
   assertContains("deploy docs", allDocs, expected);
 }
 
-for (const forbidden of ["PROBEFLASH_PORT=80", "ExecStart=/usr/bin/node"]) {
+for (const forbidden of [
+  "PROBEFLASH_PORT=80",
+  "ExecStart=/usr/bin/node",
+  "Recommended root: `/opt/probeflash/`",
+  "copy source for `/opt/probeflash/shared/env/probeflash.env`",
+  "Create `/opt/probeflash/{releases,shared/{data,logs,env},runtime}`",
+]) {
   assertNotContains("deploy docs", allDocs, forbidden);
 }
 
 console.log("[S3-SERVER-DEPLOY-PREP verify] PASS: deploy files exist and are readable");
-console.log("[S3-SERVER-DEPLOY-PREP verify] PASS: env.example exposes the expected LAN deployment defaults");
-console.log("[S3-SERVER-DEPLOY-PREP verify] PASS: systemd template uses independent runtime, service account placeholders, and writable paths");
-console.log("[S3-SERVER-DEPLOY-PREP verify] PASS: docs keep runtime, layout, port, pre-check, and rollback boundaries consistent");
+console.log("[S3-SERVER-DEPLOY-PREP verify] PASS: env.example exposes the expected user-dir LAN deployment defaults");
+console.log("[S3-SERVER-DEPLOY-PREP verify] PASS: systemd template is later-authorized and points to the user-dir layout");
+console.log("[S3-SERVER-DEPLOY-PREP verify] PASS: docs put /home/hurricane/probeflash before later /opt hardening");
