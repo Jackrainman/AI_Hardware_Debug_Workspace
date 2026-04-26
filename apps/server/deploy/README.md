@@ -1,8 +1,8 @@
 # ProbeFlash server deploy docs
 
-本目录是服务器部署材料入口。当前可执行路线是 `S3-SERVER-USER-DIR-DEPLOY-VERIFY`：先在 `/home/hurricane/probeflash` 做 no-sudo 用户目录验证。本目录修改只影响仓库内文档、env 示例、systemd 后续模板与静态校验；不 SSH、不上传、不 sudo、不写 `/opt`、不启动 systemd、不验证 LAN。
+本目录是服务器部署材料入口。当前推荐路线是 **release tarball first**：从 GitHub Release 获取固定版本资产，校验 `SHA256SUMS.txt`，解压到 `/home/hurricane/probeflash/releases/vX.Y.Z`，再用 `current` symlink 切换当前版本。服务器不作为开发 checkout，不以服务器 `git pull` 作为主部署方式。本目录修改只影响仓库内文档、env 示例、systemd 后续模板与静态校验；不 SSH、不上传、不 sudo、不写 `/opt`、不启动 systemd、不验证 LAN。
 
-## Current route: user-dir no-sudo verify
+## Current route: release tarball user-dir no-sudo verify
 
 - Target server: `192.168.2.2`, Ubuntu 20.04.6 LTS, SSH user `hurricane`.
 - Deploy root: `/home/hurricane/probeflash`.
@@ -13,11 +13,13 @@
 - Host: no-sudo LAN verify may bind `PROBEFLASH_HOST=0.0.0.0`, then test `http://192.168.2.2:4100/`.
 - Server system Node is `v10.19.0`; ProbeFlash must not use it and must not upgrade it.
 - No reverse proxy, `.local`, public exposure, permission system, Electron, AI/RAG, or existing web service changes in this phase.
+- Release assets for v0.2.0: `probeflash-web-v0.2.0.tar.gz`, `probeflash-server-v0.2.0.tar.gz`, `probeflash-dev-tools-v0.2.0.tar.gz`, `SHA256SUMS.txt`.
+- `git pull` is allowed only for development/debugging, not as the formal server deployment path.
 
 ## Files in this directory
 
 - `env.example`: copy source for `/home/hurricane/probeflash/shared/env/probeflash.env`.
-- `install-layout.md`: current `/home/hurricane/probeflash` user-dir layout, plus later `/opt` notes.
+- `install-layout.md`: current `/home/hurricane/probeflash` release layout, plus later `/opt` notes.
 - `probeflash.service.template`: later authorized systemd template for the same user-dir layout; it is not required for no-sudo verify.
 
 Repository-side verification:
@@ -34,8 +36,10 @@ Current root: `/home/hurricane/probeflash/`.
 
 ```text
 /home/hurricane/probeflash/
-  current -> /home/hurricane/probeflash/releases/<release-id>/
-  releases/<release-id>/        # app code for one immutable release
+  current -> /home/hurricane/probeflash/releases/v0.2.0/
+  releases/v0.2.0/              # immutable unpacked release payload
+    apps/server/
+    dist/
   shared/data/                  # SQLite db and WAL/SHM files
   shared/logs/                  # stdout/stderr or manual run logs
   shared/env/probeflash.env     # copied from env.example
@@ -74,15 +78,23 @@ Current `apps/server` service is the API/storage server. It does not claim that 
 
 ## No-sudo deploy verify checklist
 
-Do not run these steps from this docs-only prep. They are the intended checklist for `S3-SERVER-USER-DIR-DEPLOY-VERIFY` only after the user confirms SSH, upload, write path, process start, and 4100 port boundaries.
+Do not run these steps from this docs-only prep. They are the intended checklist for `S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY` only after the user confirms SSH, release download or upload method, write path, process start, and 4100 port boundaries.
 
 1. Confirm target user is `hurricane` and no sudo/systemd action is authorized for this step.
 2. Create only the user-dir tree under `/home/hurricane/probeflash/{releases,shared/{data,logs,env},runtime}`.
-3. Put independent Node under `/home/hurricane/probeflash/runtime/node/` and verify `/home/hurricane/probeflash/runtime/node/bin/node --version`.
-4. Copy a release into `/home/hurricane/probeflash/releases/<release-id>/` and point `/home/hurricane/probeflash/current` to it.
-5. Copy `env.example` to `/home/hurricane/probeflash/shared/env/probeflash.env` and review host/port/db/workspace values.
-6. Start a temporary user-owned ProbeFlash process with the independent runtime; do not create a systemd service in this step.
-7. Verify `/api/health`, SQLite persistence, logs, restart behavior, LAN access, and the old port 80 service.
+3. Download the fixed GitHub Release assets on the server, or upload the exact assets from a trusted local machine.
+4. Verify `SHA256SUMS.txt` before unpacking; do not run unverified tarballs.
+5. Put independent Node under `/home/hurricane/probeflash/runtime/node/` and verify `/home/hurricane/probeflash/runtime/node/bin/node --version`.
+6. Unpack the release into `/home/hurricane/probeflash/releases/v0.2.0/` and point `/home/hurricane/probeflash/current` to it.
+7. Copy `env.example` to `/home/hurricane/probeflash/shared/env/probeflash.env` and review host/port/db/workspace values.
+8. Start a temporary user-owned ProbeFlash process with the independent runtime; do not create a systemd service in this step.
+9. Verify `/api/health`, SQLite persistence, logs, restart behavior, LAN access, and the old port 80 service.
+
+## Release update / rollback rule
+
+- Update by downloading a new release, verifying SHA256, unpacking to `/home/hurricane/probeflash/releases/vX.Y.Z/`, switching `current`, restarting, and checking health.
+- Rollback by switching `current` back to the previous release and restarting.
+- Never keep SQLite, env files, logs, or Node runtime inside a release directory; keep them under `shared/` and `runtime/` so they survive release replacement.
 
 ## Later authorized systemd route
 

@@ -70,7 +70,7 @@ for (const [key, expectedValue] of Object.entries(expectedEnv)) {
 const service = contents["probeflash.service.template"];
 const requiredServiceLines = [
   "Description=ProbeFlash LAN storage server",
-  "Use only after /home/hurricane/probeflash no-sudo verification succeeds",
+  "Use only after release tarball no-sudo verification under /home/hurricane/probeflash succeeds",
   "User=hurricane",
   "Group=hurricane",
   "WorkingDirectory=/home/hurricane/probeflash/current/apps/server",
@@ -98,6 +98,7 @@ const allDocs = `${contents["README.md"]}\n${contents["install-layout.md"]}`;
 for (const expected of [
   "/home/hurricane/probeflash/current",
   "/home/hurricane/probeflash/releases/",
+  "/home/hurricane/probeflash/releases/v0.2.0",
   "/home/hurricane/probeflash/shared/data",
   "/home/hurricane/probeflash/shared/logs",
   "/home/hurricane/probeflash/shared/env",
@@ -112,6 +113,12 @@ for (const expected of [
   "Node 24",
   "node:sqlite",
   "no-sudo",
+  "release tarball first",
+  "probeflash-web-v0.2.0.tar.gz",
+  "probeflash-server-v0.2.0.tar.gz",
+  "probeflash-dev-tools-v0.2.0.tar.gz",
+  "SHA256SUMS.txt",
+  "git pull",
   "not required for no-sudo verify",
   "later / formal install / optional hardening",
   "/opt/probeflash",
@@ -123,6 +130,7 @@ for (const forbidden of [
   "PROBEFLASH_PORT=80",
   "ExecStart=/usr/bin/node",
   "Recommended root: `/opt/probeflash/`",
+  "server `git pull` as the formal server deployment path",
   "copy source for `/opt/probeflash/shared/env/probeflash.env`",
   "Create `/opt/probeflash/{releases,shared/{data,logs,env},runtime}`",
 ]) {
@@ -132,4 +140,4 @@ for (const forbidden of [
 console.log("[S3-SERVER-DEPLOY-PREP verify] PASS: deploy files exist and are readable");
 console.log("[S3-SERVER-DEPLOY-PREP verify] PASS: env.example exposes the expected user-dir LAN deployment defaults");
 console.log("[S3-SERVER-DEPLOY-PREP verify] PASS: systemd template is later-authorized and points to the user-dir layout");
-console.log("[S3-SERVER-DEPLOY-PREP verify] PASS: docs put /home/hurricane/probeflash before later /opt hardening");
+console.log("[S3-SERVER-DEPLOY-PREP verify] PASS: docs prefer release tarball user-dir deployment before later /opt hardening");

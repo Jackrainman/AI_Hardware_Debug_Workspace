@@ -144,7 +144,7 @@
 - 决策：ProbeFlash 服务器部署必须按分层顺序推进：先在 `/home/hurricane/probeflash` 做 no-sudo 用户目录验证；再准备指向该用户目录的 `probeflash.service`；用户明确授权后才写 `/etc/systemd/system/probeflash.service` 并验证 systemd 自启；`/opt`、反向代理、`.local`、80/443 美化全部后置。
 - 原因：先验证独立 Node runtime、4100 端口、SQLite 持久化与旧服务旁路，能把权限风险、服务风险和数据风险拆开，避免影响 filebrowser / vnt-cli / docker / Portainer。
 - 放弃方案：直接写 `/opt`；默认 sudo；直接安装 systemd；抢占 80；升级系统 Node；把 Portainer / vnt-cli 的 root 服务方式照抄给 ProbeFlash。
-- 影响与后续动作：`current.md`、`backlog.md`、`.agent-state/handoff.json` 的下一任务切到 `S3-SERVER-USER-DIR-DEPLOY-VERIFY`，后续 systemd 任务必须显式依赖用户授权。
+- 影响与后续动作：当时 `current.md`、`backlog.md`、`.agent-state/handoff.json` 的下一任务切到用户目录部署验证，后续 systemd 任务必须显式依赖用户授权；该任务命名与部署方式已由 D-014 更新为 release tarball first。
 
 
 ## D-012：AI 与代码上下文能力采用 draft-only 与 explicit bundle 优先
@@ -162,4 +162,13 @@
 - 决策：建立 Night Run / Unattended Mode。夜跑只允许 repo-local、可自动验证、可回滚任务；遇到服务器、sudo、systemd、外部账号、API key、路径 / 权限 / 端口确认、删除 / 迁移数据、产品拍板或无法本地验证的问题必须停止并留下 handoff。将 v0.2 前历史专项输入移动到 `docs/archive/v0.2-closeout/`，默认读取链不再包含 archive。
 - 原因：把无人值守能力限制在安全边界内，避免误操作服务器或真实数据；同时让 `docs/planning/` 继续只承载当前战况、候选池与长期拍板，降低上下文重置后的误读风险。
 - 放弃方案：夜跑继续推进真实服务器部署；把历史草案留在 `docs/planning/`；删除历史文档；恢复已硬删除的弱化 handoff / roadmap / architecture 文档。
-- 影响与后续动作：`AGENTS.md`、`current.md`、`backlog.md`、`.agent-state/handoff.json` 与相关 skills 必须保留夜跑边界；当前下一任务仍是 `S3-SERVER-USER-DIR-DEPLOY-VERIFY`，但只能在用户白天确认 SSH / 上传 / 写入路径 / 启动进程 / 4100 端口边界后执行。
+- 影响与后续动作：`AGENTS.md`、`current.md`、`backlog.md`、`.agent-state/handoff.json` 与相关 skills 必须保留夜跑边界；当时的用户目录部署验证只能在用户白天确认 SSH / 上传 / 写入路径 / 启动进程 / 4100 端口边界后执行；当前任务命名与部署方式已由 D-014 更新为 release tarball first。
+
+
+## D-014：服务器部署采用 release tarball first
+- 日期：2026-04-26
+- 背景：v0.2.0 GitHub Release 已发布，资产包括 `probeflash-web-v0.2.0.tar.gz`、`probeflash-server-v0.2.0.tar.gz`、`probeflash-dev-tools-v0.2.0.tar.gz` 与 `SHA256SUMS.txt`；WSL 本地已验证 release 包可下载、解压、运行与 `/api` proxy 失败态。用户当前没有时间做真实服务器验证，并明确倾向用 release 压缩包部署，而不是服务器上 `git pull` 开发态部署。
+- 决策：ProbeFlash 后续服务器部署以 GitHub Release tarball 为主路径：下载固定版本资产，校验 `SHA256SUMS.txt`，解压到 `/home/hurricane/probeflash/releases/vX.Y.Z`，用独立 Node runtime 启动，用 `current` symlink 指向当前版本，并把 SQLite、日志与 env 保存在 `/home/hurricane/probeflash/shared/`；服务器不作为开发 checkout，`git pull` 只可作为开发 / 调试方式，不是正式部署方式。
+- 原因：release 包部署可重复、可校验、可回滚，能避免服务器源码树漂移、误用系统 Node v10、误删持久数据或把开发态 checkout 当成生产部署；`current` symlink + `releases/` + `shared/` 能把版本切换和数据持久化拆开。
+- 放弃方案：服务器上长期 `git checkout` / `git pull`；把 `shared/data` 放进 release 目录；未校验 SHA256 直接运行；直接写 `/opt`；直接 systemd；抢占 80；升级服务器全局 Node。
+- 影响与后续动作：旧 `S3-SERVER-USER-DIR-DEPLOY-VERIFY` 拆分为 `S3-SERVER-RELEASE-DOWNLOAD-PLAN`、`S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY`、`S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN`、`S3-SERVER-RELEASE-UPDATE-FLOW` 与后置 `S3-SERVER-SYSTEMD-AUTOSTART-PREP`。当前真实部署任务是 `S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY`，状态保持 `blocked_by_user_confirmation` + `blocked_by_user_time` + not night-safe。

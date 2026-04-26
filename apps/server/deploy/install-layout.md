@@ -1,6 +1,6 @@
 # ProbeFlash install layout
 
-本文件定义当前真实部署验证采用的用户目录布局。当前任务不创建服务器目录、不上传文件、不执行 sudo、不安装 systemd。
+本文件定义当前真实部署验证采用的 release tarball 用户目录布局。当前任务不创建服务器目录、不上传文件、不执行 sudo、不安装 systemd。
 
 ## Current user-dir layout
 
@@ -8,14 +8,12 @@ Current root: `/home/hurricane/probeflash`.
 
 ```text
 /home/hurricane/probeflash/
-  current -> /home/hurricane/probeflash/releases/<release-id>/
+  current -> /home/hurricane/probeflash/releases/v0.2.0/
   releases/
-    <release-id>/
-      apps/
-        server/
-        desktop/
-      docs/
-      package metadata / release notes as needed
+    v0.2.0/
+      apps/server/
+      dist/
+      release metadata / package files as needed
   shared/
     data/
       probeflash.sqlite
@@ -34,11 +32,13 @@ Current root: `/home/hurricane/probeflash`.
 
 ## What goes where
 
-- App code: `/home/hurricane/probeflash/releases/<release-id>/`; `/home/hurricane/probeflash/current` is the symlink to the active release.
+- Release payload: `/home/hurricane/probeflash/releases/vX.Y.Z/`; `/home/hurricane/probeflash/current` is the symlink to the active release.
+- Release source: fixed GitHub Release assets such as `probeflash-web-v0.2.0.tar.gz`, `probeflash-server-v0.2.0.tar.gz`, `probeflash-dev-tools-v0.2.0.tar.gz`, verified with `SHA256SUMS.txt` before unpacking.
 - SQLite data: `/home/hurricane/probeflash/shared/data/probeflash.sqlite`; WAL/SHM sidecar files stay in the same directory.
 - Logs: `/home/hurricane/probeflash/shared/logs/`; no-sudo verify may write process logs here, and later systemd can append stdout/stderr here.
 - Env: `/home/hurricane/probeflash/shared/env/probeflash.env`; copy from `apps/server/deploy/env.example`.
 - Node runtime: `/home/hurricane/probeflash/runtime/node/`; must be independent and must not use `/usr/bin/node`.
+- Formal deployment must not depend on a server-side `git checkout` or `git pull`; those are development/debugging shortcuts only.
 
 ## Ownership and permissions
 
@@ -62,6 +62,15 @@ ln -sfn /home/hurricane/probeflash/releases/<new-release-id> /home/hurricane/pro
 ```
 
 Rollback only points `current` back to the previous release. Do not delete `/home/hurricane/probeflash/shared/data/`.
+
+## Persistent shared paths
+
+Release replacement must not delete or overwrite these paths:
+
+- `/home/hurricane/probeflash/shared/data/`
+- `/home/hurricane/probeflash/shared/logs/`
+- `/home/hurricane/probeflash/shared/env/`
+- `/home/hurricane/probeflash/runtime/node/`
 
 ## Later formal install option
 

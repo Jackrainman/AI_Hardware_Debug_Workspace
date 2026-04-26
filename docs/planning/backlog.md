@@ -4,9 +4,9 @@
 
 ## 当前阶段与总路线
 - 当前版本：v0.2.0 release。
-- 当前真实状态：本地 HTTP + SQLite 主链路、workspace 创建与切换、issue / investigation record / closeout / archive / error-entry 主路径、本地 release smoke、S4 version / health / backup / restore dry-run、AI-ready prompt/schema、AI-ready closeout draft panel 已完成；真实服务器部署、systemd 自启、服务器 LAN 持久化验证、真实 AI、仓库代码上下文分析均未完成。
-- 总路线：先服务器安全部署，再 operability / data safety，再 AI-ready 产品边界，再最小真实 AI 草稿，最后 code context bundle 与代码上下文 AI 分析。
-- 服务器部署安全分层：先 `/home/hurricane/probeflash` no-sudo 验证；再准备 `probeflash.service`；用户授权后才写 `/etc/systemd/system/probeflash.service` 并验证 systemd；最后才考虑 `/opt`、反向代理、`.local` 或 80/443 美化。
+- 当前真实状态：本地 HTTP + SQLite 主链路、workspace 创建与切换、issue / investigation record / closeout / archive / error-entry 主路径、本地 release smoke、S4 version / health / backup / restore dry-run、AI-ready prompt/schema、AI-ready closeout draft panel 已完成；真实服务器 release 部署、systemd 自启、服务器 LAN 持久化验证、真实 AI、仓库代码上下文分析均未完成。
+- 总路线：先 release tarball 服务器安全部署，再 operability / data safety 的服务器复验，再 AI-ready 产品边界，再最小真实 AI 草稿，最后 code context bundle 与代码上下文 AI 分析。
+- 服务器部署安全分层：优先从 GitHub Release 下载固定版本资产并校验 `SHA256SUMS.txt`，解压到 `/home/hurricane/probeflash/releases/vX.Y.Z`，用 `current` symlink 切换版本，`shared/data` / `shared/env` / `shared/logs` 与 `runtime/node` 不随 release 删除；不把服务器当开发 checkout，不以服务器 `git pull` 作为主部署方式。no-sudo release 用户目录验证通过后，才准备 `probeflash.service`；用户授权后才写 `/etc/systemd/system/probeflash.service` 并验证 systemd；最后才考虑 `/opt`、反向代理、`.local` 或 80/443 美化。
 
 ## 认领规则
 1. AI 只能从下列队列中认领 **第一个依赖已满足且未完成** 的原子任务。
@@ -24,10 +24,10 @@
 
 ### 1. TECH-DEBT-DEPLOY-DOC-CLARITY
 - **状态**：completed_this_round。
-- **目标**：让 `apps/server/deploy/*` 与当前真实部署路线一致：先 `/home/hurricane/probeflash` no-sudo 用户目录部署验证，再进入后续授权 systemd；`/opt/probeflash` 只能作为 later / formal install / optional hardening。
+- **目标**：让 `apps/server/deploy/*` 与当前真实部署路线一致：先 release tarball first 的 `/home/hurricane/probeflash` no-sudo 用户目录部署验证，再进入后续授权 systemd；`/opt/probeflash` 只能作为 later / formal install / optional hardening。
 - **风险来源**：旧 deploy 文档、env 示例、service 模板和 `verify-deploy-prep` 以 `/opt/probeflash` / systemd 为第一路线，可能诱导 AI 或人工在未授权时 sudo、写 `/opt`、使用系统 Node 或误碰 80。
 - **不做项**：不 SSH；不上传；不 sudo；不写 systemd；不改 server 业务代码；不改 API；不实际部署；不升级系统 Node；不占 80。
-- **验证要求**：`cd apps/server && npm run verify:deploy-prep`；`git diff --check`；读回 `README.md` / `install-layout.md` / `env.example` / `probeflash.service.template` 确认 no-sudo user-dir 路线清楚。
+- **验证要求**：`cd apps/server && npm run verify:deploy-prep`；`git diff --check`；读回 `README.md` / `install-layout.md` / `env.example` / `probeflash.service.template` 确认 release tarball no-sudo user-dir 路线清楚。
 - **是否 night-safe**：是，docs / deploy prep repo-local，已完成。
 - **是否需要用户白天确认**：否；真实部署仍需要用户白天确认。
 
@@ -61,7 +61,7 @@
 ### 5. TECH-DEBT-PLANNING-QUEUE-SIGNAL
 - **状态**：completed_this_round。
 - **目标**：消除 `current.md` / `handoff.json` / backlog 中“当前唯一任务”与 blocked / night-safe 并行任务的冲突，防止 AI 越过服务器主线直接进入真实 AI。
-- **风险来源**：`current_atomic_task` 曾指向 `AI-ASSIST-POLISH-CLOSEOUT-MINIMAL`，但服务器部署主线仍是 `S3-SERVER-USER-DIR-DEPLOY-VERIFY blocked_by_user_confirmation`；真实 AI 又依赖 API key/provider/server env 用户确认。
+- **风险来源**：`current_atomic_task` 曾指向 `AI-ASSIST-POLISH-CLOSEOUT-MINIMAL`，但服务器部署主线仍是 `S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY blocked_by_user_confirmation`；真实 AI 又依赖 API key/provider/server env 用户确认。
 - **不做项**：不重排为大路线图；不删除服务器任务；不把 blocked 任务标 completed；不把真实 AI 标 started；不恢复旧文档。
 - **验证要求**：`cd apps/desktop && npm run verify:handoff`；`python3 -m json.tool .agent-state/handoff.json >/dev/null`；`git diff --check`；读回确认白天主线与夜跑候选分离。
 - **是否 night-safe**：是，docs / planning / handoff repo-local，已完成。
@@ -103,53 +103,75 @@
 - **是否 night-safe**：是，前提是只触碰 repo-local 临时路径。
 - **是否需要用户白天确认**：否，除非涉及真实服务器或用户数据路径。
 
-## 近期 3 个任务
+## 近期 release-based 部署任务
 
-### 1. S3-SERVER-USER-DIR-DEPLOY-VERIFY
-- **目标**：在服务器 `/home/hurricane/probeflash` 下完成 v0.2.0 no-sudo 用户目录部署验证。
-- **前置依赖**：v0.2.0 release asset 已生成并完成本地 smoke；本地 HTTP + SQLite E2E 已完成；服务器事实已确认；用户授权 SSH / 上传 / 在 `/home/hurricane` 写入。
-- **夜跑状态**：`blocked_by_user_confirmation`；必须等用户白天确认 SSH、上传方式、写入路径、启动进程与 4100 端口边界后执行。
-- **输入文件**：`AGENTS.md`、`docs/planning/current.md`、`.agent-state/handoff.json`、本文件、v0.2.0 release assets、`apps/server/deploy/*` 参考材料、目标服务器 `192.168.2.2`。
-- **允许改动**：服务器 `/home/hurricane/probeflash/releases`、`/home/hurricane/probeflash/current`、`/home/hurricane/probeflash/runtime/node`、`/home/hurricane/probeflash/shared/data`、`/home/hurricane/probeflash/shared/logs`、`/home/hurricane/probeflash/shared/env`；仓库内仅 planning sync 或必要 deployment note。
-- **明确不做**：不 sudo；不 systemd；不写 `/opt`；不碰 80；不升级系统 Node；不使用系统 Node v10；不影响 filebrowser / vnt-cli / docker / Portainer；不做反向代理 / `.local`。
-- **验证要求**：`curl http://127.0.0.1:4100/api/health`；`curl http://192.168.2.2:4100/api/health`；创建 workspace / issue；停止重启后读回；确认 `/home/hurricane/probeflash/shared/data/probeflash.sqlite` 存在且由 ProbeFlash 使用；确认 filebrowser:80 仍正常。
-- **完成定义**：ProbeFlash 使用独立 Node runtime 在用户目录运行；4100 可本机与 LAN 访问；SQLite 重启后可读回；filebrowser:80 不受影响；没有执行 sudo / systemd / `/opt` 操作。
+### 1. S3-SERVER-RELEASE-DOWNLOAD-PLAN
+- **目标**：明确服务器如何获得固定版本 GitHub Release assets，并校验 `SHA256SUMS.txt`。
+- **状态**：documented_this_round；这是 repo-local 计划项，不执行下载、不上传、不 SSH。
+- **前置依赖**：v0.2.0 release assets 已发布；本地 release smoke 已通过。
+- **输入文件**：`apps/server/deploy/*`、release asset 名称、目标服务器事实、`SHA256SUMS.txt`。
+- **允许改动**：deploy docs、planning、handoff、必要的 deploy 静态校验。
+- **明确不做**：不触碰 GitHub release assets；不改 tag；不上传服务器；不执行真实下载；不 SSH；不 sudo；不写 `/home/hurricane/probeflash`。
+- **验证要求**：deploy docs 必须写清 `probeflash-web-v0.2.0.tar.gz`、`probeflash-server-v0.2.0.tar.gz`、`probeflash-dev-tools-v0.2.0.tar.gz`、`SHA256SUMS.txt`、SHA256 校验与“不用服务器 git pull”。
+- **完成定义**：后续 AI 和用户能按 release tarball 路线准备下载 / 上传与校验，而不会把服务器当开发 checkout。
+- **下一个任务**：`S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY`。
+
+### 2. S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY
+- **目标**：在服务器 `/home/hurricane/probeflash` 下使用 release tarball 完成 v0.2.0 no-sudo 用户目录部署验证。
+- **前置依赖**：`S3-SERVER-RELEASE-DOWNLOAD-PLAN` 已写清；v0.2.0 release assets 已生成并完成本地 smoke；本地 HTTP + SQLite E2E 已完成；服务器事实已确认；用户授权 SSH / 下载或上传 / 在 `/home/hurricane` 写入 / 启动临时进程 / 使用 4100。
+- **夜跑状态**：`blocked_by_user_confirmation` + `blocked_by_user_time`；必须等用户白天确认真实服务器边界后执行。
+- **输入文件**：`AGENTS.md`、`docs/planning/current.md`、`.agent-state/handoff.json`、本文件、v0.2.0 release assets、`SHA256SUMS.txt`、`apps/server/deploy/*`、目标服务器 `192.168.2.2`。
+- **允许改动**：服务器 `/home/hurricane/probeflash/releases/v0.2.0`、`/home/hurricane/probeflash/current`、`/home/hurricane/probeflash/runtime/node`、`/home/hurricane/probeflash/shared/data`、`/home/hurricane/probeflash/shared/logs`、`/home/hurricane/probeflash/shared/env`；仓库内仅 planning sync 或必要 deployment note。
+- **明确不做**：不在服务器上 `git pull`；不 sudo；不 systemd；不写 `/opt`；不碰 80；不升级系统 Node；不使用系统 Node v10；不影响 filebrowser / vnt-cli / docker / Portainer；不做反向代理 / `.local`。
+- **验证要求**：校验 `SHA256SUMS.txt`；确认 `current -> releases/v0.2.0`；`curl http://127.0.0.1:4100/api/health`；`curl http://192.168.2.2:4100/api/health`；创建 workspace / issue；停止重启后读回；确认 `/home/hurricane/probeflash/shared/data/probeflash.sqlite` 存在且由 ProbeFlash 使用；确认 filebrowser:80 仍正常。
+- **完成定义**：ProbeFlash 从固定 release 资产运行；4100 可本机与 LAN 访问；SQLite 重启后可读回；`shared/data` / `shared/env` / `shared/logs` 不随 release 删除；filebrowser:80 不受影响；没有执行 sudo / systemd / `/opt` / 服务器 `git pull`。
+- **下一个任务**：`S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN` 或 `S3-SERVER-SYSTEMD-AUTOSTART-PREP`，由 deploy verify 结果决定。
+
+### 3. S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN
+- **目标**：明确 web dist 如何服务，以及 `/api` 如何代理到 backend。
+- **前置依赖**：v0.2.0 web release smoke 已证明临时静态服务器 + `/api` proxy 可行。
+- **夜跑状态**：pending_repo_local_plan；可夜跑，但只能改仓库内 deploy docs / 静态计划，不启动真实服务器。
+- **输入文件**：`apps/server/deploy/*`、本地 release smoke 结论、后续可能的 `web-server.mjs` / Node 静态代理方案。
+- **允许改动**：deploy docs、planning、handoff；必要时补 repo-local verify，不改业务 API / UI。
+- **明确不做**：不碰 80；不做 nginx / Caddy / 反向代理；不做 `.local`；不公网暴露；不 SSH；不 systemd。
+- **验证要求**：文档必须区分 backend `4100` 与 web entry；如采用 Node 静态代理方案，需说明 `/api` 只代理到 `127.0.0.1:4100`，backend 停止时必须暴露 proxy error，不 silent fallback。
+- **完成定义**：后续服务器验证知道 web dist 的服务方式与 API proxy 边界，不会误把 backend health 当成完整 LAN Web UI 验证。
+- **下一个任务**：`S3-SERVER-RELEASE-UPDATE-FLOW`。
+
+### 4. S3-SERVER-RELEASE-UPDATE-FLOW
+- **目标**：定义后续 v0.2.1 / v0.3.0 如何从 release tarball 更新和回滚，而不是用 `git pull` 作为主部署方式。
+- **前置依赖**：release 用户目录布局已确定；实际验证部分依赖 `S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY` 完成。
+- **夜跑状态**：repo-local plan 可夜跑；真实更新 / rollback 验证必须等服务器 release deploy 完成。
+- **输入文件**：v0.2.0 release assets、后续 release tarball 约定、服务器 `/home/hurricane/probeflash` 布局、systemd service、`apps/server/deploy/*`。
+- **允许改动**：部署文档 / 脚本；planning sync；服务器侧 `releases/vX.Y.Z` 与 `current` symlink 只在用户授权部署时允许。
+- **明确不做**：不把 `shared/data` 放进 release 目录；不删除 DB；不依赖服务器 `git pull`；不碰 80；不升级系统 Node；不做公网发布。
+- **验证要求**：下载新 release；校验 SHA256；解压到 `releases/vX.Y.Z`；切换 `current` symlink；restart；health check；DB 保留；回滚到上一个 release。
+- **完成定义**：有可重复的 release tarball 更新流程；失败可回滚；服务版本与 DB 持久化可验证。
 - **下一个任务**：`S3-SERVER-SYSTEMD-AUTOSTART-PREP`。
 
-### 2. S3-SERVER-SYSTEMD-AUTOSTART-PREP
-- **目标**：在 no-sudo 部署验证成功后，准备与 `/home/hurricane/probeflash` 布局一致的 `probeflash.service`。
-- **前置依赖**：`S3-SERVER-USER-DIR-DEPLOY-VERIFY` 完成；用户目录 runtime / current / shared 路径已确定。
-- **夜跑状态**：`blocked_by_external_dependency`；等待真实服务器用户目录部署验证完成，不能在夜跑中越过该事实。
+### 5. S3-SERVER-SYSTEMD-AUTOSTART-PREP
+- **目标**：在 no-sudo release 部署验证成功后，准备与 `/home/hurricane/probeflash` release 布局一致的 `probeflash.service`。
+- **前置依赖**：`S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY` 完成；用户目录 runtime / current / shared 路径已由真实 release 部署验证。
+- **夜跑状态**：`blocked_by_external_dependency_after_release_user_dir_verify`；等待真实服务器用户目录 release 部署验证完成，不能在夜跑中越过该事实。
 - **输入文件**：`apps/server/deploy/probeflash.service.template`、`apps/server/deploy/env.example`、用户目录部署记录、systemd 事实、filebrowser.service 已知风格。
-- **允许改动**：planning 文件；必要时更新 `apps/server/deploy/*` 的模板 / 示例以匹配用户目录部署，但不得改 server 业务逻辑。
+- **允许改动**：planning 文件；必要时更新 `apps/server/deploy/*` 的模板 / 示例以匹配 release 用户目录部署，但不得改 server 业务逻辑。
 - **明确不做**：不执行真正 `systemctl`；不写 `/etc/systemd/system/probeflash.service`；不 sudo；不占 80；不用 root 跑 ProbeFlash；不切 `/opt`。
 - **验证要求**：unit 内容静态检查；确认 `User=hurricane`、`Group=hurricane`、`WorkingDirectory=/home/hurricane/probeflash/current/apps/server`、`EnvironmentFile=/home/hurricane/probeflash/shared/env/probeflash.env`、`ExecStart=/home/hurricane/probeflash/runtime/node/bin/node src/server.mjs`、`Restart=always`、`RestartSec=3s`；如环境允许，对临时 unit 文件运行 `systemd-analyze verify` 或等价静态检查。
-- **完成定义**：`probeflash.service` 草案可被用户审阅；路径均指向 `/home/hurricane/probeflash`；未执行 sudo / systemctl；下一轮可在用户授权后安装验证。
+- **完成定义**：`probeflash.service` 草案可被用户审阅；路径均指向 release-based `/home/hurricane/probeflash`；未执行 sudo / systemctl；下一轮可在用户授权后安装验证。
 - **下一个任务**：`S3-SERVER-SYSTEMD-AUTOSTART-VERIFY`。
 
-### 3. S3-SERVER-SYSTEMD-AUTOSTART-VERIFY
+### 6. S3-SERVER-SYSTEMD-AUTOSTART-VERIFY
 - **目标**：用户授权后安装并验证 `probeflash.service` 开机自启。
 - **前置依赖**：`S3-SERVER-SYSTEMD-AUTOSTART-PREP` 完成；用户明确授权 sudo、写 `/etc/systemd/system/probeflash.service`、执行 daemon-reload / enable / start / status。
 - **夜跑状态**：`blocked_by_user_confirmation`；涉及 sudo、systemd 与 `/etc/systemd/system` 写入，夜跑不可执行。
-- **输入文件**：已审阅的 `probeflash.service`、`/home/hurricane/probeflash/shared/env/probeflash.env`、用户目录部署结果、sudo 授权边界。
+- **输入文件**：已审阅的 `probeflash.service`、`/home/hurricane/probeflash/shared/env/probeflash.env`、用户目录 release 部署结果、sudo 授权边界。
 - **允许改动**：服务器 `/etc/systemd/system/probeflash.service`；systemd unit enable/start 状态；仓库 planning sync。
 - **明确不做**：未确认前不 sudo；不改 filebrowser / vnt-cli / docker / Portainer；不占 80；不升级系统 Node；不迁移到 `/opt`；不做反向代理 / `.local`。
 - **验证要求**：写 unit 前复述并确认路径；`systemctl daemon-reload`、`systemctl enable probeflash`、`systemctl start probeflash`、`systemctl status probeflash`；`journalctl -u probeflash`；`curl http://127.0.0.1:4100/api/health`；`curl http://192.168.2.2:4100/api/health`；restart 或 reboot 后读回；确认 filebrowser:80 正常。
 - **完成定义**：ProbeFlash 由 systemd 以 `hurricane:hurricane` 拉起并可开机自启；服务日志可诊断；SQLite 数据保留；旧服务不受影响。
-- **下一个任务**：`S3-SERVER-RELEASE-UPDATE-FLOW`。
+- **下一个任务**：服务器 release 更新 / rollback 实测或 S4 服务器路径复验，由 planning 重新判断。
 
 ## 中期任务队列
-
-### 4. S3-SERVER-RELEASE-UPDATE-FLOW
-- **目标**：定义并验证后续服务器如何从 release tarball 更新和回滚，而不是用 `git pull` 作为主部署方式。
-- **前置依赖**：`S3-SERVER-SYSTEMD-AUTOSTART-VERIFY` 完成。
-- **夜跑状态**：`blocked_by_external_dependency`；依赖真实服务器目录与 systemd 结果，当前不可夜跑。
-- **输入文件**：v0.2.0 release assets、后续 release tarball 约定、服务器 `/home/hurricane/probeflash` 布局、systemd service、`apps/server/deploy/*`。
-- **允许改动**：部署文档 / 脚本；服务器 `releases/vX.Y.Z` 目录与 `current` symlink；planning sync。
-- **明确不做**：不把 `shared/data` 放进 release 目录；不删除 DB；不依赖服务器 `git pull`；不碰 80；不升级系统 Node；不做公网发布。
-- **验证要求**：解压新 release；切换 `current` symlink；restart；health；DB 保留；回滚到上一个 release；确认 `shared/data/probeflash.sqlite` 不随 release 删除。
-- **完成定义**：有可重复的 release tarball 更新流程；失败可回滚；服务版本与 DB 持久化可验证。
-- **下一个任务**：`S4-DATA-BACKUP-EXPORT`。
 
 ### 5. S4-DATA-BACKUP-EXPORT
 - **目标**：提供 SQLite 备份 / 导出机制，保证运行中不破坏 DB。
@@ -284,7 +306,7 @@
 
 ## 当前先不做
 - 不把真实服务器部署标记为 completed。
-- 不在夜跑 / 无人值守模式下执行 `S3-SERVER-USER-DIR-DEPLOY-VERIFY` 或任何真实服务器任务。
+- 不在夜跑 / 无人值守模式下执行 `S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY` 或任何真实服务器任务。
 - 不把 AI-ready / AI assist / code context 写成已实现。
 - 不让服务器直接扫描任意仓库路径。
 - 不引入 RAG / embedding 作为第一步。

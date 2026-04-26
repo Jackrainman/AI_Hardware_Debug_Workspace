@@ -1,5 +1,5 @@
 # ProbeFlash later authorized systemd service template.
-# Use only after /home/hurricane/probeflash no-sudo verification succeeds and the user authorizes sudo/systemd.
+# Use only after release tarball no-sudo verification under /home/hurricane/probeflash succeeds and the user authorizes sudo/systemd.
 # Copy to /etc/systemd/system/probeflash.service only during S3-SERVER-SYSTEMD-AUTOSTART-VERIFY.
 
 [Unit]
