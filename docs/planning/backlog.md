@@ -4,7 +4,7 @@
 
 ## 当前阶段与总路线
 - 当前版本：v0.2.0 release。
-- 当前真实状态：本地 HTTP + SQLite 主链路、workspace 创建与切换、issue / investigation record / closeout / archive / error-entry 主路径、本地 release smoke、S4 version / health / backup / restore dry-run、AI-ready prompt/schema 已完成；真实服务器部署、systemd 自启、服务器 LAN 持久化验证、真实 AI、仓库代码上下文分析均未完成。
+- 当前真实状态：本地 HTTP + SQLite 主链路、workspace 创建与切换、issue / investigation record / closeout / archive / error-entry 主路径、本地 release smoke、S4 version / health / backup / restore dry-run、AI-ready prompt/schema、AI-ready closeout draft panel 已完成；真实服务器部署、systemd 自启、服务器 LAN 持久化验证、真实 AI、仓库代码上下文分析均未完成。
 - 总路线：先服务器安全部署，再 operability / data safety，再 AI-ready 产品边界，再最小真实 AI 草稿，最后 code context bundle 与代码上下文 AI 分析。
 - 服务器部署安全分层：先 `/home/hurricane/probeflash` no-sudo 验证；再准备 `probeflash.service`；用户授权后才写 `/etc/systemd/system/probeflash.service` 并验证 systemd；最后才考虑 `/opt`、反向代理、`.local` 或 80/443 美化。
 
@@ -126,7 +126,7 @@
 ### 10. AI-READY-CLOSEOUT-DRAFT-PANEL
 - **目标**：在 closeout 流程里增加“草稿辅助面板”，先用规则模板生成草稿。
 - **前置依赖**：`AI-READY-PROMPT-TEMPLATE-SYSTEM` 完成。
-- **夜跑状态**：`current_night_safe`；只生成可审阅规则草稿，不调用外部 AI，不自动写库。
+- **夜跑状态**：completed；已新增本地规则草稿生成器、closeout 表单草稿面板与 `npm run verify:ai-ready-closeout-draft-panel`，不调用外部 AI，不自动写库。
 - **输入文件**：closeout UI、issue / records / closeout input、prompt template schema、existing closeout orchestration。
 - **允许改动**：前端 closeout panel、规则草稿生成器、UI smoke / verify 脚本、planning sync。
 - **明确不做**：不调用外部 AI；不自动写入；不改变原 closeout 必填规则；不做 RAG / embedding；不保存 API key。
@@ -137,6 +137,7 @@
 ### 11. AI-ASSIST-POLISH-CLOSEOUT-MINIMAL
 - **目标**：接入真实 AI 的最小措辞优化，只返回 closeout 草稿。
 - **前置依赖**：`AI-READY-CLOSEOUT-DRAFT-PANEL` 完成；server 可安全持有 env；prompt schema 已稳定。
+- **夜跑状态**：`blocked_by_external_dependency_api_key_after_ai_ready`；需要用户确认真实 AI provider、API key/server env、timeout 与 mock/test provider 边界，夜跑不可执行。
 - **输入文件**：server env、server API、prompt templates、closeout draft panel、error state UI。
 - **允许改动**：server-side AI provider 最薄 adapter、server env 文档、前端请求草稿接口、timeout / error state、verify 脚本、planning sync。
 - **明确不做**：browser 不持有 API key；AI 不直接写库；AI 失败不阻断 closeout；不做 RAG / embedding；不做多 provider 复杂抽象；不把草稿当事实结论。

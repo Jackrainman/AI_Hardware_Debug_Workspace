@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import "./App.css";
+import {
+  buildRuleCloseoutDraft,
+  type RuleCloseoutDraft,
+} from "./ai/rule-closeout-draft";
 import type { IssueCard } from "./domain/schemas/issue-card";
+import type { InvestigationRecord } from "./domain/schemas/investigation-record";
 import {
   buildIssueCardFromIntake,
   defaultIntakeOptions,
@@ -656,12 +661,16 @@ type CloseoutSummary = {
 function CloseoutForm({
   repository,
   issueId,
+  issueCard,
+  records,
   onClosed,
   reportStorageError,
   clearStorageFeedback,
 }: {
   repository: StorageRepository;
   issueId: string;
+  issueCard: IssueCard | null;
+  records: InvestigationRecord[];
   onClosed: (summary: CloseoutSummary) => void;
   reportStorageError: (error: StorageFeedbackError) => void;
   clearStorageFeedback: () => void;
@@ -670,7 +679,26 @@ function CloseoutForm({
   const [rootCause, setRootCause] = useState<string>("");
   const [resolution, setResolution] = useState<string>("");
   const [prevention, setPrevention] = useState<string>("");
+  const [draft, setDraft] = useState<RuleCloseoutDraft | null>(null);
   const [status, setStatus] = useState<CloseoutSubmitStatus>({ state: "idle" });
+
+  useEffect(() => {
+    setDraft(null);
+  }, [issueId]);
+
+  const handleGenerateDraft = () => {
+    if (issueCard === null) return;
+    setDraft(buildRuleCloseoutDraft(issueCard, records));
+  };
+
+  const handleApplyDraft = () => {
+    if (draft === null) return;
+    setCategory(draft.category);
+    setRootCause(draft.rootCause);
+    setResolution(draft.resolution);
+    setPrevention(draft.prevention);
+    setStatus({ state: "idle" });
+  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -695,6 +723,7 @@ function CloseoutForm({
     setRootCause("");
     setResolution("");
     setPrevention("");
+    setDraft(null);
     const markdownContent = result.archiveDocument.markdownContent;
     const markdownPreview =
       markdownContent.length > 500
@@ -726,6 +755,63 @@ function CloseoutForm({
       <p className="storage-line" data-testid="closeout-target">
         结案对象：{issueId}
       </p>
+      <section className="closeout-draft-panel" data-testid="closeout-draft-panel">
+        <div className="closeout-draft-header">
+          <div>
+            <span className="closeout-draft-eyebrow">AI-ready 规则草稿</span>
+            <p>本区只用本地规则生成可审阅草稿，不调用外部 AI，也不会自动写库。</p>
+          </div>
+          <button
+            type="button"
+            className="button-secondary"
+            onClick={handleGenerateDraft}
+            disabled={issueCard === null}
+            data-testid="closeout-draft-generate"
+          >
+            生成规则草稿
+          </button>
+        </div>
+        {issueCard === null && (
+          <p className="storage-line">问题卡详情仍在读取中，稍后可生成草稿。</p>
+        )}
+        {draft !== null && (
+          <div className="closeout-draft-body">
+            <div className="closeout-draft-grid" data-testid="closeout-draft-preview">
+              <div>
+                <span>问题描述优化</span>
+                <p>{draft.problemSummary}</p>
+              </div>
+              <div>
+                <span>根因总结草稿</span>
+                <p>{draft.rootCause}</p>
+              </div>
+              <div>
+                <span>解决方案草稿</span>
+                <p>{draft.resolution}</p>
+              </div>
+              <div>
+                <span>预防建议草稿</span>
+                <p>{draft.prevention}</p>
+              </div>
+            </div>
+            <div className="closeout-draft-meta">
+              <span>置信度：{labelDraftConfidence(draft.confidence)}</span>
+              <span>关键信号：{draft.keySignals.length} 条</span>
+              <span>检查项：{draft.checklistItems.length} 条</span>
+            </div>
+            <div className="intake-actions">
+              <button
+                type="button"
+                className="button-secondary"
+                onClick={handleApplyDraft}
+                data-testid="closeout-draft-apply"
+              >
+                套用到结案表单
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
       <label className="intake-field">
         <span>归档分类</span>
         <input
@@ -772,6 +858,17 @@ function CloseoutForm({
       </p>
     </form>
   );
+}
+
+function labelDraftConfidence(confidence: RuleCloseoutDraft["confidence"]): string {
+  switch (confidence) {
+    case "low":
+      return "低，需要补充人工确认";
+    case "medium":
+      return "中，建议复核后使用";
+    case "high":
+      return "高，仍需人工确认";
+  }
 }
 
 function renderCloseoutStatus(status: CloseoutSubmitStatus): string {
@@ -1069,6 +1166,8 @@ function IssuePane({
               <CloseoutForm
                 repository={repository}
                 issueId={selectedIssueId}
+                issueCard={selectedCard}
+                records={recordList?.valid ?? []}
                 onClosed={handleIssueClosed}
                 reportStorageError={reportStorageError}
                 clearStorageFeedback={clearStorageFeedback}

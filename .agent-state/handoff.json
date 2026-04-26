@@ -16,14 +16,14 @@
     "archive_state": "object - v0.2.0 前历史文档归档状态与读取条件",
     "notes": "string[] - 长期性约束与下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-04-26T10:29:43+08:00",
+  "timestamp": "2026-04-26T10:36:08+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "S3",
   "current_stage_name": "服务器安全部署",
   "current_stage_goal": "基于 v0.2.0 已完成的本地 HTTP + SQLite 主链路，先在 Ubuntu 20.04 服务器完成 no-sudo 用户目录部署验证，再进入 systemd 自启、operability / data safety、AI-ready、最小真实 AI 草稿与 code context bundle。",
   "primary_track": "safe_server_deploy_then_operability_then_ai_ready",
   "deferred_track": "real_ai_after_ai_ready_and_code_context_after_bundle_mvp",
-  "current_atomic_task": "AI-READY-CLOSEOUT-DRAFT-PANEL",
+  "current_atomic_task": "AI-ASSIST-POLISH-CLOSEOUT-MINIMAL",
   "roadmap_tracks": {
     "A_S3_Server_Deployment_Line": [
       "S3-SERVER-USER-DIR-DEPLOY-VERIFY",
@@ -65,6 +65,7 @@
     "data_backup_export_completed": true,
     "data_restore_dry_run_completed": true,
     "ai_ready_prompt_template_system_completed": true,
+    "ai_ready_closeout_draft_panel_completed": true,
     "local_release_smoke": [
       "web dist 可被 127.0.0.1:4173 托管",
       "4173 的 /api 可代理到 127.0.0.1:4100",
@@ -202,15 +203,6 @@
       "status": "blocked_by_user_confirmation"
     },
     {
-      "id": "AI-READY-CLOSEOUT-DRAFT-PANEL",
-      "track": "C_AI_Ready_Product_Line",
-      "goal": "在 closeout 流程里增加草稿辅助面板，先用规则模板生成草稿。",
-      "depends_on": [
-        "AI-READY-PROMPT-TEMPLATE-SYSTEM"
-      ],
-      "status": "current_night_safe"
-    },
-    {
       "id": "AI-ASSIST-POLISH-CLOSEOUT-MINIMAL",
       "track": "C_AI_Ready_Product_Line",
       "goal": "接入真实 AI 的最小措辞优化，只返回 closeout 草稿。",
@@ -219,6 +211,15 @@
         "用户确认 server env API key / provider 边界"
       ],
       "status": "blocked_by_external_dependency_api_key_after_ai_ready"
+    },
+    {
+      "id": "AI-ASSIST-SUGGEST-PREVENTION",
+      "track": "C_AI_Ready_Product_Line",
+      "goal": "基于 issue + records + resolution 生成预防建议草稿。",
+      "depends_on": [
+        "AI-ASSIST-POLISH-CLOSEOUT-MINIMAL"
+      ],
+      "status": "pending_after_minimal_ai"
     }
   ],
   "pending_task_queue": [
@@ -656,7 +657,7 @@
         "主流程仍由用户确认写库"
       ],
       "next_task": "AI-ASSIST-POLISH-CLOSEOUT-MINIMAL",
-      "status": "current_night_safe"
+      "status": "completed"
     },
     {
       "order": 11,
@@ -980,7 +981,8 @@
     "S4-OPERABILITY-HEALTH-STATUS",
     "S4-DATA-BACKUP-EXPORT",
     "S4-DATA-RESTORE-DRY-RUN",
-    "AI-READY-PROMPT-TEMPLATE-SYSTEM"
+    "AI-READY-PROMPT-TEMPLATE-SYSTEM",
+    "AI-READY-CLOSEOUT-DRAFT-PANEL"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -998,8 +1000,8 @@
       "apps/server/deploy/*：仅服务器部署任务且用户已确认边界后读取"
     ],
     "claiming_rule": "夜跑模式下扫描 pending_task_queue / backlog：服务器、sudo、systemd、真实外部环境任务标 blocked 但不标 completed；随后认领第一个依赖已满足、repo-local、可自动验证、可回滚的 night-safe 任务。",
-    "recommended_next": "AI-READY-CLOSEOUT-DRAFT-PANEL",
-    "night_run_gate": "allowed_for_recommended_next: AI-READY-CLOSEOUT-DRAFT-PANEL is repo-local rule-draft UI work with no external AI call, no API key and no automatic database write; S3 server tasks remain blocked_by_user_confirmation or blocked_by_external_dependency.",
+    "recommended_next": "AI-ASSIST-POLISH-CLOSEOUT-MINIMAL",
+    "night_run_gate": "blocked_for_recommended_next: AI-ASSIST-POLISH-CLOSEOUT-MINIMAL requires user-confirmed real AI provider/API key/server env boundaries; S3 server tasks also remain blocked_by_user_confirmation or blocked_by_external_dependency.",
     "selection_order": [
       "夜跑先跳过并保留 blocked server tasks",
       "先完成可并行的 operability / data safety repo-local tasks",
@@ -1014,13 +1016,11 @@
       "docs/planning/decisions.md",
       ".agent-state/handoff.json",
       ".agents/skills/task-execution/SKILL.md",
-      "apps/desktop/src/domain/closeout.ts",
-      "apps/desktop/src/use-cases/closeout-orchestrator.ts",
-      "apps/desktop/src/domain/schemas/issue-card.ts",
-      "apps/desktop/src/domain/schemas/investigation-record.ts",
-      "apps/desktop/src/domain/schemas/error-entry.ts",
+      "apps/desktop/src/App.tsx",
+      "apps/desktop/src/App.css",
       "apps/desktop/src/ai/prompt-templates.ts",
-      "apps/desktop/scripts/verify-ai-ready-prompt-template-system.mts",
+      "apps/desktop/src/ai/rule-closeout-draft.ts",
+      "apps/desktop/scripts/verify-ai-ready-closeout-draft-panel.mts",
       "apps/desktop/package.json",
       "git status --short",
       "git log --oneline -5"
@@ -1028,9 +1028,8 @@
   },
   "verification_expectations": {
     "code_task_this_round": [
+      "cd apps/desktop && npm run verify:ai-ready-closeout-draft-panel",
       "cd apps/desktop && npm run verify:ai-ready-prompt-template-system",
-      "cd apps/server && npm run verify:s4-data-restore-dry-run",
-      "cd apps/server && npm run verify:s4-data-backup-export",
       "git diff --check",
       "python3 解析 .agent-state/handoff.json",
       "cd apps/desktop && npm run typecheck",
@@ -1055,7 +1054,7 @@
     "下一轮如果用户未授权 SSH / 上传 / 启动进程，只能输出阻塞点，不能自行部署。",
     "服务器系统 Node v10.19.0 不能运行当前 backend；必须使用独立 Node runtime。",
     "80 端口由 filebrowser 占用，ProbeFlash 必须使用 4100，不得影响既有服务。",
-    "AI-ready prompt/schema 已完成，但 closeout 草稿面板、真实 AI、code context 分析都只是规划队列，不是已实现功能。",
+    "AI-ready prompt/schema 与 closeout 草稿面板已完成，但真实 AI、code context 分析都只是规划队列，不是已实现功能。",
     "code context 第一阶段只能处理用户显式提供的 bundle，不允许服务器任意扫描路径。",
     "S4-RELEASE-VERSION-ENDPOINT、S4-OPERABILITY-HEALTH-STATUS、S4-DATA-BACKUP-EXPORT、S4-DATA-RESTORE-DRY-RUN 已在本地完成；服务器实际运行版本、健康状态、备份与恢复演练仍需等真实部署后验证。"
   ],
@@ -1071,6 +1070,8 @@
     "S4-DATA-BACKUP-EXPORT 已完成：npm run backup:export 可生成 timestamped SQLite backup 与 JSON export；默认不覆盖源 DB，不导出绝对源路径。",
     "S4-DATA-RESTORE-DRY-RUN 已完成：npm run restore:dry-run 可把 SQLite backup 复制到临时 DB，通过 server storage 读回 workspace / issue / record / archive / error-entry，并可校验 JSON export 计数；默认删除临时 DB，不覆盖生产 DB。",
     "AI-READY-PROMPT-TEMPLATE-SYSTEM 已完成：src/ai/prompt-templates.ts 提供 polish_closeout / summarize_records / suggest_prevention deterministic prompt 输入、AiDraftOutput schema 与本地 verify；不调用外部模型。",
+    "AI-READY-CLOSEOUT-DRAFT-PANEL 已完成：closeout 表单内提供本地规则草稿面板，可生成并套用根因 / 结论 / 预防草稿；不调用外部模型，不自动写库。",
+    "当前首个未完成任务 AI-ASSIST-POLISH-CLOSEOUT-MINIMAL 需要用户确认真实 AI provider、API key/server env、timeout 和 mock/test provider 边界；夜跑必须停止。",
     "AI 路线固定为 prompt/schema 与规则草稿先行，真实 AI 只返回草稿，API key 只在 server env，失败不影响主流程。",
     "代码上下文路线固定为 bundle MVP 先行，repo connector 仅作为后续评估项，且必须 allowlist 与禁读 secrets。"
   ]
