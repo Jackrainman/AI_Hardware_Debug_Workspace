@@ -16,7 +16,7 @@
     "archive_state": "object - v0.2.0 前历史文档归档状态与读取条件",
     "notes": "string[] - 下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-04-27T15:41:58+08:00",
+  "timestamp": "2026-04-27T15:49:14+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "R1",
   "current_stage_name": "长期产品路线图执行启动",
@@ -72,6 +72,7 @@
     "server_schema_contract_completed": true,
     "http_feedback_contract_completed": true,
     "restore_dry_run_completed": true,
+    "json_export_harden_completed": true,
     "night_run_rules_completed": true,
     "v0_2_history_docs_archived": true,
     "real_server_release_user_dir_deploy_verify_completed": false,
@@ -118,9 +119,9 @@
       ]
     },
     {
-      "id": "DATA-02-JSON-EXPORT-HARDEN",
+      "id": "DATA-05-PARTIAL-CLOSEOUT-RECOVERY",
       "track": "Data Safety",
-      "goal": "固化 JSON export 输出字段、路径与脱敏边界。",
+      "goal": "验证 partial closeout recovery，确保 closeout 半成功时不误报已归档。",
       "status": "pending",
       "priority": "P0",
       "lane": "night-safe",
@@ -129,11 +130,11 @@
       "requires_user_confirmation": []
     },
     {
-      "id": "DATA-05-PARTIAL-CLOSEOUT-RECOVERY",
+      "id": "DATA-08-REPAIR-TASK-GENERATION",
       "track": "Data Safety",
-      "goal": "验证 partial closeout recovery，确保 closeout 半成功时不误报已归档。",
+      "goal": "读回失败时生成 repair task，确保 completion gate 不把损坏状态静默吞掉。",
       "status": "pending",
-      "priority": "P0",
+      "priority": "P1",
       "lane": "night-safe",
       "night_safe": true,
       "ai_unattended_run": true,
@@ -231,6 +232,42 @@
         "HTTP + SQLite schema and local fixture path"
       ],
       "completed_at": "2026-04-27T15:36:17+08:00"
+    },
+    {
+      "order": 9,
+      "id": "DATA-02-JSON-EXPORT-HARDEN",
+      "track": "Data Safety",
+      "status": "completed",
+      "priority": "P0",
+      "classification": "completed",
+      "depends_on": [
+        "local JSON export exists"
+      ],
+      "completed_at": "2026-04-27T15:49:14+08:00"
+    },
+    {
+      "order": 10,
+      "id": "DATA-05-PARTIAL-CLOSEOUT-RECOVERY",
+      "track": "Data Safety",
+      "status": "pending",
+      "priority": "P0",
+      "classification": "night-safe",
+      "depends_on": [
+        "closeout main path",
+        "DATA-04-INTEGRITY-CHECK"
+      ]
+    },
+    {
+      "order": 11,
+      "id": "DATA-08-REPAIR-TASK-GENERATION",
+      "track": "Data Safety",
+      "status": "pending_after_DATA-05",
+      "priority": "P1",
+      "classification": "night-safe",
+      "depends_on": [
+        "DATA-04-INTEGRITY-CHECK",
+        "DATA-05-PARTIAL-CLOSEOUT-RECOVERY"
+      ]
     }
   ],
   "execution_cadence": {
@@ -277,7 +314,6 @@
     ]
   },
   "night_safe_pool": [
-    "DATA-02-JSON-EXPORT-HARDEN",
     "DATA-05-PARTIAL-CLOSEOUT-RECOVERY",
     "DATA-08-REPAIR-TASK-GENERATION",
     "CORE-01-QUICK-ISSUE-CREATE",
@@ -377,7 +413,8 @@
     "PRODUCT-ROADMAP-REBUILD-FROM-VISION",
     "DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN",
     "DATA-04-INTEGRITY-CHECK",
-    "DEP-09-LOGS-DIAGNOSTICS-BUNDLE"
+    "DEP-09-LOGS-DIAGNOSTICS-BUNDLE",
+    "DATA-02-JSON-EXPORT-HARDEN"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -398,8 +435,8 @@
     ],
     "recommended_next_daytime": "DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY",
     "recommended_next_daytime_status": "blocked_until_user_confirms_server_boundaries",
-    "recommended_next_night_safe": "DATA-02-JSON-EXPORT-HARDEN",
-    "alternative_night_safe": "DATA-05-PARTIAL-CLOSEOUT-RECOVERY",
+    "recommended_next_night_safe": "DATA-05-PARTIAL-CLOSEOUT-RECOVERY",
+    "alternative_night_safe": "DATA-08-REPAIR-TASK-GENERATION",
     "selection_rule": "白天有用户参与时优先执行 DEP-01；无服务器授权或夜跑时不得部署，只能从 pending_task_queue / night_safe_pool 选择第一个依赖满足且未完成的任务。真实 AI/API key 和 systemd/sudo 任务不得 unattended。"
   },
   "night_run_mode": {
@@ -447,9 +484,11 @@
     "default_read_policy": "Do not read archive by default. Read only for v0.2.0 前历史背景、专项实现追溯、API / SQLite / 不可达策略背景、release closeout 追溯或归档审计。"
   },
   "verification_expectations": {
-    "last_completed_DEP_09": [
+    "last_completed_DATA_02": [
       "git diff --check",
-      "cd apps/server && npm run verify:logs-diagnostics-bundle",
+      "cd apps/server && npm run verify:data-json-export-harden",
+      "cd apps/server && npm run verify:s4-data-backup-export",
+      "cd apps/server && npm run verify:s4-data-restore-dry-run",
       "cd apps/server && npm run verify:s3-local-backend-scaffold",
       "cd apps/server && npm run verify:deploy-prep",
       "cd apps/desktop && npm run typecheck",
@@ -469,9 +508,9 @@
     "路线图较长，current.md 只允许保留最多 3 个前沿候选，完整字段必须回到 product-roadmap.md。"
   ],
   "notes": [
-    "DEP-09-LOGS-DIAGNOSTICS-BUNDLE 已完成：apps/server/scripts/diagnostics-bundle.mjs 可生成本地 diagnostics.json / summary.md，包含 health、version、release metadata 与 redacted log tails。",
+    "DATA-02-JSON-EXPORT-HARDEN 已完成：JSON export 声明 format/version/source class/redaction policy，字段、计数、secret 与绝对路径脱敏均有 verify 覆盖。",
     "下一轮若用户白天可参与服务器操作，最适合认领 DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY。",
-    "下一轮若无服务器授权或夜跑，最适合认领 DATA-02-JSON-EXPORT-HARDEN；DATA-05-PARTIAL-CLOSEOUT-RECOVERY 是 closeout 数据安全方向备选。",
+    "下一轮若无服务器授权或夜跑，最适合认领 DATA-05-PARTIAL-CLOSEOUT-RECOVERY；DATA-08-REPAIR-TASK-GENERATION 是后续备选。",
     "本轮没有上传外网，没有读取任意目录，没有服务器部署，没有接真实 AI API。"
   ]
 }

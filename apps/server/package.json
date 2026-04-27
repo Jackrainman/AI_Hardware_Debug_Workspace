@@ -19,6 +19,7 @@
     "verify:s4-operability-health-status": "node scripts/verify-s4-operability-health-status.mjs",
     "verify:s4-data-backup-export": "node scripts/verify-s4-data-backup-export.mjs",
     "verify:s4-data-restore-dry-run": "node scripts/verify-s4-data-restore-dry-run.mjs",
+    "verify:data-json-export-harden": "node scripts/verify-data-json-export-harden.mjs",
     "verify:data-integrity-check": "node scripts/verify-data-integrity-check.mjs",
     "verify:logs-diagnostics-bundle": "node scripts/verify-logs-diagnostics-bundle.mjs"
   }

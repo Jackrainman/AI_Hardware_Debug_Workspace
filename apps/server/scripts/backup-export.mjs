@@ -7,6 +7,24 @@ import { DEFAULT_DB_PATH } from "../src/server.mjs";
 
 const SERVER_APP_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_OUTPUT_DIR = resolve(SERVER_APP_DIR, ".runtime", "backups");
+const EXPORT_FORMAT = "probeflash-json-export";
+const EXPORT_FORMAT_VERSION = 1;
+const SENSITIVE_KEY_PATTERN =
+  /(api[_-]?key|access[_-]?token|refresh[_-]?token|token|secret|password|authorization|cookie|set-cookie|private[_-]?key|client[_-]?secret)/i;
+const REDACTION_SUMMARY = {
+  enabled: true,
+  sensitiveKeys: [
+    "api key",
+    "authorization",
+    "client secret",
+    "cookie",
+    "password",
+    "private key",
+    "secret",
+    "token",
+  ],
+  textPatterns: ["authorization bearer", "key=value secrets", "absolute filesystem paths"],
+};
 
 function parseArgs(argv) {
   const options = {};
@@ -43,6 +61,47 @@ function assertUsableSource(dbPath) {
   if (!stat.isFile()) {
     throw new Error(`source sqlite db must be a file: ${dbPath}`);
   }
+}
+
+function classifyDbPath(dbPath) {
+  const normalized = dbPath.replaceAll("\\", "/");
+  if (normalized.includes("/.runtime/")) return "app_runtime";
+  if (normalized.includes("/shared/data/")) return "deploy_shared_data";
+  if (normalized.includes("/tmp/")) return "temporary";
+  return "custom";
+}
+
+function redactText(value) {
+  return value
+    .replace(/(authorization\s*[:=]\s*bearer\s+)[^\s"']+/gi, "$1<redacted>")
+    .replace(
+      /((?:api[_-]?key|access[_-]?token|refresh[_-]?token|token|secret|password|client[_-]?secret)\s*[:=]\s*)["']?[^&\s"',}]+/gi,
+      "$1<redacted>",
+    )
+    .replace(
+      /([?&](?:api[_-]?key|access[_-]?token|refresh[_-]?token|token|secret|password|client[_-]?secret)=)[^&\s]+/gi,
+      "$1<redacted>",
+    )
+    .replace(/(^|[\s"'([{=])\/(?:home|Users|tmp|var|opt|mnt|root|etc)\/[^\s"',)\]}]+/g, "$1<redacted-path>")
+    .replace(/[A-Za-z]:\\[^\s"',)\]}]+/g, "<redacted-path>");
+}
+
+function redactObject(value) {
+  if (Array.isArray(value)) {
+    return value.map(redactObject);
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [
+        key,
+        SENSITIVE_KEY_PATTERN.test(key) ? "<redacted>" : redactObject(item),
+      ]),
+    );
+  }
+  if (typeof value === "string") {
+    return redactText(value);
+  }
+  return value;
 }
 
 function readJsonRows(db, tableName) {
@@ -87,17 +146,22 @@ function buildJsonExport(db, dbPath, exportedAt) {
   };
 
   return {
+    format: EXPORT_FORMAT,
+    formatVersion: EXPORT_FORMAT_VERSION,
     exportedAt,
     source: {
+      kind: "sqlite",
       dbFileName: basename(dbPath),
+      dbPathClass: classifyDbPath(dbPath),
       schemaMeta: meta,
     },
+    redaction: REDACTION_SUMMARY,
     counts,
-    workspaces,
-    issues: readJsonRows(db, "issues"),
-    records: readJsonRows(db, "records"),
-    archives: readJsonRows(db, "archives"),
-    errorEntries: readJsonRows(db, "error_entries"),
+    workspaces: redactObject(workspaces),
+    issues: redactObject(readJsonRows(db, "issues")),
+    records: redactObject(readJsonRows(db, "records")),
+    archives: redactObject(readJsonRows(db, "archives")),
+    errorEntries: redactObject(readJsonRows(db, "error_entries")),
   };
 }
 
