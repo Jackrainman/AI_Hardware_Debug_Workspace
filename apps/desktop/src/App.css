@@ -71,6 +71,67 @@
   line-height: 1.5;
 }
 
+.repair-task-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(146, 64, 14, 0.22);
+  border-radius: 10px;
+  background: rgba(255, 251, 235, 0.72);
+}
+
+.repair-task-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--warning-strong);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.repair-task-risk,
+.repair-task-check {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.repair-task-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.repair-task-label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.repair-task-panel ul,
+.repair-task-panel ol {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.repair-task-panel li + li {
+  margin-top: 3px;
+}
+
+@media (max-width: 760px) {
+  .repair-task-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .app-header-top {
   display: flex;
   align-items: flex-start;

@@ -77,6 +77,22 @@ export interface StorageFeedbackError {
   connectionState: StorageConnectionState;
   step?: string;
   completedWrites?: string[];
+  repairTask?: RepairTask;
+}
+
+export interface RepairTaskAffectedEntity {
+  entityType: StorageEntity | "closeout";
+  entityId: string;
+  description?: string;
+}
+
+export interface RepairTask {
+  problemType: string;
+  affectedEntities: RepairTaskAffectedEntity[];
+  risk: string;
+  suggestedRepairSteps: string[];
+  requiresManualConfirmation: boolean;
+  verification: string;
 }
 
 type LoadIssueCardFailure = Extract<LoadIssueCardResult, { ok: false }>["error"];
@@ -119,6 +135,71 @@ function labelCompletedWrite(entity: string): string {
     default:
       return entity;
   }
+}
+
+function uniqueAffectedEntities(entities: RepairTaskAffectedEntity[]): RepairTaskAffectedEntity[] {
+  const seen = new Set<string>();
+  return entities.filter((entity) => {
+    const key = `${entity.entityType}:${entity.entityId}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function createCloseoutRepairTask(failure: Extract<
+  CloseoutOrchestrationFailure,
+  { reason: "archive_save_failed" | "error_entry_save_failed" | "issue_card_save_failed" }
+>): RepairTask {
+  const artifacts = "artifacts" in failure ? failure.artifacts : undefined;
+  const completedLabels = failure.completedWrites.map(labelCompletedWrite).join("、") || "无";
+  const affectedEntities: RepairTaskAffectedEntity[] = [
+    {
+      entityType: failure.error.entity,
+      entityId: failure.error.target,
+      description: `失败写入目标：${labelStorageEntity(failure.error.entity)}`,
+    },
+  ];
+
+  if (artifacts?.updatedIssueCard?.id) {
+    affectedEntities.push({
+      entityType: "issue_card",
+      entityId: artifacts.updatedIssueCard.id,
+      description: "结案对应的问题卡",
+    });
+  }
+  if (artifacts?.archiveDocument?.fileName) {
+    affectedEntities.push({
+      entityType: "archive_document",
+      entityId: artifacts.archiveDocument.fileName,
+      description: artifacts.archiveDocument.filePath,
+    });
+  }
+  if (artifacts?.errorEntry?.id) {
+    affectedEntities.push({
+      entityType: "error_entry",
+      entityId: artifacts.errorEntry.id,
+      description: artifacts.errorEntry.errorCode,
+    });
+  }
+
+  return {
+    problemType: failure.completedWrites.length > 0 ? "partial_closeout_write_failure" : "closeout_write_blocked",
+    affectedEntities: uniqueAffectedEntities(affectedEntities),
+    risk:
+      failure.completedWrites.length > 0
+        ? `结案流程已部分落库（已完成：${completedLabels}），问题卡、归档摘要与错误表可能处于不一致状态。`
+        : "结案写入被阻断；如果不审阅冲突目标就反复重试，可能掩盖已有归档或错误表状态。",
+    suggestedRepairSteps: [
+      "不要删除、覆盖或自动补写生产数据。",
+      "先审阅受影响的问题卡、归档摘要和错误表条目，确认哪些实体已经落库。",
+      "人工决定是保留已落库实体并补齐缺失关系，还是重新生成 closeout ID 后再结案。",
+      "在临时副本或可回滚步骤中验证修复方案，再由人工确认是否应用到真实数据。",
+    ],
+    requiresManualConfirmation: true,
+    verification:
+      "重新读回 issue、archive、error-entry 三者，确认 archived issue 同时拥有归档摘要和错误表条目；必要时运行 SQLite integrity check。",
+  };
 }
 
 function connectionStateFromError(
@@ -464,6 +545,7 @@ export function closeoutFailureToFeedback(
         ...mapped,
         step: failure.step,
         completedWrites: failure.completedWrites,
+        repairTask: createCloseoutRepairTask(failure),
         detail:
           failure.completedWrites.length > 0
             ? `${mapped.detail ?? ""}；已完成写入：${failure.completedWrites
@@ -483,5 +565,6 @@ export function formatStorageFeedbackError(error: StorageFeedbackError): string 
     error.completedWrites && error.completedWrites.length > 0
       ? ` · 已完成=${error.completedWrites.map(labelCompletedWrite).join("、")}`
       : "";
-  return `${labelSurface(error.surface)}：${error.message}${detail}${step}${partial}（${retry}）`;
+  const repair = error.repairTask ? ` · repair=${error.repairTask.problemType}` : "";
+  return `${labelSurface(error.surface)}：${error.message}${detail}${step}${partial}${repair}（${retry}）`;
 }

@@ -7,10 +7,10 @@
 - 当前模式：`server_storage_migration`（保留服务器部署安全边界）。
 - 阶段目标：以 v0.2.x 已完成的本地 HTTP + SQLite + release 可部署基座为起点，按 8 条产品主线推进；近期 P0 只聚焦 **部署可用、数据安全、可观测**。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
-- 最近已完成：`DATA-05-PARTIAL-CLOSEOUT-RECOVERY`，新增 HTTP + SQLite closeout 半成功 verify，覆盖 archive 写失败、error-entry 写失败、issue 状态写失败，确保失败时 issue 不被误标 archived。
+- 最近已完成：`DATA-08-REPAIR-TASK-GENERATION`，数据一致性检查会输出只读 `repairPlan.tasks`，partial closeout 失败会在统一存储错误里展示 reviewable repair task；不自动修复、不删除数据、不修改真实生产 DB。
 
 ## 当前真实状态
-- 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、issue / record / closeout / archive / error-entry 主路径、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、server schema contract、HTTP feedback contract、restore dry-run、SQLite integrity check、JSON export hardening、partial closeout recovery verify、diagnostics bundle、night-run 安全规则、v0.2 历史文档归档。
+- 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、issue / record / closeout / archive / error-entry 主路径、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、server schema contract、HTTP feedback contract、restore dry-run、SQLite integrity check、JSON export hardening、partial closeout recovery verify、repair task generation、diagnostics bundle、night-run 安全规则、v0.2 历史文档归档。
 - 仍 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 AI provider/API key 接入。
 - 服务器安全边界仍有效：不 sudo、不写 `/opt`、不抢 80、不升级系统 Node、不影响 filebrowser / vnt-cli / docker / Portainer；release 部署优先 `/home/hurricane/probeflash` + 独立 Node runtime + 4100。
 - AI 安全边界仍有效：AI-ready 可夜跑；真实 AI 必须等用户确认 provider、API key/server env、timeout 和 mock/test provider 边界；AI 只返回草稿，不直接写库。
@@ -40,16 +40,16 @@
 - **DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY**
   - 状态：`blocked`；P0；白天主线；不能夜跑。
   - 选择理由：真实服务器部署仍是产品可用性的最大缺口。
-- **DATA-08-REPAIR-TASK-GENERATION**
-  - 状态：`night-safe`；P1；repo-local completion gate / repair task verify。
-  - 选择理由：`DATA-04` 与 `DATA-05` 已完成，可把读回失败显式转为 repair task，不自动修复真实数据。
 - **CORE-01-QUICK-ISSUE-CREATE**
   - 状态：`night-safe`；P1；repo-local UI / storage smoke。
   - 选择理由：数据安全 P0 本地收紧后，若继续夜跑可回到核心调试流，改善现场快速建卡。
+- **CORE-04-RECORD-TIMELINE-POLISH**
+  - 状态：`night-safe`；P1；repo-local UI smoke。
+  - 选择理由：在快速建卡之后，继续改善现场排查记录的可读性；不依赖服务器授权。
 
 ## 下一步最小可执行动作
 - 白天有用户参与：认领 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`，执行前再次复述 SSH / release assets / 写入路径 / 临时进程 / 4100 授权边界。
-- 无服务器授权或夜跑：不要部署；认领 `DATA-08-REPAIR-TASK-GENERATION`。若该任务完成后仍夜跑，重新读取事实源再扫描 `Night-safe pool`。
+- 无服务器授权或夜跑：不要部署；下一轮重新读取事实源后，优先从 night-safe pool 认领 `CORE-01-QUICK-ISSUE-CREATE`，不得在本轮自动顺推。
 - 真实 AI：仍 blocked，不得无人值守接 provider 或 API key。
 
 ## 下一任务选择流程
@@ -66,4 +66,5 @@
 - planning-only 任务最小验证：`git diff --check`、`python3 -m json.tool .agent-state/handoff.json >/dev/null`、`cd apps/desktop && npm run verify:handoff`、`git status --short`。
 - deploy docs / deploy verify 任务最小验证：`git diff --check`、`cd apps/server && npm run verify:deploy-prep`、`python3 -m json.tool .agent-state/handoff.json >/dev/null`、`cd apps/desktop && npm run verify:handoff`、`git status --short`。
 - server script / package 任务验证：`git diff --check`、任务对应 server verify、`cd apps/server && npm run verify:s3-local-backend-scaffold`、`cd apps/server && npm run verify:deploy-prep`、`cd apps/desktop && npm run typecheck`、`cd apps/desktop && npm run build`、`cd apps/desktop && npm run verify:handoff`、`cd apps/desktop && npm run verify:all`、`python3 -m json.tool .agent-state/handoff.json >/dev/null`。
+- data repair task 任务验证：`git diff --check`、`python3 -m json.tool .agent-state/handoff.json >/dev/null`、`cd apps/server && npm run verify:data-integrity-check`、`cd apps/desktop && npm run verify:data-repair-task-generation`、`cd apps/desktop && npm run typecheck`、`cd apps/desktop && npm run build`、`cd apps/desktop && npm run verify:handoff`、`cd apps/desktop && npm run verify:all`。
 - `docs/planning/current.md` 与 `.agent-state/handoff.json` 是每轮 planning sync 必更；任务池或路线变化时同步 `docs/planning/backlog.md`；长期拍板变化时同步 `docs/planning/decisions.md`。

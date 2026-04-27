@@ -380,6 +380,159 @@ function readCounts(db, checks) {
   return counts;
 }
 
+function repairTaskId(check, index) {
+  const safeCheckId = check.id.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return `repair-${String(index + 1).padStart(2, "0")}-${safeCheckId}`;
+}
+
+function inferEntityType(checkId, row = {}) {
+  if (typeof row.table === "string" && row.table.length > 0) return row.table;
+  if (checkId.startsWith("issues.")) return "issue_card";
+  if (checkId.startsWith("records.")) return "investigation_record";
+  if (checkId.startsWith("archives.")) return "archive_document";
+  if (checkId.startsWith("error_entries.")) return "error_entry";
+  if (checkId.startsWith("schema.")) return "schema";
+  if (checkId.startsWith("sqlite.")) return "sqlite_db";
+  return "unknown";
+}
+
+function inferEntityId(row = {}, fallback) {
+  for (const key of ["id", "file_name", "rowId", "rowid", "source_issue_id", "issue_id", "workspace_id"]) {
+    if (row[key] !== undefined && row[key] !== null && String(row[key]).length > 0) {
+      return String(row[key]);
+    }
+  }
+  return fallback;
+}
+
+function createAffectedEntities(check, dbPath) {
+  const details = check.details ?? {};
+  const rows = Array.isArray(details.violations) ? details.violations : [];
+  const entities = rows.map((row) => ({
+    entityType: inferEntityType(check.id, row),
+    entityId: inferEntityId(row, basename(dbPath)),
+    workspaceId: row.workspace_id ? String(row.workspace_id) : undefined,
+    details: row,
+  }));
+
+  if (details.rowId !== undefined) {
+    entities.push({
+      entityType: inferEntityType(check.id),
+      entityId: String(details.rowId),
+      details,
+    });
+  }
+
+  if (entities.length === 0) {
+    entities.push({
+      entityType: inferEntityType(check.id),
+      entityId: basename(dbPath),
+      details: { checkId: check.id, message: check.message },
+    });
+  }
+
+  return entities;
+}
+
+function repairGuidanceForCheck(check) {
+  if (check.id === "sqlite.integrity_check") {
+    return {
+      risk: "SQLite 文件级完整性异常，继续写入可能扩大损坏范围或让后续备份也包含坏页。",
+      suggestedRepairSteps: [
+        "不要直接修改或压缩该 DB，先复制原始 DB 和最近备份到只读审阅位置。",
+        "用 SQLite 官方工具在副本上重新运行 PRAGMA integrity_check，确认是否可复现。",
+        "由人工决定从最近健康备份恢复，或在副本上导出可读数据后重建 DB。",
+        "确认恢复路径后再安排停机、替换和回滚步骤。",
+      ],
+      verification: "在临时副本和目标 DB 上重新运行 integrity check，并读回 workspace / issue / archive / error-entry 计数。",
+    };
+  }
+
+  if (check.id.startsWith("schema.")) {
+    return {
+      risk: "数据库 schema 与当前代码预期不一致，继续写入可能产生无法被当前版本正确读取的数据。",
+      suggestedRepairSteps: [
+        "停止把该 DB 当作可写生产库使用，先确认正在运行的 ProbeFlash release 版本。",
+        "对照 release notes 或 schema contract 判断是版本跑错、迁移未执行，还是 DB 来自未来版本。",
+        "在临时 DB 上演练迁移或恢复，不要对原始 DB 做 destructive migration。",
+        "人工确认迁移 / 恢复方案后，再切换服务使用的 DB。",
+      ],
+      verification: "重新运行 schema contract / integrity check，确认 user_version、schema_meta 和必需表全部匹配。",
+    };
+  }
+
+  if (check.id.includes("payload")) {
+    return {
+      risk: "payload_json 与索引列或必填字段不一致，UI / API 可能跳过该实体或展示错误事实。",
+      suggestedRepairSteps: [
+        "导出受影响行的索引列和 payload_json，保留原始内容供审阅。",
+        "人工判断应以索引列、payload_json、归档文档还是最近备份为事实源。",
+        "只在临时副本中试写修正后的 payload，并通过 schema 校验后再考虑生产修复。",
+        "不要自动补空字段；缺失根因、修复或预防信息必须由人工确认。",
+      ],
+      verification: "重新运行 integrity check，并通过 UI/API 读回受影响实体，确认 schema 校验不再报错。",
+    };
+  }
+
+  if (check.id === "issues.archived_has_archive" || check.id === "issues.archived_has_error_entry") {
+    return {
+      risk: "问题卡已标记 archived，但归档摘要或错误表条目缺失，知识库会误以为该问题已完整结案。",
+      suggestedRepairSteps: [
+        "读取受影响 issue，确认 closeout 表单内容、已有 archive/error-entry 和用户最近操作。",
+        "如果只是部分写入失败，保留已落库实体，不要自动删除或覆盖。",
+        "由人工决定补齐缺失 archive/error-entry，或把 issue 状态回退为 open 后重新结案。",
+        "修复前先备份 DB；修复动作必须能回滚。",
+      ],
+      verification: "重新运行 integrity check，并读回 issue、archive、error-entry 三者的 workspaceId / issueId 关系。",
+    };
+  }
+
+  if (check.id.includes("_fk") || check.id.includes("workspace_match")) {
+    return {
+      risk: "实体关系断裂或 workspaceId 不一致，可能导致跨项目串数据、孤儿记录或归档无法追溯。",
+      suggestedRepairSteps: [
+        "列出受影响实体及其引用 ID，确认缺失父实体是否可从备份恢复。",
+        "不要自动删除孤儿记录；先判断记录是否仍有审计价值。",
+        "在临时 DB 中演练补父实体、调整 workspaceId 或恢复备份三种方案。",
+        "人工确认后再对生产 DB 做最小修复，并记录修复原因。",
+      ],
+      verification: "重新运行 PRAGMA foreign_key_check 和 integrity check，确认同一 workspace 下 issue / record / archive / error-entry 关系闭合。",
+    };
+  }
+
+  return {
+    risk: "数据一致性检查发现异常，继续写入可能隐藏真实损坏状态或让 completion gate 误判完成。",
+    suggestedRepairSteps: [
+      "先备份当前 DB 和相关导出报告。",
+      "人工审阅 affectedEntities 与 failed check 明细，确认真实事实源。",
+      "只在临时副本中试修复，不直接修改生产 DB。",
+      "确认修复方案、回滚方式和验证结果后，再安排人工应用。",
+    ],
+    verification: "重新运行 integrity check，并通过 UI/API 读回受影响实体。",
+  };
+}
+
+export function createIntegrityRepairPlan({ failedChecks, dbPath, checkedAt }) {
+  return {
+    generatedAt: checkedAt,
+    source: "sqlite_integrity_check",
+    readOnly: true,
+    autoRepair: false,
+    tasks: failedChecks.map((check, index) => {
+      const guidance = repairGuidanceForCheck(check);
+      return {
+        id: repairTaskId(check, index),
+        problemType: check.id,
+        affectedEntities: createAffectedEntities(check, dbPath),
+        risk: guidance.risk,
+        suggestedRepairSteps: guidance.suggestedRepairSteps,
+        requiresManualConfirmation: true,
+        verification: guidance.verification,
+      };
+    }),
+  };
+}
+
 export function createIntegrityReport(options = {}) {
   const dbPath = resolve(options.dbPath ?? process.env.PROBEFLASH_DB_PATH ?? DEFAULT_DB_PATH);
   assertReadableDbFile(dbPath);
@@ -387,6 +540,7 @@ export function createIntegrityReport(options = {}) {
   const db = new DatabaseSync(dbPath);
   const checks = [];
   try {
+    const checkedAt = options.checkedAt ?? new Date().toISOString();
     checkSqliteIntegrity(db, checks);
     checkSchema(db, checks);
     checkForeignKeys(db, checks);
@@ -394,18 +548,21 @@ export function createIntegrityReport(options = {}) {
     checkPayloads(db, checks);
     const counts = readCounts(db, checks);
     const failedChecks = checks.filter((check) => check.status === "fail");
+    const repairPlan = createIntegrityRepairPlan({ failedChecks, dbPath, checkedAt });
     return {
       ok: failedChecks.length === 0,
-      checkedAt: options.checkedAt ?? new Date().toISOString(),
+      checkedAt,
       db: {
         path: dbPath,
         fileName: basename(dbPath),
       },
       counts,
       checks,
+      repairPlan,
       summary: {
         passed: checks.filter((check) => check.status === "pass").length,
         failed: failedChecks.length,
+        repairTasks: repairPlan.tasks.length,
       },
     };
   } finally {

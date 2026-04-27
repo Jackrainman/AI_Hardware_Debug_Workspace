@@ -19,6 +19,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 - server schema contract。
 - HTTP feedback contract。
 - restore dry-run。
+- repair task generation（integrity check repair plan + partial closeout repair task UI）。
 - night-run 安全规则。
 - v0.2 历史文档归档。
 
@@ -81,7 +82,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 | DATA-05-PARTIAL-CLOSEOUT-RECOVERY | Data Safety | partial closeout recovery | closeout 半成功时不误报已归档 | closeout 主链路；DATA-04 更佳 | desktop/server closeout verify；planning | 不自动删除用户数据；不改业务语义 | archive 写失败、error-entry 写失败、issue 状态失败注入 | 失败可见，读回不一致可恢复或阻断 | night-safe | P0 | 是 |
 | DATA-06-BACKUP-RETENTION-POLICY | Data Safety | 备份保留与清理策略 | 防止备份无限增长或误删 | DATA-01/DATA-02 | docs；scripts dry-run | 不删除用户数据；不默认清空历史备份 | dry-run 列出将清理文件；路径限制检查 | 用户能看懂保留策略，清理需确认 | decision-needed | P1 | 否 |
 | DATA-07-RESTORE-APPLY-RUNBOOK | Data Safety | 从 dry-run 到真实恢复的人工 runbook | 真故障时可按步骤恢复 | DATA-03；用户确认停机/覆盖策略 | docs；planning | 不自动覆盖生产；不无人值守执行 | runbook 审阅；演练命令不指向生产 | 恢复流程有人工确认门和回滚说明 | decision-needed | P1 | 否 |
-| DATA-08-REPAIR-TASK-GENERATION | Data Safety | 读回失败时生成 repair task | 不把损坏状态静默吞掉 | DATA-04/DATA-05 | verification helpers；planning | 不自动修复真实数据；不假装完成 | 构造失败读回；输出 repair task | completion gate 能阻止错误归档 | night-safe | P1 | 是 |
+| DATA-08-REPAIR-TASK-GENERATION | Data Safety | 读回失败时生成 repair task | 不把损坏状态静默吞掉 | DATA-04/DATA-05 | verification helpers；planning | 不自动修复真实数据；不假装完成 | 构造失败读回；输出 repair task | completion gate 能阻止错误归档 | completed | P1 | 已完成 |
 
 ## 3. Core Debug Workflow
 
@@ -292,7 +293,6 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 ## 10. 夜跑任务池
 
 ### Night-safe pool
-- DATA-08-REPAIR-TASK-GENERATION
 - CORE-01-QUICK-ISSUE-CREATE
 - CORE-02-WORKSPACE-UX-IMPROVEMENTS
 - CORE-03-RECENT-ISSUE-REOPEN
@@ -370,4 +370,4 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 
 如果用户白天可参与服务器操作，下一轮最适合认领 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`。
 
-如果用户暂时不能参与服务器操作，下一轮最适合认领 `DATA-08-REPAIR-TASK-GENERATION`，这是 repo-local、P1、night-safe，能把读回失败显式转为 repair task 而不触碰真实服务器。
+如果用户暂时不能参与服务器操作，下一轮最适合认领 `CORE-01-QUICK-ISSUE-CREATE`，这是 repo-local、P1、night-safe，可在不触碰真实服务器的前提下改善现场快速建卡。

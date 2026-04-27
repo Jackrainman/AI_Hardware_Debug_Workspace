@@ -114,6 +114,23 @@ function hasPassedCheck(report, id) {
   return report.checks.some((check) => check.id === id && check.status === "pass");
 }
 
+function assertReviewableRepairTask(task, label) {
+  assert(typeof task.problemType === "string" && task.problemType.length > 0, `${label}: repair task should include problemType`, task);
+  assert(Array.isArray(task.affectedEntities) && task.affectedEntities.length > 0, `${label}: repair task should include affectedEntities`, task);
+  assert(typeof task.risk === "string" && task.risk.length > 0, `${label}: repair task should include risk`, task);
+  assert(
+    Array.isArray(task.suggestedRepairSteps) && task.suggestedRepairSteps.length >= 3,
+    `${label}: repair task should include suggestedRepairSteps`,
+    task,
+  );
+  assert(task.requiresManualConfirmation === true, `${label}: repair task should require manual confirmation`, task);
+  assert(typeof task.verification === "string" && task.verification.length > 0, `${label}: repair task should include verification`, task);
+}
+
+function findRepairTask(report, problemType) {
+  return report.repairPlan.tasks.find((task) => task.problemType === problemType);
+}
+
 function createCleanDb(dbPath) {
   const store = createProbeFlashDatabase(dbPath);
   try {
@@ -196,6 +213,9 @@ assert(cleanReport.ok === true, "clean DB should pass integrity check", cleanRep
 assert(hasPassedCheck(cleanReport, "sqlite.integrity_check"), "clean DB should run sqlite integrity_check", cleanReport);
 assert(hasPassedCheck(cleanReport, "issues.archived_has_archive"), "clean archived issue should have archive", cleanReport);
 assert(hasPassedCheck(cleanReport, "issues.archived_has_error_entry"), "clean archived issue should have error entry", cleanReport);
+assert(cleanReport.repairPlan.readOnly === true, "clean repair plan should be read-only", cleanReport.repairPlan);
+assert(cleanReport.repairPlan.autoRepair === false, "clean repair plan should not auto-repair", cleanReport.repairPlan);
+assert(cleanReport.repairPlan.tasks.length === 0, "clean DB should not generate repair tasks", cleanReport.repairPlan);
 
 createBrokenDb(brokenDbPath);
 const brokenReport = createIntegrityReport({ dbPath: brokenDbPath, checkedAt: NOW });
@@ -205,6 +225,30 @@ assert(hasFailedCheck(brokenReport, "records.issue_fk"), "broken DB should repor
 assert(hasFailedCheck(brokenReport, "issues.archived_has_archive"), "broken DB should report missing archive", brokenReport);
 assert(hasFailedCheck(brokenReport, "issues.archived_has_error_entry"), "broken DB should report missing error entry", brokenReport);
 assert(hasFailedCheck(brokenReport, "error_entries.payload_required_fields"), "broken DB should report blank prevention", brokenReport);
+assert(brokenReport.repairPlan.readOnly === true, "broken repair plan should be read-only", brokenReport.repairPlan);
+assert(brokenReport.repairPlan.autoRepair === false, "broken repair plan should not auto-repair", brokenReport.repairPlan);
+assert(
+  brokenReport.repairPlan.tasks.length === brokenReport.summary.failed,
+  "broken DB should generate one repair task per failed check",
+  brokenReport.repairPlan,
+);
+for (const task of brokenReport.repairPlan.tasks) {
+  assertReviewableRepairTask(task, task.id);
+}
+const missingArchiveTask = findRepairTask(brokenReport, "issues.archived_has_archive");
+assert(missingArchiveTask !== undefined, "missing archive failure should have a repair task", brokenReport.repairPlan);
+assert(
+  missingArchiveTask.affectedEntities.some((entity) => entity.entityType === "issue_card"),
+  "missing archive repair task should point to the affected issue",
+  missingArchiveTask,
+);
+const blankPreventionTask = findRepairTask(brokenReport, "error_entries.payload_required_fields");
+assert(blankPreventionTask !== undefined, "blank prevention failure should have a repair task", brokenReport.repairPlan);
+assert(
+  blankPreventionTask.suggestedRepairSteps.some((step) => step.includes("不要自动补空字段")),
+  "payload repair task should warn against automatic field filling",
+  blankPreventionTask,
+);
 
 const cli = spawnSync(process.execPath, [SCRIPT_PATH, "--db", brokenDbPath, "--checked-at", NOW], {
   encoding: "utf8",
@@ -216,8 +260,14 @@ assert(cli.status === 1, "integrity-check CLI should exit 1 for broken DB", {
 });
 const cliReport = JSON.parse(cli.stdout);
 assert(cliReport.ok === false && hasFailedCheck(cliReport, "records.issue_fk"), "CLI report should be readable JSON with failed checks", cliReport);
+assert(
+  cliReport.repairPlan.tasks.some((task) => task.problemType === "records.issue_fk"),
+  "CLI report should include repair tasks for failed checks",
+  cliReport.repairPlan,
+);
 
 console.log("[DATA-INTEGRITY-CHECK verify] PASS: clean DB passes SQLite, relationship, closeout, and payload checks");
 console.log("[DATA-INTEGRITY-CHECK verify] PASS: injected orphan record fails foreign key and relationship checks");
 console.log("[DATA-INTEGRITY-CHECK verify] PASS: archived issue without archive/error-entry is reported");
 console.log("[DATA-INTEGRITY-CHECK verify] PASS: blank ErrorEntry.prevention is reported and CLI exits non-zero");
+console.log("[DATA-INTEGRITY-CHECK verify] PASS: failed checks generate read-only repair tasks with manual confirmation gates");

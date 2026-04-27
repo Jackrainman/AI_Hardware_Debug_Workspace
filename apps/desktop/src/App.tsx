@@ -120,6 +120,46 @@ function buildSampleCard(workspaceId: string): IssueCard {
   };
 }
 
+function RepairTaskPanel({
+  repairTask,
+}: {
+  repairTask: NonNullable<StorageFeedbackError["repairTask"]>;
+}) {
+  return (
+    <aside className="repair-task-panel" data-testid="repair-task-panel">
+      <div className="repair-task-header">
+        <span>只读 Repair Task</span>
+        <strong>{repairTask.problemType}</strong>
+      </div>
+      <p className="repair-task-risk">风险：{repairTask.risk}</p>
+      <div className="repair-task-grid">
+        <div>
+          <span className="repair-task-label">受影响实体</span>
+          <ul>
+            {repairTask.affectedEntities.map((entity) => (
+              <li key={`${entity.entityType}:${entity.entityId}`}>
+                {entity.entityType} / {entity.entityId}
+                {entity.description ? `（${entity.description}）` : ""}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <span className="repair-task-label">建议修复步骤</span>
+          <ol>
+            {repairTask.suggestedRepairSteps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+        </div>
+      </div>
+      <p className="repair-task-check">
+        人工确认：{repairTask.requiresManualConfirmation ? "需要" : "不需要"}；验证方式：{repairTask.verification}
+      </p>
+    </aside>
+  );
+}
+
 type SaveStatus =
   | { state: "idle" }
   | { state: "saved"; at: string }
@@ -186,6 +226,7 @@ function StorageStatusBanner({
           {healthDetail}
         </p>
       ) : null}
+      {error?.repairTask ? <RepairTaskPanel repairTask={error.repairTask} /> : null}
     </section>
   );
 }
