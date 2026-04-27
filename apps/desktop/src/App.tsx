@@ -8,6 +8,7 @@ import type { IssueCard } from "./domain/schemas/issue-card";
 import type { InvestigationRecord } from "./domain/schemas/investigation-record";
 import {
   buildIssueCardFromIntake,
+  buildQuickIssueCardFromLine,
   defaultIntakeOptions,
   nowISO,
   type IntakeInput,
@@ -306,6 +307,80 @@ type IntakeSubmitStatus =
   | { state: "idle" }
   | { state: "saved"; id: string; at: string }
   | { state: "error"; reason: string };
+
+function QuickIssueCreateBar({
+  repository,
+  workspaceId,
+  onCreated,
+  reportStorageError,
+  clearStorageFeedback,
+}: {
+  repository: StorageRepository;
+  workspaceId: string;
+  onCreated: (id: string) => void;
+  reportStorageError: (error: StorageFeedbackError) => void;
+  clearStorageFeedback: () => void;
+}) {
+  const [line, setLine] = useState<string>("");
+  const [status, setStatus] = useState<IntakeSubmitStatus>({ state: "idle" });
+  const canSubmit = line.trim().length > 0;
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const result = buildQuickIssueCardFromLine(
+      line,
+      defaultIntakeOptions(nowISO(), undefined, workspaceId),
+    );
+    if (!result.ok) {
+      reportStorageError(
+        createValidationStorageFeedbackError("issue_intake", "create_issue", result.reason),
+      );
+      setStatus({ state: "error", reason: "请查看顶部统一存储提示" });
+      return;
+    }
+    const saved = await repository.issueCards.save(result.card);
+    if (!saved.ok) {
+      reportStorageError(storageWriteErrorToFeedback("issue_intake", "create_issue", saved.error));
+      setStatus({ state: "error", reason: "请查看顶部统一存储提示" });
+      return;
+    }
+    clearStorageFeedback();
+    setStatus({ state: "saved", id: result.card.id, at: result.card.createdAt });
+    setLine("");
+    onCreated(result.card.id);
+  };
+
+  return (
+    <form
+      className="quick-issue-bar"
+      onSubmit={handleSubmit}
+      data-testid="quick-issue-create-form"
+    >
+      <div className="quick-issue-copy">
+        <span className="quick-issue-label">快速建卡</span>
+        <strong>一句话记录现场问题</strong>
+        <p>只填标题即可创建 open issue，创建后自动选中并展开追记 / 结案区。</p>
+      </div>
+      <div className="quick-issue-input-row">
+        <input
+          type="text"
+          value={line}
+          onChange={(event) => setLine(event.target.value)}
+          placeholder="例如：CAN 心跳偶发丢包，底盘急停"
+          aria-label="一句话描述问题"
+          data-testid="quick-issue-create-input"
+          required
+        />
+        <button type="submit" disabled={!canSubmit} data-testid="quick-issue-create-submit">
+          创建并打开
+        </button>
+      </div>
+      <p className="storage-line" data-testid="quick-issue-create-status">
+        快速建卡状态：{renderIntakeStatus(status)}
+      </p>
+    </form>
+  );
+}
 
 function IssueIntakeForm({
   repository,
@@ -1157,6 +1232,13 @@ function IssuePane({
 
   return (
     <div className="issue-pane-stack">
+      <QuickIssueCreateBar
+        repository={repository}
+        workspaceId={activeWorkspace.id}
+        onCreated={handleCardCreated}
+        reportStorageError={reportStorageError}
+        clearStorageFeedback={clearStorageFeedback}
+      />
       <div className="issue-workbench">
         <aside className="issue-rail" aria-label="问题卡选择区">
           <IssueCardListView

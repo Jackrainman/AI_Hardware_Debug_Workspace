@@ -20,6 +20,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 - HTTP feedback contract。
 - restore dry-run。
 - repair task generation（integrity check repair plan + partial closeout repair task UI）。
+- quick issue create（一句话创建 open issue 并自动选中）。
 - night-run 安全规则。
 - v0.2 历史文档归档。
 
@@ -98,7 +99,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 ### 小任务
 | ID | 所属主线 | 目标 | 用户价值 | 前置依赖 | 允许修改 | 明确不做 | 验证方式 | 完成定义 | 执行类型 | 建议优先级 | 是否适合 AI unattended run |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| CORE-01-QUICK-ISSUE-CREATE | Core Debug Workflow | quick issue create | 调试现场一句话快速建卡 | workspace 创建可用 | `apps/desktop/src` UI；verify | 不接 AI；不改 storage 主链路 | 创建 issue smoke；schema 校验；读回 | 最少字段创建 open issue 并选中 | night-safe | P1 | 是 |
+| CORE-01-QUICK-ISSUE-CREATE | Core Debug Workflow | quick issue create | 调试现场一句话快速建卡 | workspace 创建可用 | `apps/desktop/src` UI；verify | 不接 AI；不改 storage 主链路 | 创建 issue smoke；schema 校验；读回 | 最少字段创建 open issue 并选中 | completed | P1 | 已完成 |
 | CORE-02-WORKSPACE-UX-IMPROVEMENTS | Core Debug Workflow | workspace UX improvements | 用户知道当前数据属于哪个项目 | workspace list/create/switch 已完成 | desktop UI；copy；verify | 不做权限/多租户；不改 DB schema | 切换 workspace；空状态；读回 | 当前 workspace、创建入口、错误态清楚 | night-safe | P1 | 是 |
 | CORE-03-RECENT-ISSUE-REOPEN | Core Debug Workflow | 最近问题快速回到现场 | 重启页面后不迷路 | issue list 可读 | desktop UI；storage state | 不做通知系统；不做协作 | reload 后最近 issue 可打开 | 用户可快速回到最近活跃问题 | night-safe | P2 | 是 |
 | CORE-04-RECORD-TIMELINE-POLISH | Core Debug Workflow | record timeline polish | 排查过程像时间线而不是散文 | record append 已完成 | desktop UI；styles；verify | 不改 record schema；不做附件 | 多类型 record 展示；排序；空状态 | 现象/猜测/动作/结果/结论一眼可分 | night-safe | P1 | 是 |
@@ -251,7 +252,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 
 | 顺序 | 任务 ID | 目标 | 类型 | P |
 |---|---|---|---|---|
-| 1 | CORE-01-QUICK-ISSUE-CREATE | 更快创建问题 | night-safe | P1 |
+| 1 | CORE-01-QUICK-ISSUE-CREATE | 更快创建问题 | completed | P1 |
 | 2 | CORE-04-RECORD-TIMELINE-POLISH | 时间线更清楚 | night-safe | P1 |
 | 3 | CORE-05-CLOSEOUT-UX-POLISH | 结案体验更稳 | night-safe | P1 |
 | 4 | SEARCH-01-BASIC-FULL-TEXT-SEARCH | 基础全文搜索 | night-safe | P1 |
@@ -293,11 +294,10 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 ## 10. 夜跑任务池
 
 ### Night-safe pool
-- CORE-01-QUICK-ISSUE-CREATE
-- CORE-02-WORKSPACE-UX-IMPROVEMENTS
-- CORE-03-RECENT-ISSUE-REOPEN
 - CORE-04-RECORD-TIMELINE-POLISH
 - CORE-05-CLOSEOUT-UX-POLISH
+- CORE-02-WORKSPACE-UX-IMPROVEMENTS
+- CORE-03-RECENT-ISSUE-REOPEN
 - CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS
 - CORE-07-ARCHIVE-FILTERS
 - CORE-08-ERROR-ENTRY-TAGS
@@ -370,4 +370,4 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 
 如果用户白天可参与服务器操作，下一轮最适合认领 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`。
 
-如果用户暂时不能参与服务器操作，下一轮最适合认领 `CORE-01-QUICK-ISSUE-CREATE`，这是 repo-local、P1、night-safe，可在不触碰真实服务器的前提下改善现场快速建卡。
+如果用户暂时不能参与服务器操作，下一轮最适合认领 `CORE-04-RECORD-TIMELINE-POLISH`，这是 repo-local、P1、night-safe，可在不触碰真实服务器的前提下改善排查记录可读性。

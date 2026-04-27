@@ -104,6 +104,20 @@ export function buildIssueCardFromIntake(
   return { ok: true, card: parsed.data };
 }
 
+export function buildQuickIssueCardFromLine(
+  line: string,
+  opts: IntakeOptions,
+): IntakeResult {
+  return buildIssueCardFromIntake(
+    {
+      title: line,
+      description: "",
+      severity: "medium",
+    },
+    opts,
+  );
+}
+
 export function nowISO(): string {
   return new Date().toISOString();
 }
