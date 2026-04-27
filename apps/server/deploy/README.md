@@ -22,6 +22,7 @@
 - `env.example`: copy source for `/home/hurricane/probeflash/shared/env/probeflash.env`.
 - `install-layout.md`: current `/home/hurricane/probeflash` release layout, plus later `/opt` notes.
 - `probeflash.service.template`: later authorized systemd template for the same user-dir layout; it is not required for no-sudo verify.
+- `update-rollback-runbook.md`: repo-local release update / rollback plan for the same user-dir layout; it is not a real server update proof.
 
 Repository-side verification:
 
@@ -114,8 +115,9 @@ Do not run these steps from this docs-only prep. They are the intended checklist
 
 ## Release update / rollback rule
 
-- Update by downloading a new release, verifying SHA256, unpacking to `/home/hurricane/probeflash/releases/vX.Y.Z/`, switching `current`, restarting, and checking health.
-- Rollback by switching `current` back to the previous release and restarting.
+- Detailed runbook: `update-rollback-runbook.md`.
+- Update by downloading a new release, verifying SHA256, unpacking to `/home/hurricane/probeflash/releases/vX.Y.Z/`, switching `current`, restarting, and checking health / version / Web UI / SQLite readback.
+- Rollback by switching `current` back to the previous release, restarting, and re-running the same checks.
 - Never keep SQLite, env files, logs, or Node runtime inside a release directory; keep them under `shared/` and `runtime/` so they survive release replacement.
 
 ## Later authorized systemd route

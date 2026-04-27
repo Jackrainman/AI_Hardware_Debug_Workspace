@@ -7,7 +7,7 @@
 - 当前模式：`server_storage_migration`（保留服务器部署安全边界）。
 - 阶段目标：以 v0.2.x 已完成的本地 HTTP + SQLite + release 可部署基座为起点，按 8 条产品主线推进；近期 P0 只聚焦 **部署可用、数据安全、可观测**。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
-- 本轮已完成：`PRODUCT-ROADMAP-REBUILD-FROM-VISION`，只改 planning / handoff 文档，未写功能代码，未服务器部署，未接真实 AI API。
+- 最近已完成：`DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN`，新增 release update / rollback runbook 并接入 deploy-prep 静态检查；未服务器部署，未 sudo/systemd，未接真实 AI API。
 
 ## 当前真实状态
 - 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、issue / record / closeout / archive / error-entry 主路径、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、server schema contract、HTTP feedback contract、restore dry-run、night-run 安全规则、v0.2 历史文档归档。
@@ -40,16 +40,16 @@
 - **DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY**
   - 状态：`blocked`；P0；白天主线；不能夜跑。
   - 选择理由：真实服务器部署仍是产品可用性的最大缺口。
-- **DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN**
-  - 状态：`night-safe`；P0；repo-local plan。
-  - 选择理由：如果用户暂时不能服务器操作，先补 release 更新 / 回滚 runbook，提升部署可更新性且不触碰真实服务器。
 - **DATA-04-INTEGRITY-CHECK**
   - 状态：`night-safe`；P0；repo-local verify/script。
   - 选择理由：数据安全是近期 1 周目标之一，能在本地临时 DB 中验证完整性检查，不依赖外部系统。
+- **DEP-09-LOGS-DIAGNOSTICS-BUNDLE**
+  - 状态：`night-safe`；P1；repo-local diagnostics script / docs。
+  - 选择理由：本地 health 与部署文档已具备，可继续补可诊断性，不触碰真实服务器。
 
 ## 下一步最小可执行动作
 - 白天有用户参与：认领 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`，执行前再次复述 SSH / release assets / 写入路径 / 临时进程 / 4100 授权边界。
-- 无服务器授权或夜跑：不要部署；认领 `DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN`。若用户明确更关心数据安全，可认领 `DATA-04-INTEGRITY-CHECK`。
+- 无服务器授权或夜跑：不要部署；认领 `DATA-04-INTEGRITY-CHECK`。若该任务完成后仍夜跑，重新读取事实源再扫描 `Night-safe pool`。
 - 真实 AI：仍 blocked，不得无人值守接 provider 或 API key。
 
 ## 下一任务选择流程
@@ -64,5 +64,6 @@
 
 ## DoD / Verification Expectation
 - planning-only 任务最小验证：`git diff --check`、`python3 -m json.tool .agent-state/handoff.json >/dev/null`、`cd apps/desktop && npm run verify:handoff`、`git status --short`。
-- 本轮未改业务代码、server/desktop src 或 package scripts，因此不要求 typecheck / build / verify:all；若后续任务改代码或 package，必须恢复对应矩阵验证。
+- deploy docs / deploy verify 任务最小验证：`git diff --check`、`cd apps/server && npm run verify:deploy-prep`、`python3 -m json.tool .agent-state/handoff.json >/dev/null`、`cd apps/desktop && npm run verify:handoff`、`git status --short`。
+- `DEP-07` 未改业务 src、server route、desktop UI 或 package scripts，因此未要求 typecheck / build / verify:all；若后续任务改代码或 package，必须恢复对应矩阵验证。
 - `docs/planning/current.md` 与 `.agent-state/handoff.json` 是每轮 planning sync 必更；任务池或路线变化时同步 `docs/planning/backlog.md`；长期拍板变化时同步 `docs/planning/decisions.md`。

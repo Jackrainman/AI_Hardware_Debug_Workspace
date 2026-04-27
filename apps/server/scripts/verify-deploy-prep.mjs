@@ -8,6 +8,7 @@ const deployRoot = resolve(serverRoot, "deploy");
 const requiredFiles = [
   "README.md",
   "install-layout.md",
+  "update-rollback-runbook.md",
   "env.example",
   "probeflash.service.template",
 ];
@@ -95,7 +96,7 @@ assertNotContains("probeflash.service.template", service, "EnvironmentFile=/opt/
 assertNotContains("probeflash.service.template", service, "ExecStart=/opt/probeflash");
 assertNotContains("probeflash.service.template", service, "ProtectHome=true");
 
-const allDocs = `${contents["README.md"]}\n${contents["install-layout.md"]}`;
+const allDocs = `${contents["README.md"]}\n${contents["install-layout.md"]}\n${contents["update-rollback-runbook.md"]}`;
 for (const expected of [
   "/home/hurricane/probeflash/current",
   "/home/hurricane/probeflash/releases/",
@@ -127,6 +128,16 @@ for (const expected of [
   "not required for no-sudo verify",
   "later / formal install / optional hardening",
   "/opt/probeflash",
+  "update-rollback-runbook.md",
+  "ln -sfn /home/hurricane/probeflash/releases/<new-version> /home/hurricane/probeflash/current",
+  "ln -sfn /home/hurricane/probeflash/releases/<previous-version> /home/hurricane/probeflash/current",
+  "GET http://127.0.0.1:4100/api/health",
+  "GET http://127.0.0.1:4100/api/version",
+  "GET http://127.0.0.1:4100/",
+  "GET http://192.168.2.2:4100/",
+  "shared/data/probeflash.sqlite",
+  "If SHA256 verification fails, do not unpack or run the release.",
+  "If rollback also fails, stop and require user intervention.",
 ]) {
   assertContains("deploy docs", allDocs, expected);
 }

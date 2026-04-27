@@ -27,7 +27,7 @@
 | 4 | DEP-04-HEALTH-STATUS-SERVER-VERIFY | day-only | P0 | 依赖 DEP-01 |
 | 5 | DATA-01-SQLITE-BACKUP-SERVER-PATH-VERIFY | day-only | P0 | 依赖 DEP-01 |
 | 6 | DATA-03-RESTORE-DRY-RUN-SERVER-PATH-VERIFY | day-only | P0 | 依赖 DATA-01 |
-| 7 | DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN | night-safe | P0 | 无服务器授权时优先认领 |
+| 7 | DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN | completed | P0 | 已完成；release update / rollback runbook 已接入 deploy-prep 静态检查 |
 | 8 | DATA-04-INTEGRITY-CHECK | night-safe | P0 | 数据安全夜跑候选 |
 
 ## 近期 2-4 周任务（最多 12 个）
@@ -75,7 +75,6 @@
 - 更完整的局域网部署体验：反向代理、`.local`、HTTPS、美化域名。
 
 ## Night-safe pool
-- DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN
 - DEP-09-LOGS-DIAGNOSTICS-BUNDLE
 - DATA-02-JSON-EXPORT-HARDEN
 - DATA-04-INTEGRITY-CHECK

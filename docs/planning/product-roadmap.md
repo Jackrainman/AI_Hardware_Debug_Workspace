@@ -242,7 +242,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 | 4 | DEP-04-HEALTH-STATUS-SERVER-VERIFY | 服务器健康状态可诊断 | day-only | P0 |
 | 5 | DATA-01-SQLITE-BACKUP-SERVER-PATH-VERIFY | 服务器 SQLite backup 复验 | day-only | P0 |
 | 6 | DATA-03-RESTORE-DRY-RUN-SERVER-PATH-VERIFY | 服务器备份 restore dry-run 复验 | day-only | P0 |
-| 7 | DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN | 更新 / 回滚 runbook | night-safe | P0 |
+| 7 | DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN | 更新 / 回滚 runbook | completed | P0 |
 | 8 | DATA-04-INTEGRITY-CHECK | SQLite integrity check | night-safe | P0 |
 
 ### 近期 2-4 周（最多 12 个任务）
@@ -292,7 +292,6 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 ## 10. 夜跑任务池
 
 ### Night-safe pool
-- DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN
 - DEP-09-LOGS-DIAGNOSTICS-BUNDLE
 - DATA-02-JSON-EXPORT-HARDEN
 - DATA-04-INTEGRITY-CHECK
@@ -375,4 +374,4 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 
 如果用户白天可参与服务器操作，下一轮最适合认领 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`。
 
-如果用户暂时不能参与服务器操作，下一轮最适合认领 `DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN`，这是 repo-local、P0、night-safe，能继续补齐部署可更新 / 可回滚能力而不触碰真实服务器。
+如果用户暂时不能参与服务器操作，下一轮最适合认领 `DATA-04-INTEGRITY-CHECK`，这是 repo-local、P0、night-safe，能继续补齐数据安全检查而不触碰真实服务器。
