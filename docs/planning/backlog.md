@@ -28,7 +28,7 @@
 | 5 | DATA-01-SQLITE-BACKUP-SERVER-PATH-VERIFY | day-only | P0 | 依赖 DEP-01 |
 | 6 | DATA-03-RESTORE-DRY-RUN-SERVER-PATH-VERIFY | day-only | P0 | 依赖 DATA-01 |
 | 7 | DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN | completed | P0 | 已完成；release update / rollback runbook 已接入 deploy-prep 静态检查 |
-| 8 | DATA-04-INTEGRITY-CHECK | night-safe | P0 | 数据安全夜跑候选 |
+| 8 | DATA-04-INTEGRITY-CHECK | completed | P0 | 已完成；SQLite integrity check CLI 与失败注入 verify 已落地 |
 
 ## 近期 2-4 周任务（最多 12 个）
 目标：搜索、AI-ready、code context bundle。
@@ -77,7 +77,6 @@
 ## Night-safe pool
 - DEP-09-LOGS-DIAGNOSTICS-BUNDLE
 - DATA-02-JSON-EXPORT-HARDEN
-- DATA-04-INTEGRITY-CHECK
 - DATA-05-PARTIAL-CLOSEOUT-RECOVERY
 - DATA-08-REPAIR-TASK-GENERATION
 - CORE-01-QUICK-ISSUE-CREATE

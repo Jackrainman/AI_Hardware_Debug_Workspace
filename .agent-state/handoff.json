@@ -16,7 +16,7 @@
     "archive_state": "object - v0.2.0 前历史文档归档状态与读取条件",
     "notes": "string[] - 下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-04-27T15:07:51+08:00",
+  "timestamp": "2026-04-27T15:36:17+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "R1",
   "current_stage_name": "长期产品路线图执行启动",
@@ -118,22 +118,22 @@
       ]
     },
     {
-      "id": "DATA-04-INTEGRITY-CHECK",
-      "track": "Data Safety",
-      "goal": "增加 SQLite 数据完整性检查。",
+      "id": "DEP-09-LOGS-DIAGNOSTICS-BUNDLE",
+      "track": "Deployment / Operability",
+      "goal": "生成最小日志 / diagnostics bundle，便于用户把失败现场打包给 AI 或维护者。",
       "status": "pending",
-      "priority": "P0",
+      "priority": "P1",
       "lane": "night-safe",
       "night_safe": true,
       "ai_unattended_run": true,
       "requires_user_confirmation": []
     },
     {
-      "id": "DEP-09-LOGS-DIAGNOSTICS-BUNDLE",
-      "track": "Deployment / Operability",
-      "goal": "生成最小日志 / diagnostics bundle，便于用户把失败现场打包给 AI 或维护者。",
+      "id": "DATA-02-JSON-EXPORT-HARDEN",
+      "track": "Data Safety",
+      "goal": "固化 JSON export 输出字段、路径与脱敏边界。",
       "status": "pending",
-      "priority": "P1",
+      "priority": "P0",
       "lane": "night-safe",
       "night_safe": true,
       "ai_unattended_run": true,
@@ -224,12 +224,13 @@
       "order": 8,
       "id": "DATA-04-INTEGRITY-CHECK",
       "track": "Data Safety",
-      "status": "pending_night_safe",
+      "status": "completed",
       "priority": "P0",
-      "classification": "night-safe",
+      "classification": "completed",
       "depends_on": [
         "HTTP + SQLite schema and local fixture path"
-      ]
+      ],
+      "completed_at": "2026-04-27T15:36:17+08:00"
     }
   ],
   "execution_cadence": {
@@ -278,7 +279,6 @@
   "night_safe_pool": [
     "DEP-09-LOGS-DIAGNOSTICS-BUNDLE",
     "DATA-02-JSON-EXPORT-HARDEN",
-    "DATA-04-INTEGRITY-CHECK",
     "DATA-05-PARTIAL-CLOSEOUT-RECOVERY",
     "DATA-08-REPAIR-TASK-GENERATION",
     "CORE-01-QUICK-ISSUE-CREATE",
@@ -376,7 +376,8 @@
     "S3-SERVER-RELEASE-DEPLOYMENT-PLANNING-REALIGN",
     "S3-SERVER-RELEASE-STATIC-WEB-SERVE-PLAN",
     "PRODUCT-ROADMAP-REBUILD-FROM-VISION",
-    "DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN"
+    "DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN",
+    "DATA-04-INTEGRITY-CHECK"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -397,8 +398,8 @@
     ],
     "recommended_next_daytime": "DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY",
     "recommended_next_daytime_status": "blocked_until_user_confirms_server_boundaries",
-    "recommended_next_night_safe": "DATA-04-INTEGRITY-CHECK",
-    "alternative_night_safe": "DEP-09-LOGS-DIAGNOSTICS-BUNDLE",
+    "recommended_next_night_safe": "DEP-09-LOGS-DIAGNOSTICS-BUNDLE",
+    "alternative_night_safe": "DATA-02-JSON-EXPORT-HARDEN",
     "selection_rule": "白天有用户参与时优先执行 DEP-01；无服务器授权或夜跑时不得部署，只能从 pending_task_queue / night_safe_pool 选择第一个依赖满足且未完成的任务。真实 AI/API key 和 systemd/sudo 任务不得 unattended。"
   },
   "night_run_mode": {
@@ -446,16 +447,20 @@
     "default_read_policy": "Do not read archive by default. Read only for v0.2.0 前历史背景、专项实现追溯、API / SQLite / 不可达策略背景、release closeout 追溯或归档审计。"
   },
   "verification_expectations": {
-    "last_completed_DEP_07": [
+    "last_completed_DATA_04": [
       "git diff --check",
+      "cd apps/server && npm run verify:data-integrity-check",
+      "cd apps/server && npm run verify:s3-local-backend-scaffold",
       "cd apps/server && npm run verify:deploy-prep",
+      "cd apps/server && npm run verify:server-schema-contract",
+      "cd apps/desktop && npm run typecheck",
+      "cd apps/desktop && npm run build",
       "python3 -m json.tool .agent-state/handoff.json >/dev/null",
       "cd apps/desktop && npm run verify:handoff",
+      "cd apps/desktop && npm run verify:all",
       "git status --short"
     ],
-    "not_required_this_round": [
-      "typecheck/build/verify:all：DEP-07 只修改 deploy docs 与现有 deploy-prep 静态检查脚本，未修改业务 src、server route、desktop UI 或 package scripts"
-    ]
+    "not_required_this_round": []
   },
   "risks": [
     "真实服务器 release 用户目录部署验证仍未完成，不得标记 completed。",
@@ -465,9 +470,9 @@
     "路线图较长，current.md 只允许保留最多 3 个前沿候选，完整字段必须回到 product-roadmap.md。"
   ],
   "notes": [
-    "DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN 已完成：apps/server/deploy/update-rollback-runbook.md 定义 release update / rollback 计划，并由 verify:deploy-prep 检查关键安全边界。",
+    "DATA-04-INTEGRITY-CHECK 已完成：apps/server/scripts/integrity-check.mjs 可检查 SQLite integrity、FK、孤儿关系、archived issue 缺 archive/error-entry 和关键 payload 必填字段。",
     "下一轮若用户白天可参与服务器操作，最适合认领 DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY。",
-    "下一轮若无服务器授权或夜跑，最适合认领 DATA-04-INTEGRITY-CHECK；DEP-09-LOGS-DIAGNOSTICS-BUNDLE 是可诊断性方向备选。",
-    "本轮没有修改业务 src、server route、desktop UI、package scripts，没有服务器部署，没有接真实 AI API。"
+    "下一轮若无服务器授权或夜跑，最适合认领 DEP-09-LOGS-DIAGNOSTICS-BUNDLE；DATA-02-JSON-EXPORT-HARDEN 是数据安全方向备选。",
+    "本轮没有修复真实数据，没有 destructive migration，没有服务器部署，没有接真实 AI API。"
   ]
 }
