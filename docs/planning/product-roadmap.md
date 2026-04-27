@@ -23,6 +23,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 - quick issue create（一句话创建 open issue 并自动选中）。
 - record timeline polish（排查记录按时间线和类型芯片展示）。
 - closeout UX polish（结案填写检查、必填提示和空格-only 本地拦截）。
+- basic full-text search（基于 SQLite LIKE 的 workspace-scoped 基础搜索，覆盖 issue / record / archive / error-entry 最小集合）。
 - night-run 安全规则。
 - v0.2 历史文档归档。
 
@@ -125,7 +126,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 ### 小任务
 | ID | 所属主线 | 目标 | 用户价值 | 前置依赖 | 允许修改 | 明确不做 | 验证方式 | 完成定义 | 执行类型 | 建议优先级 | 是否适合 AI unattended run |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| SEARCH-01-BASIC-FULL-TEXT-SEARCH | Search / Knowledge Base | basic full-text search | 输入关键词找回历史问题 | SQLite 数据稳定；archive/error-entry 有文本字段 | server search endpoint；desktop UI；verify | 不做语义检索；不建 embedding | 多字段 fixture；关键词命中；无结果 | 能搜 title/symptom/rootCause/resolution/archive | night-safe | P1 | 是 |
+| SEARCH-01-BASIC-FULL-TEXT-SEARCH | Search / Knowledge Base | basic full-text search | 输入关键词找回历史问题 | SQLite 数据稳定；archive/error-entry 有文本字段 | server search endpoint；desktop UI；verify | 不做语义检索；不建 embedding | 多字段 fixture；关键词命中；无结果 | 能搜 title/symptom/rootCause/resolution/archive | completed | P1 | 已完成 |
 | SEARCH-02-FILTERS | Search / Knowledge Base | filters | 缩小搜索结果 | SEARCH-01 或 archive filters | server query/UI | 不做复杂查询语言 | 项目/状态/时间/标签筛选 fixture | 搜索和筛选可组合 | night-safe | P1 | 是 |
 | SEARCH-03-ARCHIVE-REVIEW-PAGE | Search / Knowledge Base | archive review page | 归档文档可集中浏览复盘 | archive list/read 已可用 | desktop page；server read API 可选 | 不编辑源文件；不接 AI 总结 | 页面展示 markdown；链接 issue/error-entry | 用户可浏览归档并跳回源问题 | night-safe | P1 | 是 |
 | SEARCH-04-TAGS | Search / Knowledge Base | tags | 按模块/设备/现象组织问题 | CORE-08 或最小 tag 字段 | schema/UI/filter | 不自动生成复杂标签 | tag CRUD；筛选；读回 | issue/error-entry 支持稳定标签 | night-safe | P1 | 是 |
@@ -257,7 +258,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 | 1 | CORE-01-QUICK-ISSUE-CREATE | 更快创建问题 | completed | P1 |
 | 2 | CORE-04-RECORD-TIMELINE-POLISH | 时间线更清楚 | completed | P1 |
 | 3 | CORE-05-CLOSEOUT-UX-POLISH | 结案体验更稳 | completed | P1 |
-| 4 | SEARCH-01-BASIC-FULL-TEXT-SEARCH | 基础全文搜索 | night-safe | P1 |
+| 4 | SEARCH-01-BASIC-FULL-TEXT-SEARCH | 基础全文搜索 | completed | P1 |
 | 5 | SEARCH-02-FILTERS | 搜索筛选 | night-safe | P1 |
 | 6 | SEARCH-04-TAGS | 标签能力 | night-safe | P1 |
 | 7 | SEARCH-05-ERROR-CODE-TAXONOMY | 错误编号分类规则 | decision-needed | P1 |
@@ -296,7 +297,6 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 ## 10. 夜跑任务池
 
 ### Night-safe pool
-- SEARCH-01-BASIC-FULL-TEXT-SEARCH
 - SEARCH-02-FILTERS
 - CORE-02-WORKSPACE-UX-IMPROVEMENTS
 - CORE-03-RECENT-ISSUE-REOPEN
@@ -370,4 +370,4 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 
 如果用户白天可参与服务器操作，下一轮最适合认领 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`。
 
-如果用户暂时不能参与服务器操作，下一轮最适合认领 `SEARCH-01-BASIC-FULL-TEXT-SEARCH`，这是 repo-local、P1、night-safe，可在不触碰真实服务器或真实 AI 的前提下让历史问题开始可找回。
+如果用户暂时不能参与服务器操作，下一轮最适合认领 `SEARCH-02-FILTERS`，这是 repo-local、P1、night-safe，可在不触碰真实服务器或真实 AI 的前提下缩小已完成基础搜索的结果范围。

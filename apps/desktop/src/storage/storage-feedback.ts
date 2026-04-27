@@ -42,6 +42,7 @@ export type StorageFeedbackSurface =
   | "investigation_append"
   | "investigation_list"
   | "closeout"
+  | "knowledge_search"
   | "archive_index";
 
 export type StorageFeedbackOperation =
@@ -54,6 +55,7 @@ export type StorageFeedbackOperation =
   | "save_record"
   | "list_records"
   | "closeout"
+  | "search"
   | "list_archives";
 
 export type StorageFeedbackCode =
@@ -119,6 +121,7 @@ function labelSurface(surface: StorageFeedbackSurface): string {
     investigation_append: "追加排查记录",
     investigation_list: "排查时间线",
     closeout: "结案归档",
+    knowledge_search: "历史搜索",
     archive_index: "归档区",
   };
   return labels[surface];

@@ -43,6 +43,8 @@ import {
   type InvestigationRecordListResult,
   type StorageRepository,
   type StorageReadError,
+  type StorageSearchResult,
+  type StorageSearchResultItem,
   type WorkspaceListResult,
   storageRepository,
 } from "./storage/storage-repository";
@@ -584,6 +586,106 @@ function IssueCardListView({
         </ul>
       )}
     </div>
+  );
+}
+
+function SearchPanel({
+  repository,
+  onOpenIssue,
+  reportStorageError,
+  clearStorageFeedback,
+}: {
+  repository: StorageRepository;
+  onOpenIssue: (id: string) => void;
+  reportStorageError: (error: StorageFeedbackError) => void;
+  clearStorageFeedback: () => void;
+}) {
+  const [query, setQuery] = useState<string>("");
+  const [result, setResult] = useState<StorageSearchResult | null>(null);
+  const [isSearching, setIsSearching] = useState<boolean>(false);
+  const canSearch = query.trim().length > 0 && !isSearching;
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedQuery = query.trim();
+    if (trimmedQuery.length === 0) {
+      setResult({ query: "", items: [], readError: null });
+      return;
+    }
+    setIsSearching(true);
+    const searchResult = await repository.search.query(trimmedQuery);
+    setResult(searchResult);
+    setIsSearching(false);
+    if (searchResult.readError !== null) {
+      reportStorageError(
+        storageReadErrorToFeedback("knowledge_search", "search", searchResult.readError),
+      );
+      return;
+    }
+    clearStorageFeedback();
+  };
+
+  return (
+    <section className="search-panel" data-testid="knowledge-search-panel">
+      <form className="search-form" onSubmit={handleSubmit} data-testid="knowledge-search-form">
+        <div className="form-caption">
+          <h3>历史问题搜索</h3>
+          <p>按关键词搜索当前项目的问题卡、排查记录、归档摘要与错误表；不会跨项目读取。</p>
+        </div>
+        <div className="search-input-row">
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="例如：CAN / 握手 / 预防清单"
+            aria-label="搜索历史问题关键词"
+            data-testid="knowledge-search-input"
+          />
+          <button type="submit" disabled={!canSearch} data-testid="knowledge-search-submit">
+            {isSearching ? "搜索中" : "搜索"}
+          </button>
+        </div>
+      </form>
+      {result !== null && result.readError === null && (
+        <div className="search-result-block" data-testid="knowledge-search-result-block">
+          <p className="storage-line" data-testid="knowledge-search-summary">
+            {result.query.length === 0
+              ? "输入关键词后开始搜索"
+              : `“${result.query}” 命中 ${result.items.length} 条`}
+          </p>
+          {result.query.length > 0 && result.items.length === 0 && (
+            <p className="empty-state" data-testid="knowledge-search-empty">
+              当前项目没有匹配结果。可以换一个关键词，或先完成结案归档让错误表可被搜索。
+            </p>
+          )}
+          {result.items.length > 0 && (
+            <ul className="search-result-list" data-testid="knowledge-search-results">
+              {result.items.map((item) => (
+                <li key={`${item.kind}:${item.id}`} className="search-result-item">
+                  <button
+                    type="button"
+                    className="search-result-button"
+                    onClick={() => onOpenIssue(item.issueId)}
+                    data-testid="knowledge-search-result-item"
+                  >
+                    <span className="search-result-title-row">
+                      <span className="search-result-kind">{labelSearchResultKind(item.kind)}</span>
+                      <span className="search-result-title">{item.title}</span>
+                    </span>
+                    <span className="search-result-snippet">{item.snippet || "(空内容命中)"}</span>
+                    <span className="search-result-meta">
+                      来源问题：{item.issueId} · 字段：{labelSearchMatchedFields(item)}
+                      {item.status ? ` · 状态：${labelIssueStatus(item.status)}` : ""}
+                      {item.errorCode ? ` · ${item.errorCode}` : ""}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -1376,6 +1478,12 @@ function IssuePane({
         reportStorageError={reportStorageError}
         clearStorageFeedback={clearStorageFeedback}
       />
+      <SearchPanel
+        repository={repository}
+        onOpenIssue={handleSelect}
+        reportStorageError={reportStorageError}
+        clearStorageFeedback={clearStorageFeedback}
+      />
       <div className="issue-workbench">
         <aside className="issue-rail" aria-label="问题卡选择区">
           <IssueCardListView
@@ -1514,6 +1622,23 @@ function labelIssueStatus(status: IssueCard["status"]): string {
     needs_manual_review: "需人工复核",
   };
   return labels[status];
+}
+
+function labelSearchResultKind(kind: StorageSearchResultItem["kind"]): string {
+  const labels: Record<StorageSearchResultItem["kind"], string> = {
+    issue: "问题卡",
+    record: "排查记录",
+    archive: "归档摘要",
+    error_entry: "错误表",
+  };
+  return labels[kind];
+}
+
+function labelSearchMatchedFields(item: StorageSearchResultItem): string {
+  if (item.matchedFields.length === 0) {
+    return "未标注";
+  }
+  return item.matchedFields.join(" / ");
 }
 
 function labelInvestigationType(type: InvestigationType): string {

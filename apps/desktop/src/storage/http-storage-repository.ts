@@ -58,6 +58,8 @@ import {
 import type {
   CreateWorkspaceResult,
   StorageRepository,
+  StorageSearchResult,
+  StorageSearchResultItem,
   WorkspaceListInvalidEntry,
   WorkspaceListResult,
 } from "./storage-repository.ts";
@@ -86,6 +88,28 @@ const WorkspaceSchema = z.object({
 
 const WorkspaceCreateResponseSchema = z.object({
   workspace: WorkspaceSchema,
+});
+
+const SearchResultItemSchema = z.object({
+  kind: z.enum(["issue", "record", "archive", "error_entry"]),
+  id: z.string().min(1),
+  issueId: z.string().min(1),
+  title: z.string().min(1),
+  matchedFields: z.array(z.string().min(1)),
+  snippet: z.string(),
+  status: IssueStatus.optional(),
+  recordType: z.string().min(1).optional(),
+  fileName: z.string().min(1).optional(),
+  errorCode: z.string().min(1).optional(),
+  category: z.string().optional(),
+  createdAt: z.string().datetime({ offset: true }).optional(),
+  updatedAt: z.string().datetime({ offset: true }).optional(),
+  generatedAt: z.string().datetime({ offset: true }).optional(),
+});
+
+const SearchResponseSchema = z.object({
+  query: z.string(),
+  items: z.array(SearchResultItemSchema),
 });
 
 const ReleaseMetadataSchema = z.object({
@@ -342,6 +366,50 @@ export function createHttpStorageRepository(
   const basePath = workspaceBasePath(workspaceId);
 
   return {
+    search: {
+      async query(rawQuery: string): Promise<StorageSearchResult> {
+        const query = rawQuery.trim();
+        if (query.length === 0) {
+          return { query, items: [], readError: null };
+        }
+
+        const params = new URLSearchParams({ q: query });
+        const target = `${basePath}/search?${params.toString()}`;
+        try {
+          const data = await client.request<unknown>(target);
+          const parsed = SearchResponseSchema.safeParse(data);
+          if (!parsed.success) {
+            return {
+              query,
+              items: [],
+              readError: dataValidationReadError(
+                "issue_card",
+                target,
+                "search response must contain query and items[]",
+              ),
+            };
+          }
+          return {
+            query: parsed.data.query,
+            items: parsed.data.items as StorageSearchResultItem[],
+            readError: null,
+          };
+        } catch (error) {
+          if (isRequestError(error)) {
+            return {
+              query,
+              items: [],
+              readError: mapRequestErrorToReadError("issue_card", target, error),
+            };
+          }
+          return {
+            query,
+            items: [],
+            readError: createReadFailed("issue_card", target, error),
+          };
+        }
+      },
+    },
     workspaces: {
       async list(): Promise<WorkspaceListResult> {
         const target = "/workspaces";

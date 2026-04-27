@@ -307,6 +307,119 @@ function createStorageError(message, code = "STORAGE_ERROR") {
   return error;
 }
 
+const SEARCH_RESULT_LIMIT_DEFAULT = 20;
+const SEARCH_RESULT_LIMIT_MAX = 50;
+
+const ISSUE_SEARCH_FIELDS = [
+  ["title", (issue) => issue.title],
+  ["rawInput", (issue) => issue.rawInput],
+  ["normalizedSummary", (issue) => issue.normalizedSummary],
+  ["symptomSummary", (issue) => issue.symptomSummary],
+  ["suspectedDirections", (issue) => issue.suspectedDirections],
+  ["suggestedActions", (issue) => issue.suggestedActions],
+  ["tags", (issue) => issue.tags],
+];
+
+const RECORD_SEARCH_FIELDS = [
+  ["rawText", (record) => record.rawText],
+  ["polishedText", (record) => record.polishedText],
+  ["aiExtractedSignals", (record) => record.aiExtractedSignals],
+];
+
+const ARCHIVE_SEARCH_FIELDS = [
+  ["fileName", (archive) => archive.fileName],
+  ["markdownContent", (archive) => archive.markdownContent],
+];
+
+const ERROR_ENTRY_SEARCH_FIELDS = [
+  ["errorCode", (entry) => entry.errorCode],
+  ["title", (entry) => entry.title],
+  ["category", (entry) => entry.category],
+  ["symptom", (entry) => entry.symptom],
+  ["rootCause", (entry) => entry.rootCause],
+  ["resolution", (entry) => entry.resolution],
+  ["prevention", (entry) => entry.prevention],
+];
+
+function normalizeSearchQuery(query) {
+  if (typeof query !== "string") {
+    throw createStorageError("search query must be a string", "BAD_REQUEST");
+  }
+  const normalized = query.trim();
+  if (normalized.length === 0) {
+    throw createStorageError("search query is required", "BAD_REQUEST");
+  }
+  if (normalized.length > 120) {
+    throw createStorageError("search query must be at most 120 characters", "BAD_REQUEST");
+  }
+  return normalized;
+}
+
+function normalizeSearchLimit(limit) {
+  if (limit === undefined || limit === null || limit === "") {
+    return SEARCH_RESULT_LIMIT_DEFAULT;
+  }
+  const parsed = Number(limit);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw createStorageError("search limit must be a positive integer", "BAD_REQUEST");
+  }
+  return Math.min(parsed, SEARCH_RESULT_LIMIT_MAX);
+}
+
+function escapeLikeValue(value) {
+  return value.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_");
+}
+
+function textFromValue(value) {
+  if (Array.isArray(value)) {
+    return value.map(textFromValue).filter(Boolean).join(" ");
+  }
+  if (typeof value === "string") {
+    return value;
+  }
+  if (value === null || value === undefined) {
+    return "";
+  }
+  return String(value);
+}
+
+function compactText(value) {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function createSearchSnippet(text, query) {
+  const compacted = compactText(text);
+  if (compacted.length <= 160) {
+    return compacted;
+  }
+  const normalizedText = compacted.toLocaleLowerCase();
+  const normalizedQuery = query.toLocaleLowerCase();
+  const matchIndex = normalizedText.indexOf(normalizedQuery);
+  const start = matchIndex < 0 ? 0 : Math.max(0, matchIndex - 60);
+  const end = Math.min(compacted.length, start + 160);
+  return `${start > 0 ? "..." : ""}${compacted.slice(start, end)}${end < compacted.length ? "..." : ""}`;
+}
+
+function findMatchedFields(payload, fields, query) {
+  const normalizedQuery = query.toLocaleLowerCase();
+  const matchedFields = [];
+  let snippet = "";
+  for (const [name, getter] of fields) {
+    const text = textFromValue(getter(payload));
+    if (text.toLocaleLowerCase().includes(normalizedQuery)) {
+      matchedFields.push(name);
+      if (!snippet) {
+        snippet = createSearchSnippet(text, query);
+      }
+    }
+  }
+  return { matchedFields, snippet };
+}
+
+function timestampOfSearchResult(item) {
+  return item.updatedAt ?? item.generatedAt ?? item.createdAt ?? "";
+}
+
 export function createProbeFlashDatabase(dbPath, options = {}) {
   const defaultWorkspace = normalizeDefaultWorkspace(options.defaultWorkspace);
   mkdirSync(dirname(dbPath), { recursive: true });
@@ -482,6 +595,123 @@ export function createProbeFlashDatabase(dbPath, options = {}) {
           defaultWorkspaceName: workspace.name,
           seeded: true,
         },
+      };
+    },
+    search(workspaceId, options = {}) {
+      requireWorkspace(workspaceId);
+      const query = normalizeSearchQuery(options.query);
+      const limit = normalizeSearchLimit(options.limit);
+      const likePattern = `%${escapeLikeValue(query)}%`;
+      const items = [];
+
+      const issueRows = db
+        .prepare(
+          `SELECT payload_json FROM issues
+           WHERE workspace_id = ? AND payload_json LIKE ? ESCAPE '\\'
+           ORDER BY updated_at DESC
+           LIMIT ?`,
+        )
+        .all(workspaceId, likePattern, limit);
+      for (const row of issueRows) {
+        const issue = parsePayload(row);
+        const match = findMatchedFields(issue, ISSUE_SEARCH_FIELDS, query);
+        if (match.matchedFields.length === 0) continue;
+        items.push({
+          kind: "issue",
+          id: issue.id,
+          issueId: issue.id,
+          title: issue.title,
+          matchedFields: match.matchedFields,
+          snippet: match.snippet,
+          status: issue.status,
+          createdAt: issue.createdAt,
+          updatedAt: issue.updatedAt,
+        });
+      }
+
+      const recordRows = db
+        .prepare(
+          `SELECT payload_json FROM records
+           WHERE workspace_id = ? AND payload_json LIKE ? ESCAPE '\\'
+           ORDER BY created_at DESC
+           LIMIT ?`,
+        )
+        .all(workspaceId, likePattern, limit);
+      for (const row of recordRows) {
+        const record = parsePayload(row);
+        const match = findMatchedFields(record, RECORD_SEARCH_FIELDS, query);
+        if (match.matchedFields.length === 0) continue;
+        items.push({
+          kind: "record",
+          id: record.id,
+          issueId: record.issueId,
+          title: `排查记录：${record.issueId}`,
+          matchedFields: match.matchedFields,
+          snippet: match.snippet,
+          recordType: record.type,
+          createdAt: record.createdAt,
+        });
+      }
+
+      const archiveRows = db
+        .prepare(
+          `SELECT payload_json FROM archives
+           WHERE workspace_id = ? AND payload_json LIKE ? ESCAPE '\\'
+           ORDER BY generated_at DESC
+           LIMIT ?`,
+        )
+        .all(workspaceId, likePattern, limit);
+      for (const row of archiveRows) {
+        const archive = parsePayload(row);
+        const match = findMatchedFields(archive, ARCHIVE_SEARCH_FIELDS, query);
+        if (match.matchedFields.length === 0) continue;
+        items.push({
+          kind: "archive",
+          id: archive.fileName,
+          issueId: archive.issueId,
+          title: archive.fileName,
+          matchedFields: match.matchedFields,
+          snippet: match.snippet,
+          fileName: archive.fileName,
+          generatedAt: archive.generatedAt,
+        });
+      }
+
+      const errorEntryRows = db
+        .prepare(
+          `SELECT payload_json FROM error_entries
+           WHERE workspace_id = ? AND payload_json LIKE ? ESCAPE '\\'
+           ORDER BY updated_at DESC
+           LIMIT ?`,
+        )
+        .all(workspaceId, likePattern, limit);
+      for (const row of errorEntryRows) {
+        const entry = parsePayload(row);
+        const match = findMatchedFields(entry, ERROR_ENTRY_SEARCH_FIELDS, query);
+        if (match.matchedFields.length === 0) continue;
+        items.push({
+          kind: "error_entry",
+          id: entry.id,
+          issueId: entry.sourceIssueId,
+          title: entry.title,
+          matchedFields: match.matchedFields,
+          snippet: match.snippet,
+          errorCode: entry.errorCode,
+          category: entry.category,
+          createdAt: entry.createdAt,
+          updatedAt: entry.updatedAt,
+        });
+      }
+
+      items.sort((a, b) => {
+        const left = timestampOfSearchResult(a);
+        const right = timestampOfSearchResult(b);
+        return left < right ? 1 : left > right ? -1 : a.id.localeCompare(b.id);
+      });
+
+      return {
+        query,
+        items: items.slice(0, limit),
       };
     },
     listWorkspaces() {

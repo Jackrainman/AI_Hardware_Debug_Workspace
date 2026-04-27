@@ -264,6 +264,7 @@ function createRequestHandler({ store, storeInitError, staticDir, releaseMetadat
     const recordListMatch = url.pathname.match(
       /^\/api\/workspaces\/([^/]+)\/issues\/([^/]+)\/records$/,
     );
+    const searchMatch = url.pathname.match(/^\/api\/workspaces\/([^/]+)\/search$/);
     const archiveListMatch = url.pathname.match(/^\/api\/workspaces\/([^/]+)\/archives$/);
     const archiveDetailMatch = url.pathname.match(/^\/api\/workspaces\/([^/]+)\/archives\/(.+)$/);
     const errorEntryListMatch = url.pathname.match(/^\/api\/workspaces\/([^/]+)\/error-entries$/);
@@ -344,6 +345,14 @@ function createRequestHandler({ store, storeInitError, staticDir, releaseMetadat
         const issueId = decodeURIComponent(recordListMatch[2]);
         const payload = await readJson(req);
         return ok(res, store.createRecord(workspaceId, issueId, payload), 201);
+      }
+
+      if (searchMatch && method === "GET") {
+        const workspaceId = decodeURIComponent(searchMatch[1]);
+        return ok(res, store.search(workspaceId, {
+          query: url.searchParams.get("q") ?? "",
+          limit: url.searchParams.get("limit") ?? undefined,
+        }));
       }
 
       if (archiveListMatch && method === "GET") {
