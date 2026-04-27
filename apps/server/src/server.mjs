@@ -352,6 +352,11 @@ function createRequestHandler({ store, storeInitError, staticDir, releaseMetadat
         return ok(res, store.search(workspaceId, {
           query: url.searchParams.get("q") ?? "",
           limit: url.searchParams.get("limit") ?? undefined,
+          kind: url.searchParams.get("kind") ?? undefined,
+          status: url.searchParams.get("status") ?? undefined,
+          tag: url.searchParams.get("tag") ?? undefined,
+          from: url.searchParams.get("from") ?? undefined,
+          to: url.searchParams.get("to") ?? undefined,
         }));
       }
 

@@ -22,6 +22,7 @@
     "verify:data-json-export-harden": "node scripts/verify-data-json-export-harden.mjs",
     "verify:data-integrity-check": "node scripts/verify-data-integrity-check.mjs",
     "verify:logs-diagnostics-bundle": "node scripts/verify-logs-diagnostics-bundle.mjs",
-    "verify:search-basic-full-text": "node scripts/verify-search-basic-full-text.mjs"
+    "verify:search-basic-full-text": "node scripts/verify-search-basic-full-text.mjs",
+    "verify:search-filters": "node scripts/verify-search-filters.mjs"
   }
 }

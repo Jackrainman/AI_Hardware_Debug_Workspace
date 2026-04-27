@@ -74,6 +74,24 @@ export type CreateWorkspaceResult =
   | { ok: false; error: StorageWriteError };
 
 export type StorageSearchResultKind = "issue" | "record" | "archive" | "error_entry";
+export type StorageSearchKindFilter = "all" | StorageSearchResultKind;
+export type StorageSearchStatusFilter = "all" | IssueCard["status"];
+
+export interface StorageSearchFilters {
+  kind?: StorageSearchKindFilter;
+  status?: StorageSearchStatusFilter;
+  tag?: string;
+  from?: string;
+  to?: string;
+}
+
+export interface NormalizedStorageSearchFilters {
+  kind: StorageSearchKindFilter;
+  status: StorageSearchStatusFilter;
+  tag: string;
+  from: string;
+  to: string;
+}
 
 export interface StorageSearchResultItem {
   kind: StorageSearchResultKind;
@@ -87,6 +105,7 @@ export interface StorageSearchResultItem {
   fileName?: string;
   errorCode?: string;
   category?: string;
+  tags?: string[];
   createdAt?: string;
   updatedAt?: string;
   generatedAt?: string;
@@ -94,6 +113,7 @@ export interface StorageSearchResultItem {
 
 export interface StorageSearchResult {
   query: string;
+  filters: NormalizedStorageSearchFilters;
   items: StorageSearchResultItem[];
   readError: StorageReadError | null;
 }
@@ -105,6 +125,26 @@ const LOCAL_DEFAULT_WORKSPACE: Workspace = {
   createdAt: LOCAL_DEFAULT_WORKSPACE_TIMESTAMP,
   updatedAt: LOCAL_DEFAULT_WORKSPACE_TIMESTAMP,
 };
+
+const EMPTY_SEARCH_FILTERS: NormalizedStorageSearchFilters = {
+  kind: "all",
+  status: "all",
+  tag: "",
+  from: "",
+  to: "",
+};
+
+function normalizeStorageSearchFilters(
+  filters: StorageSearchFilters = {},
+): NormalizedStorageSearchFilters {
+  return {
+    kind: filters.kind ?? EMPTY_SEARCH_FILTERS.kind,
+    status: filters.status ?? EMPTY_SEARCH_FILTERS.status,
+    tag: filters.tag?.trim() ?? EMPTY_SEARCH_FILTERS.tag,
+    from: filters.from ?? EMPTY_SEARCH_FILTERS.from,
+    to: filters.to ?? EMPTY_SEARCH_FILTERS.to,
+  };
+}
 
 function searchTextFromValue(value: unknown): string {
   if (Array.isArray(value)) {
@@ -157,16 +197,56 @@ function searchTimestamp(item: StorageSearchResultItem): string {
   return item.updatedAt ?? item.generatedAt ?? item.createdAt ?? "";
 }
 
-async function searchLocalStorage(query: string): Promise<StorageSearchResult> {
+function matchesStorageSearchFilters(
+  item: StorageSearchResultItem,
+  filters: NormalizedStorageSearchFilters,
+): boolean {
+  if (filters.kind !== "all" && item.kind !== filters.kind) {
+    return false;
+  }
+  if (filters.status !== "all" && item.status !== filters.status) {
+    return false;
+  }
+  if (filters.tag.length > 0) {
+    const normalizedTag = filters.tag.toLocaleLowerCase();
+    if (!item.tags?.some((tag) => tag.toLocaleLowerCase() === normalizedTag)) {
+      return false;
+    }
+  }
+  const datePart = searchTimestamp(item).slice(0, 10);
+  if (filters.from && datePart < filters.from) {
+    return false;
+  }
+  if (filters.to && datePart > filters.to) {
+    return false;
+  }
+  return true;
+}
+
+function pushLocalSearchResult(
+  items: StorageSearchResultItem[],
+  item: StorageSearchResultItem,
+  filters: NormalizedStorageSearchFilters,
+): void {
+  if (matchesStorageSearchFilters(item, filters)) {
+    items.push(item);
+  }
+}
+
+async function searchLocalStorage(
+  query: string,
+  filters: StorageSearchFilters = {},
+): Promise<StorageSearchResult> {
   const normalizedQuery = query.trim();
+  const normalizedFilters = normalizeStorageSearchFilters(filters);
   if (normalizedQuery.length === 0) {
-    return { query: normalizedQuery, items: [], readError: null };
+    return { query: normalizedQuery, filters: normalizedFilters, items: [], readError: null };
   }
 
   const items: StorageSearchResultItem[] = [];
   const issueList = listIssueCards();
   if (issueList.readError !== null) {
-    return { query: normalizedQuery, items: [], readError: issueList.readError };
+    return { query: normalizedQuery, filters: normalizedFilters, items: [], readError: issueList.readError };
   }
 
   for (const summary of issueList.valid) {
@@ -186,7 +266,7 @@ async function searchLocalStorage(query: string): Promise<StorageSearchResult> {
       normalizedQuery,
     );
     if (issueMatch.matchedFields.length > 0) {
-      items.push({
+      pushLocalSearchResult(items, {
         kind: "issue",
         id: issue.id,
         issueId: issue.id,
@@ -194,14 +274,15 @@ async function searchLocalStorage(query: string): Promise<StorageSearchResult> {
         matchedFields: issueMatch.matchedFields,
         snippet: issueMatch.snippet,
         status: issue.status,
+        tags: issue.tags,
         createdAt: issue.createdAt,
         updatedAt: issue.updatedAt,
-      });
+      }, normalizedFilters);
     }
 
     const records = listInvestigationRecordsByIssueId(issue.id);
     if (records.readError !== null) {
-      return { query: normalizedQuery, items: [], readError: records.readError };
+      return { query: normalizedQuery, filters: normalizedFilters, items: [], readError: records.readError };
     }
     for (const record of records.valid) {
       const recordMatch = findLocalMatchedFields(
@@ -213,22 +294,24 @@ async function searchLocalStorage(query: string): Promise<StorageSearchResult> {
         normalizedQuery,
       );
       if (recordMatch.matchedFields.length === 0) continue;
-      items.push({
+      pushLocalSearchResult(items, {
         kind: "record",
         id: record.id,
         issueId: record.issueId,
         title: `排查记录：${record.issueId}`,
         matchedFields: recordMatch.matchedFields,
         snippet: recordMatch.snippet,
+        status: issue.status,
+        tags: issue.tags,
         recordType: record.type,
         createdAt: record.createdAt,
-      });
+      }, normalizedFilters);
     }
   }
 
   const archives = listArchiveDocuments();
   if (archives.readError !== null) {
-    return { query: normalizedQuery, items: [], readError: archives.readError };
+    return { query: normalizedQuery, filters: normalizedFilters, items: [], readError: archives.readError };
   }
   for (const archive of archives.valid) {
     const archiveMatch = findLocalMatchedFields(
@@ -239,21 +322,25 @@ async function searchLocalStorage(query: string): Promise<StorageSearchResult> {
       normalizedQuery,
     );
     if (archiveMatch.matchedFields.length === 0) continue;
-    items.push({
+    const loaded = loadIssueCard(archive.issueId);
+    const sourceIssue = loaded.ok ? loaded.card : null;
+    pushLocalSearchResult(items, {
       kind: "archive",
       id: archive.fileName,
       issueId: archive.issueId,
       title: archive.fileName,
       matchedFields: archiveMatch.matchedFields,
       snippet: archiveMatch.snippet,
+      status: sourceIssue?.status,
+      tags: sourceIssue?.tags,
       fileName: archive.fileName,
       generatedAt: archive.generatedAt,
-    });
+    }, normalizedFilters);
   }
 
   const errorEntries = listErrorEntries();
   if (errorEntries.readError !== null) {
-    return { query: normalizedQuery, items: [], readError: errorEntries.readError };
+    return { query: normalizedQuery, filters: normalizedFilters, items: [], readError: errorEntries.readError };
   }
   for (const entry of errorEntries.valid) {
     const entryMatch = findLocalMatchedFields(
@@ -269,18 +356,22 @@ async function searchLocalStorage(query: string): Promise<StorageSearchResult> {
       normalizedQuery,
     );
     if (entryMatch.matchedFields.length === 0) continue;
-    items.push({
+    const loaded = loadIssueCard(entry.sourceIssueId);
+    const sourceIssue = loaded.ok ? loaded.card : null;
+    pushLocalSearchResult(items, {
       kind: "error_entry",
       id: entry.id,
       issueId: entry.sourceIssueId,
       title: entry.title,
       matchedFields: entryMatch.matchedFields,
       snippet: entryMatch.snippet,
+      status: sourceIssue?.status,
+      tags: sourceIssue?.tags,
       errorCode: entry.errorCode,
       category: entry.category,
       createdAt: entry.createdAt,
       updatedAt: entry.updatedAt,
-    });
+    }, normalizedFilters);
   }
 
   items.sort((a, b) => {
@@ -289,12 +380,12 @@ async function searchLocalStorage(query: string): Promise<StorageSearchResult> {
     return left < right ? 1 : left > right ? -1 : a.id.localeCompare(b.id);
   });
 
-  return { query: normalizedQuery, items, readError: null };
+  return { query: normalizedQuery, filters: normalizedFilters, items, readError: null };
 }
 
 export interface StorageRepository {
   search: {
-    query(query: string): Promise<StorageSearchResult>;
+    query(query: string, filters?: StorageSearchFilters): Promise<StorageSearchResult>;
   };
   workspaces: {
     list(): Promise<WorkspaceListResult>;
@@ -321,12 +412,13 @@ export interface StorageRepository {
 
 export const localStorageStorageRepository: StorageRepository = {
   search: {
-    async query(query: string): Promise<StorageSearchResult> {
+    async query(query: string, filters: StorageSearchFilters = {}): Promise<StorageSearchResult> {
       try {
-        return await searchLocalStorage(query);
+        return await searchLocalStorage(query, filters);
       } catch (error) {
         return {
           query: query.trim(),
+          filters: normalizeStorageSearchFilters(filters),
           items: [],
           readError: createReadFailed("issue_card", "local_search", error),
         };

@@ -43,6 +43,7 @@ import {
   type InvestigationRecordListResult,
   type StorageRepository,
   type StorageReadError,
+  type StorageSearchFilters,
   type StorageSearchResult,
   type StorageSearchResultItem,
   type WorkspaceListResult,
@@ -601,19 +602,42 @@ function SearchPanel({
   clearStorageFeedback: () => void;
 }) {
   const [query, setQuery] = useState<string>("");
+  const [kindFilter, setKindFilter] = useState<StorageSearchFilters["kind"]>("all");
+  const [statusFilter, setStatusFilter] = useState<StorageSearchFilters["status"]>("all");
+  const [tagFilter, setTagFilter] = useState<string>("");
+  const [fromFilter, setFromFilter] = useState<string>("");
+  const [toFilter, setToFilter] = useState<string>("");
   const [result, setResult] = useState<StorageSearchResult | null>(null);
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const canSearch = query.trim().length > 0 && !isSearching;
 
+  const buildSearchFilters = (): StorageSearchResult["filters"] => ({
+    kind: kindFilter ?? "all",
+    status: statusFilter ?? "all",
+    tag: tagFilter.trim(),
+    from: fromFilter,
+    to: toFilter,
+  });
+
+  const countActiveSearchFilters = (filters: StorageSearchResult["filters"]): number =>
+    [
+      filters.kind !== "all",
+      filters.status !== "all",
+      filters.tag.length > 0,
+      filters.from.length > 0,
+      filters.to.length > 0,
+    ].filter(Boolean).length;
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmedQuery = query.trim();
+    const filters = buildSearchFilters();
     if (trimmedQuery.length === 0) {
-      setResult({ query: "", items: [], readError: null });
+      setResult({ query: "", filters, items: [], readError: null });
       return;
     }
     setIsSearching(true);
-    const searchResult = await repository.search.query(trimmedQuery);
+    const searchResult = await repository.search.query(trimmedQuery, filters);
     setResult(searchResult);
     setIsSearching(false);
     if (searchResult.readError !== null) {
@@ -645,13 +669,72 @@ function SearchPanel({
             {isSearching ? "搜索中" : "搜索"}
           </button>
         </div>
+        <div className="search-filter-row" data-testid="knowledge-search-filters">
+          <label>
+            <span>结果类型</span>
+            <select
+              value={kindFilter}
+              onChange={(event) => setKindFilter(event.target.value as StorageSearchFilters["kind"])}
+              data-testid="knowledge-search-kind-filter"
+            >
+              <option value="all">全部</option>
+              <option value="issue">问题卡</option>
+              <option value="record">排查记录</option>
+              <option value="archive">归档摘要</option>
+              <option value="error_entry">错误表</option>
+            </select>
+          </label>
+          <label>
+            <span>问题状态</span>
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value as StorageSearchFilters["status"])}
+              data-testid="knowledge-search-status-filter"
+            >
+              <option value="all">全部</option>
+              <option value="open">处理中</option>
+              <option value="investigating">排查中</option>
+              <option value="resolved">已解决</option>
+              <option value="archived">已归档</option>
+              <option value="needs_manual_review">需人工复核</option>
+            </select>
+          </label>
+          <label>
+            <span>已有标签</span>
+            <input
+              type="text"
+              value={tagFilter}
+              onChange={(event) => setTagFilter(event.target.value)}
+              placeholder="例如：CAN"
+              data-testid="knowledge-search-tag-filter"
+            />
+          </label>
+          <label>
+            <span>起始日期</span>
+            <input
+              type="date"
+              value={fromFilter}
+              onChange={(event) => setFromFilter(event.target.value)}
+              data-testid="knowledge-search-from-filter"
+            />
+          </label>
+          <label>
+            <span>结束日期</span>
+            <input
+              type="date"
+              value={toFilter}
+              onChange={(event) => setToFilter(event.target.value)}
+              data-testid="knowledge-search-to-filter"
+            />
+          </label>
+        </div>
       </form>
       {result !== null && result.readError === null && (
         <div className="search-result-block" data-testid="knowledge-search-result-block">
           <p className="storage-line" data-testid="knowledge-search-summary">
             {result.query.length === 0
               ? "输入关键词后开始搜索"
-              : `“${result.query}” 命中 ${result.items.length} 条`}
+              : `“${result.query}” 命中 ${result.items.length} 条 · 筛选 ${countActiveSearchFilters(result.filters)} 项`}
           </p>
           {result.query.length > 0 && result.items.length === 0 && (
             <p className="empty-state" data-testid="knowledge-search-empty">

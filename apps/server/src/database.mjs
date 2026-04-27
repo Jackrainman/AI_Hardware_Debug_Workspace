@@ -309,6 +309,8 @@ function createStorageError(message, code = "STORAGE_ERROR") {
 
 const SEARCH_RESULT_LIMIT_DEFAULT = 20;
 const SEARCH_RESULT_LIMIT_MAX = 50;
+const SEARCH_RESULT_KINDS = new Set(["all", "issue", "record", "archive", "error_entry"]);
+const SEARCH_DATE_FILTER_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 const ISSUE_SEARCH_FIELDS = [
   ["title", (issue) => issue.title],
@@ -366,6 +368,64 @@ function normalizeSearchLimit(limit) {
   return Math.min(parsed, SEARCH_RESULT_LIMIT_MAX);
 }
 
+function normalizeSearchKind(kind) {
+  if (kind === undefined || kind === null || kind === "") {
+    return "all";
+  }
+  if (!SEARCH_RESULT_KINDS.has(kind)) {
+    throw createStorageError("search kind must be all, issue, record, archive, or error_entry", "BAD_REQUEST");
+  }
+  return kind;
+}
+
+function normalizeSearchStatus(status) {
+  if (status === undefined || status === null || status === "") {
+    return "all";
+  }
+  if (status !== "all" && !ISSUE_STATUSES.has(status)) {
+    throw createStorageError("search status must be all or a valid issue status", "BAD_REQUEST");
+  }
+  return status;
+}
+
+function normalizeSearchTag(tag) {
+  if (tag === undefined || tag === null) {
+    return "";
+  }
+  if (typeof tag !== "string") {
+    throw createStorageError("search tag must be a string", "BAD_REQUEST");
+  }
+  const normalized = tag.trim();
+  if (normalized.length > 40) {
+    throw createStorageError("search tag must be at most 40 characters", "BAD_REQUEST");
+  }
+  return normalized;
+}
+
+function normalizeSearchDate(value, fieldName) {
+  if (value === undefined || value === null || value === "") {
+    return "";
+  }
+  if (typeof value !== "string" || !SEARCH_DATE_FILTER_PATTERN.test(value)) {
+    throw createStorageError(`${fieldName} must be YYYY-MM-DD`, "BAD_REQUEST");
+  }
+  return value;
+}
+
+function normalizeSearchFilters(options) {
+  const filters = {
+    kind: normalizeSearchKind(options.kind),
+    status: normalizeSearchStatus(options.status),
+    tag: normalizeSearchTag(options.tag),
+    from: normalizeSearchDate(options.from, "search from"),
+    to: normalizeSearchDate(options.to, "search to"),
+  };
+  if (filters.from && filters.to && filters.from > filters.to) {
+    throw createStorageError("search from must be before or equal to search to", "BAD_REQUEST");
+  }
+  return filters;
+}
+
 function escapeLikeValue(value) {
   return value.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_");
 }
@@ -418,6 +478,40 @@ function findMatchedFields(payload, fields, query) {
 
 function timestampOfSearchResult(item) {
   return item.updatedAt ?? item.generatedAt ?? item.createdAt ?? "";
+}
+
+function datePartOfSearchResult(item) {
+  return timestampOfSearchResult(item).slice(0, 10);
+}
+
+function matchesSearchFilters(item, filters) {
+  if (filters.kind !== "all" && item.kind !== filters.kind) {
+    return false;
+  }
+  if (filters.status !== "all" && item.status !== filters.status) {
+    return false;
+  }
+  if (filters.tag) {
+    const normalizedTag = filters.tag.toLocaleLowerCase();
+    const tags = Array.isArray(item.tags) ? item.tags : [];
+    if (!tags.some((tag) => tag.toLocaleLowerCase() === normalizedTag)) {
+      return false;
+    }
+  }
+  const datePart = datePartOfSearchResult(item);
+  if (filters.from && datePart < filters.from) {
+    return false;
+  }
+  if (filters.to && datePart > filters.to) {
+    return false;
+  }
+  return true;
+}
+
+function pushSearchResult(items, item, filters) {
+  if (matchesSearchFilters(item, filters)) {
+    items.push(item);
+  }
 }
 
 export function createProbeFlashDatabase(dbPath, options = {}) {
@@ -601,6 +695,7 @@ export function createProbeFlashDatabase(dbPath, options = {}) {
       requireWorkspace(workspaceId);
       const query = normalizeSearchQuery(options.query);
       const limit = normalizeSearchLimit(options.limit);
+      const filters = normalizeSearchFilters(options);
       const likePattern = `%${escapeLikeValue(query)}%`;
       const items = [];
 
@@ -616,7 +711,7 @@ export function createProbeFlashDatabase(dbPath, options = {}) {
         const issue = parsePayload(row);
         const match = findMatchedFields(issue, ISSUE_SEARCH_FIELDS, query);
         if (match.matchedFields.length === 0) continue;
-        items.push({
+        pushSearchResult(items, {
           kind: "issue",
           id: issue.id,
           issueId: issue.id,
@@ -624,9 +719,10 @@ export function createProbeFlashDatabase(dbPath, options = {}) {
           matchedFields: match.matchedFields,
           snippet: match.snippet,
           status: issue.status,
+          tags: issue.tags,
           createdAt: issue.createdAt,
           updatedAt: issue.updatedAt,
-        });
+        }, filters);
       }
 
       const recordRows = db
@@ -641,16 +737,19 @@ export function createProbeFlashDatabase(dbPath, options = {}) {
         const record = parsePayload(row);
         const match = findMatchedFields(record, RECORD_SEARCH_FIELDS, query);
         if (match.matchedFields.length === 0) continue;
-        items.push({
+        const sourceIssue = requireIssue(workspaceId, record.issueId);
+        pushSearchResult(items, {
           kind: "record",
           id: record.id,
           issueId: record.issueId,
           title: `排查记录：${record.issueId}`,
           matchedFields: match.matchedFields,
           snippet: match.snippet,
+          status: sourceIssue.status,
+          tags: sourceIssue.tags,
           recordType: record.type,
           createdAt: record.createdAt,
-        });
+        }, filters);
       }
 
       const archiveRows = db
@@ -665,16 +764,19 @@ export function createProbeFlashDatabase(dbPath, options = {}) {
         const archive = parsePayload(row);
         const match = findMatchedFields(archive, ARCHIVE_SEARCH_FIELDS, query);
         if (match.matchedFields.length === 0) continue;
-        items.push({
+        const sourceIssue = requireIssue(workspaceId, archive.issueId);
+        pushSearchResult(items, {
           kind: "archive",
           id: archive.fileName,
           issueId: archive.issueId,
           title: archive.fileName,
           matchedFields: match.matchedFields,
           snippet: match.snippet,
+          status: sourceIssue.status,
+          tags: sourceIssue.tags,
           fileName: archive.fileName,
           generatedAt: archive.generatedAt,
-        });
+        }, filters);
       }
 
       const errorEntryRows = db
@@ -689,18 +791,21 @@ export function createProbeFlashDatabase(dbPath, options = {}) {
         const entry = parsePayload(row);
         const match = findMatchedFields(entry, ERROR_ENTRY_SEARCH_FIELDS, query);
         if (match.matchedFields.length === 0) continue;
-        items.push({
+        const sourceIssue = requireIssue(workspaceId, entry.sourceIssueId);
+        pushSearchResult(items, {
           kind: "error_entry",
           id: entry.id,
           issueId: entry.sourceIssueId,
           title: entry.title,
           matchedFields: match.matchedFields,
           snippet: match.snippet,
+          status: sourceIssue.status,
+          tags: sourceIssue.tags,
           errorCode: entry.errorCode,
           category: entry.category,
           createdAt: entry.createdAt,
           updatedAt: entry.updatedAt,
-        });
+        }, filters);
       }
 
       items.sort((a, b) => {
@@ -711,6 +816,7 @@ export function createProbeFlashDatabase(dbPath, options = {}) {
 
       return {
         query,
+        filters,
         items: items.slice(0, limit),
       };
     },

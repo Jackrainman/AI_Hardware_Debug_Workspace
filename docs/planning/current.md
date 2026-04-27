@@ -7,10 +7,10 @@
 - 当前模式：`server_storage_migration`（保留服务器部署安全边界）。
 - 阶段目标：以 v0.2.x 已完成的本地 HTTP + SQLite + release 可部署基座为起点，按 8 条产品主线推进；近期 P0 只聚焦 **部署可用、数据安全、可观测**，无服务器授权时按 night-safe pool 补齐搜索 / 核心调试流小闭环。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
-- 最近已完成：`SEARCH-01-BASIC-FULL-TEXT-SEARCH`，新增 workspace-scoped SQLite LIKE 基础搜索、HTTP `/api/workspaces/:id/search`、前端搜索入口和 server / desktop verify；未做 embedding、RAG、真实 AI 或跨 workspace 搜索。
+- 最近已完成：`SEARCH-02-FILTERS`，在基础搜索上新增结果类型、问题状态、已有标签和日期范围筛选，并补齐 server / desktop verify；未做复杂查询语言、taxonomy、embedding、RAG 或真实 AI。
 
 ## 当前真实状态
-- 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、issue / record / closeout / archive / error-entry 主路径、basic full-text search、quick issue create、record timeline polish、closeout UX polish、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、server schema contract、HTTP feedback contract、restore dry-run、SQLite integrity check、JSON export hardening、partial closeout recovery verify、repair task generation、diagnostics bundle、night-run 安全规则、v0.2 历史文档归档。
+- 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、issue / record / closeout / archive / error-entry 主路径、basic full-text search、search filters、quick issue create、record timeline polish、closeout UX polish、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、server schema contract、HTTP feedback contract、restore dry-run、SQLite integrity check、JSON export hardening、partial closeout recovery verify、repair task generation、diagnostics bundle、night-run 安全规则、v0.2 历史文档归档。
 - 仍 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 AI provider/API key 接入。
 - 服务器安全边界仍有效：不 sudo、不写 `/opt`、不抢 80、不升级系统 Node、不影响 filebrowser / vnt-cli / docker / Portainer；release 部署优先 `/home/hurricane/probeflash` + 独立 Node runtime + 4100。
 - AI 安全边界仍有效：AI-ready 可夜跑；真实 AI 必须等用户确认 provider、API key/server env、timeout 和 mock/test provider 边界；AI 只返回草稿，不直接写库。
@@ -40,16 +40,16 @@
 - **DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY**
   - 状态：`blocked`；P0；白天主线；不能夜跑。
   - 选择理由：真实服务器部署仍是产品可用性的最大缺口。
-- **SEARCH-02-FILTERS**
-  - 状态：`night-safe`；P1；repo-local search filters / verify。
-  - 选择理由：基础搜索已完成，下一步缩小结果范围；不抢跑复杂 taxonomy。
 - **SEARCH-04-TAGS**
   - 状态：`night-safe`；P1；repo-local minimal tags / verify。
-  - 选择理由：筛选完成后补最小标签能力；不自动生成复杂分类，不做 taxonomy 拍板。
+  - 选择理由：基础搜索与筛选已完成，下一步补最小标签能力；不自动生成复杂分类，不做 taxonomy 拍板。
+- **SEARCH-03-ARCHIVE-REVIEW-PAGE**
+  - 状态：`night-safe`；P1；repo-local archive review page / verify。
+  - 选择理由：标签之后可补归档浏览页，让已结案知识更容易复盘；不编辑源文件，不接 AI 总结。
 
 ## 下一步最小可执行动作
 - 白天有用户参与：认领 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`，执行前再次复述 SSH / release assets / 写入路径 / 临时进程 / 4100 授权边界。
-- 无服务器授权或夜跑：不要部署；下一轮重新读取事实源后，优先从 pending queue / night-safe pool 认领 `SEARCH-02-FILTERS`。
+- 无服务器授权或夜跑：不要部署；下一轮重新读取事实源后，优先从 pending queue / night-safe pool 认领 `SEARCH-04-TAGS`。
 - 真实 AI：仍 blocked，不得无人值守接 provider 或 API key。
 
 ## 下一任务选择流程

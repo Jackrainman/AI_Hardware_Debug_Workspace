@@ -1046,6 +1046,39 @@ select:focus-visible {
   font-size: 13px;
 }
 
+.search-filter-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.search-filter-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-weight: 720;
+}
+
+.search-filter-row input,
+.search-filter-row select {
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  padding: 7px 9px;
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  background: var(--input-bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 400;
+}
+
 .search-result-block {
   display: flex;
   flex-direction: column;

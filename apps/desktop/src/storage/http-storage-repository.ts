@@ -57,7 +57,9 @@ import {
 } from "./storage-result.ts";
 import type {
   CreateWorkspaceResult,
+  NormalizedStorageSearchFilters,
   StorageRepository,
+  StorageSearchFilters,
   StorageSearchResult,
   StorageSearchResultItem,
   WorkspaceListInvalidEntry,
@@ -102,13 +104,23 @@ const SearchResultItemSchema = z.object({
   fileName: z.string().min(1).optional(),
   errorCode: z.string().min(1).optional(),
   category: z.string().optional(),
+  tags: z.array(z.string()).optional(),
   createdAt: z.string().datetime({ offset: true }).optional(),
   updatedAt: z.string().datetime({ offset: true }).optional(),
   generatedAt: z.string().datetime({ offset: true }).optional(),
 });
 
+const SearchFiltersSchema = z.object({
+  kind: z.enum(["all", "issue", "record", "archive", "error_entry"]),
+  status: z.enum(["all", "open", "investigating", "resolved", "archived", "needs_manual_review"]),
+  tag: z.string(),
+  from: z.string(),
+  to: z.string(),
+});
+
 const SearchResponseSchema = z.object({
   query: z.string(),
+  filters: SearchFiltersSchema.optional(),
   items: z.array(SearchResultItemSchema),
 });
 
@@ -169,6 +181,24 @@ export interface HttpStorageHealthStatus {
 
 function workspaceBasePath(workspaceId: string): string {
   return `/workspaces/${encodeURIComponent(workspaceId)}`;
+}
+
+function normalizeSearchFilters(filters: StorageSearchFilters = {}): NormalizedStorageSearchFilters {
+  return {
+    kind: filters.kind ?? "all",
+    status: filters.status ?? "all",
+    tag: filters.tag?.trim() ?? "",
+    from: filters.from ?? "",
+    to: filters.to ?? "",
+  };
+}
+
+function appendSearchFilters(params: URLSearchParams, filters: NormalizedStorageSearchFilters) {
+  if (filters.kind !== "all") params.set("kind", filters.kind);
+  if (filters.status !== "all") params.set("status", filters.status);
+  if (filters.tag) params.set("tag", filters.tag);
+  if (filters.from) params.set("from", filters.from);
+  if (filters.to) params.set("to", filters.to);
 }
 
 function dataValidationReadError(
@@ -367,13 +397,18 @@ export function createHttpStorageRepository(
 
   return {
     search: {
-      async query(rawQuery: string): Promise<StorageSearchResult> {
+      async query(
+        rawQuery: string,
+        rawFilters: StorageSearchFilters = {},
+      ): Promise<StorageSearchResult> {
         const query = rawQuery.trim();
+        const filters = normalizeSearchFilters(rawFilters);
         if (query.length === 0) {
-          return { query, items: [], readError: null };
+          return { query, filters, items: [], readError: null };
         }
 
         const params = new URLSearchParams({ q: query });
+        appendSearchFilters(params, filters);
         const target = `${basePath}/search?${params.toString()}`;
         try {
           const data = await client.request<unknown>(target);
@@ -381,6 +416,7 @@ export function createHttpStorageRepository(
           if (!parsed.success) {
             return {
               query,
+              filters,
               items: [],
               readError: dataValidationReadError(
                 "issue_card",
@@ -391,6 +427,7 @@ export function createHttpStorageRepository(
           }
           return {
             query: parsed.data.query,
+            filters: parsed.data.filters ?? filters,
             items: parsed.data.items as StorageSearchResultItem[],
             readError: null,
           };
@@ -398,12 +435,14 @@ export function createHttpStorageRepository(
           if (isRequestError(error)) {
             return {
               query,
+              filters,
               items: [],
               readError: mapRequestErrorToReadError("issue_card", target, error),
             };
           }
           return {
             query,
+            filters,
             items: [],
             readError: createReadFailed("issue_card", target, error),
           };
