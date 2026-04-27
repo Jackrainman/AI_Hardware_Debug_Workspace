@@ -92,6 +92,32 @@ function assertStringArray(value, fieldName) {
   });
 }
 
+function normalizeTagList(tags) {
+  if (!Array.isArray(tags)) return [];
+  const seen = new Set();
+  const normalized = [];
+  for (const tag of tags) {
+    if (typeof tag !== "string") continue;
+    const trimmed = tag.trim();
+    const key = trimmed.toLocaleLowerCase();
+    if (trimmed.length === 0 || seen.has(key)) continue;
+    seen.add(key);
+    normalized.push(trimmed);
+  }
+  return normalized;
+}
+
+function normalizeTagPayload(value, fieldName) {
+  if (value !== undefined) {
+    assertStringArray(value, fieldName);
+  }
+  return normalizeTagList(value);
+}
+
+function mergeTags(...tagGroups) {
+  return normalizeTagList(tagGroups.flatMap((tags) => (Array.isArray(tags) ? tags : [])));
+}
+
 function assertDatetime(value, fieldName) {
   assertString(value, fieldName);
   const match = DATETIME_WITH_OFFSET_PATTERN.exec(value);
@@ -224,7 +250,7 @@ function normalizeIssuePayload(workspaceId, payload) {
   assertStringArray(payload.suggestedActions, "issue.suggestedActions");
   assertEnum(payload.status, "issue.status", ISSUE_STATUSES);
   assertEnum(payload.severity, "issue.severity", ISSUE_SEVERITIES);
-  assertStringArray(payload.tags, "issue.tags");
+  const tags = normalizeTagPayload(payload.tags, "issue.tags");
   assertRepoSnapshot(payload.repoSnapshot, "issue.repoSnapshot");
   assertStringArray(payload.relatedFiles, "issue.relatedFiles");
   assertStringArray(payload.relatedCommits, "issue.relatedCommits");
@@ -232,7 +258,10 @@ function normalizeIssuePayload(workspaceId, payload) {
   assertDatetime(payload.createdAt, "issue.createdAt");
   assertDatetime(payload.updatedAt, "issue.updatedAt");
 
-  return payload;
+  return {
+    ...payload,
+    tags,
+  };
 }
 
 function normalizeRecordPayload(workspaceId, issueId, payload) {
@@ -289,12 +318,16 @@ function normalizeErrorEntryPayload(workspaceId, payload) {
   assertString(payload.rootCause, "errorEntry.rootCause", { allowEmpty: true });
   assertString(payload.resolution, "errorEntry.resolution", { allowEmpty: true });
   assertString(payload.prevention, "errorEntry.prevention");
+  const tags = normalizeTagPayload(payload.tags, "errorEntry.tags");
   assertStringArray(payload.relatedFiles, "errorEntry.relatedFiles");
   assertStringArray(payload.relatedCommits, "errorEntry.relatedCommits");
   assertString(payload.archiveFilePath, "errorEntry.archiveFilePath");
   assertDatetime(payload.createdAt, "errorEntry.createdAt");
   assertDatetime(payload.updatedAt, "errorEntry.updatedAt");
-  return payload;
+  return {
+    ...payload,
+    tags,
+  };
 }
 
 function parsePayload(row) {
@@ -395,11 +428,15 @@ function normalizeSearchTag(tag) {
   if (typeof tag !== "string") {
     throw createStorageError("search tag must be a string", "BAD_REQUEST");
   }
-  const normalized = tag.trim();
-  if (normalized.length > 40) {
-    throw createStorageError("search tag must be at most 40 characters", "BAD_REQUEST");
+  const normalized = normalizeTagList(tag.split(/[,，]/));
+  if (normalized.some((value) => value.length > 40)) {
+    throw createStorageError("each search tag must be at most 40 characters", "BAD_REQUEST");
   }
-  return normalized;
+  return normalized.join(",");
+}
+
+function searchTagFilterTokens(tag) {
+  return normalizeTagList(tag.split(/[,，]/)).map((value) => value.toLocaleLowerCase());
 }
 
 function normalizeSearchDate(value, fieldName) {
@@ -492,9 +529,9 @@ function matchesSearchFilters(item, filters) {
     return false;
   }
   if (filters.tag) {
-    const normalizedTag = filters.tag.toLocaleLowerCase();
-    const tags = Array.isArray(item.tags) ? item.tags : [];
-    if (!tags.some((tag) => tag.toLocaleLowerCase() === normalizedTag)) {
+    const requiredTags = searchTagFilterTokens(filters.tag);
+    const tags = normalizeTagList(item.tags).map((tag) => tag.toLocaleLowerCase());
+    if (!requiredTags.every((requiredTag) => tags.includes(requiredTag))) {
       return false;
     }
   }
@@ -709,6 +746,7 @@ export function createProbeFlashDatabase(dbPath, options = {}) {
         .all(workspaceId, likePattern, limit);
       for (const row of issueRows) {
         const issue = parsePayload(row);
+        const tags = normalizeTagList(issue.tags);
         const match = findMatchedFields(issue, ISSUE_SEARCH_FIELDS, query);
         if (match.matchedFields.length === 0) continue;
         pushSearchResult(items, {
@@ -719,7 +757,7 @@ export function createProbeFlashDatabase(dbPath, options = {}) {
           matchedFields: match.matchedFields,
           snippet: match.snippet,
           status: issue.status,
-          tags: issue.tags,
+          tags,
           createdAt: issue.createdAt,
           updatedAt: issue.updatedAt,
         }, filters);
@@ -738,6 +776,7 @@ export function createProbeFlashDatabase(dbPath, options = {}) {
         const match = findMatchedFields(record, RECORD_SEARCH_FIELDS, query);
         if (match.matchedFields.length === 0) continue;
         const sourceIssue = requireIssue(workspaceId, record.issueId);
+        const tags = normalizeTagList(sourceIssue.tags);
         pushSearchResult(items, {
           kind: "record",
           id: record.id,
@@ -746,7 +785,7 @@ export function createProbeFlashDatabase(dbPath, options = {}) {
           matchedFields: match.matchedFields,
           snippet: match.snippet,
           status: sourceIssue.status,
-          tags: sourceIssue.tags,
+          tags,
           recordType: record.type,
           createdAt: record.createdAt,
         }, filters);
@@ -754,17 +793,24 @@ export function createProbeFlashDatabase(dbPath, options = {}) {
 
       const archiveRows = db
         .prepare(
-          `SELECT payload_json FROM archives
-           WHERE workspace_id = ? AND payload_json LIKE ? ESCAPE '\\'
-           ORDER BY generated_at DESC
+          `SELECT archives.payload_json AS payload_json FROM archives
+           JOIN issues ON issues.workspace_id = archives.workspace_id AND issues.id = archives.issue_id
+           WHERE archives.workspace_id = ?
+             AND (archives.payload_json LIKE ? ESCAPE '\\' OR issues.payload_json LIKE ? ESCAPE '\\')
+           ORDER BY archives.generated_at DESC
            LIMIT ?`,
         )
-        .all(workspaceId, likePattern, limit);
+        .all(workspaceId, likePattern, likePattern, limit);
       for (const row of archiveRows) {
         const archive = parsePayload(row);
-        const match = findMatchedFields(archive, ARCHIVE_SEARCH_FIELDS, query);
-        if (match.matchedFields.length === 0) continue;
         const sourceIssue = requireIssue(workspaceId, archive.issueId);
+        const tags = normalizeTagList(sourceIssue.tags);
+        const match = findMatchedFields(
+          { ...archive, tags },
+          [...ARCHIVE_SEARCH_FIELDS, ["tags", (payload) => payload.tags]],
+          query,
+        );
+        if (match.matchedFields.length === 0) continue;
         pushSearchResult(items, {
           kind: "archive",
           id: archive.fileName,
@@ -773,7 +819,7 @@ export function createProbeFlashDatabase(dbPath, options = {}) {
           matchedFields: match.matchedFields,
           snippet: match.snippet,
           status: sourceIssue.status,
-          tags: sourceIssue.tags,
+          tags,
           fileName: archive.fileName,
           generatedAt: archive.generatedAt,
         }, filters);
@@ -781,17 +827,24 @@ export function createProbeFlashDatabase(dbPath, options = {}) {
 
       const errorEntryRows = db
         .prepare(
-          `SELECT payload_json FROM error_entries
-           WHERE workspace_id = ? AND payload_json LIKE ? ESCAPE '\\'
-           ORDER BY updated_at DESC
+          `SELECT error_entries.payload_json AS payload_json FROM error_entries
+           JOIN issues ON issues.workspace_id = error_entries.workspace_id AND issues.id = error_entries.source_issue_id
+           WHERE error_entries.workspace_id = ?
+             AND (error_entries.payload_json LIKE ? ESCAPE '\\' OR issues.payload_json LIKE ? ESCAPE '\\')
+           ORDER BY error_entries.updated_at DESC
            LIMIT ?`,
         )
-        .all(workspaceId, likePattern, limit);
+        .all(workspaceId, likePattern, likePattern, limit);
       for (const row of errorEntryRows) {
         const entry = parsePayload(row);
-        const match = findMatchedFields(entry, ERROR_ENTRY_SEARCH_FIELDS, query);
-        if (match.matchedFields.length === 0) continue;
         const sourceIssue = requireIssue(workspaceId, entry.sourceIssueId);
+        const tags = mergeTags(sourceIssue.tags, entry.tags);
+        const match = findMatchedFields(
+          { ...entry, tags },
+          [...ERROR_ENTRY_SEARCH_FIELDS, ["tags", (payload) => payload.tags]],
+          query,
+        );
+        if (match.matchedFields.length === 0) continue;
         pushSearchResult(items, {
           kind: "error_entry",
           id: entry.id,
@@ -800,7 +853,7 @@ export function createProbeFlashDatabase(dbPath, options = {}) {
           matchedFields: match.matchedFields,
           snippet: match.snippet,
           status: sourceIssue.status,
-          tags: sourceIssue.tags,
+          tags,
           errorCode: entry.errorCode,
           category: entry.category,
           createdAt: entry.createdAt,

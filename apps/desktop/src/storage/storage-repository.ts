@@ -134,13 +134,40 @@ const EMPTY_SEARCH_FILTERS: NormalizedStorageSearchFilters = {
   to: "",
 };
 
+function normalizeTagList(tags: unknown): string[] {
+  if (!Array.isArray(tags)) return [];
+  const seen = new Set<string>();
+  const normalized: string[] = [];
+  for (const tag of tags) {
+    if (typeof tag !== "string") continue;
+    const trimmed = tag.trim();
+    const key = trimmed.toLocaleLowerCase();
+    if (trimmed.length === 0 || seen.has(key)) continue;
+    seen.add(key);
+    normalized.push(trimmed);
+  }
+  return normalized;
+}
+
+function mergeTags(...tagGroups: unknown[]): string[] {
+  return normalizeTagList(tagGroups.flatMap((tags) => (Array.isArray(tags) ? tags : [])));
+}
+
+function normalizeSearchTagFilter(tag: string | undefined): string {
+  return normalizeTagList((tag ?? "").split(/[,，]/)).join(",");
+}
+
+function searchTagFilterTokens(tag: string): string[] {
+  return normalizeTagList(tag.split(/[,，]/)).map((value) => value.toLocaleLowerCase());
+}
+
 function normalizeStorageSearchFilters(
   filters: StorageSearchFilters = {},
 ): NormalizedStorageSearchFilters {
   return {
     kind: filters.kind ?? EMPTY_SEARCH_FILTERS.kind,
     status: filters.status ?? EMPTY_SEARCH_FILTERS.status,
-    tag: filters.tag?.trim() ?? EMPTY_SEARCH_FILTERS.tag,
+    tag: normalizeSearchTagFilter(filters.tag),
     from: filters.from ?? EMPTY_SEARCH_FILTERS.from,
     to: filters.to ?? EMPTY_SEARCH_FILTERS.to,
   };
@@ -208,8 +235,9 @@ function matchesStorageSearchFilters(
     return false;
   }
   if (filters.tag.length > 0) {
-    const normalizedTag = filters.tag.toLocaleLowerCase();
-    if (!item.tags?.some((tag) => tag.toLocaleLowerCase() === normalizedTag)) {
+    const requiredTags = searchTagFilterTokens(filters.tag);
+    const itemTags = normalizeTagList(item.tags).map((tag) => tag.toLocaleLowerCase());
+    if (!requiredTags.every((requiredTag) => itemTags.includes(requiredTag))) {
       return false;
     }
   }
@@ -236,6 +264,7 @@ function pushLocalSearchResult(
 async function searchLocalStorage(
   query: string,
   filters: StorageSearchFilters = {},
+  workspaceId: string = DEFAULT_WORKSPACE.id,
 ): Promise<StorageSearchResult> {
   const normalizedQuery = query.trim();
   const normalizedFilters = normalizeStorageSearchFilters(filters);
@@ -253,6 +282,8 @@ async function searchLocalStorage(
     const loaded = loadIssueCard(summary.id);
     if (!loaded.ok) continue;
     const issue = loaded.card;
+    if (issue.projectId !== workspaceId) continue;
+    const issueTags = normalizeTagList(issue.tags);
     const issueMatch = findLocalMatchedFields(
       [
         ["title", issue.title],
@@ -261,7 +292,7 @@ async function searchLocalStorage(
         ["symptomSummary", issue.symptomSummary],
         ["suspectedDirections", issue.suspectedDirections],
         ["suggestedActions", issue.suggestedActions],
-        ["tags", issue.tags],
+        ["tags", issueTags],
       ],
       normalizedQuery,
     );
@@ -274,7 +305,7 @@ async function searchLocalStorage(
         matchedFields: issueMatch.matchedFields,
         snippet: issueMatch.snippet,
         status: issue.status,
-        tags: issue.tags,
+        tags: issueTags,
         createdAt: issue.createdAt,
         updatedAt: issue.updatedAt,
       }, normalizedFilters);
@@ -302,7 +333,7 @@ async function searchLocalStorage(
         matchedFields: recordMatch.matchedFields,
         snippet: recordMatch.snippet,
         status: issue.status,
-        tags: issue.tags,
+        tags: issueTags,
         recordType: record.type,
         createdAt: record.createdAt,
       }, normalizedFilters);
@@ -314,16 +345,19 @@ async function searchLocalStorage(
     return { query: normalizedQuery, filters: normalizedFilters, items: [], readError: archives.readError };
   }
   for (const archive of archives.valid) {
+    if (archive.projectId !== workspaceId) continue;
+    const loaded = loadIssueCard(archive.issueId);
+    const sourceIssue = loaded.ok && loaded.card.projectId === workspaceId ? loaded.card : null;
+    const tags = mergeTags(sourceIssue?.tags);
     const archiveMatch = findLocalMatchedFields(
       [
         ["fileName", archive.fileName],
         ["markdownContent", archive.markdownContent],
+        ["tags", tags],
       ],
       normalizedQuery,
     );
     if (archiveMatch.matchedFields.length === 0) continue;
-    const loaded = loadIssueCard(archive.issueId);
-    const sourceIssue = loaded.ok ? loaded.card : null;
     pushLocalSearchResult(items, {
       kind: "archive",
       id: archive.fileName,
@@ -332,7 +366,7 @@ async function searchLocalStorage(
       matchedFields: archiveMatch.matchedFields,
       snippet: archiveMatch.snippet,
       status: sourceIssue?.status,
-      tags: sourceIssue?.tags,
+      tags,
       fileName: archive.fileName,
       generatedAt: archive.generatedAt,
     }, normalizedFilters);
@@ -343,6 +377,10 @@ async function searchLocalStorage(
     return { query: normalizedQuery, filters: normalizedFilters, items: [], readError: errorEntries.readError };
   }
   for (const entry of errorEntries.valid) {
+    if (entry.projectId !== workspaceId) continue;
+    const loaded = loadIssueCard(entry.sourceIssueId);
+    const sourceIssue = loaded.ok && loaded.card.projectId === workspaceId ? loaded.card : null;
+    const tags = mergeTags(sourceIssue?.tags, entry.tags);
     const entryMatch = findLocalMatchedFields(
       [
         ["errorCode", entry.errorCode],
@@ -352,12 +390,11 @@ async function searchLocalStorage(
         ["rootCause", entry.rootCause],
         ["resolution", entry.resolution],
         ["prevention", entry.prevention],
+        ["tags", tags],
       ],
       normalizedQuery,
     );
     if (entryMatch.matchedFields.length === 0) continue;
-    const loaded = loadIssueCard(entry.sourceIssueId);
-    const sourceIssue = loaded.ok ? loaded.card : null;
     pushLocalSearchResult(items, {
       kind: "error_entry",
       id: entry.id,
@@ -366,7 +403,7 @@ async function searchLocalStorage(
       matchedFields: entryMatch.matchedFields,
       snippet: entryMatch.snippet,
       status: sourceIssue?.status,
-      tags: sourceIssue?.tags,
+      tags,
       errorCode: entry.errorCode,
       category: entry.category,
       createdAt: entry.createdAt,
@@ -410,82 +447,86 @@ export interface StorageRepository {
   };
 }
 
-export const localStorageStorageRepository: StorageRepository = {
-  search: {
-    async query(query: string, filters: StorageSearchFilters = {}): Promise<StorageSearchResult> {
-      try {
-        return await searchLocalStorage(query, filters);
-      } catch (error) {
-        return {
-          query: query.trim(),
-          filters: normalizeStorageSearchFilters(filters),
-          items: [],
-          readError: createReadFailed("issue_card", "local_search", error),
-        };
-      }
+function createLocalStorageRepository(workspaceId: string = DEFAULT_WORKSPACE.id): StorageRepository {
+  return {
+    search: {
+      async query(query: string, filters: StorageSearchFilters = {}): Promise<StorageSearchResult> {
+        try {
+          return await searchLocalStorage(query, filters, workspaceId);
+        } catch (error) {
+          return {
+            query: query.trim(),
+            filters: normalizeStorageSearchFilters(filters),
+            items: [],
+            readError: createReadFailed("issue_card", "local_search", error),
+          };
+        }
+      },
     },
-  },
-  workspaces: {
-    async list(): Promise<WorkspaceListResult> {
-      return { valid: [LOCAL_DEFAULT_WORKSPACE], invalid: [], readError: null };
-    },
-    async create(input: CreateWorkspaceInput): Promise<CreateWorkspaceResult> {
-      if (input.name.trim().length === 0) {
+    workspaces: {
+      async list(): Promise<WorkspaceListResult> {
+        return { valid: [LOCAL_DEFAULT_WORKSPACE], invalid: [], readError: null };
+      },
+      async create(input: CreateWorkspaceInput): Promise<CreateWorkspaceResult> {
+        if (input.name.trim().length === 0) {
+          return {
+            ok: false,
+            error: createRemoteValidationFailed(
+              "workspace",
+              "create_workspace",
+              "workspace.name is required",
+            ),
+          };
+        }
         return {
           ok: false,
-          error: createRemoteValidationFailed(
+          error: createUnexpectedWriteError(
             "workspace",
             "create_workspace",
-            "workspace.name is required",
+            "creating workspaces requires the HTTP storage adapter",
           ),
         };
-      }
-      return {
-        ok: false,
-        error: createUnexpectedWriteError(
-          "workspace",
-          "create_workspace",
-          "creating workspaces requires the HTTP storage adapter",
-        ),
-      };
+      },
     },
-  },
-  issueCards: {
-    async list(): Promise<IssueCardListResult> {
-      return listIssueCards();
+    issueCards: {
+      async list(): Promise<IssueCardListResult> {
+        return listIssueCards();
+      },
+      async load(id: string): Promise<LoadIssueCardResult> {
+        return loadIssueCard(id);
+      },
+      async save(card: IssueCard): Promise<StorageWriteResult> {
+        return saveIssueCard(card);
+      },
     },
-    async load(id: string): Promise<LoadIssueCardResult> {
-      return loadIssueCard(id);
+    investigationRecords: {
+      async listByIssueId(issueId: string): Promise<InvestigationRecordListResult> {
+        return listInvestigationRecordsByIssueId(issueId);
+      },
+      async append(record: InvestigationRecord): Promise<StorageWriteResult> {
+        return saveInvestigationRecord(record);
+      },
     },
-    async save(card: IssueCard): Promise<StorageWriteResult> {
-      return saveIssueCard(card);
+    archiveDocuments: {
+      async list(): Promise<ArchiveDocumentListResult> {
+        return listArchiveDocuments();
+      },
+      async save(document: ArchiveDocument): Promise<StorageWriteResult> {
+        return saveArchiveDocument(document);
+      },
     },
-  },
-  investigationRecords: {
-    async listByIssueId(issueId: string): Promise<InvestigationRecordListResult> {
-      return listInvestigationRecordsByIssueId(issueId);
+    errorEntries: {
+      async list(): Promise<ErrorEntryListResult> {
+        return listErrorEntries();
+      },
+      async save(entry: ErrorEntry): Promise<StorageWriteResult> {
+        return saveErrorEntry(entry);
+      },
     },
-    async append(record: InvestigationRecord): Promise<StorageWriteResult> {
-      return saveInvestigationRecord(record);
-    },
-  },
-  archiveDocuments: {
-    async list(): Promise<ArchiveDocumentListResult> {
-      return listArchiveDocuments();
-    },
-    async save(document: ArchiveDocument): Promise<StorageWriteResult> {
-      return saveArchiveDocument(document);
-    },
-  },
-  errorEntries: {
-    async list(): Promise<ErrorEntryListResult> {
-      return listErrorEntries();
-    },
-    async save(entry: ErrorEntry): Promise<StorageWriteResult> {
-      return saveErrorEntry(entry);
-    },
-  },
-};
+  };
+}
+
+export const localStorageStorageRepository: StorageRepository = createLocalStorageRepository();
 
 export type StorageRepositoryRuntime = "http" | "local_storage";
 
@@ -495,7 +536,7 @@ export const STORAGE_REPOSITORY_RUNTIME: StorageRepositoryRuntime =
 export function createStorageRepository(options: { workspaceId?: string } = {}): StorageRepository {
   return STORAGE_REPOSITORY_RUNTIME === "http"
     ? createHttpStorageRepository({ workspaceId: options.workspaceId })
-    : localStorageStorageRepository;
+    : createLocalStorageRepository(options.workspaceId ?? DEFAULT_WORKSPACE.id);
 }
 
 export const storageRepository: StorageRepository = createStorageRepository();

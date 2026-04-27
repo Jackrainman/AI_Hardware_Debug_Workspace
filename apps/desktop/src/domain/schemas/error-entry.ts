@@ -15,6 +15,7 @@ export const ErrorEntrySchema = z.object({
   rootCause: z.string(),
   resolution: z.string(),
   prevention: z.string().trim().min(1),
+  tags: z.array(z.string()).optional(),
   relatedFiles: z.array(z.string()),
   relatedCommits: z.array(z.string()),
   archiveFilePath: z.string().min(1),

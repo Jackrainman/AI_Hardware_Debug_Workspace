@@ -187,10 +187,23 @@ function normalizeSearchFilters(filters: StorageSearchFilters = {}): NormalizedS
   return {
     kind: filters.kind ?? "all",
     status: filters.status ?? "all",
-    tag: filters.tag?.trim() ?? "",
+    tag: normalizeSearchTagFilter(filters.tag),
     from: filters.from ?? "",
     to: filters.to ?? "",
   };
+}
+
+function normalizeSearchTagFilter(tag: string | undefined): string {
+  const seen = new Set<string>();
+  const tags: string[] = [];
+  for (const value of (tag ?? "").split(/[,，]/)) {
+    const trimmed = value.trim();
+    const key = trimmed.toLocaleLowerCase();
+    if (trimmed.length === 0 || seen.has(key)) continue;
+    seen.add(key);
+    tags.push(trimmed);
+  }
+  return tags.join(",");
 }
 
 function appendSearchFilters(params: URLSearchParams, filters: NormalizedStorageSearchFilters) {

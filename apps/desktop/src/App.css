@@ -988,7 +988,7 @@ select:focus-visible {
 
 .quick-issue-input-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 0.55fr) auto;
   gap: 8px;
   min-width: 0;
 }

@@ -91,6 +91,19 @@ function unique(values: string[]): string[] {
   return Array.from(new Set(values.filter((value) => value.trim().length > 0)));
 }
 
+function uniqueTags(values: string[]): string[] {
+  const seen = new Set<string>();
+  const tags: string[] = [];
+  for (const value of values) {
+    const tag = value.trim();
+    const key = tag.toLocaleLowerCase();
+    if (tag.length === 0 || seen.has(key) || key === "uncategorized") continue;
+    seen.add(key);
+    tags.push(tag);
+  }
+  return tags;
+}
+
 function formatList(values: string[]): string {
   if (values.length === 0) return "- (none)";
   return values.map((value) => `- ${value}`).join("\n");
@@ -190,6 +203,7 @@ export function buildCloseoutFromIssue(
     ...issueCard.relatedCommits,
     ...sortedRecords.flatMap((record) => record.linkedCommits),
   ]);
+  const tags = uniqueTags([...issueCard.tags, input.category]);
 
   const archiveDraft: ArchiveDocument = {
     issueId: issueCard.id,
@@ -219,6 +233,7 @@ export function buildCloseoutFromIssue(
     rootCause: input.rootCause,
     resolution: input.resolution,
     prevention: input.prevention,
+    tags,
     relatedFiles,
     relatedCommits,
     archiveFilePath: archiveParsed.data.filePath,

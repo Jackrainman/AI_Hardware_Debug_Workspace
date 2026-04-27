@@ -13,11 +13,11 @@ import { resolveWorkspaceId } from "./workspace.ts";
 
 export type IntakeSeverity = z.infer<typeof IssueSeverity>;
 
-// 受控表单面向用户的最小输入。symptom / tags / suspected 等字段 S2 后续再扩展。
 export interface IntakeInput {
   title: string;
   description: string;
   severity: IntakeSeverity;
+  tags?: string[];
 }
 
 export interface IntakeOptions {
@@ -43,11 +43,25 @@ export type IntakeSuccess = {
 
 export type IntakeResult = IntakeSuccess | IntakeFailure;
 
-function normalizeInput(input: IntakeInput): IntakeInput {
+function normalizeTags(tags: string[] | undefined): string[] {
+  const seen = new Set<string>();
+  const normalized: string[] = [];
+  for (const tag of tags ?? []) {
+    const trimmed = tag.trim();
+    const key = trimmed.toLocaleLowerCase();
+    if (trimmed.length === 0 || seen.has(key)) continue;
+    seen.add(key);
+    normalized.push(trimmed);
+  }
+  return normalized;
+}
+
+function normalizeInput(input: IntakeInput): Required<IntakeInput> {
   return {
     title: input.title.trim(),
     description: input.description.trim(),
     severity: input.severity,
+    tags: normalizeTags(input.tags),
   };
 }
 
@@ -72,7 +86,7 @@ export function buildIssueCardFromIntake(
     suggestedActions: [],
     status: "open",
     severity: input.severity,
-    tags: [],
+    tags: input.tags,
     repoSnapshot: {
       branch: "unknown",
       headCommitHash: "0000000000000000000000000000000000000000",
@@ -107,12 +121,14 @@ export function buildIssueCardFromIntake(
 export function buildQuickIssueCardFromLine(
   line: string,
   opts: IntakeOptions,
+  tags: string[] = [],
 ): IntakeResult {
   return buildIssueCardFromIntake(
     {
       title: line,
       description: "",
       severity: "medium",
+      tags,
     },
     opts,
   );

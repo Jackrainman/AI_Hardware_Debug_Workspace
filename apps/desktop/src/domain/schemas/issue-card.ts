@@ -22,7 +22,7 @@ export const IssueCardSchema = z.object({
   suggestedActions: z.array(z.string()),
   status: IssueStatus,
   severity: IssueSeverity,
-  tags: z.array(z.string()),
+  tags: z.array(z.string()).default([]),
   repoSnapshot: RepoSnapshotSchema,
   relatedFiles: z.array(z.string()),
   relatedCommits: z.array(z.string()),

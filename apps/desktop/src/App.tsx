@@ -306,6 +306,24 @@ const SEVERITY_LABELS: Record<IntakeSeverity, string> = {
   critical: "紧急",
 };
 
+function parseTagsInput(value: string): string[] {
+  const seen = new Set<string>();
+  const tags: string[] = [];
+  for (const item of value.split(/[,，]/)) {
+    const tag = item.trim();
+    const key = tag.toLocaleLowerCase();
+    if (tag.length === 0 || seen.has(key)) continue;
+    seen.add(key);
+    tags.push(tag);
+  }
+  return tags;
+}
+
+function formatTags(tags: string[] | undefined): string {
+  const normalized = tags?.filter((tag) => tag.trim().length > 0) ?? [];
+  return normalized.length > 0 ? normalized.join("、") : "(未加标签)";
+}
+
 type IntakeSubmitStatus =
   | { state: "idle" }
   | { state: "saved"; id: string; at: string }
@@ -325,6 +343,7 @@ function QuickIssueCreateBar({
   clearStorageFeedback: () => void;
 }) {
   const [line, setLine] = useState<string>("");
+  const [tagsInput, setTagsInput] = useState<string>("");
   const [status, setStatus] = useState<IntakeSubmitStatus>({ state: "idle" });
   const canSubmit = line.trim().length > 0;
 
@@ -333,6 +352,7 @@ function QuickIssueCreateBar({
     const result = buildQuickIssueCardFromLine(
       line,
       defaultIntakeOptions(nowISO(), undefined, workspaceId),
+      parseTagsInput(tagsInput),
     );
     if (!result.ok) {
       reportStorageError(
@@ -350,6 +370,7 @@ function QuickIssueCreateBar({
     clearStorageFeedback();
     setStatus({ state: "saved", id: result.card.id, at: result.card.createdAt });
     setLine("");
+    setTagsInput("");
     onCreated(result.card.id);
   };
 
@@ -373,6 +394,14 @@ function QuickIssueCreateBar({
           aria-label="一句话描述问题"
           data-testid="quick-issue-create-input"
           required
+        />
+        <input
+          type="text"
+          value={tagsInput}
+          onChange={(event) => setTagsInput(event.target.value)}
+          placeholder="标签：CAN, 底盘"
+          aria-label="问题标签，逗号分隔"
+          data-testid="quick-issue-tags-input"
         />
         <button type="submit" disabled={!canSubmit} data-testid="quick-issue-create-submit">
           创建并打开
@@ -403,11 +432,12 @@ function IssueIntakeForm({
   const [title, setTitle] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [severity, setSeverity] = useState<IntakeSeverity>("medium");
+  const [tagsInput, setTagsInput] = useState<string>("");
   const [status, setStatus] = useState<IntakeSubmitStatus>({ state: "idle" });
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const input: IntakeInput = { title, description, severity };
+    const input: IntakeInput = { title, description, severity, tags: parseTagsInput(tagsInput) };
     const result: IntakeResult = buildIssueCardFromIntake(
       input,
       defaultIntakeOptions(nowISO(), undefined, workspaceId),
@@ -433,6 +463,7 @@ function IssueIntakeForm({
     setTitle("");
     setDescription("");
     setSeverity("medium");
+    setTagsInput("");
     onCreated(result.card.id);
   };
 
@@ -489,6 +520,17 @@ function IssueIntakeForm({
             </option>
           ))}
         </select>
+      </label>
+      <label className="intake-field">
+        <span>标签</span>
+        <input
+          type="text"
+          value={tagsInput}
+          onChange={(event) => setTagsInput(event.target.value)}
+          placeholder="例如：CAN, 底盘, 电机"
+          data-testid="issue-tags-input"
+        />
+        <small className="field-help">用逗号分隔；标签只在当前项目内搜索和筛选。</small>
       </label>
       <div className="intake-actions">
         <button type="submit">创建问题卡</button>
@@ -700,12 +742,12 @@ function SearchPanel({
             </select>
           </label>
           <label>
-            <span>已有标签</span>
+            <span>标签筛选</span>
             <input
               type="text"
               value={tagFilter}
               onChange={(event) => setTagFilter(event.target.value)}
-              placeholder="例如：CAN"
+              placeholder="例如：CAN, 底盘"
               data-testid="knowledge-search-tag-filter"
             />
           </label>
@@ -760,6 +802,7 @@ function SearchPanel({
                       来源问题：{item.issueId} · 字段：{labelSearchMatchedFields(item)}
                       {item.status ? ` · 状态：${labelIssueStatus(item.status)}` : ""}
                       {item.errorCode ? ` · ${item.errorCode}` : ""}
+                      {item.tags && item.tags.length > 0 ? ` · 标签：${formatTags(item.tags)}` : ""}
                     </span>
                   </button>
                 </li>
@@ -971,6 +1014,7 @@ type CloseoutSummary = {
   errorEntryId: string;
   archivedAt: string;
   category: string;
+  tags: string[];
   markdownPreview: string;
 };
 
@@ -1111,6 +1155,7 @@ function CloseoutForm({
       errorEntryId: result.errorEntry.id,
       archivedAt: result.archiveDocument.generatedAt,
       category: result.errorEntry.category,
+      tags: result.errorEntry.tags ?? [],
       markdownPreview,
     });
   };
@@ -1373,6 +1418,12 @@ function MainlineResultPanel({
               <span className="mainline-meta-value">{labelSeverity(selectedCard.severity)}</span>
             </li>
             <li>
+              <span className="mainline-meta-label">标签</span>
+              <span className="mainline-meta-value" data-testid="mainline-tags">
+                {formatTags(selectedCard.tags)}
+              </span>
+            </li>
+            <li>
               <span className="mainline-meta-label">追记</span>
               <span className="mainline-meta-value" data-testid="mainline-record-count">
                 {recordCount} 条
@@ -1411,6 +1462,10 @@ function MainlineResultPanel({
             <div>
               <dt>分类</dt>
               <dd>{lastCloseout.category}</dd>
+            </div>
+            <div>
+              <dt>标签</dt>
+              <dd>{formatTags(lastCloseout.tags)}</dd>
             </div>
           </dl>
           <details className="mainline-closeout-preview">
@@ -1750,6 +1805,7 @@ export type ArchiveIndexItem = {
   issueId: string;
   errorCode: string | null;
   category: string | null;
+  tags: string[];
   generatedAt: string;
 };
 
@@ -1764,12 +1820,13 @@ export async function loadArchiveIndex(
 ): Promise<ArchiveIndex> {
   const docList = await repository.archiveDocuments.list();
   const errorList = await repository.errorEntries.list();
-  const errorByIssue = new Map<string, { errorCode: string; category: string }>();
+  const errorByIssue = new Map<string, { errorCode: string; category: string; tags: string[] }>();
   for (const entry of errorList.valid) {
     if (errorByIssue.has(entry.sourceIssueId)) continue;
     errorByIssue.set(entry.sourceIssueId, {
       errorCode: entry.errorCode,
       category: entry.category,
+      tags: entry.tags ?? [],
     });
   }
   const items: ArchiveIndexItem[] = docList.valid.map((doc) => {
@@ -1780,6 +1837,7 @@ export async function loadArchiveIndex(
       issueId: doc.issueId,
       errorCode: matched?.errorCode ?? null,
       category: matched?.category ?? null,
+      tags: matched?.tags ?? [],
       generatedAt: doc.generatedAt,
     };
   });
@@ -1862,6 +1920,10 @@ export function ArchivePaneShell({
               <dd>{latest.category ?? "(未记录)"}</dd>
             </div>
             <div>
+              <dt>标签</dt>
+              <dd>{formatTags(latest.tags)}</dd>
+            </div>
+            <div>
               <dt>归档时间</dt>
               <dd>{latest.generatedAt}</dd>
             </div>
@@ -1933,6 +1995,10 @@ export function ArchiveListDrawer({
                     <div>
                       <dt>分类</dt>
                       <dd>{item.category ?? "(未记录)"}</dd>
+                    </div>
+                    <div>
+                      <dt>标签</dt>
+                      <dd>{formatTags(item.tags)}</dd>
                     </div>
                     <div>
                       <dt>来源问题</dt>
