@@ -120,6 +120,20 @@ Do not run these steps from this docs-only prep. They are the intended checklist
 - Rollback by switching `current` back to the previous release, restarting, and re-running the same checks.
 - Never keep SQLite, env files, logs, or Node runtime inside a release directory; keep them under `shared/` and `runtime/` so they survive release replacement.
 
+## Diagnostics bundle
+
+`DEP-09-LOGS-DIAGNOSTICS-BUNDLE` adds a local-only diagnostics command:
+
+```bash
+cd apps/server && npm run diagnostics:bundle -- --base-url http://127.0.0.1:4100 --log-dir /home/hurricane/probeflash/shared/logs --out /home/hurricane/probeflash/shared/logs/diagnostics
+```
+
+- The command writes a reviewable `diagnostics.json` and `summary.md`; it does not upload anything.
+- It captures `/api/health`, `/api/version`, local release metadata, runtime summary, and `.log` / `.txt` tails from allowed ProbeFlash log roots only.
+- Allowed log roots are `apps/server/.runtime/` and `/home/hurricane/probeflash/shared/logs`; arbitrary directories are rejected.
+- Log tails are redacted for authorization headers, API keys, tokens, secrets, and passwords before writing the bundle.
+- The command is diagnostic only; it does not restart services, edit data, repair SQLite, run sudo, call systemd, or touch port `80`.
+
 ## Later authorized systemd route
 
 `probeflash.service.template` is only for `S3-SERVER-SYSTEMD-AUTOSTART-PREP` / `S3-SERVER-SYSTEMD-AUTOSTART-VERIFY` after no-sudo user-dir verification succeeds and the user explicitly authorizes sudo/systemd work.

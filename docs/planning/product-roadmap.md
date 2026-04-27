@@ -292,7 +292,6 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 ## 10. 夜跑任务池
 
 ### Night-safe pool
-- DEP-09-LOGS-DIAGNOSTICS-BUNDLE
 - DATA-02-JSON-EXPORT-HARDEN
 - DATA-05-PARTIAL-CLOSEOUT-RECOVERY
 - DATA-08-REPAIR-TASK-GENERATION
@@ -373,4 +372,4 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 
 如果用户白天可参与服务器操作，下一轮最适合认领 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`。
 
-如果用户暂时不能参与服务器操作，下一轮最适合认领 `DEP-09-LOGS-DIAGNOSTICS-BUNDLE`，这是 repo-local、P1、night-safe，能继续补齐可观测 / 诊断能力而不触碰真实服务器。
+如果用户暂时不能参与服务器操作，下一轮最适合认领 `DATA-02-JSON-EXPORT-HARDEN`，这是 repo-local、P0、night-safe，能继续固化 JSON export 字段、计数和脱敏边界而不触碰真实服务器。
