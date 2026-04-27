@@ -7,10 +7,10 @@
 - 当前模式：`server_storage_migration`（保留服务器部署安全边界）。
 - 阶段目标：以 v0.2.x 已完成的本地 HTTP + SQLite + release 可部署基座为起点，按 8 条产品主线推进；近期 P0 只聚焦 **部署可用、数据安全、可观测**。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
-- 最近已完成：`DATA-02-JSON-EXPORT-HARDEN`，JSON export 现在声明 format/version/source class/redaction policy，并通过字段、计数、路径与 secret 脱敏 verify；未上传外网，未服务器部署。
+- 最近已完成：`DATA-05-PARTIAL-CLOSEOUT-RECOVERY`，新增 HTTP + SQLite closeout 半成功 verify，覆盖 archive 写失败、error-entry 写失败、issue 状态写失败，确保失败时 issue 不被误标 archived。
 
 ## 当前真实状态
-- 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、issue / record / closeout / archive / error-entry 主路径、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、server schema contract、HTTP feedback contract、restore dry-run、SQLite integrity check、JSON export hardening、diagnostics bundle、night-run 安全规则、v0.2 历史文档归档。
+- 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、issue / record / closeout / archive / error-entry 主路径、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、server schema contract、HTTP feedback contract、restore dry-run、SQLite integrity check、JSON export hardening、partial closeout recovery verify、diagnostics bundle、night-run 安全规则、v0.2 历史文档归档。
 - 仍 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 AI provider/API key 接入。
 - 服务器安全边界仍有效：不 sudo、不写 `/opt`、不抢 80、不升级系统 Node、不影响 filebrowser / vnt-cli / docker / Portainer；release 部署优先 `/home/hurricane/probeflash` + 独立 Node runtime + 4100。
 - AI 安全边界仍有效：AI-ready 可夜跑；真实 AI 必须等用户确认 provider、API key/server env、timeout 和 mock/test provider 边界；AI 只返回草稿，不直接写库。
@@ -40,16 +40,16 @@
 - **DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY**
   - 状态：`blocked`；P0；白天主线；不能夜跑。
   - 选择理由：真实服务器部署仍是产品可用性的最大缺口。
-- **DATA-05-PARTIAL-CLOSEOUT-RECOVERY**
-  - 状态：`night-safe`；P0；repo-local failure injection / readback verify。
-  - 选择理由：`DATA-04` 已完成，可继续收紧 closeout 半成功可见性，不修复真实数据。
 - **DATA-08-REPAIR-TASK-GENERATION**
   - 状态：`night-safe`；P1；repo-local completion gate / repair task verify。
-  - 选择理由：接在 integrity / partial recovery 后，用于把读回失败显式转为 repair task，不自动修复真实数据。
+  - 选择理由：`DATA-04` 与 `DATA-05` 已完成，可把读回失败显式转为 repair task，不自动修复真实数据。
+- **CORE-01-QUICK-ISSUE-CREATE**
+  - 状态：`night-safe`；P1；repo-local UI / storage smoke。
+  - 选择理由：数据安全 P0 本地收紧后，若继续夜跑可回到核心调试流，改善现场快速建卡。
 
 ## 下一步最小可执行动作
 - 白天有用户参与：认领 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`，执行前再次复述 SSH / release assets / 写入路径 / 临时进程 / 4100 授权边界。
-- 无服务器授权或夜跑：不要部署；认领 `DATA-05-PARTIAL-CLOSEOUT-RECOVERY`。若该任务完成后仍夜跑，重新读取事实源再扫描 `Night-safe pool`。
+- 无服务器授权或夜跑：不要部署；认领 `DATA-08-REPAIR-TASK-GENERATION`。若该任务完成后仍夜跑，重新读取事实源再扫描 `Night-safe pool`。
 - 真实 AI：仍 blocked，不得无人值守接 provider 或 API key。
 
 ## 下一任务选择流程
