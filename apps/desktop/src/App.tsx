@@ -42,13 +42,12 @@ import {
   type LoadIssueCardResult,
   type InvestigationRecordListResult,
   type StorageRepository,
-  type StorageReadError,
   type StorageSearchFilters,
   type StorageSearchResult,
   type StorageSearchResultItem,
   type WorkspaceListResult,
-  storageRepository,
 } from "./storage/storage-repository";
+import { loadArchiveIndex, type ArchiveIndex } from "./storage/archive-index";
 import { orchestrateIssueCloseout } from "./use-cases/closeout-orchestrator";
 import {
   CHECKING_STORAGE_CONNECTION_STATE,
@@ -1484,6 +1483,7 @@ function MainlineResultPanel({
 function IssuePane({
   repository,
   activeWorkspace,
+  externalSelectedIssueId,
   onCloseoutResult,
   onSelectedIssueChange,
   reportStorageError,
@@ -1491,6 +1491,7 @@ function IssuePane({
 }: {
   repository: StorageRepository;
   activeWorkspace: Workspace;
+  externalSelectedIssueId: string | null;
   onCloseoutResult: (summary: CloseoutSummary) => void;
   onSelectedIssueChange: (id: string | null) => void;
   reportStorageError: (error: StorageFeedbackError) => void;
@@ -1575,6 +1576,13 @@ function IssuePane({
     void loadRecordList(id);
     setLastCloseout(null);
   };
+
+  useEffect(() => {
+    if (externalSelectedIssueId === null || externalSelectedIssueId === selectedIssueId) {
+      return;
+    }
+    handleSelect(externalSelectedIssueId);
+  }, [externalSelectedIssueId]);
 
   const handleCreateNew = () => {
     setSelectedIssueId(null);
@@ -1799,57 +1807,6 @@ function StaticPaneShell({ pane }: { pane: Pane }) {
   );
 }
 
-export type ArchiveIndexItem = {
-  fileName: string;
-  filePath: string;
-  issueId: string;
-  errorCode: string | null;
-  category: string | null;
-  tags: string[];
-  generatedAt: string;
-};
-
-export type ArchiveIndex = {
-  items: ArchiveIndexItem[];
-  invalidCount: number;
-  readErrors: StorageReadError[];
-};
-
-export async function loadArchiveIndex(
-  repository: StorageRepository = storageRepository,
-): Promise<ArchiveIndex> {
-  const docList = await repository.archiveDocuments.list();
-  const errorList = await repository.errorEntries.list();
-  const errorByIssue = new Map<string, { errorCode: string; category: string; tags: string[] }>();
-  for (const entry of errorList.valid) {
-    if (errorByIssue.has(entry.sourceIssueId)) continue;
-    errorByIssue.set(entry.sourceIssueId, {
-      errorCode: entry.errorCode,
-      category: entry.category,
-      tags: entry.tags ?? [],
-    });
-  }
-  const items: ArchiveIndexItem[] = docList.valid.map((doc) => {
-    const matched = errorByIssue.get(doc.issueId);
-    return {
-      fileName: doc.fileName,
-      filePath: doc.filePath,
-      issueId: doc.issueId,
-      errorCode: matched?.errorCode ?? null,
-      category: matched?.category ?? null,
-      tags: matched?.tags ?? [],
-      generatedAt: doc.generatedAt,
-    };
-  });
-  return {
-    items,
-    invalidCount: docList.invalid.length + errorList.invalid.length,
-    readErrors: [docList.readError, errorList.readError].filter(
-      (error): error is StorageReadError => error !== null,
-    ),
-  };
-}
-
 export function ArchivePaneShell({
   pane,
   archiveIndex,
@@ -1942,14 +1899,34 @@ export function ArchiveListDrawer({
   archivePane,
   archiveIndex,
   onClose,
+  onOpenIssue,
 }: {
   open: boolean;
   archivePane: Pane;
   archiveIndex: ArchiveIndex;
   onClose: () => void;
+  onOpenIssue?: (issueId: string) => void;
 }) {
-  if (!open) return null;
   const { items } = archiveIndex;
+  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setSelectedFilePath((current) => {
+      if (current !== null && items.some((item) => item.filePath === current)) {
+        return current;
+      }
+      return items[0]?.filePath ?? null;
+    });
+  }, [open, items]);
+
+  if (!open) return null;
+  const selectedItem = items.find((item) => item.filePath === selectedFilePath) ?? items[0] ?? null;
+
+  const handleOpenIssue = (issueId: string) => {
+    onOpenIssue?.(issueId);
+  };
+
   return (
     <div
       className="archive-drawer-overlay"
@@ -1978,40 +1955,77 @@ export function ArchiveListDrawer({
         </header>
         <ArchivePaneShell pane={archivePane} archiveIndex={archiveIndex} />
         {items.length > 0 && (
-          <div className="archive-drawer-section">
-            <div className="archive-drawer-section-label">全部归档条目</div>
-            <ul className="archive-drawer-list" data-testid="archive-drawer-list">
-              {items.map((item) => (
-                <li key={item.fileName} className="archive-drawer-item">
-                  <div className="archive-drawer-item-row">
-                    <span className="archive-drawer-file">{item.fileName}</span>
-                    <span className="archive-drawer-time">{item.generatedAt}</span>
+          <div className="archive-review-layout" data-testid="archive-review-page">
+            <div className="archive-drawer-section">
+              <div className="archive-drawer-section-label">全部归档条目</div>
+              <ul className="archive-drawer-list" data-testid="archive-drawer-list">
+                {items.map((item) => {
+                  const selected = selectedItem?.filePath === item.filePath;
+                  return (
+                    <li key={item.filePath} className="archive-drawer-item">
+                      <button
+                        type="button"
+                        className="archive-drawer-item-button"
+                        aria-current={selected ? "true" : undefined}
+                        data-selected={selected ? "true" : "false"}
+                        onClick={() => setSelectedFilePath(item.filePath)}
+                        data-testid="archive-review-select"
+                      >
+                        <span className="archive-drawer-item-row">
+                          <span className="archive-drawer-file">{item.fileName}</span>
+                          <span className="archive-drawer-time">{item.generatedAt}</span>
+                        </span>
+                        <span className="archive-drawer-item-hint">
+                          {item.errorCode ?? "未绑定错误表"} · {formatTags(item.tags)}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+            {selectedItem !== null && (
+              <section className="archive-review-panel" data-testid="archive-review-panel">
+                <div className="archive-drawer-section-label">归档复盘预览</div>
+                <div className="archive-review-actions">
+                  <button
+                    type="button"
+                    className="button-secondary"
+                    onClick={() => handleOpenIssue(selectedItem.issueId)}
+                    data-testid="archive-review-open-issue"
+                  >
+                    打开来源问题
+                  </button>
+                </div>
+                <dl className="archive-drawer-meta archive-review-meta">
+                  <div>
+                    <dt>来源问题</dt>
+                    <dd>{selectedItem.issueId}</dd>
                   </div>
-                  <dl className="archive-drawer-meta">
-                    <div>
-                      <dt>错误表编号</dt>
-                      <dd>{item.errorCode ?? "(未记录)"}</dd>
-                    </div>
-                    <div>
-                      <dt>分类</dt>
-                      <dd>{item.category ?? "(未记录)"}</dd>
-                    </div>
-                    <div>
-                      <dt>标签</dt>
-                      <dd>{formatTags(item.tags)}</dd>
-                    </div>
-                    <div>
-                      <dt>来源问题</dt>
-                      <dd>{item.issueId}</dd>
-                    </div>
-                    <div>
-                      <dt>后续写盘位置</dt>
-                      <dd>{item.filePath}</dd>
-                    </div>
-                  </dl>
-                </li>
-              ))}
-            </ul>
+                  <div>
+                    <dt>错误表编号</dt>
+                    <dd>{selectedItem.errorCode ?? "(未记录)"}</dd>
+                  </div>
+                  <div>
+                    <dt>错误表条目</dt>
+                    <dd data-testid="archive-review-error-entry-link">{selectedItem.errorEntryId ?? "(未记录)"}</dd>
+                  </div>
+                  <div>
+                    <dt>分类</dt>
+                    <dd>{selectedItem.category ?? "(未记录)"}</dd>
+                  </div>
+                  <div>
+                    <dt>标签</dt>
+                    <dd>{formatTags(selectedItem.tags)}</dd>
+                  </div>
+                  <div>
+                    <dt>后续写盘位置</dt>
+                    <dd>{selectedItem.filePath}</dd>
+                  </div>
+                </dl>
+                <pre className="archive-review-markdown" data-testid="archive-review-markdown">{selectedItem.markdownContent}</pre>
+              </section>
+            )}
           </div>
         )}
         <p className="archive-drawer-note">
@@ -2328,7 +2342,7 @@ export default function App() {
   };
 
   const refreshArchiveIndex = async () => {
-    const index = await loadArchiveIndex(workspaceRepository);
+    const index = await loadArchiveIndex(workspaceRepository, activeWorkspace.id);
     setArchiveIndex(index);
     if (index.readErrors.length > 0) {
       reportStorageError(storageReadErrorToFeedback("archive_index", "list_archives", index.readErrors[0]!));
@@ -2476,6 +2490,7 @@ export default function App() {
             key={activeWorkspace.id}
             repository={workspaceRepository}
             activeWorkspace={activeWorkspace}
+            externalSelectedIssueId={activeIssueId}
             onCloseoutResult={handleCloseoutResult}
             onSelectedIssueChange={setActiveIssueId}
             reportStorageError={reportStorageError}
@@ -2491,6 +2506,10 @@ export default function App() {
         archivePane={archivePane}
         archiveIndex={archiveIndex}
         onClose={() => setIsArchiveListOpen(false)}
+        onOpenIssue={(issueId) => {
+          setActiveIssueId(issueId);
+          setIsArchiveListOpen(false);
+        }}
       />
     </div>
   );

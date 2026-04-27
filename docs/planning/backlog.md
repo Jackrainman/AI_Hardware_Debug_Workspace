@@ -5,7 +5,7 @@
 ## 当前路线
 - 当前版本基座：v0.2.x 本地 HTTP + SQLite + release 可部署基座。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
-- 当前目标：近期 1 周先让部署可用、数据安全、可观测；2-4 周做搜索、AI-ready、code context bundle；1-2 月进入真实 AI、知识库和架构拆分。`SEARCH-01-BASIC-FULL-TEXT-SEARCH`、`SEARCH-02-FILTERS` 与 `SEARCH-04-TAGS` 已完成，不再留在可认领池。
+- 当前目标：近期 1 周先让部署可用、数据安全、可观测；2-4 周做搜索、AI-ready、code context bundle；1-2 月进入真实 AI、知识库和架构拆分。`SEARCH-01-BASIC-FULL-TEXT-SEARCH`、`SEARCH-02-FILTERS`、`SEARCH-04-TAGS` 与 `SEARCH-03-ARCHIVE-REVIEW-PAGE` 已完成，不再留在可认领池。
 - 当前 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 AI provider/API key。
 
 ## 认领规则
@@ -62,7 +62,7 @@
 | 7 | CODECTX-04-ATTACH-BUNDLE-TO-ISSUE | night-safe | P1 |
 | 8 | CODECTX-05-BUNDLE-VIEWER | night-safe | P1 |
 | 9 | CODECTX-07-AI-ANALYZE-EXPLICIT-BUNDLE | blocked | P2 |
-| 10 | SEARCH-03-ARCHIVE-REVIEW-PAGE | night-safe | P1 |
+| 10 | SEARCH-03-ARCHIVE-REVIEW-PAGE | completed | P1 |
 | 11 | TECH-07-APP-TSX-MINIMAL-SPLIT | night-safe | P2 |
 | 12 | TECH-09-SERVER-ROUTE-SPLIT | night-safe | P2 |
 
@@ -75,14 +75,13 @@
 - 更完整的局域网部署体验：反向代理、`.local`、HTTPS、美化域名。
 
 ## Night-safe pool
-- SEARCH-03-ARCHIVE-REVIEW-PAGE
+- SEARCH-07-SIMILAR-ISSUES-LITE
 - CORE-02-WORKSPACE-UX-IMPROVEMENTS
 - CORE-03-RECENT-ISSUE-REOPEN
 - CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS
 - CORE-07-ARCHIVE-FILTERS
 - CORE-08-ERROR-ENTRY-TAGS
 - CORE-09-DEMO-SEED-IMPORT
-- SEARCH-07-SIMILAR-ISSUES-LITE
 - SEARCH-08-SEARCH-RESULT-LINKING
 - SEARCH-09-RECURRENCE-PROMPT
 - AIREADY-02-PROMPT-SCHEMA-VERSIONING

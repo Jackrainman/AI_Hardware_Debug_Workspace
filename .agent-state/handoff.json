@@ -16,7 +16,7 @@
     "archive_state": "object - v0.2.0 前历史文档归档状态与读取条件",
     "notes": "string[] - 下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-04-27T22:31:13+08:00",
+  "timestamp": "2026-04-27T22:46:30+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "R1",
   "current_stage_name": "长期产品路线图执行启动",
@@ -81,6 +81,7 @@
     "basic_full_text_search_completed": true,
     "search_filters_completed": true,
     "search_tags_completed": true,
+    "archive_review_page_completed": true,
     "night_run_rules_completed": true,
     "v0_2_history_docs_archived": true,
     "real_server_release_user_dir_deploy_verify_completed": false,
@@ -127,22 +128,22 @@
       ]
     },
     {
-      "id": "SEARCH-03-ARCHIVE-REVIEW-PAGE",
+      "id": "SEARCH-07-SIMILAR-ISSUES-LITE",
       "track": "Search / Knowledge Base",
-      "goal": "新增归档浏览页，让已结案知识可集中复盘并跳回源问题。",
+      "goal": "基于标题、标签和根因文本做可解释的轻量相似问题提示。",
       "status": "pending",
-      "priority": "P1",
+      "priority": "P2",
       "lane": "night-safe",
       "night_safe": true,
       "ai_unattended_run": true,
       "requires_user_confirmation": []
     },
     {
-      "id": "SEARCH-07-SIMILAR-ISSUES-LITE",
-      "track": "Search / Knowledge Base",
-      "goal": "基于标题、标签和根因文本做可解释的轻量相似问题提示。",
-      "status": "pending_after_SEARCH-03",
-      "priority": "P2",
+      "id": "AIREADY-05-DRAFT-HISTORY",
+      "track": "AI-ready Workflow",
+      "goal": "在不接真实 provider 的前提下保存和展示本地规则草稿历史。",
+      "status": "pending_after_SEARCH-07",
+      "priority": "P1",
       "lane": "night-safe",
       "night_safe": true,
       "ai_unattended_run": true,
@@ -359,22 +360,34 @@
       "order": 18,
       "id": "SEARCH-03-ARCHIVE-REVIEW-PAGE",
       "track": "Search / Knowledge Base",
-      "status": "pending",
+      "status": "completed",
       "priority": "P1",
+      "classification": "completed",
+      "depends_on": [
+        "SEARCH-04-TAGS"
+      ],
+      "completed_at": "2026-04-27T22:46:30+08:00"
+    },
+    {
+      "order": 19,
+      "id": "SEARCH-07-SIMILAR-ISSUES-LITE",
+      "track": "Search / Knowledge Base",
+      "status": "pending",
+      "priority": "P2",
       "classification": "night-safe",
       "depends_on": [
         "SEARCH-04-TAGS"
       ]
     },
     {
-      "order": 19,
-      "id": "SEARCH-07-SIMILAR-ISSUES-LITE",
-      "track": "Search / Knowledge Base",
-      "status": "pending_after_SEARCH-03",
-      "priority": "P2",
+      "order": 20,
+      "id": "AIREADY-05-DRAFT-HISTORY",
+      "track": "AI-ready Workflow",
+      "status": "pending_after_SEARCH-07",
+      "priority": "P1",
       "classification": "night-safe",
       "depends_on": [
-        "SEARCH-04-TAGS"
+        "AIREADY-04-DRAFT-PANEL"
       ]
     }
   ],
@@ -422,14 +435,13 @@
     ]
   },
   "night_safe_pool": [
-    "SEARCH-03-ARCHIVE-REVIEW-PAGE",
+    "SEARCH-07-SIMILAR-ISSUES-LITE",
     "CORE-02-WORKSPACE-UX-IMPROVEMENTS",
     "CORE-03-RECENT-ISSUE-REOPEN",
     "CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS",
     "CORE-07-ARCHIVE-FILTERS",
     "CORE-08-ERROR-ENTRY-TAGS",
     "CORE-09-DEMO-SEED-IMPORT",
-    "SEARCH-07-SIMILAR-ISSUES-LITE",
     "SEARCH-08-SEARCH-RESULT-LINKING",
     "SEARCH-09-RECURRENCE-PROMPT",
     "AIREADY-02-PROMPT-SCHEMA-VERSIONING",
@@ -522,7 +534,8 @@
     "CORE-05-CLOSEOUT-UX-POLISH",
     "SEARCH-01-BASIC-FULL-TEXT-SEARCH",
     "SEARCH-02-FILTERS",
-    "SEARCH-04-TAGS"
+    "SEARCH-04-TAGS",
+    "SEARCH-03-ARCHIVE-REVIEW-PAGE"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -543,8 +556,8 @@
     ],
     "recommended_next_daytime": "DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY",
     "recommended_next_daytime_status": "blocked_until_user_confirms_server_boundaries",
-    "recommended_next_night_safe": "SEARCH-03-ARCHIVE-REVIEW-PAGE",
-    "alternative_night_safe": "SEARCH-07-SIMILAR-ISSUES-LITE",
+    "recommended_next_night_safe": "SEARCH-07-SIMILAR-ISSUES-LITE",
+    "alternative_night_safe": "AIREADY-05-DRAFT-HISTORY",
     "selection_rule": "白天有用户参与时优先执行 DEP-01；无服务器授权或夜跑时不得部署，只能从 pending_task_queue / night_safe_pool 选择第一个依赖满足且未完成的任务。真实 AI/API key 和 systemd/sudo 任务不得 unattended。"
   },
   "night_run_mode": {
@@ -665,6 +678,15 @@
       "cd apps/desktop && npm run verify:handoff",
       "cd apps/desktop && npm run verify:all"
     ],
+    "last_completed_SEARCH_03": [
+      "git diff --check",
+      "python3 -m json.tool .agent-state/handoff.json >/dev/null",
+      "cd apps/desktop && npm run verify:search-archive-review-page",
+      "cd apps/desktop && npm run typecheck",
+      "cd apps/desktop && npm run build",
+      "cd apps/desktop && npm run verify:handoff",
+      "cd apps/desktop && npm run verify:all"
+    ],
     "not_required_this_round": []
   },
   "risks": [
@@ -675,9 +697,9 @@
     "路线图较长，current.md 只允许保留最多 3 个前沿候选，完整字段必须回到 product-roadmap.md。"
   ],
   "notes": [
-    "SEARCH-04-TAGS 已完成：复用 IssueCard.tags，并为 ErrorEntry 增加向后兼容 tags；创建问题、搜索结果、归档摘要和错误表可展示 / 筛选标签，HTTP repository、localStorage fallback 与 server API 行为一致；覆盖 tag 命中、无结果、多 tag、workspace 隔离和旧数据无 tags。",
+    "SEARCH-03-ARCHIVE-REVIEW-PAGE 已完成：归档抽屉可集中浏览 ArchiveDocument markdown、来源问题、错误表 metadata 和标签，并可跳回源问题；archive index helper 已按 workspaceId 过滤，覆盖 HTTP repository 与 localStorage fallback。",
     "下一轮若用户白天可参与服务器操作，最适合认领 DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY。",
-    "下一轮若无服务器授权或夜跑，最适合认领 SEARCH-03-ARCHIVE-REVIEW-PAGE；SEARCH-07-SIMILAR-ISSUES-LITE 是后续备选。",
+    "下一轮若无服务器授权或夜跑，最适合认领 SEARCH-07-SIMILAR-ISSUES-LITE；AIREADY-05-DRAFT-HISTORY 是后续备选。",
     "本轮没有上传外网，没有读取任意目录，没有服务器部署，没有接真实 AI API。"
   ]
 }
