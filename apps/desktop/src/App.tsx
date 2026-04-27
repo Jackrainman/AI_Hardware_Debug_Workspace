@@ -742,17 +742,32 @@ function InvestigationRecordListView({
         <p className="empty-state">还没有排查记录。选中问题后，在上方追加第一条记录。</p>
       )}
       {result && result.valid.length > 0 && (
-        <ul className="list-items" data-testid="record-list-valid">
-          {result.valid.map((record) => (
-            <li key={record.id} className="list-item list-item-static">
-              <span className="list-item-title">
-                [{labelInvestigationType(record.type)}] {record.polishedText}
+        <ol className="record-timeline" data-testid="record-timeline">
+          {result.valid.map((record, index) => (
+            <li
+              key={record.id}
+              className="record-timeline-item"
+              data-record-type={record.type}
+              data-testid="record-timeline-item"
+            >
+              <span className="record-timeline-marker" aria-hidden="true">
+                {index + 1}
               </span>
-              <span className="list-item-meta">{record.createdAt}</span>
-              <span className="list-item-id">编号：{record.id}</span>
+              <article className="record-timeline-card">
+                <div className="record-timeline-header">
+                  <span className="record-type-chip">
+                    {labelInvestigationType(record.type)}
+                  </span>
+                  <time className="record-timeline-time" dateTime={record.createdAt}>
+                    {record.createdAt}
+                  </time>
+                </div>
+                <p className="record-timeline-text">{record.polishedText}</p>
+                <span className="list-item-id">编号：{record.id}</span>
+              </article>
             </li>
           ))}
-        </ul>
+        </ol>
       )}
     </div>
   );

@@ -21,6 +21,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 - restore dry-run。
 - repair task generation（integrity check repair plan + partial closeout repair task UI）。
 - quick issue create（一句话创建 open issue 并自动选中）。
+- record timeline polish（排查记录按时间线和类型芯片展示）。
 - night-run 安全规则。
 - v0.2 历史文档归档。
 
@@ -102,7 +103,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 | CORE-01-QUICK-ISSUE-CREATE | Core Debug Workflow | quick issue create | 调试现场一句话快速建卡 | workspace 创建可用 | `apps/desktop/src` UI；verify | 不接 AI；不改 storage 主链路 | 创建 issue smoke；schema 校验；读回 | 最少字段创建 open issue 并选中 | completed | P1 | 已完成 |
 | CORE-02-WORKSPACE-UX-IMPROVEMENTS | Core Debug Workflow | workspace UX improvements | 用户知道当前数据属于哪个项目 | workspace list/create/switch 已完成 | desktop UI；copy；verify | 不做权限/多租户；不改 DB schema | 切换 workspace；空状态；读回 | 当前 workspace、创建入口、错误态清楚 | night-safe | P1 | 是 |
 | CORE-03-RECENT-ISSUE-REOPEN | Core Debug Workflow | 最近问题快速回到现场 | 重启页面后不迷路 | issue list 可读 | desktop UI；storage state | 不做通知系统；不做协作 | reload 后最近 issue 可打开 | 用户可快速回到最近活跃问题 | night-safe | P2 | 是 |
-| CORE-04-RECORD-TIMELINE-POLISH | Core Debug Workflow | record timeline polish | 排查过程像时间线而不是散文 | record append 已完成 | desktop UI；styles；verify | 不改 record schema；不做附件 | 多类型 record 展示；排序；空状态 | 现象/猜测/动作/结果/结论一眼可分 | night-safe | P1 | 是 |
+| CORE-04-RECORD-TIMELINE-POLISH | Core Debug Workflow | record timeline polish | 排查过程像时间线而不是散文 | record append 已完成 | desktop UI；styles；verify | 不改 record schema；不做附件 | 多类型 record 展示；排序；空状态 | 现象/猜测/动作/结果/结论一眼可分 | completed | P1 | 已完成 |
 | CORE-05-CLOSEOUT-UX-POLISH | Core Debug Workflow | closeout UX polish | 降低结案漏填、误填 | closeout 主路径和 draft panel | desktop UI；validation copy；verify | 不自动结案；不接真实 AI | 必填字段提示；错误态；成功读回 | 用户能清楚完成根因/解决/预防 | night-safe | P1 | 是 |
 | CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS | Core Debug Workflow | 结案草稿与失败提示 | closeout 失败时不丢输入 | CORE-05；DATA-05 更佳 | desktop state；verify | 不把草稿当事实；不自动写 archive | 失败注入；保留表单输入 | closeout 失败后用户可继续编辑 | night-safe | P2 | 是 |
 | CORE-07-ARCHIVE-FILTERS | Core Debug Workflow | archive filters | 已归档问题可按项目/时间/类别找 | archive list 已可读 | desktop UI；server query 可选 | 不做全文搜索；不做统计大屏 | filter fixture；URL/state smoke | archive 列表可筛选且结果稳定 | night-safe | P1 | 是 |
@@ -253,7 +254,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 | 顺序 | 任务 ID | 目标 | 类型 | P |
 |---|---|---|---|---|
 | 1 | CORE-01-QUICK-ISSUE-CREATE | 更快创建问题 | completed | P1 |
-| 2 | CORE-04-RECORD-TIMELINE-POLISH | 时间线更清楚 | night-safe | P1 |
+| 2 | CORE-04-RECORD-TIMELINE-POLISH | 时间线更清楚 | completed | P1 |
 | 3 | CORE-05-CLOSEOUT-UX-POLISH | 结案体验更稳 | night-safe | P1 |
 | 4 | SEARCH-01-BASIC-FULL-TEXT-SEARCH | 基础全文搜索 | night-safe | P1 |
 | 5 | SEARCH-02-FILTERS | 搜索筛选 | night-safe | P1 |
@@ -294,15 +295,14 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 ## 10. 夜跑任务池
 
 ### Night-safe pool
-- CORE-04-RECORD-TIMELINE-POLISH
 - CORE-05-CLOSEOUT-UX-POLISH
+- SEARCH-01-BASIC-FULL-TEXT-SEARCH
 - CORE-02-WORKSPACE-UX-IMPROVEMENTS
 - CORE-03-RECENT-ISSUE-REOPEN
 - CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS
 - CORE-07-ARCHIVE-FILTERS
 - CORE-08-ERROR-ENTRY-TAGS
 - CORE-09-DEMO-SEED-IMPORT
-- SEARCH-01-BASIC-FULL-TEXT-SEARCH
 - SEARCH-02-FILTERS
 - SEARCH-03-ARCHIVE-REVIEW-PAGE
 - SEARCH-04-TAGS
@@ -370,4 +370,4 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 
 如果用户白天可参与服务器操作，下一轮最适合认领 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`。
 
-如果用户暂时不能参与服务器操作，下一轮最适合认领 `CORE-04-RECORD-TIMELINE-POLISH`，这是 repo-local、P1、night-safe，可在不触碰真实服务器的前提下改善排查记录可读性。
+如果用户暂时不能参与服务器操作，下一轮最适合认领 `CORE-05-CLOSEOUT-UX-POLISH`，这是 repo-local、P1、night-safe，可在不触碰真实服务器或真实 AI 的前提下降低结案漏填风险。
