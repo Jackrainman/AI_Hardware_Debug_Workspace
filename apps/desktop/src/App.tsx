@@ -812,9 +812,57 @@ function CloseoutForm({
   const [prevention, setPrevention] = useState<string>("");
   const [draft, setDraft] = useState<RuleCloseoutDraft | null>(null);
   const [status, setStatus] = useState<CloseoutSubmitStatus>({ state: "idle" });
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+
+  const categoryReady = category.trim().length > 0;
+  const rootCauseReady = rootCause.trim().length > 0;
+  const resolutionReady = resolution.trim().length > 0;
+  const preventionReady = prevention.trim().length > 0;
+  const missingRequiredLabels = [
+    rootCauseReady ? null : "根因",
+    resolutionReady ? null : "修复/结论",
+  ].filter((label): label is string => label !== null);
+  const showRequiredHints = hasAttemptedSubmit && missingRequiredLabels.length > 0;
+  const closeoutQualityItems = [
+    {
+      id: "category",
+      testId: "closeout-quality-item-category",
+      label: "归档分类",
+      requirement: "建议",
+      ready: categoryReady,
+      hint: categoryReady ? "已填写分类，后续更容易筛选复用。" : "建议填写模块或故障类型；留空会进入未分类。",
+    },
+    {
+      id: "rootCause",
+      testId: "closeout-quality-item-rootCause",
+      label: "根因",
+      requirement: "必填",
+      ready: rootCauseReady,
+      hint: rootCauseReady ? "已写明为什么发生。" : "必须写出已确认或当前最可信的根因。",
+    },
+    {
+      id: "resolution",
+      testId: "closeout-quality-item-resolution",
+      label: "修复/结论",
+      requirement: "必填",
+      ready: resolutionReady,
+      hint: resolutionReady ? "已写明修复动作或结案依据。" : "必须写清处理动作、绕过方案或结案依据。",
+    },
+    {
+      id: "prevention",
+      testId: "closeout-quality-item-prevention",
+      label: "预防建议",
+      requirement: "建议",
+      ready: preventionReady,
+      hint: preventionReady
+        ? "已写入复发预防动作。"
+        : "建议补充可执行检查项；留空时会按修复结论生成默认预防项。",
+    },
+  ] as const;
 
   useEffect(() => {
     setDraft(null);
+    setHasAttemptedSubmit(false);
   }, [issueId]);
 
   const handleGenerateDraft = () => {
@@ -829,10 +877,19 @@ function CloseoutForm({
     setResolution(draft.resolution);
     setPrevention(draft.prevention);
     setStatus({ state: "idle" });
+    setHasAttemptedSubmit(false);
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setHasAttemptedSubmit(true);
+    if (missingRequiredLabels.length > 0) {
+      setStatus({
+        state: "error",
+        reason: `请先补齐${missingRequiredLabels.join("、")}`,
+      });
+      return;
+    }
     const input: CloseoutInput = { category, rootCause, resolution, prevention };
     const result = await orchestrateIssueCloseout(issueId, input, { repository });
     if (!result.ok) {
@@ -855,6 +912,7 @@ function CloseoutForm({
     setResolution("");
     setPrevention("");
     setDraft(null);
+    setHasAttemptedSubmit(false);
     const markdownContent = result.archiveDocument.markdownContent;
     const markdownPreview =
       markdownContent.length > 500
@@ -886,6 +944,34 @@ function CloseoutForm({
       <p className="storage-line" data-testid="closeout-target">
         结案对象：{issueId}
       </p>
+      <section className="closeout-quality-panel" data-testid="closeout-quality-panel" aria-label="结案填写检查">
+        <div className="closeout-quality-header">
+          <span>结案填写检查</span>
+          <p>提交前至少补齐根因和修复/结论；分类和预防建议会提升后续检索复用。</p>
+        </div>
+        <div className="closeout-quality-grid">
+          {closeoutQualityItems.map((item) => (
+            <div
+              key={item.id}
+              className="closeout-quality-item"
+              data-state={item.ready ? "ready" : "missing"}
+              data-requirement={item.requirement}
+              data-testid={item.testId}
+            >
+              <span>
+                {item.label}
+                <small>{item.requirement}</small>
+              </span>
+              <p>{item.hint}</p>
+            </div>
+          ))}
+        </div>
+        {showRequiredHints && (
+          <p className="field-error" data-testid="closeout-required-error">
+            请先补齐：{missingRequiredLabels.join("、")}。空格不会被视为有效内容。
+          </p>
+        )}
+      </section>
       <section className="closeout-draft-panel" data-testid="closeout-draft-panel">
         <div className="closeout-draft-header">
           <div>
@@ -944,42 +1030,78 @@ function CloseoutForm({
         )}
       </section>
       <label className="intake-field">
-        <span>归档分类</span>
+        <span className="field-label-row">
+          归档分类 <span className="field-recommended-badge">建议</span>
+        </span>
         <input
           type="text"
           value={category}
           onChange={(event) => setCategory(event.target.value)}
           placeholder="例如：启动、电源、时序"
+          aria-describedby="closeout-category-help"
         />
+        <small id="closeout-category-help" className="field-help">
+          用模块、故障类型或场景命名，后续错误表和搜索会更容易复用。
+        </small>
       </label>
       <label className="intake-field">
-        <span>根因</span>
+        <span className="field-label-row">
+          根因 <span className="field-required-badge">必填</span>
+        </span>
         <textarea
           value={rootCause}
           onChange={(event) => setRootCause(event.target.value)}
           rows={3}
           placeholder="说明已经确认或当前最可信的根因"
           required
+          aria-describedby="closeout-root-cause-help"
+          aria-invalid={hasAttemptedSubmit && !rootCauseReady}
         />
+        <small id="closeout-root-cause-help" className="field-help">
+          写“为什么发生”，不要只写“已修好”或复述现象。
+        </small>
+        {hasAttemptedSubmit && !rootCauseReady && (
+          <small className="field-error" data-testid="closeout-root-cause-error">
+            根因是必填项，不能只输入空格。
+          </small>
+        )}
       </label>
       <label className="intake-field">
-        <span>修复/结论</span>
+        <span className="field-label-row">
+          修复/结论 <span className="field-required-badge">必填</span>
+        </span>
         <textarea
           value={resolution}
           onChange={(event) => setResolution(event.target.value)}
           rows={3}
           placeholder="说明修复动作、绕过方案或结案依据"
           required
+          aria-describedby="closeout-resolution-help"
+          aria-invalid={hasAttemptedSubmit && !resolutionReady}
         />
+        <small id="closeout-resolution-help" className="field-help">
+          写清实际动作、验证结果或为什么可以结案。
+        </small>
+        {hasAttemptedSubmit && !resolutionReady && (
+          <small className="field-error" data-testid="closeout-resolution-error">
+            修复/结论是必填项，不能只输入空格。
+          </small>
+        )}
       </label>
       <label className="intake-field">
-        <span>预防建议</span>
+        <span className="field-label-row">
+          预防建议 <span className="field-recommended-badge">建议</span>
+        </span>
         <textarea
           value={prevention}
           onChange={(event) => setPrevention(event.target.value)}
           rows={2}
-          placeholder="后续如何避免复发，可留空"
+          placeholder="后续如何避免复发，例如检查清单、测试项或设计约束"
+          aria-describedby="closeout-prevention-help"
         />
+        <small id="closeout-prevention-help" className="field-help">
+          可留空；系统会按修复/结论生成默认预防项，但人工填写通常更可执行。
+        </small>
       </label>
       <div className="intake-actions">
         <button type="submit">结案并生成归档摘要</button>

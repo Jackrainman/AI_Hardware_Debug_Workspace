@@ -1363,6 +1363,134 @@ select:focus-visible {
   resize: vertical;
 }
 
+.field-label-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.field-required-badge,
+.field-recommended-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 760;
+  line-height: 1;
+}
+
+.field-required-badge {
+  border: 1px solid var(--warning-strong);
+  background: var(--warning-soft);
+  color: var(--warning-strong);
+}
+
+.field-recommended-badge {
+  border: 1px solid var(--info-strong);
+  background: var(--info-soft);
+  color: var(--info-strong);
+}
+
+.field-help,
+.field-error {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.field-help {
+  color: var(--text-muted);
+}
+
+.field-error {
+  margin: 0;
+  color: var(--warning-strong);
+}
+
+.closeout-quality-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--surface-subtle);
+}
+
+.closeout-quality-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.closeout-quality-header span {
+  color: var(--text-strong);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.closeout-quality-header p,
+.closeout-quality-item p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.closeout-quality-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  gap: 8px;
+}
+
+.closeout-quality-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.closeout-quality-item span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-strong);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.closeout-quality-item small {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--surface-subtle);
+  color: var(--text-faint);
+  font-size: 10px;
+  font-weight: 760;
+}
+
+.closeout-quality-item[data-state="ready"] {
+  border-color: var(--accent-strong);
+  background: var(--accent-soft);
+}
+
+.closeout-quality-item[data-state="ready"] small {
+  background: var(--surface);
+  color: var(--accent-text);
+}
+
+.closeout-quality-item[data-state="missing"][data-requirement="必填"] {
+  border-color: var(--warning-strong);
+  background: var(--warning-soft);
+}
+
 .closeout-draft-panel {
   display: flex;
   flex-direction: column;

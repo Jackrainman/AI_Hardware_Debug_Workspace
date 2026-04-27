@@ -16,7 +16,7 @@
     "archive_state": "object - v0.2.0 前历史文档归档状态与读取条件",
     "notes": "string[] - 下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-04-27T17:21:20+08:00",
+  "timestamp": "2026-04-27T17:26:17+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "R1",
   "current_stage_name": "长期产品路线图执行启动",
@@ -77,6 +77,7 @@
     "repair_task_generation_completed": true,
     "quick_issue_create_completed": true,
     "record_timeline_polish_completed": true,
+    "closeout_ux_polish_completed": true,
     "night_run_rules_completed": true,
     "v0_2_history_docs_archived": true,
     "real_server_release_user_dir_deploy_verify_completed": false,
@@ -123,9 +124,9 @@
       ]
     },
     {
-      "id": "CORE-05-CLOSEOUT-UX-POLISH",
-      "track": "Core Debug Workflow",
-      "goal": "降低结案漏填、误填风险，让根因 / 解决 / 预防字段提示更清楚。",
+      "id": "SEARCH-01-BASIC-FULL-TEXT-SEARCH",
+      "track": "Search / Knowledge Base",
+      "goal": "提供基础全文搜索，让标题、现象、根因、解决方案和归档摘要可找回。",
       "status": "pending",
       "priority": "P1",
       "lane": "night-safe",
@@ -134,10 +135,10 @@
       "requires_user_confirmation": []
     },
     {
-      "id": "SEARCH-01-BASIC-FULL-TEXT-SEARCH",
+      "id": "SEARCH-02-FILTERS",
       "track": "Search / Knowledge Base",
-      "goal": "提供基础全文搜索，让标题、现象、根因、解决方案和归档摘要可找回。",
-      "status": "pending",
+      "goal": "在基础搜索后增加筛选，缩小历史问题检索结果范围。",
+      "status": "pending_after_SEARCH-01",
       "priority": "P1",
       "lane": "night-safe",
       "night_safe": true,
@@ -305,13 +306,14 @@
       "order": 14,
       "id": "CORE-05-CLOSEOUT-UX-POLISH",
       "track": "Core Debug Workflow",
-      "status": "pending",
+      "status": "completed",
       "priority": "P1",
-      "classification": "night-safe",
+      "classification": "completed",
       "depends_on": [
         "closeout main path works",
         "rule-based closeout draft panel exists"
-      ]
+      ],
+      "completed_at": "2026-04-27T17:26:17+08:00"
     },
     {
       "order": 15,
@@ -323,6 +325,17 @@
       "depends_on": [
         "SQLite data stable",
         "archive/error-entry text fields exist"
+      ]
+    },
+    {
+      "order": 16,
+      "id": "SEARCH-02-FILTERS",
+      "track": "Search / Knowledge Base",
+      "status": "pending_after_SEARCH-01",
+      "priority": "P1",
+      "classification": "night-safe",
+      "depends_on": [
+        "SEARCH-01-BASIC-FULL-TEXT-SEARCH"
       ]
     }
   ],
@@ -370,15 +383,14 @@
     ]
   },
   "night_safe_pool": [
-    "CORE-05-CLOSEOUT-UX-POLISH",
     "SEARCH-01-BASIC-FULL-TEXT-SEARCH",
+    "SEARCH-02-FILTERS",
     "CORE-02-WORKSPACE-UX-IMPROVEMENTS",
     "CORE-03-RECENT-ISSUE-REOPEN",
     "CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS",
     "CORE-07-ARCHIVE-FILTERS",
     "CORE-08-ERROR-ENTRY-TAGS",
     "CORE-09-DEMO-SEED-IMPORT",
-    "SEARCH-02-FILTERS",
     "SEARCH-03-ARCHIVE-REVIEW-PAGE",
     "SEARCH-04-TAGS",
     "SEARCH-07-SIMILAR-ISSUES-LITE",
@@ -470,7 +482,8 @@
     "DATA-05-PARTIAL-CLOSEOUT-RECOVERY",
     "DATA-08-REPAIR-TASK-GENERATION",
     "CORE-01-QUICK-ISSUE-CREATE",
-    "CORE-04-RECORD-TIMELINE-POLISH"
+    "CORE-04-RECORD-TIMELINE-POLISH",
+    "CORE-05-CLOSEOUT-UX-POLISH"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -491,8 +504,8 @@
     ],
     "recommended_next_daytime": "DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY",
     "recommended_next_daytime_status": "blocked_until_user_confirms_server_boundaries",
-    "recommended_next_night_safe": "CORE-05-CLOSEOUT-UX-POLISH",
-    "alternative_night_safe": "SEARCH-01-BASIC-FULL-TEXT-SEARCH",
+    "recommended_next_night_safe": "SEARCH-01-BASIC-FULL-TEXT-SEARCH",
+    "alternative_night_safe": "SEARCH-02-FILTERS",
     "selection_rule": "白天有用户参与时优先执行 DEP-01；无服务器授权或夜跑时不得部署，只能从 pending_task_queue / night_safe_pool 选择第一个依赖满足且未完成的任务。真实 AI/API key 和 systemd/sudo 任务不得 unattended。"
   },
   "night_run_mode": {
@@ -569,6 +582,15 @@
       "cd apps/desktop && npm run verify:handoff",
       "cd apps/desktop && npm run verify:all"
     ],
+    "last_completed_CORE_05": [
+      "git diff --check",
+      "python3 -m json.tool .agent-state/handoff.json >/dev/null",
+      "cd apps/desktop && npm run verify:core-closeout-ux-polish",
+      "cd apps/desktop && npm run typecheck",
+      "cd apps/desktop && npm run build",
+      "cd apps/desktop && npm run verify:handoff",
+      "cd apps/desktop && npm run verify:all"
+    ],
     "not_required_this_round": []
   },
   "risks": [
@@ -579,9 +601,9 @@
     "路线图较长，current.md 只允许保留最多 3 个前沿候选，完整字段必须回到 product-roadmap.md。"
   ],
   "notes": [
-    "CORE-04-RECORD-TIMELINE-POLISH 已完成：排查记录按时间线展示，并用类型芯片、序号、时间戳区分观察 / 假设 / 动作 / 结果 / 结论 / 备注；未改 record schema。",
+    "CORE-05-CLOSEOUT-UX-POLISH 已完成：结案表单新增填写检查、必填 / 建议标识、字段帮助和空格-only 本地拦截；未改 closeout schema、存储语义或真实 AI 边界。",
     "下一轮若用户白天可参与服务器操作，最适合认领 DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY。",
-    "下一轮若无服务器授权或夜跑，最适合认领 CORE-05-CLOSEOUT-UX-POLISH；SEARCH-01-BASIC-FULL-TEXT-SEARCH 是后续备选。",
+    "下一轮若无服务器授权或夜跑，最适合认领 SEARCH-01-BASIC-FULL-TEXT-SEARCH；SEARCH-02-FILTERS 是后续备选。",
     "本轮没有上传外网，没有读取任意目录，没有服务器部署，没有接真实 AI API。"
   ]
 }
