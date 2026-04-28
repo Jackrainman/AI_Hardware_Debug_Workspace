@@ -7,10 +7,11 @@
 - 当前模式：`server_storage_migration`（保留服务器部署安全边界）。
 - 阶段目标：以 v0.2.x 已完成的本地 HTTP + SQLite + release 可部署基座为起点，按 8 条产品主线推进；近期 P0 只聚焦 **部署可用、数据安全、可观测**，无服务器授权时按 night-safe pool 补齐搜索 / 核心调试流小闭环。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
-- 最近已完成：`PROJECT-STATUS-LEDGER-MINIMAL`，新增 `docs/planning/status.md` 作为人类快速阅读的极薄状态索引，并在 AGENTS / planning / task-execution / task-verification 中明确它不是最终事实源、不得替代 `current.md` / `backlog.md` / `product-roadmap.md` / `.agent-state/handoff.json`；本轮未写功能代码、未新增 console/dashboard、未改 ProbeFlash UI、未部署服务器、未接真实 AI。
+- 最近已完成：`CODEBASE-REFINE-NECESSITY-AUDIT`，新增 `docs/planning/refactor-assessment.md` 证据化审计代码库重构必要性；结论是不建议在 DEP-01 或 SEARCH-07 前插入强制重构，`App.tsx` / HTTP repository / server database / verify scripts 的拆分均后置到任务命中时再做最小边界；本轮未写业务代码、未改 UI、未部署服务器、未接真实 AI。
 
 ## 当前真实状态
-- 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、issue / record / closeout / archive / error-entry 主路径、basic full-text search、search filters、search tags、archive review page、quick issue create、record timeline polish、closeout UX polish、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、server schema contract、HTTP feedback contract、restore dry-run、SQLite integrity check、JSON export hardening、partial closeout recovery verify、repair task generation、diagnostics bundle、night-run 安全规则、v0.2 历史文档归档、lightweight project status ledger。
+- 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、issue / record / closeout / archive / error-entry 主路径、basic full-text search、search filters、search tags、archive review page、quick issue create、record timeline polish、closeout UX polish、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、server schema contract、HTTP feedback contract、restore dry-run、SQLite integrity check、JSON export hardening、partial closeout recovery verify、repair task generation、diagnostics bundle、night-run 安全规则、v0.2 历史文档归档、lightweight project status ledger、refactor necessity audit。
+- 技术债审计：`docs/planning/refactor-assessment.md` 已确认当前没有必须先做的重构 gate；大文件和重复逻辑存在但不阻塞 DEP-01 / SEARCH-07。
 - 仍 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 AI provider/API key 接入。
 - 服务器安全边界仍有效：不 sudo、不写 `/opt`、不抢 80、不升级系统 Node、不影响 filebrowser / vnt-cli / docker / Portainer；release 部署优先 `/home/hurricane/probeflash` + 独立 Node runtime + 4100。
 - AI 安全边界仍有效：AI-ready 可夜跑；真实 AI 必须等用户确认 provider、API key/server env、timeout 和 mock/test provider 边界；AI 只返回草稿，不直接写库。
