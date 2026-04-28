@@ -27,7 +27,7 @@ description: 完成定义检查 + 读回验证 + completion gate 放行判断；
 4. 对归档类任务执行读回验证（文件存在、条目存在、必填字段非空）。
 5. 按任务类型检查验证矩阵：
    - 默认核对：`npm run typecheck`、`npm run build`、`npm run verify:all`、`git diff --check`、`verify:handoff`；
-   - docs / planning / skills-only：至少核对路径、内容、引用、JSON.parse、`git diff --check`，涉及归档移动时核对移动前后引用检查与 archive 读回，若缺少默认项必须有明确理由；
+   - docs / planning / skills-only：至少核对路径、内容、引用、JSON.parse、`git diff --check`，若涉及 `docs/planning/status.md`，还要核对它未超长、未流水账化、未复制 backlog / product-roadmap 长表且未与 current/handoff 明显冲突；涉及归档移动时核对移动前后引用检查与 archive 读回，若缺少默认项必须有明确理由；
    - `storage / repository / closeout / adapter / backend scaffold`：除默认项外，必须看到任务相关代码级验证与契约级验证结果，并覆盖成功态与失败态。
 6. 夜跑 / 无人值守 gate：若任务需要 SSH、sudo、systemd、真实服务器、外部账号、API key、路径 / 权限 / 端口确认、删除 / 迁移数据或产品拍板，验证状态必须是 blocked / needs_manual_review，不允许放行。
 7. 执行 completion gate 三件事齐全性检查：
@@ -54,6 +54,7 @@ description: 完成定义检查 + 读回验证 + completion gate 放行判断；
 - `completionGate = blocked` 时，禁止 `planning` 选择下一任务。
 - 连续失败必须升级人工确认。
 - 不得把 README 当作内部事实源；不得把产品介绍当作当前战况源。
+- `docs/planning/status.md` 只是快速状态索引；验证时不得把它当最终事实源，也不得允许它膨胀为新上下文石山。
 - 架构类任务若只有分析结论、没有工程化验证结果，一律视为未完成。
 - 夜跑结束前必须核对：已完成任务、commit、验证结果、未完成任务、阻塞点、下一步最小动作、是否需要用户白天介入。
 - archive 不是当前默认事实源；归档后必须读回验证，并确认旧路径引用已修正。

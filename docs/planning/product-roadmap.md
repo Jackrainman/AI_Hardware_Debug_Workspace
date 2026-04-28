@@ -1,6 +1,6 @@
 # ProbeFlash 产品路线图（从长期愿景重建）
 
-> 本路线图用于把 ProbeFlash 从 v0.2.x 的“本地 HTTP + SQLite + release 可部署基座”推进到“最好用的战队调试问题闭环软件”。本文件是长期产品路线图事实源；当前执行窗口仍以 `docs/planning/current.md` 与 `.agent-state/handoff.json` 为准。
+> 本路线图用于把 ProbeFlash 从 v0.2.x 的“本地 HTTP + SQLite + release 可部署基座”推进到“最好用的战队调试问题闭环软件”。本文件是长期产品路线图事实源；当前执行窗口仍以 `docs/planning/current.md` 与 `.agent-state/handoff.json` 为准。`docs/planning/status.md` 只是快速状态索引，不替代本文件。
 
 ## 0. 当前定位与边界
 
@@ -28,6 +28,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 - search tags（复用 IssueCard tags，ErrorEntry 增加向后兼容 tags；覆盖创建、展示、筛选、HTTP/localStorage/server verify、workspace 隔离和旧数据无 tags）。
 - night-run 安全规则。
 - v0.2 历史文档归档。
+- lightweight project status ledger（`PROJECT-STATUS-LEDGER-MINIMAL`，`docs/planning/status.md`，仅做人类快速索引）。
 
 ### 当前 blocked
 - 真实服务器 release 用户目录部署验证。
@@ -229,6 +230,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 | TECH-02-CLOSEOUT-ATOMICITY-RECOVERY | Technical Debt / Architecture | closeout atomicity recovery | 半成功状态可见可恢复 | TECH-01；DATA-05 | closeout orchestration；server storage；verify | 不自动删数据；不伪造 archived | 写入失败注入；读回验证失败 | closeout 失败不标 archived，用户能重试 | night-safe | P0 | 是 |
 | TECH-03-WORKSPACEID-CONSISTENCY-LATER | Technical Debt / Architecture | workspaceId consistency later | 多 workspace 下数据不串 | workspace 创建/切换稳定 | schema/server validation；verify | 不迁移真实数据；不改权限模型 | cross-workspace mismatch fixture | issue/record/archive/error-entry workspaceId 一致 | night-safe | P2 | 是 |
 | TECH-04-VERIFY-HELPERS | Technical Debt / Architecture | verify helpers | 降低人工读文档成本 | 现有 verify 脚本 | scripts；fixtures；package scripts if needed | 不触碰真实服务器；不外呼 | helper pass/fail fixture；`git diff --check` | deploy/handoff/storage/closeout 有 helper 覆盖 | night-safe | P1 | 是 |
+| PROJECT-STATUS-LEDGER-MINIMAL | Technical Debt / Architecture | lightweight project status ledger | 用户不用翻全部 planning 文件也能快速知道推进到哪 | current/backlog/product-roadmap/handoff 已存在 | `docs/planning/status.md`；AGENTS；planning / execution / verification skills；planning sync | 不做 console/dashboard；不改产品 UI；不替代事实源；不追加流水账 | `git diff --check`；JSON parse；`verify:handoff`；skill frontmatter 检查 | `status.md` 存在、短、可读且 current/backlog/product-roadmap/handoff 仍是事实源 | completed | P1 | 已完成 |
 | TECH-05-VERIFY-TMP-CLEANUP | Technical Debt / Architecture | verify tmp cleanup | 测试残留不污染判断 | TECH-04 | scripts；tmp path docs | 不删除用户数据；不指向生产路径 | verify 前后 git status；tmp dir 限制 | 临时 DB/log/backup 生命周期清楚 | night-safe | P1 | 是 |
 | TECH-06-SMOKE-FIXTURE-CONSOLIDATION | Technical Debt / Architecture | smoke fixture consolidation | 避免重复造测试数据 | 多条 verify 已存在 | fixtures；verify helpers | 不引入大测试框架 | fixture reuse；verify pass | 主流程 fixture 一处维护 | night-safe | P2 | 是 |
 | TECH-07-APP-TSX-MINIMAL-SPLIT | Technical Debt / Architecture | App.tsx minimal split | 降低前端变更冲突 | 主流程 smoke 稳定 | desktop components/hooks split | 不重做视觉；不改业务语义 | typecheck/build/verify:all；UI smoke | `App.tsx` 职责减少且行为不回归 | night-safe | P2 | 是 |

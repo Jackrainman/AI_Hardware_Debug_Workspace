@@ -1,11 +1,11 @@
 # 待办池（Backlog）
 
-> Backlog 只存未开做候选、节奏队列和任务池。每个任务的完整字段见 `docs/planning/product-roadmap.md`；当前唯一执行窗口见 `docs/planning/current.md`；机读队列见 `.agent-state/handoff.json`。
+> Backlog 只存未开做候选、节奏队列和任务池。每个任务的完整字段见 `docs/planning/product-roadmap.md`；当前唯一执行窗口见 `docs/planning/current.md`；快速状态索引见 `docs/planning/status.md`，但它不是事实源；机读队列见 `.agent-state/handoff.json`。
 
 ## 当前路线
 - 当前版本基座：v0.2.x 本地 HTTP + SQLite + release 可部署基座。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
-- 当前目标：近期 1 周先让部署可用、数据安全、可观测；2-4 周做搜索、AI-ready、code context bundle；1-2 月进入真实 AI、知识库和架构拆分。`SEARCH-01-BASIC-FULL-TEXT-SEARCH`、`SEARCH-02-FILTERS`、`SEARCH-04-TAGS` 与 `SEARCH-03-ARCHIVE-REVIEW-PAGE` 已完成，不再留在可认领池。
+- 当前目标：近期 1 周先让部署可用、数据安全、可观测；2-4 周做搜索、AI-ready、code context bundle；1-2 月进入真实 AI、知识库和架构拆分。`SEARCH-01-BASIC-FULL-TEXT-SEARCH`、`SEARCH-02-FILTERS`、`SEARCH-04-TAGS`、`SEARCH-03-ARCHIVE-REVIEW-PAGE` 与 `PROJECT-STATUS-LEDGER-MINIMAL` 已完成，不再留在可认领池。
 - 当前 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 AI provider/API key。
 
 ## 认领规则
@@ -15,6 +15,7 @@
 4. 真实 AI 任务在用户确认 provider、API key/server env、timeout 与 mock/test provider 边界前均保持 blocked。
 5. Code context 先做 explicit bundle，不允许 server 任意扫描仓库路径。
 6. 需要产品方向、数据保留、taxonomy、repo connector、权限/RAG 等拍板时，任务保持 `decision-needed`。
+7. `docs/planning/status.md` 只用于快速概览，不得替代本文件、`current.md`、`product-roadmap.md` 或 `.agent-state/handoff.json` 做任务认领依据。
 
 ## 近期 1 周任务（最多 8 个）
 目标：部署可用、数据安全、可观测。
@@ -149,3 +150,4 @@
 - 不引入 RAG / embedding 作为第一步。
 - 不做权限系统、账号体系、多租户、复杂协同或公网暴露。
 - 不做 Electron / preload / fs / IPC，不把 `.debug_workspace` 文件写盘当作当前主线。
+- 不把 `docs/planning/status.md` 变成 backlog 副本、路线图副本或历史流水账。

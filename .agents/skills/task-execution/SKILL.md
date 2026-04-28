@@ -19,7 +19,7 @@ description: 执行由 planning 选定的唯一原子任务，完成文件修改
 
 ## steps
 1. 确认 `docs/planning/current.md` 中的“当前唯一主线原子任务”与 `taskId` 一致；不一致时回到 `planning`。
-2. 开始修改前，先从 `current.md` / `handoff.json` / `backlog.md` 读出该任务的：目标、直接输入边界、不做项、工程化验证、完成定义；若缺字段，先补 planning。
+2. 开始修改前，先从 `current.md` / `handoff.json` / `backlog.md` / `product-roadmap.md` 读出该任务的：目标、直接输入边界、不做项、工程化验证、完成定义；`status.md` 只能做概览，若缺字段，先补 planning。
 3. 若处于夜跑 / 无人值守模式，先做 safety gate：只允许 repo-local、可自动验证、可回滚任务；若任务需要 SSH、sudo、systemd、真实服务器、外部账号、API key、路径 / 权限 / 端口确认、删除 / 迁移数据或产品拍板，必须停止并写清 handoff。
 4. 仅围绕当前原子任务修改文件，不混入其他任务改动，不做顺手重构。
 5. 若任务属于 `storage / repository / closeout / adapter / backend scaffold` 等架构类改动，必须落地为**可执行工程接缝**（接口、service/use-case、error model、adapter、后端脚手架等），不能只停在分析结论。
@@ -30,6 +30,7 @@ description: 执行由 planning 选定的唯一原子任务，完成文件修改
 7. 更新 `docs/planning/current.md` 与 `.agent-state/handoff.json`；二者是 planning sync 必更文件。
 8. 仅在职责命中时更新其他保留文档：
    - 当前前沿窗口或候选池变化时，更新 `docs/planning/backlog.md`。
+   - 状态索引需要反映本轮变化时，更新 `docs/planning/status.md`；只覆盖当前状态，不追加流水账。
    - 长期规则、技术拍板或阶段级决策变化时，更新 `docs/planning/decisions.md`。
    - 产品定义、用户场景、领域模型或领域语言变化时，更新 `docs/product/产品介绍.md`。
    - 对外展示、快速开始、比赛/演示口径变化时，更新 `README.md`。
@@ -63,4 +64,5 @@ description: 执行由 planning 选定的唯一原子任务，完成文件修改
 - 不得静默忽略工具错误和写盘失败。
 - 不得恢复已硬删除的弱化文档；交接状态只写入 current 与机读 handoff。
 - docs-only 任务若跳过默认验证，必须在汇报或交接中明确说明原因；不得默认省略。
+- `docs/planning/status.md` 不得变成任务定义、长路线图或历史日志；任务执行依据仍是 current/backlog/product-roadmap/handoff。
 - archive 只存历史输入；移动文档必须优先 move，不删除，并修正旧路径引用。

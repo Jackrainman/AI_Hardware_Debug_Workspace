@@ -8,6 +8,7 @@
 ## 2. Workspace Rules
 - `docs/product/` 只放产品定义、用户场景、领域语言、数据模型与长期能力方向。
 - `docs/planning/` 只放当前战况、候选池与长期拍板；v0.2.0 前已经完成或过期的历史专项输入放入 `docs/archive/v0.2-closeout/`。
+- `docs/planning/status.md` 是人类快速阅读的项目状态索引，不是最终事实源，不承载详细任务定义，不替代 `current.md` / `backlog.md` / `product-roadmap.md` / `.agent-state/handoff.json`。
 - `docs/archive/v0.2-closeout/` 只放 v0.2.0 closeout 前历史文档；AI 不应默认读取，除非任务明确命中历史背景、专项实现追溯或归档审计。
 - `.agent-state/` 只放上下文重置所需的机读状态；当前唯一机读状态文件是 `.agent-state/handoff.json`。
 - `.debug_workspace/` 只放调试运行数据与归档。
@@ -37,6 +38,7 @@
 ## 6. Rolling Planning And Next Task Selection
 - 每轮只允许一个原子任务处于执行中。
 - 默认必读输入只保留：`AGENTS.md`、`docs/planning/current.md`、`.agent-state/handoff.json`、`git status --short`、`git log --oneline -5`、当前任务直接相关代码或专项文档。
+- 可以先读 `docs/planning/status.md` 获取人类概览；但任务执行前必须读取 `current.md` / `backlog.md` / `product-roadmap.md` / `.agent-state/handoff.json` 等事实源，禁止只凭 `status.md` 认领或执行任务。
 - 条件读取规则：
   - `docs/planning/backlog.md`：当前前沿窗口耗尽、任务切换、候选新增/移除/改名/重排优先级时读取。
   - `docs/planning/decisions.md`：阶段切换、长期规则变化、技术争议或需要核对长期拍板时读取。
@@ -93,6 +95,7 @@
 - **内部长期保留**：
   - `AGENTS.md`：长期规则、工作流、DoD、夜跑边界、禁改区、文档职责。
   - `docs/planning/current.md`：唯一当前战况。阶段目标、前沿任务窗口（1~3 候选）、唯一执行中的原子任务、下一任务选择流程、DoD；不保留长篇历史实现细节，不重复 `git log`，不复制 `.agent-state/handoff.json.notes`。
+  - `docs/planning/status.md`：快速状态索引。只摘要当前阶段、能力状态、关键 blocked、前 5 个 night-safe 候选和最近完成 10 条以内；不得成为新的长文档或历史日志。
   - `.agent-state/handoff.json`：唯一机读状态。只保存下一轮选择所必需的结构化字段，不承载长篇 prose。
   - `docs/planning/backlog.md`：唯一候选池。只留未开做候选；不再维护“已完成”长列表。
   - `docs/planning/decisions.md`：关键拍板与长期约束。仅在出现新的长期性决定时追加，不是轮次日志。
@@ -109,6 +112,7 @@
   - `docs/planning/current.md`：必更。只覆盖当前阶段、前沿窗口、当前唯一执行中的原子任务、下一任务选择流程、DoD 当前态；“当前唯一执行中的原子任务”只保留当前态，不保留多轮旧任务正文。
   - `.agent-state/handoff.json`：必更。只写机读状态与下一轮必须保留的结构化字段；`notes` 只保留长期约束或关键边界，不复写任务完成明细。
   - `docs/planning/backlog.md`：条件更新。仅当前前沿任务窗口变化、候选任务被移除 / 新增 / 改名 / 重排优先级、或当前任务完成后需要显式切换下一前沿任务时修改。
+  - `docs/planning/status.md`：可更新。仅覆盖当前状态索引，不追加流水账，不复制 backlog 长任务表或 product-roadmap 长路线图。
 - **按需**更新：
   - `AGENTS.md`：长期规则、工作流、文档职责、夜跑边界发生变化时。
   - `docs/planning/decisions.md`：产生了新的长期性决定（D-xxx 级别）时。
