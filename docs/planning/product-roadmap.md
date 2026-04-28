@@ -29,6 +29,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 - similar issues lite（基于标题、现象、标签、根因与处理方式重合的可解释规则排序；覆盖 pure ranking、localStorage fallback、HTTP repository 和 workspace 隔离）。
 - search result linking（复用 `IssueCard.relatedHistoricalIssueIds`，支持从搜索 / 相似结果人工关联到当前问题、展示与取消关联；覆盖 localStorage fallback 与 HTTP 读写读回）。
 - recurrence prompt（基于高相似度结果给出可忽略复发提示，展示历史标题、标签、根因和处理摘要；不接 AI、不自动写库）。
+- UI redesign stage brief（`docs/planning/ui-redesign-brief.md`，建议进入受控 UI 小阶段，下一 UI 任务先做信息架构审查，不实际改 UI）。
 - night-run 安全规则。
 - v0.2 历史文档归档。
 - lightweight project status ledger（`PROJECT-STATUS-LEDGER-MINIMAL`，`docs/planning/status.md`，仅做人类快速索引）。
@@ -304,7 +305,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 ## 10. 夜跑任务池
 
 ### Night-safe pool
-- UI-REDESIGN-STAGE-BRIEF
+- UI-01-INFORMATION-ARCHITECTURE-REVIEW
 - CORE-02-WORKSPACE-UX-IMPROVEMENTS
 - CORE-03-RECENT-ISSUE-REOPEN
 - CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS
@@ -372,4 +373,4 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 
 如果用户白天可参与服务器操作，下一轮最适合认领 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`。
 
-如果用户暂时不能参与服务器操作，下一轮最适合认领 `UI-REDESIGN-STAGE-BRIEF`，这是 repo-local、P2、night-safe，只写下一阶段 UI 改造 brief，不实际改 UI、不引入组件库。
+如果用户暂时不能参与服务器操作，下一轮最适合认领 `UI-01-INFORMATION-ARCHITECTURE-REVIEW`，这是 repo-local、P2、night-safe，只做页面信息架构审查，不实际改 UI、不引入组件库；UI 小阶段完整拆分见 `docs/planning/ui-redesign-brief.md`。

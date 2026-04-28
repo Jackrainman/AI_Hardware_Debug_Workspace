@@ -1,11 +1,11 @@
 # 待办池（Backlog）
 
-> Backlog 只存未开做候选、节奏队列和任务池。每个任务的完整字段见 `docs/planning/product-roadmap.md`；当前唯一执行窗口见 `docs/planning/current.md`；快速状态索引见 `docs/planning/status.md`，但它不是事实源；机读队列见 `.agent-state/handoff.json`。
+> Backlog 只存未开做候选、节奏队列和任务池。路线图任务的完整字段见 `docs/planning/product-roadmap.md`；UI 小阶段任务字段见 `docs/planning/ui-redesign-brief.md`；当前唯一执行窗口见 `docs/planning/current.md`；快速状态索引见 `docs/planning/status.md`，但它不是事实源；机读队列见 `.agent-state/handoff.json`。
 
 ## 当前路线
 - 当前版本基座：v0.2.x 本地 HTTP + SQLite + release 可部署基座。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
-- 当前目标：近期 1 周先让部署可用、数据安全、可观测；2-4 周做搜索、AI-ready、code context bundle；1-2 月进入真实 AI、知识库和架构拆分。`SEARCH-01-BASIC-FULL-TEXT-SEARCH`、`SEARCH-02-FILTERS`、`SEARCH-04-TAGS`、`SEARCH-03-ARCHIVE-REVIEW-PAGE`、`SEARCH-07-SIMILAR-ISSUES-LITE`、`SEARCH-08-SEARCH-RESULT-LINKING`、`SEARCH-09-RECURRENCE-PROMPT`、`TECH-DEBT-SEARCH-KB-CLEANUP-LITE` 与 `PROJECT-STATUS-LEDGER-MINIMAL` 已完成，不再留在可认领池。
+- 当前目标：近期 1 周先让部署可用、数据安全、可观测；2-4 周做搜索、AI-ready、code context bundle；1-2 月进入真实 AI、知识库和架构拆分。`SEARCH-01-BASIC-FULL-TEXT-SEARCH`、`SEARCH-02-FILTERS`、`SEARCH-04-TAGS`、`SEARCH-03-ARCHIVE-REVIEW-PAGE`、`SEARCH-07-SIMILAR-ISSUES-LITE`、`SEARCH-08-SEARCH-RESULT-LINKING`、`SEARCH-09-RECURRENCE-PROMPT`、`TECH-DEBT-SEARCH-KB-CLEANUP-LITE`、`UI-REDESIGN-STAGE-BRIEF` 与 `PROJECT-STATUS-LEDGER-MINIMAL` 已完成，不再留在可认领池；UI 小阶段任务拆分见 `docs/planning/ui-redesign-brief.md`。
 - 当前 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 AI provider/API key。
 
 ## 认领规则
@@ -76,7 +76,7 @@
 - 更完整的局域网部署体验：反向代理、`.local`、HTTPS、美化域名。
 
 ## Night-safe pool
-- UI-REDESIGN-STAGE-BRIEF
+- UI-01-INFORMATION-ARCHITECTURE-REVIEW
 - CORE-02-WORKSPACE-UX-IMPROVEMENTS
 - CORE-03-RECENT-ISSUE-REOPEN
 - CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS
