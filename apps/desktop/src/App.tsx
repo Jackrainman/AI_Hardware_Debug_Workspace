@@ -56,6 +56,10 @@ import {
   addRelatedHistoricalIssue,
   removeRelatedHistoricalIssue,
 } from "./search/related-historical-issues";
+import {
+  buildRecurrencePrompt,
+  type RecurrencePrompt,
+} from "./search/recurrence-prompt";
 import { orchestrateIssueCloseout } from "./use-cases/closeout-orchestrator";
 import {
   CHECKING_STORAGE_CONNECTION_STATE,
@@ -978,6 +982,77 @@ function RelatedHistoricalIssuesPanel({
   );
 }
 
+function RecurrencePromptPanel({
+  prompt,
+  relatedHistoricalIssueIds,
+  onOpenIssue,
+  onLinkHistoricalIssue,
+  onDismiss,
+}: {
+  prompt: RecurrencePrompt | null;
+  relatedHistoricalIssueIds: string[];
+  onOpenIssue: (id: string) => void;
+  onLinkHistoricalIssue: (id: string) => void;
+  onDismiss: () => void;
+}) {
+  if (prompt === null) {
+    return null;
+  }
+  const isLinked = relatedHistoricalIssueIds.includes(prompt.issueId);
+  return (
+    <section className="recurrence-prompt-panel" data-testid="recurrence-prompt-panel">
+      <header className="recurrence-prompt-header">
+        <span className="recurrence-prompt-badge">可能复发</span>
+        <div>
+          <h3>可参考历史处理方式</h3>
+          <p>这是规则提示，不是事实判断；请人工确认后再复用处理方案。</p>
+        </div>
+      </header>
+      <div className="recurrence-prompt-body">
+        <button
+          type="button"
+          className="recurrence-prompt-title"
+          onClick={() => onOpenIssue(prompt.issueId)}
+          data-testid="recurrence-prompt-open"
+        >
+          {prompt.title}
+        </button>
+        <p className="recurrence-prompt-meta">
+          来源问题：{prompt.issueId} · 相似度 {prompt.score}
+          {prompt.errorCode ? ` · ${prompt.errorCode}` : ""}
+          {prompt.tags.length > 0 ? ` · 标签：${formatTags(prompt.tags)}` : ""}
+        </p>
+        <p className="recurrence-prompt-reasons">依据：{prompt.reasons.join("；")}</p>
+        {prompt.rootCauseSummary && (
+          <p className="recurrence-prompt-summary">历史根因：{prompt.rootCauseSummary}</p>
+        )}
+        {prompt.resolutionSummary && (
+          <p className="recurrence-prompt-summary">历史处理：{prompt.resolutionSummary}</p>
+        )}
+      </div>
+      <div className="recurrence-prompt-actions">
+        <button
+          type="button"
+          className="link-history-button"
+          onClick={() => onLinkHistoricalIssue(prompt.issueId)}
+          disabled={isLinked}
+          data-testid="recurrence-prompt-link"
+        >
+          {isLinked ? "已关联到当前问题" : "关联这条历史问题"}
+        </button>
+        <button
+          type="button"
+          className="recurrence-prompt-dismiss"
+          onClick={onDismiss}
+          data-testid="recurrence-prompt-dismiss"
+        >
+          忽略本次提示
+        </button>
+      </div>
+    </section>
+  );
+}
+
 const INVESTIGATION_TYPES: InvestigationType[] = [
   "observation",
   "hypothesis",
@@ -1668,6 +1743,10 @@ function IssuePane({
   const [lastCloseout, setLastCloseout] = useState<CloseoutSummary | null>(null);
   const [similarIssues, setSimilarIssues] = useState<SimilarIssuesResult | null>(null);
   const [isLoadingSimilarIssues, setIsLoadingSimilarIssues] = useState<boolean>(false);
+  const [dismissedRecurrencePrompt, setDismissedRecurrencePrompt] = useState<{
+    currentIssueId: string;
+    historicalIssueId: string;
+  } | null>(null);
 
   const refreshCardList = async () => {
     const result = await repository.issueCards.list();
@@ -1778,6 +1857,7 @@ function IssuePane({
     setRecordList(null);
     setLastCloseout(null);
     setSimilarIssues(null);
+    setDismissedRecurrencePrompt(null);
   };
 
   const handleCardCreated = (id: string) => {
@@ -1788,6 +1868,7 @@ function IssuePane({
     void loadRecordList(id);
     setLastCloseout(null);
     setSimilarIssues(null);
+    setDismissedRecurrencePrompt(null);
   };
 
   const handleRecordAppended = () => {
@@ -1842,6 +1923,11 @@ function IssuePane({
 
   const recordCount = recordList?.valid.length ?? 0;
   const relatedHistoricalIssueIds = selectedCard?.relatedHistoricalIssueIds ?? [];
+  const ignoredRecurrenceIssueIds =
+    dismissedRecurrencePrompt !== null && dismissedRecurrencePrompt.currentIssueId === selectedIssueId
+      ? [dismissedRecurrencePrompt.historicalIssueId]
+      : [];
+  const recurrencePrompt = buildRecurrencePrompt(similarIssues, ignoredRecurrenceIssueIds);
 
   return (
     <div className="issue-pane-stack">
@@ -1890,6 +1976,22 @@ function IssuePane({
             recordCount={recordCount}
             lastCloseout={lastCloseout}
           />
+          {selectedIssueId !== null && !isLoadingSimilarIssues && (
+            <RecurrencePromptPanel
+              prompt={recurrencePrompt}
+              relatedHistoricalIssueIds={relatedHistoricalIssueIds}
+              onOpenIssue={handleSelect}
+              onLinkHistoricalIssue={handleLinkHistoricalIssue}
+              onDismiss={() => {
+                if (selectedIssueId !== null && recurrencePrompt !== null) {
+                  setDismissedRecurrencePrompt({
+                    currentIssueId: selectedIssueId,
+                    historicalIssueId: recurrencePrompt.issueId,
+                  });
+                }
+              }}
+            />
+          )}
           <RelatedHistoricalIssuesPanel
             issue={selectedCard}
             onOpenIssue={handleSelect}

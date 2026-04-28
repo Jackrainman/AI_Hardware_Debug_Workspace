@@ -7,10 +7,10 @@
 - 当前模式：`server_storage_migration`（保留服务器部署安全边界）。
 - 阶段目标：以 v0.2.x 已完成的本地 HTTP + SQLite + release 可部署基座为起点，按 8 条产品主线推进；近期 P0 只聚焦 **部署可用、数据安全、可观测**，无服务器授权时按 night-safe pool 补齐搜索 / 核心调试流小闭环。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
-- 最近已完成：`SEARCH-08-SEARCH-RESULT-LINKING`，复用 `IssueCard.relatedHistoricalIssueIds` 增加搜索 / 相似结果到当前问题的人工关联、已关联历史问题展示、取消关联和 `verify:search-result-linking`；不自动改根因、不自动结案、不改 API contract。
+- 最近已完成：`SEARCH-09-RECURRENCE-PROMPT`，基于 SEARCH-07 高相似度结果新增可忽略的“可能复发 / 可参考历史处理方式”提示和 `verify:search-recurrence-prompt`；提示只作为规则解释，不替代人工判断、不自动写库。
 
 ## 当前真实状态
-- 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、issue / record / closeout / archive / error-entry 主路径、basic full-text search、search filters、search tags、archive review page、similar issues lite、search result linking、quick issue create、record timeline polish、closeout UX polish、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、server schema contract、HTTP feedback contract、restore dry-run、SQLite integrity check、JSON export hardening、partial closeout recovery verify、repair task generation、diagnostics bundle、night-run 安全规则、v0.2 历史文档归档、lightweight project status ledger、refactor necessity audit。
+- 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、issue / record / closeout / archive / error-entry 主路径、basic full-text search、search filters、search tags、archive review page、similar issues lite、search result linking、recurrence prompt、quick issue create、record timeline polish、closeout UX polish、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、server schema contract、HTTP feedback contract、restore dry-run、SQLite integrity check、JSON export hardening、partial closeout recovery verify、repair task generation、diagnostics bundle、night-run 安全规则、v0.2 历史文档归档、lightweight project status ledger、refactor necessity audit。
 - 技术债审计：`docs/planning/refactor-assessment.md` 已确认当前没有必须先做的重构 gate；大文件和重复逻辑存在但不阻塞 DEP-01 / SEARCH-07。
 - 仍 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 AI provider/API key 接入。
 - 服务器安全边界仍有效：不 sudo、不写 `/opt`、不抢 80、不升级系统 Node、不影响 filebrowser / vnt-cli / docker / Portainer；release 部署优先 `/home/hurricane/probeflash` + 独立 Node runtime + 4100。
@@ -41,16 +41,16 @@
 - **DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY**
   - 状态：`blocked`；P0；白天主线；不能夜跑。
   - 选择理由：真实服务器部署仍是产品可用性的最大缺口。
-- **SEARCH-09-RECURRENCE-PROMPT**
-  - 状态：`night-safe`；P2；依赖 SEARCH-08 已满足。
-  - 选择理由：相似问题和人工关联入口已完成，下一步可基于 SEARCH-07 高相似度结果给出可忽略的复发提示；不做 AI 判断、不自动写 ErrorEntry。
 - **TECH-DEBT-SEARCH-KB-CLEANUP-LITE**
-  - 状态：`pending_after_SEARCH-09`；P2；搜索 / 标签 / 相似度 / fixture 小阶段维护窗口。
+  - 状态：`night-safe`；P2；搜索 / 标签 / 相似度 / fixture 小阶段维护窗口。
   - 选择理由：SEARCH-07/08/09 完成后，只清理本小阶段直接产生或碰到的重复 helper / fixture；不拆 App.tsx、HTTP repository、server routes 或 database。
+- **UI-REDESIGN-STAGE-BRIEF**
+  - 状态：`pending_after_TECH-DEBT-SEARCH-KB-CLEANUP-LITE`；P2；下一阶段 UI 改造规划文档。
+  - 选择理由：Search / Knowledge Base 小阶段收尾后，只写 UI 改造 brief，不实际改 UI、不引入组件库。
 
 ## 下一步最小可执行动作
 - 白天有用户参与：认领 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`，执行前再次复述 SSH / release assets / 写入路径 / 临时进程 / 4100 授权边界。
-- 无服务器授权或夜跑：不要部署；下一轮重新读取事实源后，优先从 pending queue / night-safe pool 认领 `SEARCH-09-RECURRENCE-PROMPT`。
+- 无服务器授权或夜跑：不要部署；下一轮重新读取事实源后，优先从 pending queue / night-safe pool 认领 `TECH-DEBT-SEARCH-KB-CLEANUP-LITE`。
 - 真实 AI：仍 blocked，不得无人值守接 provider 或 API key。
 
 ## 下一任务选择流程

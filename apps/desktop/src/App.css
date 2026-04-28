@@ -1453,6 +1453,115 @@ select:focus-visible {
   color: var(--accent-text);
 }
 
+.recurrence-prompt-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--warning-strong);
+  border-radius: 10px;
+  background: var(--warning-soft);
+  box-shadow: var(--shadow-soft);
+}
+
+.recurrence-prompt-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.recurrence-prompt-header h3,
+.recurrence-prompt-header p,
+.recurrence-prompt-meta,
+.recurrence-prompt-reasons,
+.recurrence-prompt-summary {
+  margin: 0;
+}
+
+.recurrence-prompt-header h3 {
+  color: var(--text-strong);
+  font-size: 14px;
+  font-weight: 780;
+}
+
+.recurrence-prompt-header p,
+.recurrence-prompt-meta,
+.recurrence-prompt-summary {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.recurrence-prompt-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 9px;
+  border: 1px solid var(--warning-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--warning-strong);
+  font-size: 11px;
+  font-weight: 780;
+  white-space: nowrap;
+}
+
+.recurrence-prompt-body {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 12px;
+  border: 1px solid rgba(146, 64, 14, 0.22);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.recurrence-prompt-title {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-strong);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 760;
+  text-align: left;
+}
+
+.recurrence-prompt-title:hover {
+  color: var(--warning-strong);
+}
+
+.recurrence-prompt-reasons {
+  color: var(--text-strong);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.recurrence-prompt-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.recurrence-prompt-dismiss {
+  min-height: 28px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 720;
+}
+
+.recurrence-prompt-dismiss:hover {
+  background: var(--surface-subtle);
+}
+
 .create-issue-entry {
   border-color: var(--accent-strong);
   background: linear-gradient(180deg, var(--surface) 0%, var(--surface-subtle) 100%);
