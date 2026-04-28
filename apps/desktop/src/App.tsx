@@ -52,6 +52,10 @@ import {
   findSimilarIssuesForIssue,
   type SimilarIssuesResult,
 } from "./search/similar-issues";
+import {
+  addRelatedHistoricalIssue,
+  removeRelatedHistoricalIssue,
+} from "./search/related-historical-issues";
 import { orchestrateIssueCloseout } from "./use-cases/closeout-orchestrator";
 import {
   CHECKING_STORAGE_CONNECTION_STATE,
@@ -637,12 +641,18 @@ function IssueCardListView({
 
 function SearchPanel({
   repository,
+  currentIssueId,
+  relatedHistoricalIssueIds,
   onOpenIssue,
+  onLinkHistoricalIssue,
   reportStorageError,
   clearStorageFeedback,
 }: {
   repository: StorageRepository;
+  currentIssueId: string | null;
+  relatedHistoricalIssueIds: string[];
   onOpenIssue: (id: string) => void;
+  onLinkHistoricalIssue: (id: string) => void;
   reportStorageError: (error: StorageFeedbackError) => void;
   clearStorageFeedback: () => void;
 }) {
@@ -788,28 +798,45 @@ function SearchPanel({
           )}
           {result.items.length > 0 && (
             <ul className="search-result-list" data-testid="knowledge-search-results">
-              {result.items.map((item) => (
-                <li key={`${item.kind}:${item.id}`} className="search-result-item">
-                  <button
-                    type="button"
-                    className="search-result-button"
-                    onClick={() => onOpenIssue(item.issueId)}
-                    data-testid="knowledge-search-result-item"
-                  >
-                    <span className="search-result-title-row">
-                      <span className="search-result-kind">{labelSearchResultKind(item.kind)}</span>
-                      <span className="search-result-title">{item.title}</span>
-                    </span>
-                    <span className="search-result-snippet">{item.snippet || "(空内容命中)"}</span>
-                    <span className="search-result-meta">
-                      来源问题：{item.issueId} · 字段：{labelSearchMatchedFields(item)}
-                      {item.status ? ` · 状态：${labelIssueStatus(item.status)}` : ""}
-                      {item.errorCode ? ` · ${item.errorCode}` : ""}
-                      {item.tags && item.tags.length > 0 ? ` · 标签：${formatTags(item.tags)}` : ""}
-                    </span>
-                  </button>
-                </li>
-              ))}
+              {result.items.map((item) => {
+                const isCurrentIssue = currentIssueId === item.issueId;
+                const isLinked = relatedHistoricalIssueIds.includes(item.issueId);
+                return (
+                  <li key={`${item.kind}:${item.id}`} className="search-result-item">
+                    <button
+                      type="button"
+                      className="search-result-button"
+                      onClick={() => onOpenIssue(item.issueId)}
+                      data-testid="knowledge-search-result-item"
+                    >
+                      <span className="search-result-title-row">
+                        <span className="search-result-kind">{labelSearchResultKind(item.kind)}</span>
+                        <span className="search-result-title">{item.title}</span>
+                      </span>
+                      <span className="search-result-snippet">{item.snippet || "(空内容命中)"}</span>
+                      <span className="search-result-meta">
+                        来源问题：{item.issueId} · 字段：{labelSearchMatchedFields(item)}
+                        {item.status ? ` · 状态：${labelIssueStatus(item.status)}` : ""}
+                        {item.errorCode ? ` · ${item.errorCode}` : ""}
+                        {item.tags && item.tags.length > 0 ? ` · 标签：${formatTags(item.tags)}` : ""}
+                      </span>
+                    </button>
+                    {currentIssueId !== null && !isCurrentIssue && (
+                      <div className="search-result-actions">
+                        <button
+                          type="button"
+                          className="link-history-button"
+                          onClick={() => onLinkHistoricalIssue(item.issueId)}
+                          disabled={isLinked}
+                          data-testid="knowledge-search-link-result"
+                        >
+                          {isLinked ? "已关联到当前问题" : "关联到当前问题"}
+                        </button>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
@@ -821,11 +848,17 @@ function SearchPanel({
 function SimilarIssuesPanel({
   result,
   isLoading,
+  currentIssueId,
+  relatedHistoricalIssueIds,
   onOpenIssue,
+  onLinkHistoricalIssue,
 }: {
   result: SimilarIssuesResult | null;
   isLoading: boolean;
+  currentIssueId: string | null;
+  relatedHistoricalIssueIds: string[];
   onOpenIssue: (id: string) => void;
+  onLinkHistoricalIssue: (id: string) => void;
 }) {
   if (result === null && !isLoading) {
     return null;
@@ -847,35 +880,100 @@ function SimilarIssuesPanel({
       )}
       {!isLoading && result !== null && result.items.length > 0 && (
         <ul className="similar-issues-list" data-testid="similar-issues-results">
-          {result.items.map((item) => (
-            <li key={item.issueId} className="similar-issues-item">
-              <button
-                type="button"
-                className="similar-issues-button"
-                onClick={() => onOpenIssue(item.issueId)}
-                data-testid="similar-issues-result-item"
-              >
-                <span className="similar-issues-title-row">
-                  <span className="similar-issues-score">{item.score}</span>
-                  <span className="similar-issues-title">{item.title}</span>
-                </span>
-                <span className="similar-issues-meta">
-                  {item.issueId} · {labelIssueStatus(item.status)}
-                  {item.errorCode ? ` · ${item.errorCode}` : ""}
-                  {item.archiveFileName ? ` · ${item.archiveFileName}` : ""}
-                </span>
-                <span className="similar-issues-reasons">{item.reasons.join("；")}</span>
-                {item.rootCauseSummary && (
-                  <span className="similar-issues-summary">根因：{item.rootCauseSummary}</span>
+          {result.items.map((item) => {
+            const isCurrentIssue = currentIssueId === item.issueId;
+            const isLinked = relatedHistoricalIssueIds.includes(item.issueId);
+            return (
+              <li key={item.issueId} className="similar-issues-item">
+                <button
+                  type="button"
+                  className="similar-issues-button"
+                  onClick={() => onOpenIssue(item.issueId)}
+                  data-testid="similar-issues-result-item"
+                >
+                  <span className="similar-issues-title-row">
+                    <span className="similar-issues-score">{item.score}</span>
+                    <span className="similar-issues-title">{item.title}</span>
+                  </span>
+                  <span className="similar-issues-meta">
+                    {item.issueId} · {labelIssueStatus(item.status)}
+                    {item.errorCode ? ` · ${item.errorCode}` : ""}
+                    {item.archiveFileName ? ` · ${item.archiveFileName}` : ""}
+                  </span>
+                  <span className="similar-issues-reasons">{item.reasons.join("；")}</span>
+                  {item.rootCauseSummary && (
+                    <span className="similar-issues-summary">根因：{item.rootCauseSummary}</span>
+                  )}
+                  {item.resolutionSummary && (
+                    <span className="similar-issues-summary">处理：{item.resolutionSummary}</span>
+                  )}
+                </button>
+                {currentIssueId !== null && !isCurrentIssue && (
+                  <div className="search-result-actions">
+                    <button
+                      type="button"
+                      className="link-history-button"
+                      onClick={() => onLinkHistoricalIssue(item.issueId)}
+                      disabled={isLinked}
+                      data-testid="similar-issues-link-result"
+                    >
+                      {isLinked ? "已关联到当前问题" : "关联到当前问题"}
+                    </button>
+                  </div>
                 )}
-                {item.resolutionSummary && (
-                  <span className="similar-issues-summary">处理：{item.resolutionSummary}</span>
-                )}
-              </button>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
+    </section>
+  );
+}
+
+function RelatedHistoricalIssuesPanel({
+  issue,
+  onOpenIssue,
+  onUnlinkHistoricalIssue,
+}: {
+  issue: IssueCard | null;
+  onOpenIssue: (id: string) => void;
+  onUnlinkHistoricalIssue: (id: string) => void;
+}) {
+  const relatedIssueIds = issue?.relatedHistoricalIssueIds ?? [];
+  if (issue === null || relatedIssueIds.length === 0) {
+    return null;
+  }
+  return (
+    <section className="related-history-panel" data-testid="related-history-panel">
+      <header className="related-history-header">
+        <span className="similar-issues-badge">人工关联</span>
+        <div>
+          <h3>已关联历史问题</h3>
+          <p>这些引用只帮助人工复盘，不会自动改根因、解决方案或结案状态。</p>
+        </div>
+      </header>
+      <ul className="related-history-list" data-testid="related-history-list">
+        {relatedIssueIds.map((issueId) => (
+          <li key={issueId} className="related-history-item">
+            <button
+              type="button"
+              className="related-history-open"
+              onClick={() => onOpenIssue(issueId)}
+              data-testid="related-history-open"
+            >
+              {issueId}
+            </button>
+            <button
+              type="button"
+              className="link-history-button link-history-button-danger"
+              onClick={() => onUnlinkHistoricalIssue(issueId)}
+              data-testid="related-history-unlink"
+            >
+              取消关联
+            </button>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -1704,7 +1802,46 @@ function IssuePane({
     void reloadSelectedCard(summary.issueId);
   };
 
+  const saveSelectedCardUpdate = async (updatedCard: IssueCard) => {
+    const saved = await repository.issueCards.save(updatedCard);
+    if (!saved.ok) {
+      reportStorageError(
+        storageWriteErrorToFeedback("issue_detail", "create_issue", saved.error),
+      );
+      return false;
+    }
+    setSelectedCard(updatedCard);
+    void refreshCardList();
+    clearStorageFeedback();
+    return true;
+  };
+
+  const handleLinkHistoricalIssue = (issueId: string) => {
+    if (selectedCard === null) return;
+    const updatedCard = addRelatedHistoricalIssue(selectedCard, issueId, new Date().toISOString());
+    if (
+      updatedCard.updatedAt === selectedCard.updatedAt &&
+      updatedCard.relatedHistoricalIssueIds.join("\0") === selectedCard.relatedHistoricalIssueIds.join("\0")
+    ) {
+      return;
+    }
+    void saveSelectedCardUpdate(updatedCard);
+  };
+
+  const handleUnlinkHistoricalIssue = (issueId: string) => {
+    if (selectedCard === null) return;
+    const updatedCard = removeRelatedHistoricalIssue(selectedCard, issueId, new Date().toISOString());
+    if (
+      updatedCard.updatedAt === selectedCard.updatedAt &&
+      updatedCard.relatedHistoricalIssueIds.join("\0") === selectedCard.relatedHistoricalIssueIds.join("\0")
+    ) {
+      return;
+    }
+    void saveSelectedCardUpdate(updatedCard);
+  };
+
   const recordCount = recordList?.valid.length ?? 0;
+  const relatedHistoricalIssueIds = selectedCard?.relatedHistoricalIssueIds ?? [];
 
   return (
     <div className="issue-pane-stack">
@@ -1717,7 +1854,10 @@ function IssuePane({
       />
       <SearchPanel
         repository={repository}
+        currentIssueId={selectedIssueId}
+        relatedHistoricalIssueIds={relatedHistoricalIssueIds}
         onOpenIssue={handleSelect}
+        onLinkHistoricalIssue={handleLinkHistoricalIssue}
         reportStorageError={reportStorageError}
         clearStorageFeedback={clearStorageFeedback}
       />
@@ -1750,11 +1890,19 @@ function IssuePane({
             recordCount={recordCount}
             lastCloseout={lastCloseout}
           />
+          <RelatedHistoricalIssuesPanel
+            issue={selectedCard}
+            onOpenIssue={handleSelect}
+            onUnlinkHistoricalIssue={handleUnlinkHistoricalIssue}
+          />
           {selectedIssueId !== null && (
             <SimilarIssuesPanel
               result={similarIssues}
               isLoading={isLoadingSimilarIssues}
+              currentIssueId={selectedIssueId}
+              relatedHistoricalIssueIds={relatedHistoricalIssueIds}
               onOpenIssue={handleSelect}
+              onLinkHistoricalIssue={handleLinkHistoricalIssue}
             />
           )}
           {selectedIssueId === null && (

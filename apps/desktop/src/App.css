@@ -1228,6 +1228,40 @@ select:focus-visible {
   word-break: break-word;
 }
 
+.search-result-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 2px 2px;
+}
+
+.link-history-button {
+  min-height: 28px;
+  padding: 5px 10px;
+  border: 1px solid var(--accent-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--accent-text);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 720;
+}
+
+.link-history-button:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+.link-history-button:disabled {
+  border-color: var(--border);
+  background: var(--surface-subtle);
+  color: var(--text-faint);
+  cursor: not-allowed;
+}
+
+.link-history-button-danger {
+  border-color: var(--warning-strong);
+  color: var(--warning-strong);
+}
+
 .similar-issues-panel {
   display: flex;
   flex-direction: column;
@@ -1347,6 +1381,76 @@ select:focus-visible {
 
 .similar-issues-reasons {
   color: var(--text-strong);
+}
+
+.related-history-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-soft);
+}
+
+.related-history-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.related-history-header h3,
+.related-history-header p {
+  margin: 0;
+}
+
+.related-history-header h3 {
+  color: var(--text-strong);
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.related-history-header p {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.related-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.related-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--surface-subtle);
+}
+
+.related-history-open {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-strong);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 720;
+  text-align: left;
+  word-break: break-all;
+}
+
+.related-history-open:hover {
+  color: var(--accent-text);
 }
 
 .create-issue-entry {
