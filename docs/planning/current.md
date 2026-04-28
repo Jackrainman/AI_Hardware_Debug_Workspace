@@ -7,10 +7,10 @@
 - 当前模式：`server_storage_migration`（保留服务器部署安全边界）。
 - 阶段目标：以 v0.2.x 已完成的本地 HTTP + SQLite + release 可部署基座为起点，按 8 条产品主线推进；近期 P0 只聚焦 **部署可用、数据安全、可观测**，无服务器授权时按 night-safe pool 补齐搜索 / 核心调试流小闭环。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
-- 最近已完成：`CODEBASE-REFINE-NECESSITY-AUDIT`，新增 `docs/planning/refactor-assessment.md` 证据化审计代码库重构必要性；结论是不建议在 DEP-01 或 SEARCH-07 前插入强制重构，`App.tsx` / HTTP repository / server database / verify scripts 的拆分均后置到任务命中时再做最小边界；本轮未写业务代码、未改 UI、未部署服务器、未接真实 AI。
+- 最近已完成：`SEARCH-07-SIMILAR-ISSUES-LITE`，新增桌面侧轻量相似问题排序 helper、当前问题相似历史提示面板和 `verify:search-similar-issues`；规则只基于标题、现象、标签、根因与处理方式重合，不做 embedding、RAG 或真实 AI。
 
 ## 当前真实状态
-- 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、issue / record / closeout / archive / error-entry 主路径、basic full-text search、search filters、search tags、archive review page、quick issue create、record timeline polish、closeout UX polish、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、server schema contract、HTTP feedback contract、restore dry-run、SQLite integrity check、JSON export hardening、partial closeout recovery verify、repair task generation、diagnostics bundle、night-run 安全规则、v0.2 历史文档归档、lightweight project status ledger、refactor necessity audit。
+- 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、issue / record / closeout / archive / error-entry 主路径、basic full-text search、search filters、search tags、archive review page、similar issues lite、quick issue create、record timeline polish、closeout UX polish、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、server schema contract、HTTP feedback contract、restore dry-run、SQLite integrity check、JSON export hardening、partial closeout recovery verify、repair task generation、diagnostics bundle、night-run 安全规则、v0.2 历史文档归档、lightweight project status ledger、refactor necessity audit。
 - 技术债审计：`docs/planning/refactor-assessment.md` 已确认当前没有必须先做的重构 gate；大文件和重复逻辑存在但不阻塞 DEP-01 / SEARCH-07。
 - 仍 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 AI provider/API key 接入。
 - 服务器安全边界仍有效：不 sudo、不写 `/opt`、不抢 80、不升级系统 Node、不影响 filebrowser / vnt-cli / docker / Portainer；release 部署优先 `/home/hurricane/probeflash` + 独立 Node runtime + 4100。
@@ -41,16 +41,16 @@
 - **DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY**
   - 状态：`blocked`；P0；白天主线；不能夜跑。
   - 选择理由：真实服务器部署仍是产品可用性的最大缺口。
-- **SEARCH-07-SIMILAR-ISSUES-LITE**
-  - 状态：`night-safe`；P2；repo-local lightweight ranking / verify。
-  - 选择理由：基础搜索、筛选、标签和归档复盘入口已完成，可用 title/tag/rootCause overlap 做可解释相似问题；不做 embedding、RAG 或真实 AI。
-- **AIREADY-05-DRAFT-HISTORY**
-  - 状态：`night-safe`；P1；repo-local draft history / verify。
-  - 选择理由：真实 AI 仍 blocked，但 AI-ready 草稿历史可在本地规则草稿基础上继续补可追溯性；不接 provider，不保存 key。
+- **SEARCH-08-SEARCH-RESULT-LINKING**
+  - 状态：`night-safe`；P2；依赖 SEARCH-07 已满足。
+  - 选择理由：相似问题与历史搜索已能找回旧经验，下一步应允许用户把搜索 / 相似结果显式关联到当前问题；不自动改根因、不自动结案。
+- **SEARCH-09-RECURRENCE-PROMPT**
+  - 状态：`pending_after_SEARCH-08`；P2；repo-local recurrence prompt / verify。
+  - 选择理由：历史关联入口完成后，再基于 SEARCH-07 的高相似度结果给出可忽略的复发提示；不做 AI 判断、不自动写 ErrorEntry。
 
 ## 下一步最小可执行动作
 - 白天有用户参与：认领 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`，执行前再次复述 SSH / release assets / 写入路径 / 临时进程 / 4100 授权边界。
-- 无服务器授权或夜跑：不要部署；下一轮重新读取事实源后，优先从 pending queue / night-safe pool 认领 `SEARCH-07-SIMILAR-ISSUES-LITE`。
+- 无服务器授权或夜跑：不要部署；下一轮重新读取事实源后，优先从 pending queue / night-safe pool 认领 `SEARCH-08-SEARCH-RESULT-LINKING`。
 - 真实 AI：仍 blocked，不得无人值守接 provider 或 API key。
 
 ## 下一任务选择流程

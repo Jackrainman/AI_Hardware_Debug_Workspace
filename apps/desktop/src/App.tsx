@@ -48,6 +48,10 @@ import {
   type WorkspaceListResult,
 } from "./storage/storage-repository";
 import { loadArchiveIndex, type ArchiveIndex } from "./storage/archive-index";
+import {
+  findSimilarIssuesForIssue,
+  type SimilarIssuesResult,
+} from "./search/similar-issues";
 import { orchestrateIssueCloseout } from "./use-cases/closeout-orchestrator";
 import {
   CHECKING_STORAGE_CONNECTION_STATE,
@@ -814,6 +818,68 @@ function SearchPanel({
   );
 }
 
+function SimilarIssuesPanel({
+  result,
+  isLoading,
+  onOpenIssue,
+}: {
+  result: SimilarIssuesResult | null;
+  isLoading: boolean;
+  onOpenIssue: (id: string) => void;
+}) {
+  if (result === null && !isLoading) {
+    return null;
+  }
+  return (
+    <section className="similar-issues-panel" data-testid="similar-issues-panel">
+      <header className="similar-issues-header">
+        <span className="similar-issues-badge">规则匹配</span>
+        <div>
+          <h3>相似历史问题</h3>
+          <p>基于标题、现象、标签、根因和处理方式的可解释重合；不做 AI 判因。</p>
+        </div>
+      </header>
+      {isLoading && <p className="storage-line">正在扫描当前项目历史问题...</p>}
+      {!isLoading && result !== null && result.items.length === 0 && (
+        <p className="empty-state" data-testid="similar-issues-empty">
+          当前项目暂未发现足够相似的已解决 / 已归档历史问题。
+        </p>
+      )}
+      {!isLoading && result !== null && result.items.length > 0 && (
+        <ul className="similar-issues-list" data-testid="similar-issues-results">
+          {result.items.map((item) => (
+            <li key={item.issueId} className="similar-issues-item">
+              <button
+                type="button"
+                className="similar-issues-button"
+                onClick={() => onOpenIssue(item.issueId)}
+                data-testid="similar-issues-result-item"
+              >
+                <span className="similar-issues-title-row">
+                  <span className="similar-issues-score">{item.score}</span>
+                  <span className="similar-issues-title">{item.title}</span>
+                </span>
+                <span className="similar-issues-meta">
+                  {item.issueId} · {labelIssueStatus(item.status)}
+                  {item.errorCode ? ` · ${item.errorCode}` : ""}
+                  {item.archiveFileName ? ` · ${item.archiveFileName}` : ""}
+                </span>
+                <span className="similar-issues-reasons">{item.reasons.join("；")}</span>
+                {item.rootCauseSummary && (
+                  <span className="similar-issues-summary">根因：{item.rootCauseSummary}</span>
+                )}
+                {item.resolutionSummary && (
+                  <span className="similar-issues-summary">处理：{item.resolutionSummary}</span>
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 const INVESTIGATION_TYPES: InvestigationType[] = [
   "observation",
   "hypothesis",
@@ -1502,6 +1568,8 @@ function IssuePane({
   const [selectedCard, setSelectedCard] = useState<IssueCard | null>(null);
   const [recordList, setRecordList] = useState<InvestigationRecordListResult | null>(null);
   const [lastCloseout, setLastCloseout] = useState<CloseoutSummary | null>(null);
+  const [similarIssues, setSimilarIssues] = useState<SimilarIssuesResult | null>(null);
+  const [isLoadingSimilarIssues, setIsLoadingSimilarIssues] = useState<boolean>(false);
 
   const refreshCardList = async () => {
     const result = await repository.issueCards.list();
@@ -1561,6 +1629,18 @@ function IssuePane({
     clearStorageFeedback();
   };
 
+  const loadSimilarIssues = async (card: IssueCard) => {
+    setIsLoadingSimilarIssues(true);
+    const result = await findSimilarIssuesForIssue(repository, card);
+    setSimilarIssues(result);
+    setIsLoadingSimilarIssues(false);
+    if (result.readError !== null) {
+      reportStorageError(
+        storageReadErrorToFeedback("knowledge_search", "search", result.readError),
+      );
+    }
+  };
+
   const refreshRecordList = () => {
     if (selectedIssueId === null) {
       setRecordList(null);
@@ -1584,12 +1664,22 @@ function IssuePane({
     handleSelect(externalSelectedIssueId);
   }, [externalSelectedIssueId]);
 
+  useEffect(() => {
+    if (selectedCard === null) {
+      setSimilarIssues(null);
+      setIsLoadingSimilarIssues(false);
+      return;
+    }
+    void loadSimilarIssues(selectedCard);
+  }, [selectedCard?.id, selectedCard?.updatedAt, repository]);
+
   const handleCreateNew = () => {
     setSelectedIssueId(null);
     onSelectedIssueChange(null);
     setSelectedCard(null);
     setRecordList(null);
     setLastCloseout(null);
+    setSimilarIssues(null);
   };
 
   const handleCardCreated = (id: string) => {
@@ -1599,6 +1689,7 @@ function IssuePane({
     void reloadSelectedCard(id);
     void loadRecordList(id);
     setLastCloseout(null);
+    setSimilarIssues(null);
   };
 
   const handleRecordAppended = () => {
@@ -1659,6 +1750,13 @@ function IssuePane({
             recordCount={recordCount}
             lastCloseout={lastCloseout}
           />
+          {selectedIssueId !== null && (
+            <SimilarIssuesPanel
+              result={similarIssues}
+              isLoading={isLoadingSimilarIssues}
+              onOpenIssue={handleSelect}
+            />
+          )}
           {selectedIssueId === null && (
             <p className="empty-state issue-next-step">
               创建问题卡后会自动选中最新一张，随即展开排查追记和结案归档表单；也可以在左侧点「刷新列表」从已有卡中挑选继续处理。

@@ -1228,6 +1228,127 @@ select:focus-visible {
   word-break: break-word;
 }
 
+.similar-issues-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-soft);
+}
+
+.similar-issues-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.similar-issues-header h3,
+.similar-issues-header p {
+  margin: 0;
+}
+
+.similar-issues-header h3 {
+  color: var(--text-strong);
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.similar-issues-header p {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.similar-issues-badge,
+.similar-issues-score {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--accent-strong);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 11px;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.similar-issues-badge {
+  padding: 3px 9px;
+}
+
+.similar-issues-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.similar-issues-item {
+  min-width: 0;
+}
+
+.similar-issues-button {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+  width: 100%;
+  min-height: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--surface-subtle);
+  color: var(--text);
+  text-align: left;
+}
+
+.similar-issues-button:hover {
+  border-color: var(--accent-strong);
+  background: var(--accent-soft);
+}
+
+.similar-issues-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.similar-issues-score {
+  flex: 0 0 auto;
+  min-width: 26px;
+  min-height: 22px;
+  padding: 2px 7px;
+}
+
+.similar-issues-title {
+  min-width: 0;
+  color: var(--text-strong);
+  font-size: 13px;
+  font-weight: 720;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.similar-issues-meta,
+.similar-issues-reasons,
+.similar-issues-summary {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.similar-issues-reasons {
+  color: var(--text-strong);
+}
+
 .create-issue-entry {
   border-color: var(--accent-strong);
   background: linear-gradient(180deg, var(--surface) 0%, var(--surface-subtle) 100%);

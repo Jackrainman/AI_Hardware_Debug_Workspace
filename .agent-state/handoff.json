@@ -16,7 +16,7 @@
     "archive_state": "object - v0.2.0 前历史文档归档状态与读取条件",
     "notes": "string[] - 下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-04-28T23:00:00+08:00",
+  "timestamp": "2026-04-28T23:40:00+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "R1",
   "current_stage_name": "长期产品路线图执行启动",
@@ -82,6 +82,7 @@
     "search_filters_completed": true,
     "search_tags_completed": true,
     "archive_review_page_completed": true,
+    "search_similar_issues_completed": true,
     "project_status_ledger_completed": true,
     "night_run_rules_completed": true,
     "v0_2_history_docs_archived": true,
@@ -93,7 +94,7 @@
     "refactor_assessment_document": "docs/planning/refactor-assessment.md",
     "codebase_refine_necessity_audit_completed": true,
     "conclusion": "No prerequisite refactor is needed before DEP-01 or SEARCH-07. App.tsx, HTTP repository, server database and verify scripts have real friction, but current boundaries are sufficient for the next tasks.",
-    "recommended_next_task": "SEARCH-07-SIMILAR-ISSUES-LITE when no server authorization is available; DEP-01 remains the P0 daytime task when the user confirms server boundaries."
+    "recommended_next_task": "SEARCH-08-SEARCH-RESULT-LINKING when no server authorization is available; DEP-01 remains the P0 daytime task when the user confirms server boundaries."
   },
   "environment_facts": {
     "server": {
@@ -135,9 +136,9 @@
       ]
     },
     {
-      "id": "SEARCH-07-SIMILAR-ISSUES-LITE",
+      "id": "SEARCH-08-SEARCH-RESULT-LINKING",
       "track": "Search / Knowledge Base",
-      "goal": "基于标题、标签和根因文本做可解释的轻量相似问题提示。",
+      "goal": "允许用户把搜索结果 / 相似问题结果显式关联到当前问题。",
       "status": "pending",
       "priority": "P2",
       "lane": "night-safe",
@@ -146,11 +147,11 @@
       "requires_user_confirmation": []
     },
     {
-      "id": "AIREADY-05-DRAFT-HISTORY",
-      "track": "AI-ready Workflow",
-      "goal": "在不接真实 provider 的前提下保存和展示本地规则草稿历史。",
-      "status": "pending_after_SEARCH-07",
-      "priority": "P1",
+      "id": "SEARCH-09-RECURRENCE-PROMPT",
+      "track": "Search / Knowledge Base",
+      "goal": "当当前问题与历史问题高度相似时给出可解释复发提示。",
+      "status": "pending_after_SEARCH-08",
+      "priority": "P2",
       "lane": "night-safe",
       "night_safe": true,
       "ai_unattended_run": true,
@@ -379,18 +380,41 @@
       "order": 19,
       "id": "SEARCH-07-SIMILAR-ISSUES-LITE",
       "track": "Search / Knowledge Base",
+      "status": "completed",
+      "priority": "P2",
+      "classification": "completed",
+      "depends_on": [
+        "SEARCH-04-TAGS"
+      ],
+      "completed_at": "2026-04-28T23:40:00+08:00"
+    },
+    {
+      "order": 20,
+      "id": "SEARCH-08-SEARCH-RESULT-LINKING",
+      "track": "Search / Knowledge Base",
       "status": "pending",
       "priority": "P2",
       "classification": "night-safe",
       "depends_on": [
-        "SEARCH-04-TAGS"
+        "SEARCH-07-SIMILAR-ISSUES-LITE"
       ]
     },
     {
-      "order": 20,
+      "order": 21,
+      "id": "SEARCH-09-RECURRENCE-PROMPT",
+      "track": "Search / Knowledge Base",
+      "status": "pending_after_SEARCH-08",
+      "priority": "P2",
+      "classification": "night-safe",
+      "depends_on": [
+        "SEARCH-08-SEARCH-RESULT-LINKING"
+      ]
+    },
+    {
+      "order": 22,
       "id": "AIREADY-05-DRAFT-HISTORY",
       "track": "AI-ready Workflow",
-      "status": "pending_after_SEARCH-07",
+      "status": "pending_after_SEARCH_KB_CHAIN",
       "priority": "P1",
       "classification": "night-safe",
       "depends_on": [
@@ -442,15 +466,14 @@
     ]
   },
   "night_safe_pool": [
-    "SEARCH-07-SIMILAR-ISSUES-LITE",
+    "SEARCH-08-SEARCH-RESULT-LINKING",
+    "SEARCH-09-RECURRENCE-PROMPT",
     "CORE-02-WORKSPACE-UX-IMPROVEMENTS",
     "CORE-03-RECENT-ISSUE-REOPEN",
     "CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS",
     "CORE-07-ARCHIVE-FILTERS",
     "CORE-08-ERROR-ENTRY-TAGS",
     "CORE-09-DEMO-SEED-IMPORT",
-    "SEARCH-08-SEARCH-RESULT-LINKING",
-    "SEARCH-09-RECURRENCE-PROMPT",
     "AIREADY-02-PROMPT-SCHEMA-VERSIONING",
     "AIREADY-03-GOLDEN-DRAFT-FIXTURES",
     "AIREADY-05-DRAFT-HISTORY",
@@ -544,7 +567,8 @@
     "SEARCH-04-TAGS",
     "SEARCH-03-ARCHIVE-REVIEW-PAGE",
     "PROJECT-STATUS-LEDGER-MINIMAL",
-    "CODEBASE-REFINE-NECESSITY-AUDIT"
+    "CODEBASE-REFINE-NECESSITY-AUDIT",
+    "SEARCH-07-SIMILAR-ISSUES-LITE"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -566,9 +590,9 @@
     ],
     "recommended_next_daytime": "DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY",
     "recommended_next_daytime_status": "blocked_until_user_confirms_server_boundaries",
-    "recommended_next_night_safe": "SEARCH-07-SIMILAR-ISSUES-LITE",
-    "alternative_night_safe": "AIREADY-05-DRAFT-HISTORY",
-    "refactor_gate": "CODEBASE-REFINE-NECESSITY-AUDIT found no required refactor gate before DEP-01 or SEARCH-07; defer App.tsx / HTTP repository / server database / verify helper splits until a concrete task touches them.",
+    "recommended_next_night_safe": "SEARCH-08-SEARCH-RESULT-LINKING",
+    "alternative_night_safe": "SEARCH-09-RECURRENCE-PROMPT after SEARCH-08 completes",
+    "refactor_gate": "CODEBASE-REFINE-NECESSITY-AUDIT found no required refactor gate before DEP-01 or SEARCH-07. SEARCH-07 is complete; defer App.tsx / HTTP repository / server database / verify helper splits until a concrete task touches them.",
     "selection_rule": "白天有用户参与时优先执行 DEP-01；无服务器授权或夜跑时不得部署，只能从 pending_task_queue / night_safe_pool 选择第一个依赖满足且未完成的任务。真实 AI/API key 和 systemd/sudo 任务不得 unattended。"
   },
   "night_run_mode": {
@@ -698,6 +722,15 @@
       "cd apps/desktop && npm run verify:handoff",
       "cd apps/desktop && npm run verify:all"
     ],
+    "last_completed_SEARCH_07": [
+      "git diff --check",
+      "python3 -m json.tool .agent-state/handoff.json >/dev/null",
+      "cd apps/desktop && npm run verify:search-similar-issues",
+      "cd apps/desktop && npm run typecheck",
+      "cd apps/desktop && npm run build",
+      "cd apps/desktop && npm run verify:handoff",
+      "cd apps/desktop && npm run verify:all"
+    ],
     "last_completed_PROJECT_STATUS_LEDGER_MINIMAL": [
       "git diff --check",
       "python3 -m json.tool .agent-state/handoff.json >/dev/null",
@@ -723,10 +756,11 @@
     "docs/planning/status.md 只是快速状态索引，不得替代 current/backlog/product-roadmap/handoff.json。"
   ],
   "notes": [
+    "SEARCH-07-SIMILAR-ISSUES-LITE 已完成：新增 src/search/similar-issues.ts、当前问题相似历史提示面板和 verify:search-similar-issues；不接 embedding / RAG / 真实 AI。",
     "CODEBASE-REFINE-NECESSITY-AUDIT 已完成：docs/planning/refactor-assessment.md 记录证据化审计结论；当前不建议在 DEP-01 或 SEARCH-07 前插入强制重构。",
     "PROJECT-STATUS-LEDGER-MINIMAL 已完成：docs/planning/status.md 是人类快速状态索引，不是最终事实源；AI 执行前仍必须读取 current/backlog/product-roadmap/handoff.json。",
     "下一轮若用户白天可参与服务器操作，最适合认领 DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY。",
-    "下一轮若无服务器授权或夜跑，最适合认领 SEARCH-07-SIMILAR-ISSUES-LITE；AIREADY-05-DRAFT-HISTORY 是后续备选。",
-    "本轮没有写功能代码，没有新增 console/dashboard，没有改 ProbeFlash UI，没有服务器部署，没有接真实 AI API。"
+    "下一轮若无服务器授权或夜跑，最适合认领 SEARCH-08-SEARCH-RESULT-LINKING；SEARCH-09-RECURRENCE-PROMPT 必须等 SEARCH-08 完成后再做。",
+    "本轮没有新增 console/dashboard，没有服务器部署，没有接真实 AI API；SEARCH-07 只做小面板和规则 helper，没有大 UI 改造。"
   ]
 }

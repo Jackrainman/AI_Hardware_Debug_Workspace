@@ -5,7 +5,7 @@
 ## 当前路线
 - 当前版本基座：v0.2.x 本地 HTTP + SQLite + release 可部署基座。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
-- 当前目标：近期 1 周先让部署可用、数据安全、可观测；2-4 周做搜索、AI-ready、code context bundle；1-2 月进入真实 AI、知识库和架构拆分。`SEARCH-01-BASIC-FULL-TEXT-SEARCH`、`SEARCH-02-FILTERS`、`SEARCH-04-TAGS`、`SEARCH-03-ARCHIVE-REVIEW-PAGE` 与 `PROJECT-STATUS-LEDGER-MINIMAL` 已完成，不再留在可认领池。
+- 当前目标：近期 1 周先让部署可用、数据安全、可观测；2-4 周做搜索、AI-ready、code context bundle；1-2 月进入真实 AI、知识库和架构拆分。`SEARCH-01-BASIC-FULL-TEXT-SEARCH`、`SEARCH-02-FILTERS`、`SEARCH-04-TAGS`、`SEARCH-03-ARCHIVE-REVIEW-PAGE`、`SEARCH-07-SIMILAR-ISSUES-LITE` 与 `PROJECT-STATUS-LEDGER-MINIMAL` 已完成，不再留在可认领池。
 - 当前 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 AI provider/API key。
 
 ## 认领规则
@@ -43,7 +43,7 @@
 | 5 | SEARCH-02-FILTERS | completed | P1 |
 | 6 | SEARCH-04-TAGS | completed | P1 |
 | 7 | SEARCH-05-ERROR-CODE-TAXONOMY | decision-needed | P1 |
-| 8 | SEARCH-07-SIMILAR-ISSUES-LITE | night-safe | P2 |
+| 8 | SEARCH-07-SIMILAR-ISSUES-LITE | completed | P2 |
 | 9 | AIREADY-05-DRAFT-HISTORY | night-safe | P1 |
 | 10 | AIREADY-06-DRAFT-DIFF | night-safe | P1 |
 | 11 | CODECTX-01-BUNDLE-CLI | night-safe | P1 |
@@ -76,15 +76,14 @@
 - 更完整的局域网部署体验：反向代理、`.local`、HTTPS、美化域名。
 
 ## Night-safe pool
-- SEARCH-07-SIMILAR-ISSUES-LITE
+- SEARCH-08-SEARCH-RESULT-LINKING
+- SEARCH-09-RECURRENCE-PROMPT
 - CORE-02-WORKSPACE-UX-IMPROVEMENTS
 - CORE-03-RECENT-ISSUE-REOPEN
 - CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS
 - CORE-07-ARCHIVE-FILTERS
 - CORE-08-ERROR-ENTRY-TAGS
 - CORE-09-DEMO-SEED-IMPORT
-- SEARCH-08-SEARCH-RESULT-LINKING
-- SEARCH-09-RECURRENCE-PROMPT
 - AIREADY-02-PROMPT-SCHEMA-VERSIONING
 - AIREADY-03-GOLDEN-DRAFT-FIXTURES
 - AIREADY-05-DRAFT-HISTORY

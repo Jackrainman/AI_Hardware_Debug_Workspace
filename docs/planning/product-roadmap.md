@@ -26,6 +26,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 - basic full-text search（基于 SQLite LIKE 的 workspace-scoped 基础搜索，覆盖 issue / record / archive / error-entry 最小集合）。
 - search filters（结果类型、问题状态、已有标签和日期范围筛选；覆盖 server / desktop verify）。
 - search tags（复用 IssueCard tags，ErrorEntry 增加向后兼容 tags；覆盖创建、展示、筛选、HTTP/localStorage/server verify、workspace 隔离和旧数据无 tags）。
+- similar issues lite（基于标题、现象、标签、根因与处理方式重合的可解释规则排序；覆盖 pure ranking、localStorage fallback、HTTP repository 和 workspace 隔离）。
 - night-run 安全规则。
 - v0.2 历史文档归档。
 - lightweight project status ledger（`PROJECT-STATUS-LEDGER-MINIMAL`，`docs/planning/status.md`，仅做人类快速索引）。
@@ -135,7 +136,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 | SEARCH-04-TAGS | Search / Knowledge Base | tags | 按模块/设备/现象组织问题 | CORE-08 或最小 tag 字段 | schema/UI/filter | 不自动生成复杂标签 | tag CRUD；筛选；读回 | issue/error-entry 支持稳定标签 | completed | P1 | 已完成 |
 | SEARCH-05-ERROR-CODE-TAXONOMY | Search / Knowledge Base | error code taxonomy | 错误编号有团队共识 | 用户确认编号规则 | docs/schema/UI | 不擅自改历史编号；不引入组织权限 | taxonomy examples；创建新 ErrorEntry | `DBG-YYYYMMDD-XXX` 或新规则被固化 | decision-needed | P1 | 否 |
 | SEARCH-06-TAG-HYGIENE-MERGE | Search / Knowledge Base | tag hygiene / merge | 避免 `can`、`CAN`、`canbus` 分裂 | SEARCH-04；用户确认合并策略 | docs/UI/script dry-run | 不自动合并生产数据 | dry-run 显示影响范围 | 标签合并需人工确认且可回滚 | decision-needed | P2 | 否 |
-| SEARCH-07-SIMILAR-ISSUES-LITE | Search / Knowledge Base | similar issues lite | 新问题能看到相似旧坑 | SEARCH-01/04 | local ranking；UI；verify | 不做 RAG/embedding；不宣称智能判因 | tag/title/rootCause overlap fixture | 返回相似问题、依据和链接 | night-safe | P2 | 是 |
+| SEARCH-07-SIMILAR-ISSUES-LITE | Search / Knowledge Base | similar issues lite | 新问题能看到相似旧坑 | SEARCH-01/04 | local ranking；UI；verify | 不做 RAG/embedding；不宣称智能判因 | tag/title/rootCause overlap fixture | 返回相似问题、依据和链接 | completed | P2 | 已完成 |
 | SEARCH-08-SEARCH-RESULT-LINKING | Search / Knowledge Base | search result issue linking | 搜索结果可直接复用到当前问题 | SEARCH-01/03 | desktop UI；record/issue linking | 不自动改 rootCause；不自动结案 | 添加 relatedHistoricalIssueIds；读回 | 用户能把旧问题关联到新问题 | night-safe | P2 | 是 |
 | SEARCH-09-RECURRENCE-PROMPT | Search / Knowledge Base | 复发提示 | 旧问题复发时减少重复踩坑 | SEARCH-07/08 | UI panel；verify | 不替代人工判断；不自动 closeout | 相似问题出现提示；用户可忽略 | 输入相似现象时展示旧解决摘要 | night-safe | P2 | 是 |
 
@@ -266,7 +267,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 | 5 | SEARCH-02-FILTERS | 搜索筛选 | completed | P1 |
 | 6 | SEARCH-04-TAGS | 标签能力 | completed | P1 |
 | 7 | SEARCH-05-ERROR-CODE-TAXONOMY | 错误编号分类规则 | decision-needed | P1 |
-| 8 | SEARCH-07-SIMILAR-ISSUES-LITE | 轻量相似问题 | night-safe | P2 |
+| 8 | SEARCH-07-SIMILAR-ISSUES-LITE | 轻量相似问题 | completed | P2 |
 | 9 | AIREADY-05-DRAFT-HISTORY | 草稿历史 | night-safe | P1 |
 | 10 | AIREADY-06-DRAFT-DIFF | 草稿 diff | night-safe | P1 |
 | 11 | CODECTX-01-BUNDLE-CLI | code context bundle CLI | night-safe | P1 |
@@ -301,15 +302,14 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 ## 10. 夜跑任务池
 
 ### Night-safe pool
-- SEARCH-07-SIMILAR-ISSUES-LITE
+- SEARCH-08-SEARCH-RESULT-LINKING
+- SEARCH-09-RECURRENCE-PROMPT
 - CORE-02-WORKSPACE-UX-IMPROVEMENTS
 - CORE-03-RECENT-ISSUE-REOPEN
 - CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS
 - CORE-07-ARCHIVE-FILTERS
 - CORE-08-ERROR-ENTRY-TAGS
 - CORE-09-DEMO-SEED-IMPORT
-- SEARCH-08-SEARCH-RESULT-LINKING
-- SEARCH-09-RECURRENCE-PROMPT
 - AIREADY-02-PROMPT-SCHEMA-VERSIONING
 - AIREADY-03-GOLDEN-DRAFT-FIXTURES
 - AIREADY-05-DRAFT-HISTORY
@@ -371,4 +371,4 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 
 如果用户白天可参与服务器操作，下一轮最适合认领 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`。
 
-如果用户暂时不能参与服务器操作，下一轮最适合认领 `SEARCH-07-SIMILAR-ISSUES-LITE`，这是 repo-local、P2、night-safe，可在不触碰真实服务器或真实 AI 的前提下补轻量相似问题提示。
+如果用户暂时不能参与服务器操作，下一轮最适合认领 `SEARCH-08-SEARCH-RESULT-LINKING`，这是 repo-local、P2、night-safe，可在不触碰真实服务器或真实 AI 的前提下把搜索 / 相似问题结果显式关联到当前问题。
