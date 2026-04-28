@@ -3,7 +3,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { startProbeFlashServer } from "../../server/src/server.mjs";
-import { buildIssueCardFromIntake, defaultIntakeOptions } from "../src/domain/issue-intake.ts";
 import type { IssueCard } from "../src/domain/schemas/issue-card.ts";
 import {
   addRelatedHistoricalIssue,
@@ -11,15 +10,13 @@ import {
 } from "../src/search/related-historical-issues.ts";
 import { createHttpStorageRepository } from "../src/storage/http-storage-repository.ts";
 import { createStorageRepository, type StorageRepository } from "../src/storage/storage-repository.ts";
+import {
+  buildSearchIssue,
+  installSearchVerifyLocalStorage,
+  SEARCH_VERIFY_WORKSPACE_ID,
+} from "./search-verify-fixtures.mts";
 
-interface LocalStorageShape {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
-  key(index: number): string | null;
-  readonly length: number;
-}
-
-const WORKSPACE_ID = "workspace-26-r1";
+const WORKSPACE_ID = SEARCH_VERIFY_WORKSPACE_ID;
 const NOW = "2026-04-28T22:15:00+08:00";
 const LINKED_AT = "2026-04-28T22:16:00+08:00";
 const UNLINKED_AT = "2026-04-28T22:17:00+08:00";
@@ -36,24 +33,6 @@ function assert(condition: unknown, reason: string, detail?: unknown): asserts c
   if (!condition) fail(reason, detail);
 }
 
-function makeLocalStoragePolyfill(): LocalStorageShape {
-  const store = new Map<string, string>();
-  return {
-    get length() {
-      return store.size;
-    },
-    getItem(key: string) {
-      return store.get(key) ?? null;
-    },
-    setItem(key: string, value: string) {
-      store.set(key, value);
-    },
-    key(index: number) {
-      return Array.from(store.keys())[index] ?? null;
-    },
-  };
-}
-
 function buildIssue(
   workspaceId: string,
   id: string,
@@ -61,17 +40,15 @@ function buildIssue(
   description: string,
   status: IssueCard["status"] = "open",
 ): IssueCard {
-  const result = buildIssueCardFromIntake(
-    {
-      title,
-      description,
-      severity: "medium",
-      tags: ["CAN", "历史关联"],
-    },
-    defaultIntakeOptions(NOW, id, workspaceId),
-  );
-  assert(result.ok, "issue fixture should build", result);
-  return { ...result.card, status, updatedAt: NOW };
+  return buildSearchIssue({
+    workspaceId,
+    id,
+    title,
+    description,
+    tags: ["CAN", "历史关联"],
+    status,
+    now: NOW,
+  });
 }
 
 async function saveIssue(repository: StorageRepository, issue: IssueCard) {
@@ -158,9 +135,7 @@ assert(appSource.includes("knowledge-search-link-result"), "App should expose se
 assert(appSource.includes("similar-issues-link-result"), "App should expose similar result link action marker");
 assert(appSource.includes("related-history-unlink"), "App should expose unlink action marker");
 
-(globalThis as unknown as { window: { localStorage: LocalStorageShape } }).window = {
-  localStorage: makeLocalStoragePolyfill(),
-};
+installSearchVerifyLocalStorage();
 
 const localRepository = createStorageRepository({ workspaceId: WORKSPACE_ID });
 await verifyRepositoryLinking(localRepository, "local");

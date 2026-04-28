@@ -304,7 +304,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 ## 10. 夜跑任务池
 
 ### Night-safe pool
-- TECH-DEBT-SEARCH-KB-CLEANUP-LITE
+- UI-REDESIGN-STAGE-BRIEF
 - CORE-02-WORKSPACE-UX-IMPROVEMENTS
 - CORE-03-RECENT-ISSUE-REOPEN
 - CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS
@@ -372,4 +372,4 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 
 如果用户白天可参与服务器操作，下一轮最适合认领 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`。
 
-如果用户暂时不能参与服务器操作，下一轮最适合认领 `TECH-DEBT-SEARCH-KB-CLEANUP-LITE`，这是 repo-local、P2、night-safe，只清理 Search / Knowledge Base 小阶段直接产生或碰到的 helper / fixture 重复逻辑。
+如果用户暂时不能参与服务器操作，下一轮最适合认领 `UI-REDESIGN-STAGE-BRIEF`，这是 repo-local、P2、night-safe，只写下一阶段 UI 改造 brief，不实际改 UI、不引入组件库。

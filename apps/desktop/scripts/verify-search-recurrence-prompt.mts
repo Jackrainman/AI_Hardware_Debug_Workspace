@@ -1,6 +1,5 @@
 import { readFileSync } from "node:fs";
 
-import { buildIssueCardFromIntake, defaultIntakeOptions } from "../src/domain/issue-intake.ts";
 import type { ErrorEntry } from "../src/domain/schemas/error-entry.ts";
 import type { IssueCard } from "../src/domain/schemas/issue-card.ts";
 import {
@@ -8,8 +7,9 @@ import {
   RECURRENCE_PROMPT_SCORE_THRESHOLD,
 } from "../src/search/recurrence-prompt.ts";
 import { rankSimilarIssues, type SimilarIssuesResult } from "../src/search/similar-issues.ts";
+import { buildSearchIssue, SEARCH_VERIFY_WORKSPACE_ID } from "./search-verify-fixtures.mts";
 
-const WORKSPACE_ID = "workspace-26-r1";
+const WORKSPACE_ID = SEARCH_VERIFY_WORKSPACE_ID;
 const OTHER_WORKSPACE_ID = "workspace-recurrence-other";
 const NOW = "2026-04-28T22:45:00+08:00";
 
@@ -33,17 +33,7 @@ function buildIssue(
   tags: string[],
   status: IssueCard["status"] = "open",
 ): IssueCard {
-  const result = buildIssueCardFromIntake(
-    {
-      title,
-      description,
-      severity: "medium",
-      tags,
-    },
-    defaultIntakeOptions(NOW, id, workspaceId),
-  );
-  assert(result.ok, "issue fixture should build", result);
-  return { ...result.card, status, updatedAt: NOW };
+  return buildSearchIssue({ workspaceId, id, title, description, tags, status, now: NOW });
 }
 
 function errorEntry(workspaceId: string, issueId: string): ErrorEntry {
