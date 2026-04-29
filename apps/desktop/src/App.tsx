@@ -196,11 +196,16 @@ function StorageStatusBanner({
   connectionState,
   error,
   healthStatus,
+  activeWorkspace,
+  workspaceList,
 }: {
   connectionState: StorageConnectionState;
   error: StorageFeedbackError | null;
   healthStatus: HttpStorageHealthStatus | null;
+  activeWorkspace: Workspace;
+  workspaceList: WorkspaceListResult | null;
 }) {
+  const workspaceListStatus = describeWorkspaceListStatus(workspaceList, activeWorkspace);
   const healthDetail = healthStatus
     ? [
         healthStatus.serverReady ? "服务就绪" : "服务未就绪",
@@ -224,17 +229,23 @@ function StorageStatusBanner({
       data-connection-state={connectionState.state}
     >
       <div className="storage-feedback-row">
-        <span className="storage-feedback-label">统一存储状态</span>
+        <span className="storage-feedback-label">项目与存储状态</span>
         <span className="storage-feedback-connection">
           {describeStorageConnectionState(connectionState)}
         </span>
       </div>
+      <div className="project-context-summary" data-testid="project-context-summary">
+        <div className="project-context-identity">
+          <span className="project-context-eyebrow">当前数据归属</span>
+          <strong>{activeWorkspace.name}</strong>
+          <span>项目 ID：{activeWorkspace.id}</span>
+        </div>
+        <p className="project-context-state" data-testid="workspace-list-state">
+          {workspaceListStatus}
+        </p>
+      </div>
       <p className="storage-feedback-message" data-testid="storage-feedback-message">
-        {error === null
-          ? connectionState.state === "checking"
-            ? "正在检查 /api 与服务器长期存储状态…"
-            : "当前通过 HTTP 连接服务器存储；若服务异常、超时或写入失败，会统一显示在这里。"
-          : formatStorageFeedbackError(error)}
+        {renderProjectStorageMessage(connectionState, error, activeWorkspace)}
       </p>
       {healthDetail && error === null ? (
         <p className="storage-feedback-detail" data-testid="storage-health-detail">
@@ -244,6 +255,36 @@ function StorageStatusBanner({
       {error?.repairTask ? <RepairTaskPanel repairTask={error.repairTask} /> : null}
     </section>
   );
+}
+
+function describeWorkspaceListStatus(
+  workspaceList: WorkspaceListResult | null,
+  activeWorkspace: Workspace,
+): string {
+  if (workspaceList === null) {
+    return `当前项目「${activeWorkspace.name}」可用；项目列表正在读取。`;
+  }
+  if (workspaceList.readError !== null) {
+    return `当前仍停留在「${activeWorkspace.name}」；项目列表读取失败，请修复存储状态后重试。`;
+  }
+  const invalidNote = workspaceList.invalid.length > 0
+    ? `，${workspaceList.invalid.length} 个异常项目已跳过`
+    : "";
+  return `当前项目「${activeWorkspace.name}」；可切换项目 ${workspaceList.valid.length} 个${invalidNote}。`;
+}
+
+function renderProjectStorageMessage(
+  connectionState: StorageConnectionState,
+  error: StorageFeedbackError | null,
+  activeWorkspace: Workspace,
+): string {
+  if (error !== null) {
+    return `${formatStorageFeedbackError(error)} 当前项目「${activeWorkspace.name}」的读写可能受影响；请按提示修复后刷新或重试。`;
+  }
+  if (connectionState.state === "checking") {
+    return `正在检查 /api 与「${activeWorkspace.name}」的长期存储状态…`;
+  }
+  return `当前项目「${activeWorkspace.name}」通过 HTTP + SQLite 读写；创建或切换项目不会删除、迁移已有数据。`;
 }
 
 function IssueStorageControls({
@@ -566,12 +607,14 @@ function renderIntakeStatus(status: IntakeSubmitStatus): string {
 
 function IssueCardListView({
   result,
+  activeWorkspace,
   selectedIssueId,
   onCreateNew,
   onRefresh,
   onSelect,
 }: {
   result: IssueCardListResult | null;
+  activeWorkspace: Workspace;
   selectedIssueId: string | null;
   onCreateNew: () => void;
   onRefresh: () => void;
@@ -585,7 +628,7 @@ function IssueCardListView({
       <div className="issue-rail-header">
         <div className="form-caption">
           <h3>问题卡选择区</h3>
-          <p>默认只显示未归档问题卡；选中后在右侧继续追记或结案。</p>
+          <p>当前项目：{activeWorkspace.name}；默认只显示未归档问题卡，选中后在右侧继续追记或结案。</p>
         </div>
         {selectedIssueId !== null && (
           <button
@@ -604,12 +647,19 @@ function IssueCardListView({
         </button>
         <span className="storage-line" data-testid="list-summary">
           {result === null
-            ? "尚未刷新"
-            : `未归档 ${activeCards.length} 条 · 异常 ${result.invalid.length} 条`}
+            ? `当前项目「${activeWorkspace.name}」· 正在读取问题卡`
+            : `当前项目「${activeWorkspace.name}」· 未归档 ${activeCards.length} 条 · 异常 ${result.invalid.length} 条`}
         </span>
       </div>
+      {result && result.readError !== null && (
+        <p className="empty-state issue-list-error" data-testid="issue-list-error">
+          当前项目「{activeWorkspace.name}」的问题卡读取失败。下一步：先查看上方项目与存储状态，确认 /api 可用后点击刷新列表。
+        </p>
+      )}
       {result && result.readError === null && activeCards.length === 0 && result.invalid.length === 0 && (
-        <p className="empty-state">暂无未归档问题卡。请先在右侧创建一张卡。</p>
+        <p className="empty-state" data-testid="issue-list-empty">
+          当前项目「{activeWorkspace.name}」暂无未归档问题卡。使用上方一句话快速建卡，或在右侧完整表单创建，数据会写入该项目。
+        </p>
       )}
       {result && activeCards.length > 0 && (
         <ul className="list-items" data-testid="list-valid">
@@ -1951,6 +2001,7 @@ function IssuePane({
         <aside className="issue-rail" aria-label="问题卡选择区">
           <IssueCardListView
             result={cardList}
+            activeWorkspace={activeWorkspace}
             selectedIssueId={selectedIssueId}
             onCreateNew={handleCreateNew}
             onRefresh={refreshCardList}
@@ -2009,7 +2060,7 @@ function IssuePane({
           )}
           {selectedIssueId === null && (
             <p className="empty-state issue-next-step">
-              创建问题卡后会自动选中最新一张，随即展开排查追记和结案归档表单；也可以在左侧点「刷新列表」从已有卡中挑选继续处理。
+              当前项目「{activeWorkspace.name}」还没有选中问题。创建问题卡后会自动选中最新一张，随即展开排查追记和结案归档表单；也可以在左侧点「刷新列表」从已有卡中挑选继续处理。
             </p>
           )}
           {selectedIssueId !== null && (
@@ -2399,7 +2450,7 @@ function renderWorkspaceCreateStatus(status: WorkspaceCreateStatus): string {
     case "saved":
       return `已创建并切换 · ${status.id}`;
     case "error":
-      return `创建失败：${status.reason}`;
+      return `项目创建失败：${status.reason}；确认上方项目与存储状态后可重试`;
   }
 }
 
@@ -2438,6 +2489,8 @@ function ProjectSelector({
   const [name, setName] = useState<string>("");
   const [createStatus, setCreateStatus] = useState<WorkspaceCreateStatus>({ state: "idle" });
   const workspaces = mergeWorkspaceItems(workspaceList, activeWorkspace);
+  const workspaceListReadFailed = workspaceList?.readError !== null && workspaceList?.readError !== undefined;
+  const workspaceListEmpty = workspaceList !== null && workspaceList.readError === null && workspaceList.valid.length === 0;
 
   const handleCreate = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -2449,7 +2502,7 @@ function ProjectSelector({
     setCreateStatus({ state: "saving" });
     const result = await onCreateWorkspace(trimmedName);
     if (!result.ok) {
-      setCreateStatus({ state: "error", reason: "请查看顶部统一存储提示" });
+      setCreateStatus({ state: "error", reason: "请查看上方项目与存储状态" });
       return;
     }
     setName("");
@@ -2467,7 +2520,11 @@ function ProjectSelector({
         data-testid="project-selector-button"
       >
         <span className="header-entry-icon" aria-hidden="true">📁</span>
-        <span className="header-entry-label">项目：{activeWorkspace.name}</span>
+        <span className="header-entry-label project-entry-label">
+          <span className="project-entry-kicker">当前项目</span>
+          <span>{activeWorkspace.name}</span>
+        </span>
+        <span className="project-entry-id">{activeWorkspace.id}</span>
         <span className="project-entry-caret" aria-hidden="true">{open ? "▴" : "▾"}</span>
       </button>
       {open && (
@@ -2494,6 +2551,9 @@ function ProjectSelector({
             <span className="project-current-label">当前项目</span>
             <strong>{activeWorkspace.name}</strong>
             <span className="project-current-id">{activeWorkspace.id}</span>
+            <p className="project-current-note" data-testid="project-current-note">
+              问题卡、排查记录、归档和错误表都会写入这个项目；切换项目会清空当前选中问题，但不会删除已有数据。
+            </p>
           </section>
           <div className="project-selector-section">
             <div className="project-selector-section-header">
@@ -2502,8 +2562,15 @@ function ProjectSelector({
                 刷新
               </button>
             </div>
-            {workspaceList?.readError !== null && workspaceList?.readError !== undefined && (
-              <p className="storage-line">项目列表读取失败，请查看顶部统一存储提示。</p>
+            {workspaceListReadFailed && (
+              <p className="empty-state project-state-warning" data-testid="workspace-list-error">
+                项目列表读取失败；当前仍停留在「{activeWorkspace.name}」。下一步：确认上方项目与存储状态后点击刷新。
+              </p>
+            )}
+            {workspaceListEmpty && (
+              <p className="empty-state project-state-empty" data-testid="workspace-list-empty">
+                服务器暂未返回可切换项目；当前使用「{activeWorkspace.name}」。可以在下方创建新项目，创建后会自动切换。
+              </p>
             )}
             {workspaceList !== null && workspaceList.invalid.length > 0 && (
               <p className="storage-line">有 {workspaceList.invalid.length} 个异常项目已跳过。</p>
@@ -2531,7 +2598,7 @@ function ProjectSelector({
           </div>
           <form className="project-create-form" onSubmit={handleCreate} data-testid="workspace-create-form">
             <label className="intake-field">
-              <span>创建项目</span>
+              <span>创建新项目（创建后自动切换）</span>
               <input
                 type="text"
                 value={name}
@@ -2539,13 +2606,16 @@ function ProjectSelector({
                 onChange={(event) => setName(event.target.value)}
                 placeholder="例如：27年 R1 / 舵轮调试"
               />
+              <small className="field-help">
+                适用于不同赛季、机器人或调试分支；不会删除或迁移已有项目数据。
+              </small>
             </label>
             <div className="intake-actions">
               <button type="submit" disabled={createStatus.state === "saving"}>
                 创建并切换
               </button>
             </div>
-            <p className="storage-line" data-testid="workspace-create-status">
+            <p className="storage-line workspace-create-status" data-state={createStatus.state} data-testid="workspace-create-status">
               创建状态：{renderWorkspaceCreateStatus(createStatus)}
             </p>
           </form>
@@ -2824,6 +2894,8 @@ export default function App() {
         connectionState={storageConnectionState}
         error={storageFeedbackError}
         healthStatus={storageHealthStatus}
+        activeWorkspace={activeWorkspace}
+        workspaceList={workspaceList}
       />
       <main className="app-main">
         <section className="pane" data-pane="issue">

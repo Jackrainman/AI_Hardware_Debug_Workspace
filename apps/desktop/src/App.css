@@ -64,6 +64,51 @@
   line-height: 1.6;
 }
 
+.project-context-summary {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.project-context-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.project-context-eyebrow {
+  color: var(--text-faint);
+  font-size: 10px;
+  font-weight: 760;
+  letter-spacing: 0.04em;
+}
+
+.project-context-identity strong {
+  color: var(--text-strong);
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.project-context-identity span:last-child,
+.project-context-state {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.project-context-state {
+  max-width: 520px;
+  margin: 0;
+  text-align: right;
+}
+
 .storage-feedback-detail {
   margin: 0;
   color: var(--text-muted);
@@ -127,6 +172,15 @@
 }
 
 @media (max-width: 760px) {
+  .project-context-summary {
+    flex-direction: column;
+  }
+
+  .project-context-state {
+    max-width: none;
+    text-align: left;
+  }
+
   .repair-task-grid {
     grid-template-columns: 1fr;
   }
@@ -217,6 +271,28 @@
   font-size: 13px;
   font-weight: 650;
   line-height: 1.3;
+  white-space: nowrap;
+}
+
+.project-entry-button .project-entry-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+
+.project-entry-kicker,
+.project-entry-id {
+  color: var(--text-faint);
+  font-size: 10px;
+  font-weight: 720;
+  line-height: 1.2;
+}
+
+.project-entry-id {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -315,6 +391,13 @@
   line-height: 1.3;
 }
 
+.project-current-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .project-current-id,
 .project-workspace-id {
   color: var(--text-faint);
@@ -357,6 +440,23 @@
   border-color: var(--accent-strong);
   background: var(--accent-soft);
   color: var(--accent-text);
+}
+
+.project-state-warning,
+.issue-list-error {
+  border-color: var(--warning-strong);
+  background: var(--warning-soft);
+  color: var(--warning-strong);
+}
+
+.project-state-empty {
+  border-color: var(--info-strong);
+  background: var(--info-soft);
+  color: var(--text-strong);
+}
+
+.workspace-create-status[data-state="error"] {
+  color: var(--warning-strong);
 }
 
 .project-workspace-name {
