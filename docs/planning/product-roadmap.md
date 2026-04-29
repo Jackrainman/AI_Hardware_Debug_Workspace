@@ -225,7 +225,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | TECH-M1 | Technical Debt / Architecture | closeout atomicity design 与 workspaceId consistency later | 主闭环数据更可信 | closeout 主路径；HTTP/SQLite schema | closeout orchestration；verify；docs | 不做大 schema migration；不删数据 | failure injection；readback；workspace mismatch fixture | closeout 失败不产生伪完成 | night-safe | P0 | 是 |
 | TECH-M2 | Technical Debt / Architecture | verify helpers 与 verify tmp cleanup | 每轮验证更快、更可靠 | 现有 verify scripts | scripts；fixtures；docs | 不依赖真实服务器；不慢速 E2E 膨胀 | helper deterministic；git status clean | 高风险路径有可复用 helper，临时文件可控 | night-safe | P1 | 是 |
-| TECH-M3 | Technical Debt / Architecture | App.tsx / HTTP repository / server route / database split | 后续功能不继续堆石山 | 主流程测试稳定；任务边界明确 | `apps/desktop/src`；`apps/server/src`；verify | 不大 UI 重构；不改业务语义；不接新功能 | typecheck/build/verify:all；主路径 smoke | 文件职责更清楚且行为不回归 | night-safe | P2 | 是 |
+| TECH-M3 | Technical Debt / Architecture | App.tsx / HTTP repository / server route / database split | 后续功能不继续堆石山 | 主流程测试稳定；任务边界明确；UI 方向已确认时优先支持 UI 修复 | `apps/desktop/src`；`apps/server/src`；verify | 不大 UI 重构；不改业务语义；不接新功能 | typecheck/build/verify:all；主路径 smoke | 文件职责更清楚且行为不回归 | night-safe | P2 | 是，但 TECH-07 需先过人工 UI gate |
 
 ### 小任务
 | ID | 所属主线 | 目标 | 用户价值 | 前置依赖 | 允许修改 | 明确不做 | 验证方式 | 完成定义 | 执行类型 | 建议优先级 | 是否适合 AI unattended run |
@@ -237,7 +237,9 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 | PROJECT-STATUS-LEDGER-MINIMAL | Technical Debt / Architecture | lightweight project status ledger | 用户不用翻全部 planning 文件也能快速知道推进到哪 | current/backlog/product-roadmap/handoff 已存在 | `docs/planning/status.md`；AGENTS；planning / execution / verification skills；planning sync | 不做 console/dashboard；不改产品 UI；不替代事实源；不追加流水账 | `git diff --check`；JSON parse；`verify:handoff`；skill frontmatter 检查 | `status.md` 存在、短、可读且 current/backlog/product-roadmap/handoff 仍是事实源 | completed | P1 | 已完成 |
 | TECH-05-VERIFY-TMP-CLEANUP | Technical Debt / Architecture | verify tmp cleanup | 测试残留不污染判断 | TECH-04 | scripts；tmp path docs | 不删除用户数据；不指向生产路径 | verify 前后 git status；tmp dir 限制 | 临时 DB/log/backup 生命周期清楚 | night-safe | P1 | 是 |
 | TECH-06-SMOKE-FIXTURE-CONSOLIDATION | Technical Debt / Architecture | smoke fixture consolidation | 避免重复造测试数据 | 多条 verify 已存在 | fixtures；verify helpers | 不引入大测试框架 | fixture reuse；verify pass | 主流程 fixture 一处维护 | night-safe | P2 | 是 |
-| TECH-07-APP-TSX-MINIMAL-SPLIT | Technical Debt / Architecture | App.tsx minimal split | 降低前端变更冲突 | 主流程 smoke 稳定 | desktop components/hooks split | 不重做视觉；不改业务语义 | typecheck/build/verify:all；UI smoke | `App.tsx` 职责减少且行为不回归 | night-safe | P2 | 是 |
+| UI-GATE-01-MANUAL-VISUAL-DIRECTION | Technical Debt / Architecture | TECH-07 前人工确认 UI 方向 | 避免在错误视觉方向上拆分或实现 | UI-01；用户可人工 review | `docs/planning/ui-redesign-brief.md`；planning sync；人工确认记录 | 不改产品代码；不引入组件库；不隐藏真实边界 | 人工确认；`git diff --check`；handoff JSON parse | 首屏布局、主次关系和边界表达被确认 | day-only | P1 | 否 |
+| TECH-07-APP-TSX-MINIMAL-SPLIT | Technical Debt / Architecture | App.tsx minimal split | 降低前端变更冲突 | UI-GATE-01；主流程 smoke 稳定 | desktop components/hooks split | 不重做视觉；不改业务语义 | typecheck/build/verify:all；UI smoke | `App.tsx` 职责减少且行为不回归 | gated-night-safe | P1 | 仅 UI-GATE-01 后可无人值守 |
+| UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT | Technical Debt / Architecture | TECH-07 后人工 review 的 UI 修改首轮 | 先修当前 UI 大问题，再做 broad refactor | TECH-07；用户可人工验收 | desktop UI；styles；verify；planning sync | 不全量重写 `App.tsx`；不改业务数据流；不接真实 AI | desktop/mobile 人工 smoke；typecheck/build/verify:all | 第一轮 shell / workspace / Knowledge Assist UI 修复被人工验收 | day-only | P1 | 否 |
 | TECH-08-HTTP-REPOSITORY-SPLIT | Technical Debt / Architecture | HTTP repository split | storage adapter 更易维护 | HTTP adapter 主链路稳定 | desktop storage/repository files | 不改 API contract；不移除 localStorage verify path | adapter contract verify；主路径 smoke | HTTP repository 和 UI 编排边界清楚 | night-safe | P2 | 是 |
 | TECH-09-SERVER-ROUTE-SPLIT | Technical Debt / Architecture | server route split | server endpoint 更好维护 | server tests/verify 稳定 | `apps/server/src` routes | 不改 API 行为；不引入框架 | server verify；health/version/CRUD smoke | routes 从单文件拆出且契约不变 | night-safe | P2 | 是 |
 | TECH-10-DATABASE-MODULE-SPLIT | Technical Debt / Architecture | database module split | SQLite schema/queries/validation 更清楚 | server schema contract 已完成 | database modules；verify | 不做 destructive migration；不改 schema 语义 | schema contract verify；backup/restore verify | schema、mapping、queries 分层且读写不回归 | night-safe | P2 | 是 |
@@ -258,7 +260,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 | 7 | DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN | 更新 / 回滚 runbook | completed | P0 |
 | 8 | DATA-04-INTEGRITY-CHECK | SQLite integrity check | completed | P0 |
 
-### 近期 2-4 周（最多 12 个任务）
+### 近期 2-4 周（B 组已展开）
 目标：搜索、AI-ready、code context bundle。
 
 | 顺序 | 任务 ID | 目标 | 类型 | P |
@@ -276,7 +278,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 | 11 | CODECTX-01-BUNDLE-CLI | code context bundle CLI | night-safe | P1 |
 | 12 | CODECTX-02-SECRETS-PROTECTION | bundle secrets protection | night-safe | P1 |
 
-### 中期 1-2 月（最多 12 个任务）
+### 中期 1-2 月（含 UI gate 顺序）
 目标：真实 AI、知识库、架构拆分。
 
 | 顺序 | 任务 ID | 目标 | 类型 | P |
@@ -291,8 +293,10 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 | 8 | CODECTX-05-BUNDLE-VIEWER | bundle viewer | night-safe | P1 |
 | 9 | CODECTX-07-AI-ANALYZE-EXPLICIT-BUNDLE | AI 分析显式 bundle | blocked | P2 |
 | 10 | SEARCH-03-ARCHIVE-REVIEW-PAGE | archive review page | completed | P1 |
-| 11 | TECH-07-APP-TSX-MINIMAL-SPLIT | App.tsx 最小拆分 | night-safe | P2 |
-| 12 | TECH-09-SERVER-ROUTE-SPLIT | server route split | night-safe | P2 |
+| 11 | UI-GATE-01-MANUAL-VISUAL-DIRECTION | TECH-07 前人工确认 UI 方向 | day-only | P1 |
+| 12 | TECH-07-APP-TSX-MINIMAL-SPLIT | App.tsx 最小拆分 | gated-night-safe | P1 |
+| 13 | UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT | TECH-07 后人工 review 的 UI 修改首轮 | day-only | P1 |
+| 14 | TECH-09-SERVER-ROUTE-SPLIT | server route split | night-safe | P2 |
 
 ### 长期方向（只列方向）
 - 团队级多项目知识库与轻量权限。
@@ -332,10 +336,12 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 - TECH-04-VERIFY-HELPERS
 - TECH-05-VERIFY-TMP-CLEANUP
 - TECH-06-SMOKE-FIXTURE-CONSOLIDATION
-- TECH-07-APP-TSX-MINIMAL-SPLIT
 - TECH-08-HTTP-REPOSITORY-SPLIT
 - TECH-09-SERVER-ROUTE-SPLIT
 - TECH-10-DATABASE-MODULE-SPLIT
+
+### Gated night-safe pool
+- TECH-07-APP-TSX-MINIMAL-SPLIT：必须在 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` 人工确认后执行，只做支撑拆分，不做视觉重设计。
 
 ### Day-only pool
 - DEP-02-STATIC-DIST-SERVER-PATH-VERIFY
@@ -344,6 +350,8 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 - DEP-05-SYSTEMD-AUTOSTART-PREP
 - DATA-01-SQLITE-BACKUP-SERVER-PATH-VERIFY
 - DATA-03-RESTORE-DRY-RUN-SERVER-PATH-VERIFY
+- UI-GATE-01-MANUAL-VISUAL-DIRECTION
+- UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT
 
 ### Blocked by external
 - DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY
@@ -373,4 +381,4 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 
 如果用户白天可参与服务器操作，下一轮最适合认领 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`。
 
-如果用户暂时不能参与服务器操作，下一轮最适合认领 `UI-01-INFORMATION-ARCHITECTURE-REVIEW`，这是 repo-local、P2、night-safe，只做页面信息架构审查，不实际改 UI、不引入组件库；UI 小阶段完整拆分见 `docs/planning/ui-redesign-brief.md`。
+如果用户暂时不能参与服务器操作，下一轮最适合认领 B 组第一项 `UI-01-INFORMATION-ARCHITECTURE-REVIEW`，这是 repo-local、night-safe、planning-only，只做页面信息架构审查，不实际改 UI、不引入组件库。B 组功能完成后，先走 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` -> `TECH-07-APP-TSX-MINIMAL-SPLIT` -> `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT`，再考虑 broad refactor。

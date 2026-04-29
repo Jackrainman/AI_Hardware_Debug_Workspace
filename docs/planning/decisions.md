@@ -180,4 +180,13 @@
 - 决策：新增 `docs/planning/product-roadmap.md` 作为长期产品路线图事实源，把后续演进拆为 8 条主线：Deployment / Operability、Data Safety、Core Debug Workflow、Search / Knowledge Base、AI-ready Workflow、Real AI Assistance、Code Context Analysis、Technical Debt / Architecture。每个大任务和小任务都必须带目标、用户价值、依赖、允许修改、不做项、验证方式、完成定义、执行类型、优先级和 AI unattended 适配性。
 - 原因：8 条主线能同时保留长期愿景和当前执行边界；近期仍先做部署可用、数据安全、可观测，避免在真实服务器未验证、API key 未确认时抢跑真实 AI 或 repo connector。
 - 放弃方案：继续维护只围绕 S3/S4/AI 的短队列；把 AI/RAG/权限/代码扫描提前塞进当前入口；在多个 planning 文档里重复维护长篇当前战况。
-- 影响与后续动作：`current.md` 只保留当前 P0 执行窗口和 3 个前沿候选；`backlog.md` 保存节奏队列与任务池；`.agent-state/handoff.json` 保存机器可读的下一任务选择依据。下一轮白天主线仍是 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`；无服务器授权时优先认领 `DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN`。
+- 影响与后续动作：`current.md` 只保留当前 P0 执行窗口和 3 个前沿候选；`backlog.md` 保存节奏队列与任务池；`.agent-state/handoff.json` 保存机器可读的下一任务选择依据。下一轮白天主线仍是 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`；`DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN` 已完成，当前无服务器授权时优先认领 `UI-01-INFORMATION-ARCHITECTURE-REVIEW`。
+
+
+## D-016：UI 大问题先进入受控 UI 修复链路，TECH-07 只作为中间支撑
+- 日期：2026-04-30
+- 背景：Search / KB 链路和 UI redesign brief 已完成，当前 UI 存在信息层级混合、Knowledge Assist 分散、workspace / storage 状态分散、长表单压迫主流程等问题。与此同时，`App.tsx` 是最大冲突面，直接全量重写或先做 broad refactor 都会扩大回归面。
+- 决策：B 组 repo-local 功能一起规划但仍串行执行；B 组完成后，优先进入受控 UI 修复，而不是先做 TECH-08 / TECH-09 / TECH-10 等 broad refactor。具体顺序为：`UI-01-INFORMATION-ARCHITECTURE-REVIEW` -> `UI-GATE-01-MANUAL-VISUAL-DIRECTION` -> `TECH-07-APP-TSX-MINIMAL-SPLIT` -> `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT` -> 后续 UI 局部实现任务。
+- 原因：UI 当前是验收观感最大问题；但 UI 修改必须先有信息架构和人工方向确认。`TECH-07` 的价值是降低 `App.tsx` 冲突面，为后续 UI 改造提供支撑，不应独立变成技术洁癖式重构。
+- 放弃方案：B 组后直接做 `TECH-08-HTTP-REPOSITORY-SPLIT`、`TECH-09-SERVER-ROUTE-SPLIT`、`TECH-10-DATABASE-MODULE-SPLIT`；直接全量重写 `App.tsx`；绕过人工确认直接做大 UI 改版；引入组件库或 broad CSS reset。
+- 影响与后续动作：`backlog.md` 与 `.agent-state/handoff.json` 需要记录 B 组串行队列和 TECH-07 前后的人工 UI gate；`ui-redesign-brief.md` 需要把这些 gate 写入 UI 小阶段边界。`current.md` 仍只保留最多 3 个前沿候选，不把整个 B 组展开成当前执行窗口。

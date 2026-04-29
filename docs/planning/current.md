@@ -5,14 +5,14 @@
 ## 当前阶段
 - 阶段：**R1：长期产品路线图执行启动**。
 - 当前模式：`server_storage_migration`（保留服务器部署安全边界）。
-- 阶段目标：以 v0.2.x 已完成的本地 HTTP + SQLite + release 可部署基座为起点，按 8 条产品主线推进；近期 P0 只聚焦 **部署可用、数据安全、可观测**，无服务器授权时按 night-safe pool 补齐搜索 / 核心调试流小闭环。
+- 阶段目标：以 v0.2.x 已完成的本地 HTTP + SQLite + release 可部署基座为起点，按 8 条产品主线推进；近期 P0 只聚焦 **部署可用、数据安全、可观测**，无服务器授权时按 B 组 night-safe 队列补齐 UI 信息架构、workspace UX、最近问题回到现场、结案失败保留提示和 AI-ready 草稿历史。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
 - 最近已完成：`UI-REDESIGN-STAGE-BRIEF`，新增 `docs/planning/ui-redesign-brief.md`，明确下一阶段 UI 改造边界、任务拆分与推荐下一 UI 任务；未改 UI / CSS / 业务代码。
 
 ## 当前真实状态
 - 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、issue / record / closeout / archive / error-entry 主路径、basic full-text search、search filters、search tags、archive review page、similar issues lite、search result linking、recurrence prompt、search / KB verify fixture cleanup、UI redesign stage brief、quick issue create、record timeline polish、closeout UX polish、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、server schema contract、HTTP feedback contract、restore dry-run、SQLite integrity check、JSON export hardening、partial closeout recovery verify、repair task generation、diagnostics bundle、night-run 安全规则、v0.2 历史文档归档、lightweight project status ledger、refactor necessity audit。
-- 技术债审计：`docs/planning/refactor-assessment.md` 已确认当前没有必须先做的重构 gate；大文件和重复逻辑存在但不阻塞 DEP-01 / SEARCH-07。
-- UI 改造准备：`docs/planning/ui-redesign-brief.md` 已确认下一小阶段建议从信息架构审查开始；推荐下一 UI 任务是 `UI-01-INFORMATION-ARCHITECTURE-REVIEW`，禁止直接重写 `App.tsx` 或引入组件库。
+- 技术债审计：`docs/planning/refactor-assessment.md` 已更新为当前事实；`SEARCH-07` 已完成，当前没有必须先做的 broad refactor gate；大文件和重复逻辑存在但不阻塞 DEP-01 / UI-01。
+- UI 改造准备：`docs/planning/ui-redesign-brief.md` 已确认下一小阶段建议从信息架构审查开始；推荐下一 UI 任务是 `UI-01-INFORMATION-ARCHITECTURE-REVIEW`，禁止直接重写 `App.tsx` 或引入组件库。B 组功能完成后，优先走 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` -> `TECH-07-APP-TSX-MINIMAL-SPLIT` -> `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT`，而不是先做 TECH-08 / TECH-09 / TECH-10 broad refactor。
 - 仍 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 AI provider/API key 接入。
 - 服务器安全边界仍有效：不 sudo、不写 `/opt`、不抢 80、不升级系统 Node、不影响 filebrowser / vnt-cli / docker / Portainer；release 部署优先 `/home/hurricane/probeflash` + 独立 Node runtime + 4100。
 - AI 安全边界仍有效：AI-ready 可夜跑；真实 AI 必须等用户确认 provider、API key/server env、timeout 和 mock/test provider 边界；AI 只返回草稿，不直接写库。
@@ -43,12 +43,16 @@
   - 状态：`blocked`；P0；白天主线；不能夜跑。
   - 选择理由：真实服务器部署仍是产品可用性的最大缺口。
 - **UI-01-INFORMATION-ARCHITECTURE-REVIEW**
-  - 状态：`night-safe`；P2；下一阶段 UI 改造的第一个 planning-only 任务。
+  - 状态：`night-safe`；P1；下一阶段 UI 改造的第一个 planning-only 任务。
   - 选择理由：UI brief 已完成，当前信息架构仍需先明确页面区域、主次关系、导航和状态布局；不实际改 UI、不引入组件库。
+- **CORE-02-WORKSPACE-UX-IMPROVEMENTS**
+  - 状态：`night-safe_after_UI-01`；P1；B 组第二项。
+  - 选择理由：workspace / storage 状态分散是当前 UI 大问题的一部分；需在 UI-01 明确布局后做最小 UX 改善。
 
 ## 下一步最小可执行动作
 - 白天有用户参与：认领 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`，执行前再次复述 SSH / release assets / 写入路径 / 临时进程 / 4100 授权边界。
-- 无服务器授权或夜跑：不要部署；下一轮重新读取事实源后，优先从 pending queue / night-safe pool 认领 `UI-01-INFORMATION-ARCHITECTURE-REVIEW`。
+- 无服务器授权或夜跑：不要部署；下一轮重新读取事实源后，优先从 B 组队列认领 `UI-01-INFORMATION-ARCHITECTURE-REVIEW`，后续串行顺序是 `CORE-02-WORKSPACE-UX-IMPROVEMENTS`、`CORE-03-RECENT-ISSUE-REOPEN`、`CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS`、`AIREADY-05-DRAFT-HISTORY`。
+- B 组完成后：先 UI 后 broad refactor，但必须通过人工 UI gate；顺序为 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` -> `TECH-07-APP-TSX-MINIMAL-SPLIT` -> `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT`。
 - 真实 AI：仍 blocked，不得无人值守接 provider 或 API key。
 
 ## 下一任务选择流程

@@ -16,12 +16,12 @@
     "archive_state": "object - v0.2.0 前历史文档归档状态与读取条件",
     "notes": "string[] - 下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-04-28T17:31:59+08:00",
+  "timestamp": "2026-04-30T00:00:00+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "R1",
   "current_stage_name": "长期产品路线图执行启动",
-  "current_stage_goal": "从 v0.2.x 本地 HTTP + SQLite + release 可部署基座出发，按 8 条产品主线推进；近期 P0 仍是部署可用、数据安全、可观测。",
-  "primary_track": "Deployment / Operability + Data Safety P0",
+  "current_stage_goal": "从 v0.2.x 本地 HTTP + SQLite + release 可部署基座出发，按 8 条产品主线推进；近期 P0 仍是部署可用、数据安全、可观测；无服务器授权时按 B 组 night-safe 队列串行推进本地 UI / core / AI-ready 小闭环。",
+  "primary_track": "Deployment / Operability + Data Safety P0; no-server window uses B-group night-safe queue",
   "deferred_track": "Real AI、repo connector、RAG/embedding、权限系统和硬件自动接入均后置到依赖满足或用户拍板后。",
   "current_atomic_task": "DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY",
   "roadmap_document": "docs/planning/product-roadmap.md",
@@ -97,7 +97,7 @@
   "assessment_state": {
     "refactor_assessment_document": "docs/planning/refactor-assessment.md",
     "codebase_refine_necessity_audit_completed": true,
-    "conclusion": "No prerequisite refactor is needed before DEP-01 or SEARCH-07. App.tsx, HTTP repository, server database and verify scripts have real friction, but current boundaries are sufficient for the next tasks.",
+    "conclusion": "No prerequisite broad refactor is needed before DEP-01 or UI-01. SEARCH-07/08/09 are complete. App.tsx, HTTP repository, server database and verify scripts have real friction; UI repair should proceed through UI-01, a manual UI direction gate, TECH-07 as an enabling split, then a manual UI polish pass.",
     "recommended_next_task": "UI-01-INFORMATION-ARCHITECTURE-REVIEW when no server authorization is available; DEP-01 remains the P0 daytime task when the user confirms server boundaries."
   },
   "environment_facts": {
@@ -144,13 +144,40 @@
       "track": "Technical Debt / Architecture",
       "goal": "只做 UI 信息架构审查，明确页面区域、主次关系、导航和状态布局。",
       "status": "pending",
-      "priority": "P2",
+      "priority": "P1",
+      "lane": "night-safe",
+      "night_safe": true,
+      "ai_unattended_run": true,
+      "requires_user_confirmation": []
+    },
+    {
+      "id": "CORE-02-WORKSPACE-UX-IMPROVEMENTS",
+      "track": "Core Debug Workflow",
+      "goal": "在 UI-01 后最小改善 workspace / storage 状态表达和空状态。",
+      "status": "pending_after_UI-01",
+      "priority": "P1",
       "lane": "night-safe",
       "night_safe": true,
       "ai_unattended_run": true,
       "requires_user_confirmation": []
     }
   ],
+  "b_group_plan": {
+    "rule": "B group is planned together but executed serially: one atomic task, one verification set, one commit per round.",
+    "tasks": [
+      "UI-01-INFORMATION-ARCHITECTURE-REVIEW",
+      "CORE-02-WORKSPACE-UX-IMPROVEMENTS",
+      "CORE-03-RECENT-ISSUE-REOPEN",
+      "CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS",
+      "AIREADY-05-DRAFT-HISTORY"
+    ],
+    "after_b_group_sequence": [
+      "UI-GATE-01-MANUAL-VISUAL-DIRECTION",
+      "TECH-07-APP-TSX-MINIMAL-SPLIT",
+      "UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT"
+    ],
+    "decision": "After B group, fix UI first through manual gates and TECH-07 as an enabling split; do not prioritize TECH-08/09/10 broad refactors unless a concrete storage/server task requires them."
+  },
   "pending_task_queue": [
     {
       "order": 1,
@@ -434,7 +461,7 @@
       "id": "UI-01-INFORMATION-ARCHITECTURE-REVIEW",
       "track": "Technical Debt / Architecture",
       "status": "pending",
-      "priority": "P2",
+      "priority": "P1",
       "classification": "night-safe",
       "depends_on": [
         "UI-REDESIGN-STAGE-BRIEF"
@@ -442,13 +469,84 @@
     },
     {
       "order": 25,
-      "id": "AIREADY-05-DRAFT-HISTORY",
-      "track": "AI-ready Workflow",
-      "status": "pending_after_SEARCH_KB_CHAIN",
+      "id": "CORE-02-WORKSPACE-UX-IMPROVEMENTS",
+      "track": "Core Debug Workflow",
+      "status": "pending_after_UI-01",
       "priority": "P1",
       "classification": "night-safe",
       "depends_on": [
-        "AIREADY-04-DRAFT-PANEL"
+        "UI-01-INFORMATION-ARCHITECTURE-REVIEW"
+      ]
+    },
+    {
+      "order": 26,
+      "id": "CORE-03-RECENT-ISSUE-REOPEN",
+      "track": "Core Debug Workflow",
+      "status": "pending_after_CORE-02",
+      "priority": "P2",
+      "classification": "night-safe",
+      "depends_on": [
+        "CORE-02-WORKSPACE-UX-IMPROVEMENTS"
+      ]
+    },
+    {
+      "order": 27,
+      "id": "CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS",
+      "track": "Core Debug Workflow",
+      "status": "pending_after_CORE-03",
+      "priority": "P2",
+      "classification": "night-safe",
+      "depends_on": [
+        "CORE-03-RECENT-ISSUE-REOPEN"
+      ]
+    },
+    {
+      "order": 28,
+      "id": "AIREADY-05-DRAFT-HISTORY",
+      "track": "AI-ready Workflow",
+      "status": "pending_after_CORE-06",
+      "priority": "P1",
+      "classification": "night-safe",
+      "depends_on": [
+        "AIREADY-04-DRAFT-PANEL",
+        "CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS"
+      ]
+    },
+    {
+      "order": 29,
+      "id": "UI-GATE-01-MANUAL-VISUAL-DIRECTION",
+      "track": "Technical Debt / Architecture",
+      "status": "pending_after_B_GROUP",
+      "priority": "P1",
+      "classification": "day-only",
+      "depends_on": [
+        "UI-01-INFORMATION-ARCHITECTURE-REVIEW",
+        "CORE-02-WORKSPACE-UX-IMPROVEMENTS",
+        "CORE-03-RECENT-ISSUE-REOPEN",
+        "CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS",
+        "AIREADY-05-DRAFT-HISTORY"
+      ]
+    },
+    {
+      "order": 30,
+      "id": "TECH-07-APP-TSX-MINIMAL-SPLIT",
+      "track": "Technical Debt / Architecture",
+      "status": "pending_after_UI_GATE_01",
+      "priority": "P1",
+      "classification": "gated-night-safe",
+      "depends_on": [
+        "UI-GATE-01-MANUAL-VISUAL-DIRECTION"
+      ]
+    },
+    {
+      "order": 31,
+      "id": "UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT",
+      "track": "Technical Debt / Architecture",
+      "status": "pending_after_TECH-07",
+      "priority": "P1",
+      "classification": "day-only",
+      "depends_on": [
+        "TECH-07-APP-TSX-MINIMAL-SPLIT"
       ]
     }
   ],
@@ -464,7 +562,7 @@
       "DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN",
       "DATA-04-INTEGRITY-CHECK"
     ],
-    "two_to_four_week_goal": "搜索、AI-ready、code context bundle。",
+    "two_to_four_week_goal": "B 组本地 UI / core / AI-ready 小闭环，然后 code context bundle。",
     "two_to_four_week_tasks": [
       "CORE-01-QUICK-ISSUE-CREATE",
       "CORE-04-RECORD-TIMELINE-POLISH",
@@ -475,6 +573,10 @@
       "SEARCH-03-ARCHIVE-REVIEW-PAGE",
       "SEARCH-05-ERROR-CODE-TAXONOMY",
       "SEARCH-07-SIMILAR-ISSUES-LITE",
+      "UI-01-INFORMATION-ARCHITECTURE-REVIEW",
+      "CORE-02-WORKSPACE-UX-IMPROVEMENTS",
+      "CORE-03-RECENT-ISSUE-REOPEN",
+      "CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS",
       "AIREADY-05-DRAFT-HISTORY",
       "AIREADY-06-DRAFT-DIFF",
       "CODECTX-01-BUNDLE-CLI",
@@ -491,7 +593,9 @@
       "CODECTX-04-ATTACH-BUNDLE-TO-ISSUE",
       "CODECTX-05-BUNDLE-VIEWER",
       "CODECTX-07-AI-ANALYZE-EXPLICIT-BUNDLE",
+      "UI-GATE-01-MANUAL-VISUAL-DIRECTION",
       "TECH-07-APP-TSX-MINIMAL-SPLIT",
+      "UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT",
       "TECH-09-SERVER-ROUTE-SPLIT"
     ]
   },
@@ -523,10 +627,16 @@
     "TECH-04-VERIFY-HELPERS",
     "TECH-05-VERIFY-TMP-CLEANUP",
     "TECH-06-SMOKE-FIXTURE-CONSOLIDATION",
-    "TECH-07-APP-TSX-MINIMAL-SPLIT",
     "TECH-08-HTTP-REPOSITORY-SPLIT",
     "TECH-09-SERVER-ROUTE-SPLIT",
     "TECH-10-DATABASE-MODULE-SPLIT"
+  ],
+  "gated_night_safe_pool": [
+    {
+      "id": "TECH-07-APP-TSX-MINIMAL-SPLIT",
+      "requires": "UI-GATE-01-MANUAL-VISUAL-DIRECTION",
+      "boundary": "Only an enabling App.tsx component/hook split for confirmed UI work; no visual redesign, no full rewrite, no business behavior changes."
+    }
   ],
   "day_only_pool": [
     "DEP-02-STATIC-DIST-SERVER-PATH-VERIFY",
@@ -534,7 +644,9 @@
     "DEP-04-HEALTH-STATUS-SERVER-VERIFY",
     "DEP-05-SYSTEMD-AUTOSTART-PREP",
     "DATA-01-SQLITE-BACKUP-SERVER-PATH-VERIFY",
-    "DATA-03-RESTORE-DRY-RUN-SERVER-PATH-VERIFY"
+    "DATA-03-RESTORE-DRY-RUN-SERVER-PATH-VERIFY",
+    "UI-GATE-01-MANUAL-VISUAL-DIRECTION",
+    "UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT"
   ],
   "blocked_by_external": [
     "DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY",
@@ -625,9 +737,11 @@
     "recommended_next_daytime_status": "blocked_until_user_confirms_server_boundaries",
     "recommended_next_night_safe": "UI-01-INFORMATION-ARCHITECTURE-REVIEW",
     "recommended_next_ui_task": "UI-01-INFORMATION-ARCHITECTURE-REVIEW",
-    "alternative_night_safe": "CORE-02-WORKSPACE-UX-IMPROVEMENTS if the UI small stage is deferred; UI-02-SHELL-LAYOUT-POLISH only after UI-01 completes and planning promotes it",
-    "refactor_gate": "CODEBASE-REFINE-NECESSITY-AUDIT found no required refactor gate before DEP-01 or SEARCH-07. SEARCH-07 is complete; defer App.tsx / HTTP repository / server database / verify helper splits until a concrete task touches them.",
-    "selection_rule": "白天有用户参与时优先执行 DEP-01；无服务器授权或夜跑时不得部署，只能从 pending_task_queue / night_safe_pool 选择第一个依赖满足且未完成的任务。真实 AI/API key 和 systemd/sudo 任务不得 unattended。"
+    "b_group_order": "UI-01 -> CORE-02 -> CORE-03 -> CORE-06 -> AIREADY-05; plan together but execute one atomic task per round.",
+    "after_b_group_order": "UI-GATE-01-MANUAL-VISUAL-DIRECTION -> TECH-07-APP-TSX-MINIMAL-SPLIT -> UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT.",
+    "alternative_night_safe": "CORE-02-WORKSPACE-UX-IMPROVEMENTS only after UI-01 completes or if the user explicitly defers UI-01; UI-02-SHELL-LAYOUT-POLISH only after UI gates and planning promotion.",
+    "refactor_gate": "CODEBASE-REFINE-NECESSITY-AUDIT found no required broad refactor gate before DEP-01 or UI-01. SEARCH-07 is complete. TECH-07 is gated behind UI-GATE-01 and should support UI repair, not become a full App.tsx rewrite.",
+    "selection_rule": "白天有用户参与时优先执行 DEP-01；无服务器授权或夜跑时不得部署，只能从 pending_task_queue / night_safe_pool 选择第一个依赖满足且未完成的任务。B 组必须串行执行；UI-GATE-*、真实 AI/API key 和 systemd/sudo 任务不得 unattended。"
   },
   "night_run_mode": {
     "policy": "Night run / unattended mode may only execute repo-local, automatically verifiable and rollback-friendly atomic tasks. External systems, real servers, privileged operations, destructive data operations and product decisions must stop with handoff.",
@@ -822,13 +936,17 @@
     "Code context 第一阶段只能处理用户显式提供的 bundle，不允许 server 任意扫描路径。",
     "路线图较长，current.md 只允许保留最多 3 个前沿候选，完整字段必须回到 product-roadmap.md。",
     "docs/planning/status.md 只是快速状态索引，不得替代 current/backlog/product-roadmap/handoff.json。",
-    "UI implementation 必须先经过 UI-01 信息架构审查；不得直接全量重写 App.tsx、引入组件库或改变业务数据流。"
+    "UI implementation 必须先经过 UI-01 信息架构审查；不得直接全量重写 App.tsx、引入组件库或改变业务数据流。",
+    "TECH-07 只有在 UI-GATE-01 人工确认后才能执行；它是 UI 改造支撑拆分，不是视觉重设计。",
+    "UI-GATE-01 与 UI-GATE-02 是人工阻塞 / day-review 任务，不能夜跑。"
   ],
   "notes": [
     "UI-REDESIGN-STAGE-BRIEF 已完成：新增 docs/planning/ui-redesign-brief.md，只做下一阶段 UI 改造规划和任务拆分；未改 App.tsx、CSS、组件、业务代码、server 或依赖。",
     "推荐下一 UI 任务是 UI-01-INFORMATION-ARCHITECTURE-REVIEW；它是 planning-only/night-safe，只明确页面区域、主次关系、导航和状态布局。",
     "下一轮若用户白天可参与服务器操作，最适合认领 DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY。",
-    "下一轮若无服务器授权或夜跑，最适合认领 UI-01-INFORMATION-ARCHITECTURE-REVIEW；不要部署服务器，不接真实 AI。",
+    "下一轮若无服务器授权或夜跑，最适合认领 B 组第一项 UI-01-INFORMATION-ARCHITECTURE-REVIEW；不要部署服务器，不接真实 AI。",
+    "B 组顺序：UI-01 -> CORE-02 -> CORE-03 -> CORE-06 -> AIREADY-05；一起规划但必须逐个原子任务执行。",
+    "B 组完成后先修 UI 而不是先 broad refactor：UI-GATE-01 -> TECH-07 -> UI-GATE-02。",
     "UI 小阶段禁止 dashboard/console/new app、App.tsx full rewrite、业务逻辑重写、server change、真实 AI、embedding/RAG、Electron/fs/IPC、schema migration、组件库和 broad CSS reset。"
   ]
 }

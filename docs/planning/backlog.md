@@ -5,7 +5,7 @@
 ## 当前路线
 - 当前版本基座：v0.2.x 本地 HTTP + SQLite + release 可部署基座。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
-- 当前目标：近期 1 周先让部署可用、数据安全、可观测；2-4 周做搜索、AI-ready、code context bundle；1-2 月进入真实 AI、知识库和架构拆分。`SEARCH-01-BASIC-FULL-TEXT-SEARCH`、`SEARCH-02-FILTERS`、`SEARCH-04-TAGS`、`SEARCH-03-ARCHIVE-REVIEW-PAGE`、`SEARCH-07-SIMILAR-ISSUES-LITE`、`SEARCH-08-SEARCH-RESULT-LINKING`、`SEARCH-09-RECURRENCE-PROMPT`、`TECH-DEBT-SEARCH-KB-CLEANUP-LITE`、`UI-REDESIGN-STAGE-BRIEF` 与 `PROJECT-STATUS-LEDGER-MINIMAL` 已完成，不再留在可认领池；UI 小阶段任务拆分见 `docs/planning/ui-redesign-brief.md`。
+- 当前目标：近期 1 周先让部署可用、数据安全、可观测；无服务器授权时先按 B 组 night-safe 功能包串行补齐 UI 信息架构、workspace UX、最近问题回到现场、结案失败保留提示和 AI-ready 草稿历史；B 组完成后优先进入受控 UI 修复链路，而不是先做 broad refactor。`SEARCH-01-BASIC-FULL-TEXT-SEARCH`、`SEARCH-02-FILTERS`、`SEARCH-04-TAGS`、`SEARCH-03-ARCHIVE-REVIEW-PAGE`、`SEARCH-07-SIMILAR-ISSUES-LITE`、`SEARCH-08-SEARCH-RESULT-LINKING`、`SEARCH-09-RECURRENCE-PROMPT`、`TECH-DEBT-SEARCH-KB-CLEANUP-LITE`、`UI-REDESIGN-STAGE-BRIEF` 与 `PROJECT-STATUS-LEDGER-MINIMAL` 已完成，不再留在可认领池；UI 小阶段任务拆分见 `docs/planning/ui-redesign-brief.md`。
 - 当前 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 AI provider/API key。
 
 ## 认领规则
@@ -16,6 +16,24 @@
 5. Code context 先做 explicit bundle，不允许 server 任意扫描仓库路径。
 6. 需要产品方向、数据保留、taxonomy、repo connector、权限/RAG 等拍板时，任务保持 `decision-needed`。
 7. `docs/planning/status.md` 只用于快速概览，不得替代本文件、`current.md`、`product-roadmap.md` 或 `.agent-state/handoff.json` 做任务认领依据。
+
+## B 组 night-safe 组合规划
+
+> B 组可以一起规划，但仍必须一轮只执行一个原子任务、一次只提交一个 commit。任何任务若触发服务器、SSH、sudo、systemd、API key、真实数据迁移或人工产品拍板，立即停止并转为 blocked / day-only。
+
+| 顺序 | 任务 ID | 类型 | 为什么在 B 组 |
+|---|---|---|---|
+| B1 | UI-01-INFORMATION-ARCHITECTURE-REVIEW | night-safe / planning-only | 当前 UI 有明显信息架构问题，先定页面区域、主次关系、导航和状态布局。 |
+| B2 | CORE-02-WORKSPACE-UX-IMPROVEMENTS | night-safe | 当前 workspace / storage 状态分散，先让用户知道数据属于哪个项目。 |
+| B3 | CORE-03-RECENT-ISSUE-REOPEN | night-safe | 现场重启或刷新后能回到最近活跃问题，改善主流程连续性。 |
+| B4 | CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS | night-safe | closeout 失败时保留输入并提示下一步，降低丢失感。 |
+| B5 | AIREADY-05-DRAFT-HISTORY | night-safe | 规则草稿已有，补历史可审阅能力；仍不接真实 AI。 |
+
+## B 组后 UI / TECH 顺序
+
+- 结论：B 组功能完成后，先改 UI，但不是直接大改；先过人工 UI gate，再做 `TECH-07-APP-TSX-MINIMAL-SPLIT`，然后进入人工 review 的 UI implementation。
+- 顺序：`UI-GATE-01-MANUAL-VISUAL-DIRECTION` -> `TECH-07-APP-TSX-MINIMAL-SPLIT` -> `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT`。
+- 暂不优先：`TECH-08-HTTP-REPOSITORY-SPLIT`、`TECH-09-SERVER-ROUTE-SPLIT`、`TECH-10-DATABASE-MODULE-SPLIT`，除非具体 storage / server 任务命中它们。
 
 ## 近期 1 周任务（最多 8 个）
 目标：部署可用、数据安全、可观测。
@@ -31,7 +49,7 @@
 | 7 | DEP-07-RELEASE-UPDATE-ROLLBACK-PLAN | completed | P0 | 已完成；release update / rollback runbook 已接入 deploy-prep 静态检查 |
 | 8 | DATA-04-INTEGRITY-CHECK | completed | P0 | 已完成；SQLite integrity check CLI 与失败注入 verify 已落地 |
 
-## 近期 2-4 周任务（最多 12 个）
+## 近期 2-4 周任务（B 组已展开）
 目标：搜索、AI-ready、code context bundle。
 
 | 顺序 | 任务 ID | 类型 | P |
@@ -44,12 +62,16 @@
 | 6 | SEARCH-04-TAGS | completed | P1 |
 | 7 | SEARCH-05-ERROR-CODE-TAXONOMY | decision-needed | P1 |
 | 8 | SEARCH-07-SIMILAR-ISSUES-LITE | completed | P2 |
-| 9 | AIREADY-05-DRAFT-HISTORY | night-safe | P1 |
-| 10 | AIREADY-06-DRAFT-DIFF | night-safe | P1 |
-| 11 | CODECTX-01-BUNDLE-CLI | night-safe | P1 |
-| 12 | CODECTX-02-SECRETS-PROTECTION | night-safe | P1 |
+| 9 | UI-01-INFORMATION-ARCHITECTURE-REVIEW | night-safe | P1 |
+| 10 | CORE-02-WORKSPACE-UX-IMPROVEMENTS | night-safe | P1 |
+| 11 | CORE-03-RECENT-ISSUE-REOPEN | night-safe | P2 |
+| 12 | CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS | night-safe | P2 |
+| 13 | AIREADY-05-DRAFT-HISTORY | night-safe | P1 |
+| 14 | AIREADY-06-DRAFT-DIFF | night-safe | P1 |
+| 15 | CODECTX-01-BUNDLE-CLI | night-safe | P1 |
+| 16 | CODECTX-02-SECRETS-PROTECTION | night-safe | P1 |
 
-## 中期 1-2 月任务（最多 12 个）
+## 中期 1-2 月任务（含 UI gate 顺序）
 目标：真实 AI、知识库、架构拆分。
 
 | 顺序 | 任务 ID | 类型 | P |
@@ -64,8 +86,10 @@
 | 8 | CODECTX-05-BUNDLE-VIEWER | night-safe | P1 |
 | 9 | CODECTX-07-AI-ANALYZE-EXPLICIT-BUNDLE | blocked | P2 |
 | 10 | SEARCH-03-ARCHIVE-REVIEW-PAGE | completed | P1 |
-| 11 | TECH-07-APP-TSX-MINIMAL-SPLIT | night-safe | P2 |
-| 12 | TECH-09-SERVER-ROUTE-SPLIT | night-safe | P2 |
+| 11 | UI-GATE-01-MANUAL-VISUAL-DIRECTION | day-only | P1 |
+| 12 | TECH-07-APP-TSX-MINIMAL-SPLIT | gated-night-safe | P1 |
+| 13 | UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT | day-only | P1 |
+| 14 | TECH-09-SERVER-ROUTE-SPLIT | night-safe | P2 |
 
 ## 长期方向
 - 团队级多项目知识库与轻量权限。
@@ -103,10 +127,12 @@
 - TECH-04-VERIFY-HELPERS
 - TECH-05-VERIFY-TMP-CLEANUP
 - TECH-06-SMOKE-FIXTURE-CONSOLIDATION
-- TECH-07-APP-TSX-MINIMAL-SPLIT
 - TECH-08-HTTP-REPOSITORY-SPLIT
 - TECH-09-SERVER-ROUTE-SPLIT
 - TECH-10-DATABASE-MODULE-SPLIT
+
+## Gated night-safe pool
+- TECH-07-APP-TSX-MINIMAL-SPLIT：必须在 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` 人工确认后执行，只做支撑拆分，不做视觉重设计。
 
 ## Day-only pool
 - DEP-02-STATIC-DIST-SERVER-PATH-VERIFY
@@ -115,6 +141,8 @@
 - DEP-05-SYSTEMD-AUTOSTART-PREP
 - DATA-01-SQLITE-BACKUP-SERVER-PATH-VERIFY
 - DATA-03-RESTORE-DRY-RUN-SERVER-PATH-VERIFY
+- UI-GATE-01-MANUAL-VISUAL-DIRECTION
+- UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT
 
 ## Blocked by external
 - DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY
@@ -149,3 +177,4 @@
 - 不做权限系统、账号体系、多租户、复杂协同或公网暴露。
 - 不做 Electron / preload / fs / IPC，不把 `.debug_workspace` 文件写盘当作当前主线。
 - 不把 `docs/planning/status.md` 变成 backlog 副本、路线图副本或历史流水账。
+- 不在 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` 之前执行 `TECH-07-APP-TSX-MINIMAL-SPLIT`；不把 TECH-07 做成视觉重设计或 `App.tsx` 全量重写。

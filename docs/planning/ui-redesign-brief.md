@@ -2,7 +2,7 @@
 
 ## Executive Decision
 
-建议进入一个受控的 UI 改造小阶段，但它必须排在 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY` 的白天授权之后；无服务器授权或夜跑时，可以先推进 repo-local 的 UI 规划与局部实现任务。UI 改造主目标不是做新 dashboard，而是把现有 ProbeFlash 主流程重新整理成更清楚的现场问题闭环：当前项目、快速建卡、问题详情、排查时间线、Knowledge Assist、结案和归档复盘各有明确位置。不能直接大改 `App.tsx`，因为当前 2864 行文件同时承载 workspace、issue、search、closeout、archive 和 storage feedback 编排，整文件重写会扩大回归面并破坏已验证的 HTTP + SQLite 主链路。推荐第一批 UI 原子任务先做 `UI-01-INFORMATION-ARCHITECTURE-REVIEW`，再根据设计结果推进 shell、issue flow 和 Knowledge Assist 的局部 polish。
+建议进入一个受控的 UI 改造小阶段，但它必须排在 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY` 的白天授权之后；无服务器授权或夜跑时，可以先推进 repo-local 的 UI 规划与局部实现任务。UI 改造主目标不是做新 dashboard，而是把现有 ProbeFlash 主流程重新整理成更清楚的现场问题闭环：当前项目、快速建卡、问题详情、排查时间线、Knowledge Assist、结案和归档复盘各有明确位置。不能直接大改 `App.tsx`，因为当前 2864 行文件同时承载 workspace、issue、search、closeout、archive 和 storage feedback 编排，整文件重写会扩大回归面并破坏已验证的 HTTP + SQLite 主链路。当前推荐顺序是：先做 `UI-01-INFORMATION-ARCHITECTURE-REVIEW`，再通过 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` 人工确认目标 UI，随后用 `TECH-07-APP-TSX-MINIMAL-SPLIT` 降低 `App.tsx` 冲突面，最后进入 `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT` 和后续 shell、issue flow、Knowledge Assist 局部 polish。
 
 ## Current UI Problems
 
@@ -71,6 +71,36 @@
 不做：不改 UI 代码，不改 `App.tsx`，不改 CSS，不改业务逻辑。
 
 验证：`git diff --check`、`python3 -m json.tool .agent-state/handoff.json >/dev/null`、`cd apps/desktop && npm run verify:handoff`、`status.md` 不流水账。
+
+### UI-GATE-01-MANUAL-VISUAL-DIRECTION
+
+目标：在任何较大 UI 代码修改前，由用户人工确认目标信息架构、首屏布局、视觉方向和必须保留的真实边界。
+
+类型：manual-blocked / day-review；不能夜跑。
+
+不做：不直接重写 `App.tsx`，不引入组件库，不改业务逻辑，不隐藏服务器未部署、localStorage 兼容路径或真实 AI 未接入边界。
+
+验证：读回本 brief、`current.md`、`backlog.md`、`.agent-state/handoff.json`；人工确认记录必须存在于 planning sync；`git diff --check`；`python3 -m json.tool .agent-state/handoff.json >/dev/null`。
+
+### TECH-07-APP-TSX-MINIMAL-SPLIT
+
+目标：在目标 UI 方向已人工确认后，做最小 `App.tsx` 组件 / hook 拆分，为后续 UI implementation 降低冲突面。
+
+类型：gated-night-safe；依赖 `UI-01-INFORMATION-ARCHITECTURE-REVIEW` 与 `UI-GATE-01-MANUAL-VISUAL-DIRECTION`。
+
+不做：不做视觉重设计，不改 schema / repository / HTTP API contract，不改业务语义，不删除 localStorage compatibility verify path。
+
+验证：`git diff --check`、`python3 -m json.tool .agent-state/handoff.json >/dev/null`、`cd apps/desktop && npm run typecheck`、`cd apps/desktop && npm run build`、`cd apps/desktop && npm run verify:handoff`、`cd apps/desktop && npm run verify:all`、主流程 smoke。
+
+### UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT
+
+目标：在 TECH-07 后执行第一轮人工 review 的 UI 修改任务，优先修首屏、workspace / storage 状态、当前问题主区域和 Knowledge Assist 主次关系。
+
+类型：manual-blocked / day-review；不能夜跑。
+
+不做：不全量重写 `App.tsx`，不重做业务数据流，不接真实 AI，不做 dashboard / console / new app，不引入组件库或 broad CSS reset。
+
+验证：desktop / mobile 人工 smoke 记录、`git diff --check`、`python3 -m json.tool .agent-state/handoff.json >/dev/null`、`cd apps/desktop && npm run typecheck`、`cd apps/desktop && npm run build`、`cd apps/desktop && npm run verify:handoff`、`cd apps/desktop && npm run verify:all`。
 
 ### UI-02-SHELL-LAYOUT-POLISH
 
@@ -168,11 +198,16 @@
 
 判断依据：当前信息架构还不够清楚，Search / Knowledge Base 新能力刚完成但在页面上分散；如果直接做 shell 或 Knowledge Assist 视觉实现，容易在 `App.tsx` 里继续堆 UI 而不是降低认知负担。`UI-01` 先产出页面区域、主次关系、导航和状态布局，再决定 `UI-02` / `UI-04` 的具体实现边界。不能推荐“直接重写整个 UI”。
 
+后续顺序：B 组功能完成后不先做 broad refactor。推荐先完成人工 UI 方向确认，再执行 `TECH-07-APP-TSX-MINIMAL-SPLIT`，再进入人工 review 的 UI implementation。`TECH-08` / `TECH-09` / `TECH-10` 等非 UI 支撑型重构应后置到具体 server / storage 任务命中时。
+
 ## Night-safe vs Day-review
 
 | Task | Type | Why |
 | --- | --- | --- |
 | UI-01 | night-safe | planning-only，不改 UI 代码。 |
+| UI-GATE-01 | manual-blocked | 目标 UI、首屏信息架构和边界表述必须人工确认，不能夜跑。 |
+| TECH-07 | gated-night-safe | 只在 UI-GATE-01 后作为 UI implementation 支撑，不做视觉重设计。 |
+| UI-GATE-02 | manual-blocked | TECH-07 后的第一轮 UI 修改必须人工 review，不能夜跑。 |
 | UI-02 | day-review preferred | shell 观感和 LAN 演示第一印象最好人工看一眼。 |
 | UI-03 | night-safe | issue create/select/readback 可自动验证，但视觉仍建议截图。 |
 | UI-04 | night-safe or day-review | Search/Kb 行为可验证，Knowledge Assist 观感最好人工确认。 |
@@ -220,5 +255,6 @@ planning-only UI 任务可以不跑 typecheck/build/verify:all，但必须在汇
 - `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY` 的 P0 白天主线地位不变；只要用户白天授权 SSH、release 获取、用户目录写入、临时进程和 4100 端口边界，DEP-01 仍优先。
 - UI 改造可以作为下一个小阶段，但无服务器授权时才进入 UI night-safe 任务。
 - 推荐下一 UI 任务是 `UI-01-INFORMATION-ARCHITECTURE-REVIEW`；它只做信息架构设计，不实际改 UI。
+- B 组功能完成后，UI 大问题优先级高于 broad refactor；执行顺序为 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` -> `TECH-07-APP-TSX-MINIMAL-SPLIT` -> `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT`。
 - `status.md` 只做摘要，不变成 UI backlog 副本。
 - 完整 UI 拆分以本文为 brief；`backlog.md` / `.agent-state/handoff.json` 只提升当前最小下一候选，避免同时推进多个 UI 任务。
