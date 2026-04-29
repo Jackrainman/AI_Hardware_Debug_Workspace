@@ -5,7 +5,7 @@
 ## 当前路线
 - 当前版本基座：v0.2.x 本地 HTTP + SQLite + release 可部署基座。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
-- 当前目标：近期 1 周先让部署可用、数据安全、可观测；无服务器授权时先按 B 组 night-safe 功能包串行补齐最近问题回到现场、结案失败保留提示和 AI-ready 草稿历史；B 组完成后优先进入受控 UI 修复链路，而不是先做 broad refactor。`SEARCH-01-BASIC-FULL-TEXT-SEARCH`、`SEARCH-02-FILTERS`、`SEARCH-04-TAGS`、`SEARCH-03-ARCHIVE-REVIEW-PAGE`、`SEARCH-07-SIMILAR-ISSUES-LITE`、`SEARCH-08-SEARCH-RESULT-LINKING`、`SEARCH-09-RECURRENCE-PROMPT`、`TECH-DEBT-SEARCH-KB-CLEANUP-LITE`、`UI-REDESIGN-STAGE-BRIEF`、`UI-01-INFORMATION-ARCHITECTURE-REVIEW`、`CORE-02-WORKSPACE-UX-IMPROVEMENTS` 与 `PROJECT-STATUS-LEDGER-MINIMAL` 已完成，不再留在可认领池；UI 小阶段任务拆分见 `docs/planning/ui-redesign-brief.md`。
+- 当前目标：近期 1 周先让部署可用、数据安全、可观测；无服务器授权时先按 B 组 night-safe 功能包串行补齐结案失败保留提示和 AI-ready 草稿历史；B 组完成后优先进入受控 UI 修复链路，而不是先做 broad refactor。`SEARCH-01-BASIC-FULL-TEXT-SEARCH`、`SEARCH-02-FILTERS`、`SEARCH-04-TAGS`、`SEARCH-03-ARCHIVE-REVIEW-PAGE`、`SEARCH-07-SIMILAR-ISSUES-LITE`、`SEARCH-08-SEARCH-RESULT-LINKING`、`SEARCH-09-RECURRENCE-PROMPT`、`TECH-DEBT-SEARCH-KB-CLEANUP-LITE`、`UI-REDESIGN-STAGE-BRIEF`、`UI-01-INFORMATION-ARCHITECTURE-REVIEW`、`CORE-02-WORKSPACE-UX-IMPROVEMENTS`、`CORE-03-RECENT-ISSUE-REOPEN` 与 `PROJECT-STATUS-LEDGER-MINIMAL` 已完成，不再留在可认领池；UI 小阶段任务拆分见 `docs/planning/ui-redesign-brief.md`。
 - 当前 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 AI provider/API key。
 
 ## 认领规则
@@ -25,8 +25,8 @@
 |---|---|---|---|
 | B1 | UI-01-INFORMATION-ARCHITECTURE-REVIEW | completed | 已补齐最终信息架构和 `CORE-02` 输入边界；未改 UI 代码。 |
 | B2 | CORE-02-WORKSPACE-UX-IMPROVEMENTS | completed | 已改善当前项目身份、创建入口、workspace / issue 空态和错误态；新增对应 verify。 |
-| B3 | CORE-03-RECENT-ISSUE-REOPEN | night-safe / current | 现场重启或刷新后能回到最近活跃问题，改善主流程连续性。 |
-| B4 | CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS | night-safe | closeout 失败时保留输入并提示下一步，降低丢失感。 |
+| B3 | CORE-03-RECENT-ISSUE-REOPEN | completed | 已支持当前 workspace 最近未归档问题刷新 / 重开恢复；缺失、已归档和 workspace 切换均安全降级。 |
+| B4 | CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS | night-safe / current | closeout 失败时保留输入并提示下一步，降低丢失感。 |
 | B5 | AIREADY-05-DRAFT-HISTORY | night-safe | 规则草稿已有，补历史可审阅能力；仍不接真实 AI。 |
 
 ## B 组后 UI / TECH 顺序
@@ -64,8 +64,8 @@
 | 8 | SEARCH-07-SIMILAR-ISSUES-LITE | completed | P2 |
 | 9 | UI-01-INFORMATION-ARCHITECTURE-REVIEW | completed | P1 |
 | 10 | CORE-02-WORKSPACE-UX-IMPROVEMENTS | completed | P1 |
-| 11 | CORE-03-RECENT-ISSUE-REOPEN | night-safe / current | P2 |
-| 12 | CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS | night-safe | P2 |
+| 11 | CORE-03-RECENT-ISSUE-REOPEN | completed | P2 |
+| 12 | CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS | night-safe / current | P2 |
 | 13 | AIREADY-05-DRAFT-HISTORY | night-safe | P1 |
 | 14 | AIREADY-06-DRAFT-DIFF | night-safe | P1 |
 | 15 | CODECTX-01-BUNDLE-CLI | night-safe | P1 |
@@ -100,7 +100,6 @@
 - 更完整的局域网部署体验：反向代理、`.local`、HTTPS、美化域名。
 
 ## Night-safe pool
-- CORE-03-RECENT-ISSUE-REOPEN
 - CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS
 - CORE-07-ARCHIVE-FILTERS
 - CORE-08-ERROR-ENTRY-TAGS

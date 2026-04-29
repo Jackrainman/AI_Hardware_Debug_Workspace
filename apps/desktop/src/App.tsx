@@ -57,6 +57,12 @@ import {
   removeRelatedHistoricalIssue,
 } from "./search/related-historical-issues";
 import {
+  getBrowserRecentIssueStorage,
+  rememberRecentIssueForReopen,
+  resolveRecentIssueReopen,
+  type RecentIssueReopenState,
+} from "./storage/recent-issue-reopen";
+import {
   buildRecurrencePrompt,
   type RecurrencePrompt,
 } from "./search/recurrence-prompt";
@@ -605,10 +611,30 @@ function renderIntakeStatus(status: IntakeSubmitStatus): string {
   }
 }
 
+function renderRecentIssueReopenState(state: RecentIssueReopenState): string {
+  switch (state.state) {
+    case "checking":
+      return "最近现场：正在检查当前项目的本地记录";
+    case "none":
+      return "最近现场：当前项目暂无本地记录";
+    case "restored":
+      return `最近现场：已回到 ${state.issueId}`;
+    case "recorded":
+      return `最近现场：已记录 ${state.issueId}，刷新后会优先回到这里`;
+    case "missing":
+      return `最近现场：${state.issueId} 不在当前项目内，已安全降级`;
+    case "archived":
+      return `最近现场：${state.issueId} 已归档，刷新不会自动重开`;
+    case "unavailable":
+      return "最近现场：浏览器本地状态不可用，暂不自动恢复";
+  }
+}
+
 function IssueCardListView({
   result,
   activeWorkspace,
   selectedIssueId,
+  recentIssueReopenState,
   onCreateNew,
   onRefresh,
   onSelect,
@@ -616,6 +642,7 @@ function IssueCardListView({
   result: IssueCardListResult | null;
   activeWorkspace: Workspace;
   selectedIssueId: string | null;
+  recentIssueReopenState: RecentIssueReopenState;
   onCreateNew: () => void;
   onRefresh: () => void;
   onSelect: (id: string) => void;
@@ -642,13 +669,20 @@ function IssueCardListView({
         )}
       </div>
       <div className="list-header">
-        <button type="button" className="button-secondary" onClick={onRefresh}>
+        <button type="button" className="button-secondary" onClick={() => onRefresh()}>
           刷新列表
         </button>
         <span className="storage-line" data-testid="list-summary">
           {result === null
             ? `当前项目「${activeWorkspace.name}」· 正在读取问题卡`
             : `当前项目「${activeWorkspace.name}」· 未归档 ${activeCards.length} 条 · 异常 ${result.invalid.length} 条`}
+        </span>
+        <span
+          className="storage-line"
+          data-testid="recent-issue-reopen-state"
+          data-state={recentIssueReopenState.state}
+        >
+          {renderRecentIssueReopenState(recentIssueReopenState)}
         </span>
       </div>
       {result && result.readError !== null && (
@@ -1793,15 +1827,22 @@ function IssuePane({
   const [lastCloseout, setLastCloseout] = useState<CloseoutSummary | null>(null);
   const [similarIssues, setSimilarIssues] = useState<SimilarIssuesResult | null>(null);
   const [isLoadingSimilarIssues, setIsLoadingSimilarIssues] = useState<boolean>(false);
+  const [recentIssueReopenState, setRecentIssueReopenState] = useState<RecentIssueReopenState>({
+    state: "checking",
+  });
   const [dismissedRecurrencePrompt, setDismissedRecurrencePrompt] = useState<{
     currentIssueId: string;
     historicalIssueId: string;
   } | null>(null);
 
-  const refreshCardList = async () => {
+  const recentIssueStorage = getBrowserRecentIssueStorage();
+
+  const refreshCardList = async (options: { restoreRecent?: boolean } = {}) => {
+    const shouldRestoreRecent = options.restoreRecent ?? true;
     const result = await repository.issueCards.list();
     setCardList(result);
     if (result.readError !== null) {
+      setRecentIssueReopenState({ state: "unavailable" });
       reportStorageError(storageReadErrorToFeedback("issue_list", "list_issues", result.readError));
       return;
     }
@@ -1817,19 +1858,45 @@ function IssuePane({
       return;
     }
     clearStorageFeedback();
+    if (shouldRestoreRecent && selectedIssueId === null && externalSelectedIssueId === null) {
+      const resolved = resolveRecentIssueReopen(recentIssueStorage, activeWorkspace.id, result.valid);
+      setRecentIssueReopenState(resolved.state);
+      if (resolved.issueIdToOpen !== null) {
+        setSelectedIssueId(resolved.issueIdToOpen);
+        onSelectedIssueChange(resolved.issueIdToOpen);
+        void reloadSelectedCard(resolved.issueIdToOpen, { recentState: "restored" });
+        void loadRecordList(resolved.issueIdToOpen);
+        setLastCloseout(null);
+        setSimilarIssues(null);
+        setDismissedRecurrencePrompt(null);
+      }
+    }
   };
 
   useEffect(() => {
-    void refreshCardList();
+    void refreshCardList({ restoreRecent: true });
   }, []);
 
-  const reloadSelectedCard = async (id: string) => {
+  const reloadSelectedCard = async (
+    id: string,
+    options: { recentState?: "recorded" | "restored" | null } = {},
+  ) => {
     const loaded = await repository.issueCards.load(id);
     setSelectedCard(loaded.ok ? loaded.card : null);
     if (!loaded.ok) {
       reportStorageError(loadIssueCardFailureToFeedback("issue_detail", loaded.error));
       return;
     }
+    const nextRecentState = rememberRecentIssueForReopen(
+      recentIssueStorage,
+      activeWorkspace.id,
+      loaded.card,
+    );
+    setRecentIssueReopenState(
+      nextRecentState.state === "recorded" && options.recentState === "restored"
+        ? { state: "restored", issueId: loaded.card.id }
+        : nextRecentState,
+    );
     clearStorageFeedback();
   };
 
@@ -1879,7 +1946,7 @@ function IssuePane({
   const handleSelect = (id: string) => {
     setSelectedIssueId(id);
     onSelectedIssueChange(id);
-    void reloadSelectedCard(id);
+    void reloadSelectedCard(id, { recentState: "recorded" });
     void loadRecordList(id);
     setLastCloseout(null);
   };
@@ -1911,10 +1978,10 @@ function IssuePane({
   };
 
   const handleCardCreated = (id: string) => {
-    void refreshCardList();
+    void refreshCardList({ restoreRecent: false });
     setSelectedIssueId(id);
     onSelectedIssueChange(id);
-    void reloadSelectedCard(id);
+    void reloadSelectedCard(id, { recentState: "recorded" });
     void loadRecordList(id);
     setLastCloseout(null);
     setSimilarIssues(null);
@@ -1928,9 +1995,9 @@ function IssuePane({
   const handleIssueClosed = (summary: CloseoutSummary) => {
     setLastCloseout(summary);
     onCloseoutResult(summary);
-    void refreshCardList();
+    void refreshCardList({ restoreRecent: false });
     void loadRecordList(summary.issueId);
-    void reloadSelectedCard(summary.issueId);
+    void reloadSelectedCard(summary.issueId, { recentState: null });
   };
 
   const saveSelectedCardUpdate = async (updatedCard: IssueCard) => {
@@ -1942,7 +2009,7 @@ function IssuePane({
       return false;
     }
     setSelectedCard(updatedCard);
-    void refreshCardList();
+    void refreshCardList({ restoreRecent: false });
     clearStorageFeedback();
     return true;
   };
@@ -2003,6 +2070,7 @@ function IssuePane({
             result={cardList}
             activeWorkspace={activeWorkspace}
             selectedIssueId={selectedIssueId}
+            recentIssueReopenState={recentIssueReopenState}
             onCreateNew={handleCreateNew}
             onRefresh={refreshCardList}
             onSelect={handleSelect}
