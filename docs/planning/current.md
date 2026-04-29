@@ -7,12 +7,12 @@
 - 当前模式：`server_storage_migration`（保留服务器部署安全边界）。
 - 阶段目标：以 v0.2.x 已完成的本地 HTTP + SQLite + release 可部署基座为起点，按 8 条产品主线推进；近期 P0 只聚焦 **部署可用、数据安全、可观测**，无服务器授权时按 B 组 night-safe 队列补齐 UI 信息架构、workspace UX、最近问题回到现场、结案失败保留提示和 AI-ready 草稿历史。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
-- 最近已完成：`UI-REDESIGN-STAGE-BRIEF`，新增 `docs/planning/ui-redesign-brief.md`，明确下一阶段 UI 改造边界、任务拆分与推荐下一 UI 任务；未改 UI / CSS / 业务代码。
+- 最近已完成：`UI-01-INFORMATION-ARCHITECTURE-REVIEW`，在 `docs/planning/ui-redesign-brief.md` 中补齐最终信息架构，明确首屏区域、workspace/storage 状态位置、issue list/detail 主次关系、Knowledge Assist 区域、closeout 入口策略和 `CORE-02` 输入边界；未改 UI / CSS / 业务代码。
 
 ## 当前真实状态
-- 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、issue / record / closeout / archive / error-entry 主路径、basic full-text search、search filters、search tags、archive review page、similar issues lite、search result linking、recurrence prompt、search / KB verify fixture cleanup、UI redesign stage brief、quick issue create、record timeline polish、closeout UX polish、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、server schema contract、HTTP feedback contract、restore dry-run、SQLite integrity check、JSON export hardening、partial closeout recovery verify、repair task generation、diagnostics bundle、night-run 安全规则、v0.2 历史文档归档、lightweight project status ledger、refactor necessity audit。
+- 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、issue / record / closeout / archive / error-entry 主路径、basic full-text search、search filters、search tags、archive review page、similar issues lite、search result linking、recurrence prompt、search / KB verify fixture cleanup、UI redesign stage brief、UI information architecture review、quick issue create、record timeline polish、closeout UX polish、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、server schema contract、HTTP feedback contract、restore dry-run、SQLite integrity check、JSON export hardening、partial closeout recovery verify、repair task generation、diagnostics bundle、night-run 安全规则、v0.2 历史文档归档、lightweight project status ledger、refactor necessity audit。
 - 技术债审计：`docs/planning/refactor-assessment.md` 已更新为当前事实；`SEARCH-07` 已完成，当前没有必须先做的 broad refactor gate；大文件和重复逻辑存在但不阻塞 DEP-01 / UI-01。
-- UI 改造准备：`docs/planning/ui-redesign-brief.md` 已确认下一小阶段建议从信息架构审查开始；推荐下一 UI 任务是 `UI-01-INFORMATION-ARCHITECTURE-REVIEW`，禁止直接重写 `App.tsx` 或引入组件库。B 组功能完成后，优先走 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` -> `TECH-07-APP-TSX-MINIMAL-SPLIT` -> `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT`，而不是先做 TECH-08 / TECH-09 / TECH-10 broad refactor。
+- UI 改造准备：`docs/planning/ui-redesign-brief.md` 已完成信息架构审查，当前 UI 实现输入边界只开放到 `CORE-02-WORKSPACE-UX-IMPROVEMENTS` 的 workspace / storage UX 最小改善；禁止直接重写 `App.tsx` 或引入组件库。B 组功能完成后，优先走 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` -> `TECH-07-APP-TSX-MINIMAL-SPLIT` -> `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT`，而不是先做 TECH-08 / TECH-09 / TECH-10 broad refactor。
 - 仍 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 AI provider/API key 接入。
 - 服务器安全边界仍有效：不 sudo、不写 `/opt`、不抢 80、不升级系统 Node、不影响 filebrowser / vnt-cli / docker / Portainer；release 部署优先 `/home/hurricane/probeflash` + 独立 Node runtime + 4100。
 - AI 安全边界仍有效：AI-ready 可夜跑；真实 AI 必须等用户确认 provider、API key/server env、timeout 和 mock/test provider 边界；AI 只返回草稿，不直接写库。
@@ -38,20 +38,29 @@
   - 验证方式：SHA256 校验；`curl http://127.0.0.1:4100/`；`curl http://127.0.0.1:4100/api/health`；`curl http://192.168.2.2:4100/`；`curl http://192.168.2.2:4100/api/health`；创建 workspace / issue；停止重启后读回；确认 `shared/data/probeflash.sqlite` 被使用；确认 filebrowser:80 正常。
   - 完成定义：固定 release 资产在用户目录运行；4100 可本机与 LAN 访问 Web UI 和 `/api`；SQLite 重启后可读回；`shared/data` / `shared/env` / `shared/logs` 不随 release 删除；未执行 sudo / systemd / `/opt` / 服务器 `git pull`。
 
+## 当前唯一 B 组可执行原子任务（无服务器授权时）
+- **CORE-02-WORKSPACE-UX-IMPROVEMENTS**
+  - 目标：基于 `UI-01` 的 Project context bar 输入边界，最小改善 workspace 展示、创建入口、空状态和 storage/server 错误态，让用户清楚当前数据属于哪个项目。
+  - 当前状态：`pending`；night-safe；repo-local；可自动验证。
+  - 允许改动：`apps/desktop/src` 中 workspace 展示、创建入口、空状态、错误态相关代码；对应 verify 脚本；planning sync 文件；必要时同步 `status.md` / `backlog.md`。
+  - 明确不做：不做权限 / 多租户；不改 DB schema；不做 server 部署；不做大 UI 改版；不执行 `TECH-07`；不全量重写 `App.tsx`。
+  - 验证方式：`git diff --check`、`python3 -m json.tool .agent-state/handoff.json >/dev/null`、`cd apps/desktop && npm run typecheck`、`cd apps/desktop && npm run build`、`cd apps/desktop && npm run verify:handoff`、`cd apps/desktop && npm run verify:all`，并补 workspace 创建 / 切换 / 空状态或错误态相关 verify。
+  - 完成定义：当前 workspace 身份、创建入口、空状态与错误态更清楚；不改变数据流和 storage 语义；planning sync 后下一任务切到 `CORE-03-RECENT-ISSUE-REOPEN`。
+
 ## 当前前沿任务窗口（最多 3 个候选）
 - **DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY**
   - 状态：`blocked`；P0；白天主线；不能夜跑。
   - 选择理由：真实服务器部署仍是产品可用性的最大缺口。
-- **UI-01-INFORMATION-ARCHITECTURE-REVIEW**
-  - 状态：`night-safe`；P1；下一阶段 UI 改造的第一个 planning-only 任务。
-  - 选择理由：UI brief 已完成，当前信息架构仍需先明确页面区域、主次关系、导航和状态布局；不实际改 UI、不引入组件库。
 - **CORE-02-WORKSPACE-UX-IMPROVEMENTS**
-  - 状态：`night-safe_after_UI-01`；P1；B 组第二项。
-  - 选择理由：workspace / storage 状态分散是当前 UI 大问题的一部分；需在 UI-01 明确布局后做最小 UX 改善。
+  - 状态：`night-safe`；P1；B 组第二项，当前无服务器授权时的唯一可执行原子任务。
+  - 选择理由：`UI-01` 已明确 Project context bar；workspace / storage 状态分散是当前 UI 大问题的一部分，需先做最小 UX 改善。
+- **CORE-03-RECENT-ISSUE-REOPEN**
+  - 状态：`pending_after_CORE-02`；P2；B 组第三项。
+  - 选择理由：workspace UX 清楚后，再支持刷新或重开页面快速回到最近活跃问题。
 
 ## 下一步最小可执行动作
 - 白天有用户参与：认领 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`，执行前再次复述 SSH / release assets / 写入路径 / 临时进程 / 4100 授权边界。
-- 无服务器授权或夜跑：不要部署；下一轮重新读取事实源后，优先从 B 组队列认领 `UI-01-INFORMATION-ARCHITECTURE-REVIEW`，后续串行顺序是 `CORE-02-WORKSPACE-UX-IMPROVEMENTS`、`CORE-03-RECENT-ISSUE-REOPEN`、`CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS`、`AIREADY-05-DRAFT-HISTORY`。
+- 无服务器授权或夜跑：不要部署；下一轮重新读取事实源后，优先从 B 组队列认领 `CORE-02-WORKSPACE-UX-IMPROVEMENTS`，后续串行顺序是 `CORE-03-RECENT-ISSUE-REOPEN`、`CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS`、`AIREADY-05-DRAFT-HISTORY`。
 - B 组完成后：先 UI 后 broad refactor，但必须通过人工 UI gate；顺序为 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` -> `TECH-07-APP-TSX-MINIMAL-SPLIT` -> `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT`。
 - 真实 AI：仍 blocked，不得无人值守接 provider 或 API key。
 

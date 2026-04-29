@@ -34,6 +34,56 @@
 | Archive review | Drawer 内浏览 archive markdown 并跳回来源 issue。 | 与 closeout 后的知识沉淀连接较弱。 | Medium | 不编辑 archive 源内容。 |
 | Storage / server feedback | 顶部统一存储状态和错误提示。 | 状态可见但视觉优先级和 workspace 状态未整合。 | High | 不能改变错误语义，不能伪造服务器可用。 |
 
+## Final Information Architecture (UI-01)
+
+### Product Shape
+
+ProbeFlash 主界面应被理解为 **workspace-scoped issue workbench**，不是 dashboard、console 或项目管理系统。首屏只回答 4 个问题：当前数据属于哪个项目、现在选中哪个问题、下一步该记录 / 排查 / 结案什么、有哪些历史知识可辅助判断。
+
+### First Screen Regions
+
+| Region | Primary content | Priority | Notes for implementation |
+| --- | --- | --- | --- |
+| Global header | 产品名、当前阶段真实边界、archive review 入口。 | Secondary | 阶段和边界要真实但不能压过当前 workspace。 |
+| Project context bar | 当前 workspace、创建 / 切换入口、storage/server 状态、错误与重试提示。 | Primary | `CORE-02` 优先把 workspace 与 storage feedback 合并成用户能读懂的项目上下文。 |
+| Issue rail | 快速建卡、open issue list、当前选中态、空状态和错误态。 | Primary | 这是导航和现场 triage，不承载知识库搜索主任务。 |
+| Issue workbench | 当前 issue 摘要、状态 / 标签、下一步提示、record composer、timeline、closeout CTA / panel。 | Primary | 选中问题后的主操作都在这里，避免被 search 抢首屏焦点。 |
+| Knowledge Assist | 复发提示、相似问题、人工关联历史、历史搜索。 | Supporting | 单一区域表达“辅助判断”，不把规则建议当事实，不自动写库。 |
+| Archive review | 归档文档浏览和跳回来源 issue。 | Auxiliary | 仍可用 drawer / secondary surface，不进入首屏主任务。 |
+| Footer boundary | localStorage 兼容路径、Electron/fs/IPC 未接入等长期边界。 | Low | 保留真实边界，但首屏优先级低于 project context bar。 |
+
+### Workspace And Storage State Placement
+
+- 当前 workspace 名称 / ID、创建入口、切换入口和 storage/server 连接状态应合并为一个 **Project context bar**，放在 header 下方或 header 主操作区内。
+- storage/server 错误态应直接说明影响范围：当前项目数据是否可读、创建 / 写入是否可重试、用户下一步应该刷新 / 切换 workspace / 稍后重试。
+- localStorage 兼容路径只能作为次级技术边界，不应与当前 workspace 主身份争抢视觉优先级。
+- 不得把本地 HTTP + SQLite 说成真实服务器部署完成；真实服务器、systemd 和真实 AI 仍保持 blocked 表达。
+
+### Issue List And Detail Relationship
+
+- Issue rail 是选择和快速创建区域；它显示 open issues、当前选中态、关键状态、标签和最近活动线索，但不承载完整排查内容。
+- Issue workbench 是主任务区域；无 issue 选中时给出“先创建或选择问题”的空状态，已选中时优先显示 issue 摘要、下一步建议、record timeline 和 closeout 入口。
+- Issue detail 内的记录、时间线和结案应按“记录现场 -> 组织排查 -> 收束归档”的顺序排列；Knowledge Assist 不应插在快速建卡和主 workbench 之间。
+- Workspace 切换、issue 不存在或已归档时，detail 应安全降级到可理解的空状态，并提示重新选择 open issue 或打开归档复盘。
+
+### Knowledge Assist Region
+
+- Search、similar issues、recurrence prompt 和 linked historical issues 合并为一个 **Knowledge Assist** 区域，文案统一使用“辅助判断 / 历史线索 / 人工关联”。
+- 复发提示优先级最高，因为它直接影响当前 issue 判断；相似问题和已关联历史其次；全文搜索作为用户主动查询入口。
+- Knowledge Assist 只能提供解释、链接和人工关联动作；不得自动修改 root cause、resolution、record 或 closeout 内容。
+- 该区域可以在桌面端作为右侧 supporting rail，在窄屏下落到 issue workbench 下方；具体视觉需要 `UI-GATE-01` 人工确认。
+
+### Closeout Entry Strategy
+
+- Closeout 是当前 issue 的收束动作，不是独立长表单页面；入口应靠近 issue 摘要 / 当前状态，并能跳转或聚焦到 closeout panel。
+- Closeout panel 仍保留在 issue workbench 内，放在 record timeline 之后或同一区域的明确“收束”段落，避免遮挡正在记录的排查过程。
+- AI-ready / rule-based draft 只能以“草稿”出现，必须由用户审阅和手动应用；真实 AI 未接入时不能宣称模型生成。
+- Closeout 成功语义、ArchiveDocument / ErrorEntry 写入语义和 schema 语义不因 UI 信息架构改变。
+
+### CORE-02 Input Boundary
+
+`CORE-02-WORKSPACE-UX-IMPROVEMENTS` 只接收本节中与 Project context bar、workspace 创建 / 切换、workspace 空状态、storage/server 错误态和“当前数据属于哪个项目”相关的输入。它可以做最小 UI / copy / verify 改善，但不得移动 Knowledge Assist、重排 closeout 主流程、执行 `TECH-07`、全量重写 `App.tsx`、引入组件库、改 schema、改 server 或改变业务数据流。
+
 ## Protected Product Flows
 
 - workspace create / switch

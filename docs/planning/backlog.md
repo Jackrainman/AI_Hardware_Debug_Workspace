@@ -5,7 +5,7 @@
 ## 当前路线
 - 当前版本基座：v0.2.x 本地 HTTP + SQLite + release 可部署基座。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
-- 当前目标：近期 1 周先让部署可用、数据安全、可观测；无服务器授权时先按 B 组 night-safe 功能包串行补齐 UI 信息架构、workspace UX、最近问题回到现场、结案失败保留提示和 AI-ready 草稿历史；B 组完成后优先进入受控 UI 修复链路，而不是先做 broad refactor。`SEARCH-01-BASIC-FULL-TEXT-SEARCH`、`SEARCH-02-FILTERS`、`SEARCH-04-TAGS`、`SEARCH-03-ARCHIVE-REVIEW-PAGE`、`SEARCH-07-SIMILAR-ISSUES-LITE`、`SEARCH-08-SEARCH-RESULT-LINKING`、`SEARCH-09-RECURRENCE-PROMPT`、`TECH-DEBT-SEARCH-KB-CLEANUP-LITE`、`UI-REDESIGN-STAGE-BRIEF` 与 `PROJECT-STATUS-LEDGER-MINIMAL` 已完成，不再留在可认领池；UI 小阶段任务拆分见 `docs/planning/ui-redesign-brief.md`。
+- 当前目标：近期 1 周先让部署可用、数据安全、可观测；无服务器授权时先按 B 组 night-safe 功能包串行补齐 workspace UX、最近问题回到现场、结案失败保留提示和 AI-ready 草稿历史；B 组完成后优先进入受控 UI 修复链路，而不是先做 broad refactor。`SEARCH-01-BASIC-FULL-TEXT-SEARCH`、`SEARCH-02-FILTERS`、`SEARCH-04-TAGS`、`SEARCH-03-ARCHIVE-REVIEW-PAGE`、`SEARCH-07-SIMILAR-ISSUES-LITE`、`SEARCH-08-SEARCH-RESULT-LINKING`、`SEARCH-09-RECURRENCE-PROMPT`、`TECH-DEBT-SEARCH-KB-CLEANUP-LITE`、`UI-REDESIGN-STAGE-BRIEF`、`UI-01-INFORMATION-ARCHITECTURE-REVIEW` 与 `PROJECT-STATUS-LEDGER-MINIMAL` 已完成，不再留在可认领池；UI 小阶段任务拆分见 `docs/planning/ui-redesign-brief.md`。
 - 当前 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 AI provider/API key。
 
 ## 认领规则
@@ -23,8 +23,8 @@
 
 | 顺序 | 任务 ID | 类型 | 为什么在 B 组 |
 |---|---|---|---|
-| B1 | UI-01-INFORMATION-ARCHITECTURE-REVIEW | night-safe / planning-only | 当前 UI 有明显信息架构问题，先定页面区域、主次关系、导航和状态布局。 |
-| B2 | CORE-02-WORKSPACE-UX-IMPROVEMENTS | night-safe | 当前 workspace / storage 状态分散，先让用户知道数据属于哪个项目。 |
+| B1 | UI-01-INFORMATION-ARCHITECTURE-REVIEW | completed | 已补齐最终信息架构和 `CORE-02` 输入边界；未改 UI 代码。 |
+| B2 | CORE-02-WORKSPACE-UX-IMPROVEMENTS | night-safe / current | 当前 workspace / storage 状态分散，先让用户知道数据属于哪个项目。 |
 | B3 | CORE-03-RECENT-ISSUE-REOPEN | night-safe | 现场重启或刷新后能回到最近活跃问题，改善主流程连续性。 |
 | B4 | CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS | night-safe | closeout 失败时保留输入并提示下一步，降低丢失感。 |
 | B5 | AIREADY-05-DRAFT-HISTORY | night-safe | 规则草稿已有，补历史可审阅能力；仍不接真实 AI。 |
@@ -62,8 +62,8 @@
 | 6 | SEARCH-04-TAGS | completed | P1 |
 | 7 | SEARCH-05-ERROR-CODE-TAXONOMY | decision-needed | P1 |
 | 8 | SEARCH-07-SIMILAR-ISSUES-LITE | completed | P2 |
-| 9 | UI-01-INFORMATION-ARCHITECTURE-REVIEW | night-safe | P1 |
-| 10 | CORE-02-WORKSPACE-UX-IMPROVEMENTS | night-safe | P1 |
+| 9 | UI-01-INFORMATION-ARCHITECTURE-REVIEW | completed | P1 |
+| 10 | CORE-02-WORKSPACE-UX-IMPROVEMENTS | night-safe / current | P1 |
 | 11 | CORE-03-RECENT-ISSUE-REOPEN | night-safe | P2 |
 | 12 | CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS | night-safe | P2 |
 | 13 | AIREADY-05-DRAFT-HISTORY | night-safe | P1 |
@@ -100,7 +100,6 @@
 - 更完整的局域网部署体验：反向代理、`.local`、HTTPS、美化域名。
 
 ## Night-safe pool
-- UI-01-INFORMATION-ARCHITECTURE-REVIEW
 - CORE-02-WORKSPACE-UX-IMPROVEMENTS
 - CORE-03-RECENT-ISSUE-REOPEN
 - CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS
