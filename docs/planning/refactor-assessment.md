@@ -2,9 +2,11 @@
 
 ## Executive Decision
 
+2026-04-30 交接更新：本评估中推荐的 `UI-01-INFORMATION-ARCHITECTURE-REVIEW`、后续 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` 与 `TECH-07-APP-TSX-MINIMAL-SPLIT` 均已完成，且用户已认可 TECH-07 拆分结果。当前下一轮只允许自动认领 `UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT`，先做行为保持模块化拆分；完成后必须停在 `UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT`，等待用户人工检查能否正常跑，再决定是否进入 UI 重排。
+
 当前不建议在 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY` 或 `UI-01-INFORMATION-ARCHITECTURE-REVIEW` 前插入强制重构任务。代码库确实存在大文件、重复搜索 / 标签归一化、verify fixture 重复和 server 数据库职责过重，但这些问题目前没有阻塞本地 HTTP + SQLite 主链路，也不是 DEP-01 服务器用户目录部署验证或 UI-01 信息架构审查的前置条件。`SEARCH-07-SIMILAR-ISSUES-LITE`、`SEARCH-08-SEARCH-RESULT-LINKING`、`SEARCH-09-RECURRENCE-PROMPT` 与 search / KB cleanup 已完成；旧的 SEARCH-07 推荐不再是当前事实源。
 
-推荐下一步唯一 repo-local 可推进任务是 `UI-01-INFORMATION-ARCHITECTURE-REVIEW`；如果用户白天确认服务器边界，`DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY` 仍是 P0 白天主线且不需要等待重构。B 组功能完成后，建议先进入受控 UI 修复链路，而不是先做 broad refactor：先人工确认 UI 方向，再执行 `TECH-07-APP-TSX-MINIMAL-SPLIT` 作为 UI 改造支撑点，之后再做人工 review 的 UI implementation。
+当前唯一 repo-local 下一任务是 `UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT`；如果用户白天确认服务器边界，`DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY` 仍是 P0 blocked 主线，但下一轮默认不自动改选服务器部署。B 组、人工 UI 方向确认、TECH-07 和 UI-GATE-02 acceptance 已完成；当前必须先做模块化拆分并停在 UI-GATE-03 人工运行检查，再进入真正 UI implementation。
 
 ## Confirmed Findings
 
@@ -88,9 +90,9 @@ No candidate simultaneously satisfies “blocks DEP-01 / UI-01” and “small, 
 
 ## Recommended Next Task
 
-Recommended unique repo-local next task: `UI-01-INFORMATION-ARCHITECTURE-REVIEW`.
+Current unique repo-local next task after this assessment's follow-up work: `UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT`.
 
-Rationale: DEP-01 remains the P0 daytime task, but it is blocked by user confirmation of SSH, release asset transfer, `/home/hurricane/probeflash` write permission, temporary process start and port 4100 boundary. With no server authorization, UI-01 is the first pending night-safe task and is not blocked by any prerequisite refactor.
+Rationale: DEP-01 remains externally blocked and is not the next default task. UI-01, UI-GATE-01 and TECH-07 have completed; the user accepted TECH-07 and requested a behavior-preserving module split before UI relayout. `UI-MOD-01` must stop at `UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT` for manual run/smoke checking.
 
 If a small refactor is later forced by UI implementation evidence, the minimum safe boundary is: extract only the `App.tsx` component or hook slice needed by that UI task, keep server API contracts unchanged, keep localStorage compatibility, do not alter repository semantics, and verify with `typecheck`, `build`, `verify:handoff`, relevant flow verifies and `verify:all`.
 

@@ -239,8 +239,10 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 | TECH-05-VERIFY-TMP-CLEANUP | Technical Debt / Architecture | verify tmp cleanup | 测试残留不污染判断 | TECH-04 | scripts；tmp path docs | 不删除用户数据；不指向生产路径 | verify 前后 git status；tmp dir 限制 | 临时 DB/log/backup 生命周期清楚 | night-safe | P1 | 是 |
 | TECH-06-SMOKE-FIXTURE-CONSOLIDATION | Technical Debt / Architecture | smoke fixture consolidation | 避免重复造测试数据 | 多条 verify 已存在 | fixtures；verify helpers | 不引入大测试框架 | fixture reuse；verify pass | 主流程 fixture 一处维护 | night-safe | P2 | 是 |
 | UI-GATE-01-MANUAL-VISUAL-DIRECTION | Technical Debt / Architecture | TECH-07 前人工确认 UI 方向 | 避免在错误视觉方向上拆分或实现 | UI-01；用户可人工 review | `docs/planning/ui-redesign-brief.md`；planning sync；人工确认记录 | 不改产品代码；不引入组件库；不隐藏真实边界 | 人工确认；`git diff --check`；handoff JSON parse | 首屏布局、主次关系和边界表达被确认 | completed | P1 | 已完成 |
-| TECH-07-APP-TSX-MINIMAL-SPLIT | Technical Debt / Architecture | App.tsx minimal split | 降低前端变更冲突 | UI-GATE-01；主流程 smoke 稳定 | desktop components/hooks split | 不重做视觉；不改业务语义 | typecheck/build/verify:all；UI smoke | `App.tsx` 职责减少且行为不回归 | current | P1 | 是 |
-| UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT | Technical Debt / Architecture | TECH-07 后人工 review 的 UI 修改首轮 | 先修当前 UI 大问题，再做 broad refactor | TECH-07；用户可人工验收 | desktop UI；styles；verify；planning sync | 不全量重写 `App.tsx`；不改业务数据流；不接真实 AI | desktop/mobile 人工 smoke；typecheck/build/verify:all | 第一轮 shell / workspace / Knowledge Assist UI 修复被人工验收 | day-only | P1 | 否 |
+| TECH-07-APP-TSX-MINIMAL-SPLIT | Technical Debt / Architecture | App.tsx minimal split | 降低前端变更冲突 | UI-GATE-01；主流程 smoke 稳定 | desktop components/hooks split | 不重做视觉；不改业务语义 | typecheck/build/verify:all；UI smoke | `App.tsx` 支撑壳已抽出且行为不回归 | completed | P1 | 已完成 |
+| UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT | Technical Debt / Architecture | TECH-07 后人工 review 拆分结果 | 防止直接进入错误方向的 UI implementation | TECH-07；用户可人工验收 | planning sync；人工确认记录 | 不直接做 UI 实现；不改业务数据流；不接真实 AI | 人工确认；handoff JSON parse | 用户已认可 TECH-07 拆分结果，并要求先做模块化拆分再 UI 重排 | completed | P1 | 已完成 |
+| UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT | Technical Debt / Architecture | UI 重排前组件模块化拆分 | 降低三栏布局、QuickIssue landing 和 Knowledge Assist 合并的回归风险 | TECH-07；UI-GATE-02 用户认可 | `apps/desktop/src` UI components；imports；必要 helper 移动；planning sync | 不改变渲染顺序；不做三栏布局；不改文案/交互；不改 schema/repository/API/server | typecheck；build；verify:handoff；verify:all；git diff --check | `App.tsx` 变成更薄编排层，抽出组件行为保持 | night-safe | P1 | 是 |
+| UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT | Technical Debt / Architecture | 模块化后 UI 重排前人工运行检查 | 确认行为保持拆分没有破坏现有可用性 | UI-MOD-01 | 人工 smoke 记录；planning sync | 不自动进入 UI 重排；不做视觉实现 | 用户启动 / 浏览主流程；handoff JSON parse | 用户确认能正常跑后，才允许选择 UI 重排实现任务 | day-only | P1 | 否 |
 | TECH-08-HTTP-REPOSITORY-SPLIT | Technical Debt / Architecture | HTTP repository split | storage adapter 更易维护 | HTTP adapter 主链路稳定 | desktop storage/repository files | 不改 API contract；不移除 localStorage verify path | adapter contract verify；主路径 smoke | HTTP repository 和 UI 编排边界清楚 | night-safe | P2 | 是 |
 | TECH-09-SERVER-ROUTE-SPLIT | Technical Debt / Architecture | server route split | server endpoint 更好维护 | server tests/verify 稳定 | `apps/server/src` routes | 不改 API 行为；不引入框架 | server verify；health/version/CRUD smoke | routes 从单文件拆出且契约不变 | night-safe | P2 | 是 |
 | TECH-10-DATABASE-MODULE-SPLIT | Technical Debt / Architecture | database module split | SQLite schema/queries/validation 更清楚 | server schema contract 已完成 | database modules；verify | 不做 destructive migration；不改 schema 语义 | schema contract verify；backup/restore verify | schema、mapping、queries 分层且读写不回归 | night-safe | P2 | 是 |
@@ -295,9 +297,11 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 | 9 | CODECTX-07-AI-ANALYZE-EXPLICIT-BUNDLE | AI 分析显式 bundle | blocked | P2 |
 | 10 | SEARCH-03-ARCHIVE-REVIEW-PAGE | archive review page | completed | P1 |
 | 11 | UI-GATE-01-MANUAL-VISUAL-DIRECTION | TECH-07 前人工确认 UI 方向 | completed | P1 |
-| 12 | TECH-07-APP-TSX-MINIMAL-SPLIT | App.tsx 最小拆分 | current | P1 |
-| 13 | UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT | TECH-07 后人工 review 的 UI 修改首轮 | day-only | P1 |
-| 14 | TECH-09-SERVER-ROUTE-SPLIT | server route split | night-safe | P2 |
+| 12 | TECH-07-APP-TSX-MINIMAL-SPLIT | App.tsx 最小拆分 | completed | P1 |
+| 13 | UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT | TECH-07 后人工 review 拆分结果 | completed | P1 |
+| 14 | UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT | UI 重排前组件模块化拆分 | night-safe | P1 |
+| 15 | UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT | 模块化后 UI 重排前人工运行检查 | day-only | P1 |
+| 16 | TECH-09-SERVER-ROUTE-SPLIT | server route split | night-safe | P2 |
 
 ### 长期方向（只列方向）
 - 团队级多项目知识库与轻量权限。
@@ -310,7 +314,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 ## 10. 夜跑任务池
 
 ### Night-safe pool
-- TECH-07-APP-TSX-MINIMAL-SPLIT（current）：`UI-GATE-01` 已人工确认；只能按 `ui-redesign-brief.md#ui-gate-01-confirmation` 做支撑拆分，不做视觉重设计。
+- UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT（current）：用户已认可 TECH-07 拆分结果；下一轮只做行为保持模块化拆分，不做 UI 重排。
 - UI-01-INFORMATION-ARCHITECTURE-REVIEW
 - CORE-02-WORKSPACE-UX-IMPROVEMENTS
 - CORE-03-RECENT-ISSUE-REOPEN
@@ -343,7 +347,8 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 - TECH-10-DATABASE-MODULE-SPLIT
 
 ### Gated night-safe pool
-- UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT：必须在 `TECH-07-APP-TSX-MINIMAL-SPLIT` 完成后执行；第一轮只做 shell / workspace 状态 / Knowledge Assist 主次关系。
+- UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT：当前唯一可自动认领的 UI 相关 repo-local 任务；只做行为保持模块化拆分，不做 UI 重排。
+- UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT：`UI-MOD-01` 完成后必须停下等待用户人工检查，不能夜跑越过。
 
 ### Day-only pool
 - DEP-02-STATIC-DIST-SERVER-PATH-VERIFY
@@ -352,7 +357,7 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 - DEP-05-SYSTEMD-AUTOSTART-PREP
 - DATA-01-SQLITE-BACKUP-SERVER-PATH-VERIFY
 - DATA-03-RESTORE-DRY-RUN-SERVER-PATH-VERIFY
-- UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT
+- UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT
 
 ### Blocked by external
 - DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY
@@ -380,6 +385,6 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 
 ## 11. 下一轮建议认领
 
-如果用户白天可参与服务器操作，下一轮最适合认领 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`。
+下一轮默认只认领 `UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT`，即使白天可用也不要自动改选服务器部署，除非用户明确推翻本轮 UI 模块化优先约束并重新授权 DEP-01。
 
-如果用户暂时不能参与服务器操作，下一轮最适合认领 `TECH-07-APP-TSX-MINIMAL-SPLIT`。执行前必须读取 `docs/planning/ui-redesign-brief.md#ui-gate-01-confirmation`，只做支撑拆分，不做视觉重设计；完成后再进入 `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT`，不得跳到 broad refactor。
+`UI-MOD-01` 完成、验证并提交后，必须停在 `UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT`，等待用户人工启动 / 浏览确认能正常跑；在此之前不得进入三栏 UI 重排、QuickIssue landing、Knowledge Assist 合并或 closeout 视觉重构。

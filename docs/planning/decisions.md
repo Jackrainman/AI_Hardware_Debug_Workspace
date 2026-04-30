@@ -190,3 +190,12 @@
 - 原因：UI 当前是验收观感最大问题；但 UI 修改必须先有信息架构和人工方向确认。`TECH-07` 的价值是降低 `App.tsx` 冲突面，为后续 UI 改造提供支撑，不应独立变成技术洁癖式重构。
 - 放弃方案：B 组后直接做 `TECH-08-HTTP-REPOSITORY-SPLIT`、`TECH-09-SERVER-ROUTE-SPLIT`、`TECH-10-DATABASE-MODULE-SPLIT`；直接全量重写 `App.tsx`；绕过人工确认直接做大 UI 改版；引入组件库或 broad CSS reset。
 - 影响与后续动作：`backlog.md` 与 `.agent-state/handoff.json` 需要记录 B 组串行队列和 TECH-07 前后的人工 UI gate；`ui-redesign-brief.md` 需要把这些 gate 写入 UI 小阶段边界。`current.md` 仍只保留最多 3 个前沿候选，不把整个 B 组展开成当前执行窗口。
+
+
+## D-017：UI 重排前先做行为保持模块化拆分，并设置人工运行检查门
+- 日期：2026-04-30
+- 背景：用户已认可 `TECH-07-APP-TSX-MINIMAL-SPLIT` 的初步拆分结果，但当前 `App.tsx` 仍包含大量 UI 组件和 helper。若直接进入三栏布局、QuickIssue landing、Knowledge Assist 合并或 closeout 视觉整理，会在同一轮同时承担模块拆分、布局重排和交互文案变化，回归面过大。
+- 决策：下一轮只允许自动认领 `UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT`。该任务只做行为保持的 UI 组件模块化拆分，不改变渲染顺序、CSS 主视觉、业务数据流、schema、repository、HTTP API 或 server。模块化完成、验证并提交后，必须停在 `UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT`，由用户人工启动 / 浏览确认能正常跑；未通过该 gate 前不得自动进入 UI 重排实现。
+- 原因：先降低 `App.tsx` 冲突面，可以让后续 UI 重排只处理信息层级和视觉，不同时承担搬家风险；人工运行检查能在大 UI 改造前确认行为保持拆分没有破坏现有功能。
+- 放弃方案：直接做三栏 UI 重排；把 QuickIssue landing、severity 下拉、删除 3/4 编号和 Knowledge Assist 合并混入模块化拆分；继续扩展 `App.tsx`；跳过人工检查直接进入 UI implementation。
+- 影响与后续动作：`current.md`、`backlog.md`、`product-roadmap.md`、`ui-redesign-brief.md`、`status.md` 与 `.agent-state/handoff.json` 必须把下一任务切到 `UI-MOD-01`，并记录 `UI-GATE-03` 是后续 UI 重构前的强制停止点。

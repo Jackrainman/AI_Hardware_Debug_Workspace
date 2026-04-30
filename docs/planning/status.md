@@ -5,7 +5,7 @@
 > 硬限制：总长度建议不超过 120 行；不追加流水账；不复制 backlog 长任务表；不复制 product-roadmap 长路线图；最近完成只保留最近 10 条以内；blocked 只列当前关键 blocked；night-safe 只列前 5 个候选；每次任务结束只覆盖当前状态，不追加历史过程。
 
 ## 1. 一句话状态
-ProbeFlash 已具备本地 HTTP + SQLite + release 可部署基座、workspace UX 改善、最近活跃问题恢复、结案失败输入保留提示、规则草稿历史、基础知识检索、轻量相似问题提示、历史问题人工关联和复发提示；当前白天主线仍卡在真实服务器用户目录部署确认，B 组、`UI-GATE-01` 与 `TECH-07-APP-TSX-MINIMAL-SPLIT` 已完成，下一步是 `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT` 人工验收。
+ProbeFlash 已具备本地 HTTP + SQLite + release 可部署基座、workspace UX 改善、最近活跃问题恢复、结案失败输入保留提示、规则草稿历史、基础知识检索、轻量相似问题提示、历史问题人工关联和复发提示；当前白天服务器主线仍卡在真实服务器用户目录部署确认，B 组、`UI-GATE-01` 与 `TECH-07` 已完成且拆分结果已被用户认可；下一轮只自动认领 `UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT`，完成后停在 UI 重构前人工运行检查。
 
 ## 2. 当前能力状态
 
@@ -36,14 +36,16 @@ ProbeFlash 已具备本地 HTTP + SQLite + release 可部署基座、workspace U
 | 状态 | `blocked`，不能夜跑 |
 | blocked 原因 | 需要真实服务器 SSH、release 下载或上传、写入 `/home/hurricane/probeflash`、启动临时进程和 4100 端口边界确认 |
 | 用户需要确认什么 | SSH 登录方式、release 获取方式、用户目录写入授权、临时进程启动授权、4100 端口授权 |
+| 下一轮默认认领 | `UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT`，只做模块化拆分 |
+| UI 停止点 | `UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT`，模块化后由用户人工检查能否正常跑 |
 
 ## 4. 当前 night-safe / repo-local 候选
-- 当前无可自动顺推的 UI repo-local 任务；`TECH-07` 已完成，`UI-GATE-02` 必须等待用户人工验收。
-- 其它 night-safe 候选暂不自动越过 UI-GATE-02：`AIREADY-06-DRAFT-DIFF`、`CODECTX-01-BUNDLE-CLI`、`CODECTX-02-SECRETS-PROTECTION`、`CORE-07-ARCHIVE-FILTERS`。
+- 唯一可自动认领的下一任务：`UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT`，只做行为保持模块化拆分，不做三栏布局、QuickIssue landing、Knowledge Assist 合并或文案/交互修改。
+- 其它 night-safe 候选暂不自动越过 UI 模块化门：`AIREADY-06-DRAFT-DIFF`、`CODECTX-01-BUNDLE-CLI`、`CODECTX-02-SECRETS-PROTECTION`、`CORE-07-ARCHIVE-FILTERS`。
 
 ## 4.1 B 组后顺序
-- B 组功能完成后先修 UI，不先做 broad refactor；当前顺序是 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` completed -> `TECH-07-APP-TSX-MINIMAL-SPLIT` completed -> `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT` current / day-only。
-- `UI-GATE-02` 为人工阻塞 / day-review，不能夜跑；下一步必须由用户验收拆分结果和第一轮 UI 方向。
+- B 组功能完成后先修 UI，但当前顺序改为：`UI-GATE-01` completed -> `TECH-07` completed -> `UI-GATE-02` completed/manual accepted -> `UI-MOD-01` current / night-safe -> `UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT` day-only。
+- `UI-MOD-01` 完成后必须停止，等待用户人工确认页面能正常跑；不能自动进入 UI 重排实现。
 
 ## 5. 最近完成
 - `TECH-07-APP-TSX-MINIMAL-SPLIT`：已抽取 `WorkspaceChrome` / `ProjectContextShell`、`KnowledgeAssistPanel` 与 `IssueMainFlow` 纯展示壳；保持原 render 顺序、条件渲染和业务触发，不改 `App.css` 主视觉。
@@ -64,13 +66,13 @@ ProbeFlash 已具备本地 HTTP + SQLite + release 可部署基座、workspace U
 - 不做 SSH、sudo、systemd、`/opt`、80/443、真实服务器部署或 release/tag 修改。
 - 不接真实 AI provider / API key，不把 AI-ready 说成真实 AI 已完成。
 - 不引入 RAG / embedding、权限系统、多租户、Electron / preload / fs / IPC。
-- 不在 `UI-GATE-02` 人工验收前执行后续 UI implementation；不把 TECH-07 拆分结果扩展成 UI 重设计或全量重写。
+- 不在 `UI-MOD-01` 完成并通过 `UI-GATE-03` 人工运行检查前执行后续 UI implementation；不把模块化拆分扩展成 UI 重设计或全量重写。
 
 ## 7. 用户下一步
 - 今天完全不想动：停止自动推进；不碰服务器和真实 AI。
-- 想继续 UI：先人工验收 `TECH-07` 拆分结果，确认是否放行 `UI-GATE-02` 后的第一轮 UI polish。
-- 只有 10 分钟：确认是否允许下一次白天操作 SSH、release 获取方式、`/home/hurricane/probeflash` 写入和 4100 临时进程。
-- 有 30 分钟清醒时间：一起执行 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY` 的服务器用户目录部署验证，并保留 no-sudo / no-systemd 边界。
+- 想继续 UI：下一次先自动执行 `UI-MOD-01` 模块化拆分；拆分提交后由用户人工运行检查，再决定是否进入三栏 UI 重排。
+- 只有 10 分钟：保持当前约束，下一轮只做 `UI-MOD-01`，不切服务器。
+- 如果明确想推翻本轮 UI 模块化优先约束：再单独确认是否允许白天操作 SSH、release 获取方式、`/home/hurricane/probeflash` 写入和 4100 临时进程。
 
 ## 8. 状态来源
 - `AGENTS.md`
