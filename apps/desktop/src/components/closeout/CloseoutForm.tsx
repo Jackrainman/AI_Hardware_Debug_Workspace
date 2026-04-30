@@ -232,7 +232,7 @@ export function CloseoutForm({
       data-testid="closeout-form"
     >
       <div className="form-caption">
-        <h3>4. 结案归档</h3>
+        <h3>结案归档</h3>
         <p>填写根因和处理结论，经 HTTP 写入归档摘要与错误表条目。</p>
       </div>
       <p className="storage-line" data-testid="closeout-target">

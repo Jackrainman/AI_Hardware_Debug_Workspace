@@ -96,7 +96,7 @@ export function InvestigationAppendForm({
   return (
     <form className="intake-form" onSubmit={handleSubmit} data-testid="investigation-append-form">
       <div className="form-caption">
-        <h3>3. 追加排查记录</h3>
+        <h3>追加排查记录</h3>
         <p>把观察、假设、动作和结果按时间线沉淀下来。</p>
       </div>
       <p className="storage-line" data-testid="investigation-target">

@@ -1079,16 +1079,18 @@ select:focus-visible {
 
 .issue-workbench {
   display: grid;
-  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  grid-template-columns: 260px minmax(0, 1fr) 320px;
   align-items: start;
   gap: 16px;
 }
 
-.issue-rail {
+.issue-rail,
+.knowledge-assist-rail {
   min-width: 0;
 }
 
-.issue-rail .list-view {
+.issue-rail .list-view,
+.knowledge-assist-rail .knowledge-assist-panel {
   position: sticky;
   top: 18px;
 }
@@ -1109,11 +1111,40 @@ select:focus-visible {
   white-space: nowrap;
 }
 
+.issue-rail-create-button:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
 .issue-workspace {
   display: flex;
   flex-direction: column;
   min-width: 0;
   gap: 14px;
+}
+
+.quick-issue-landing {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.quick-issue-supporting-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.72fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.quick-issue-landing .demo-hint {
+  border-color: var(--border-soft);
+  background: var(--surface-subtle);
+}
+
+.quick-issue-landing .storage-controls {
+  border-style: dashed;
+  background: var(--surface);
 }
 
 .quick-issue-bar {
@@ -1157,12 +1188,13 @@ select:focus-visible {
 
 .quick-issue-input-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(140px, 0.55fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(92px, 0.26fr) minmax(130px, 0.48fr) auto;
   gap: 8px;
   min-width: 0;
 }
 
-.quick-issue-input-row input {
+.quick-issue-input-row input,
+.quick-issue-input-row select {
   min-width: 0;
   min-height: 40px;
   padding: 9px 11px;
@@ -1174,8 +1206,85 @@ select:focus-visible {
   font-size: 13px;
 }
 
+.quick-issue-input-row select {
+  color: var(--text-strong);
+  font-weight: 650;
+}
+
 .quick-issue-bar .storage-line {
   grid-column: 2;
+}
+
+.knowledge-assist-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--surface-subtle);
+  box-shadow: var(--shadow-soft);
+}
+
+.knowledge-assist-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.knowledge-assist-header h3,
+.knowledge-assist-header p {
+  margin: 0;
+}
+
+.knowledge-assist-header h3 {
+  color: var(--text-strong);
+  font-size: 14px;
+  font-weight: 760;
+  line-height: 1.3;
+}
+
+.knowledge-assist-header p {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.knowledge-assist-badge {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  min-height: 22px;
+  padding: 3px 8px;
+  border: 1px solid var(--info-strong);
+  border-radius: 999px;
+  background: var(--info-soft);
+  color: var(--info-strong);
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.knowledge-assist-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.knowledge-assist-panel .search-panel,
+.knowledge-assist-panel .similar-issues-panel,
+.knowledge-assist-panel .related-history-panel,
+.knowledge-assist-panel .recurrence-prompt-panel {
+  box-shadow: none;
+}
+
+.knowledge-assist-panel .search-form,
+.knowledge-assist-panel .search-input-row,
+.knowledge-assist-panel .search-result-list,
+.knowledge-assist-panel .similar-issues-list {
+  grid-template-columns: 1fr;
 }
 
 .search-panel {
@@ -2519,6 +2628,10 @@ select:focus-visible {
     grid-template-columns: 1fr;
   }
 
+  .quick-issue-supporting-grid {
+    grid-template-columns: 1fr;
+  }
+
   .quick-issue-bar {
     grid-template-columns: 1fr;
   }
@@ -2531,7 +2644,8 @@ select:focus-visible {
     grid-column: auto;
   }
 
-  .issue-rail .list-view {
+  .issue-rail .list-view,
+  .knowledge-assist-rail .knowledge-assist-panel {
     position: static;
   }
 }

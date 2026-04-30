@@ -57,7 +57,6 @@ import {
 import {
   DemoHint,
   IssueCardListView,
-  IssueIntakeForm,
   QuickIssueCreateBar,
 } from "./components/issue/IssueEntryComponents";
 import { MainlineResultPanel } from "./components/issue/MainlineResultPanel";
@@ -591,26 +590,6 @@ function IssuePane({
 
   return (
     <div className="issue-pane-stack">
-      <QuickIssueCreateBar
-        repository={repository}
-        workspaceId={activeWorkspace.id}
-        onCreated={handleCardCreated}
-        reportStorageError={reportStorageError}
-        clearStorageFeedback={clearStorageFeedback}
-      />
-      <KnowledgeAssistPanel
-        searchPanel={(
-          <SearchPanel
-            repository={repository}
-            currentIssueId={selectedIssueId}
-            relatedHistoricalIssueIds={relatedHistoricalIssueIds}
-            onOpenIssue={handleSelect}
-            onLinkHistoricalIssue={handleLinkHistoricalIssue}
-            reportStorageError={reportStorageError}
-            clearStorageFeedback={clearStorageFeedback}
-          />
-        )}
-      />
       <div className="issue-workbench">
         <aside className="issue-rail" aria-label="问题卡选择区">
           <IssueCardListView
@@ -626,11 +605,10 @@ function IssuePane({
         <IssueMainFlow
           selectedIssueId={selectedIssueId}
           activeWorkspaceName={activeWorkspace.name}
-          createIssueForm={(
-            <IssueIntakeForm
+          quickIssueEntry={(
+            <QuickIssueCreateBar
               repository={repository}
               workspaceId={activeWorkspace.id}
-              isDefaultMode
               onCreated={handleCardCreated}
               reportStorageError={reportStorageError}
               clearStorageFeedback={clearStorageFeedback}
@@ -642,43 +620,6 @@ function IssuePane({
               selectedCard={selectedCard}
               recordCount={recordCount}
               lastCloseout={lastCloseout}
-            />
-          )}
-          knowledgeAssistPanel={(
-            <KnowledgeAssistPanel
-              recurrencePromptPanel={selectedIssueId !== null && !isLoadingSimilarIssues ? (
-                <RecurrencePromptPanel
-                  prompt={recurrencePrompt}
-                  relatedHistoricalIssueIds={relatedHistoricalIssueIds}
-                  onOpenIssue={handleSelect}
-                  onLinkHistoricalIssue={handleLinkHistoricalIssue}
-                  onDismiss={() => {
-                    if (selectedIssueId !== null && recurrencePrompt !== null) {
-                      setDismissedRecurrencePrompt({
-                        currentIssueId: selectedIssueId,
-                        historicalIssueId: recurrencePrompt.issueId,
-                      });
-                    }
-                  }}
-                />
-              ) : null}
-              relatedHistoricalIssuesPanel={(
-                <RelatedHistoricalIssuesPanel
-                  issue={selectedCard}
-                  onOpenIssue={handleSelect}
-                  onUnlinkHistoricalIssue={handleUnlinkHistoricalIssue}
-                />
-              )}
-              similarIssuesPanel={selectedIssueId !== null ? (
-                <SimilarIssuesPanel
-                  result={similarIssues}
-                  isLoading={isLoadingSimilarIssues}
-                  currentIssueId={selectedIssueId}
-                  relatedHistoricalIssueIds={relatedHistoricalIssueIds}
-                  onOpenIssue={handleSelect}
-                  onLinkHistoricalIssue={handleLinkHistoricalIssue}
-                />
-              ) : null}
             />
           )}
           investigationAppendForm={selectedIssueId !== null ? (
@@ -716,6 +657,54 @@ function IssuePane({
             />
           )}
         />
+        <aside className="knowledge-assist-rail" aria-label="Knowledge Assist supporting 区">
+          <KnowledgeAssistPanel
+            recurrencePromptPanel={selectedIssueId !== null && !isLoadingSimilarIssues ? (
+              <RecurrencePromptPanel
+                prompt={recurrencePrompt}
+                relatedHistoricalIssueIds={relatedHistoricalIssueIds}
+                onOpenIssue={handleSelect}
+                onLinkHistoricalIssue={handleLinkHistoricalIssue}
+                onDismiss={() => {
+                  if (selectedIssueId !== null && recurrencePrompt !== null) {
+                    setDismissedRecurrencePrompt({
+                      currentIssueId: selectedIssueId,
+                      historicalIssueId: recurrencePrompt.issueId,
+                    });
+                  }
+                }}
+              />
+            ) : null}
+            relatedHistoricalIssuesPanel={(
+              <RelatedHistoricalIssuesPanel
+                issue={selectedCard}
+                onOpenIssue={handleSelect}
+                onUnlinkHistoricalIssue={handleUnlinkHistoricalIssue}
+              />
+            )}
+            similarIssuesPanel={selectedIssueId !== null ? (
+              <SimilarIssuesPanel
+                result={similarIssues}
+                isLoading={isLoadingSimilarIssues}
+                currentIssueId={selectedIssueId}
+                relatedHistoricalIssueIds={relatedHistoricalIssueIds}
+                onOpenIssue={handleSelect}
+                onLinkHistoricalIssue={handleLinkHistoricalIssue}
+              />
+            ) : null}
+            searchPanel={(
+              <SearchPanel
+                repository={repository}
+                currentIssueId={selectedIssueId}
+                relatedHistoricalIssueIds={relatedHistoricalIssueIds}
+                onOpenIssue={handleSelect}
+                onLinkHistoricalIssue={handleLinkHistoricalIssue}
+                reportStorageError={reportStorageError}
+                clearStorageFeedback={clearStorageFeedback}
+              />
+            )}
+          />
+        </aside>
       </div>
     </div>
   );
@@ -831,7 +820,7 @@ export function ArchivePaneShell({
       )}
       {latest === null ? (
         <p className="empty-state archive-empty-state" data-testid="archive-empty-state">
-          尚无归档结果。完成问题卡区第 4 步“结案并生成归档摘要”后，这里会显示累计归档数量与最近一次归档摘要，刷新也不会丢失。
+          尚无归档结果。完成问题卡区的“结案并生成归档摘要”后，这里会显示累计归档数量与最近一次归档摘要，刷新也不会丢失。
         </p>
       ) : (
         <section className="archive-result-panel" data-testid="archive-result-panel">

@@ -122,12 +122,13 @@ export function buildQuickIssueCardFromLine(
   line: string,
   opts: IntakeOptions,
   tags: string[] = [],
+  severity: IntakeSeverity = "medium",
 ): IntakeResult {
   return buildIssueCardFromIntake(
     {
       title: line,
       description: "",
-      severity: "medium",
+      severity,
       tags,
     },
     opts,

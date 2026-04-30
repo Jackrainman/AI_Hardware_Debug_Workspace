@@ -35,9 +35,9 @@ type IntakeSubmitStatus =
 export function DemoHint() {
   return (
     <div className="demo-hint" data-testid="demo-hint">
-      <div className="demo-hint-title">🎯 最小演示路径</div>
+      <div className="demo-hint-title">最小演示路径</div>
       <div className="demo-hint-steps">
-        <span>1️⃣ 填写上方表单 → 2️⃣ 创建后自动选中 / 左侧选择已有卡 → 3️⃣ 追加排查记录 → 4️⃣ 填写结案归档</span>
+        <span>快速建卡 / 选择已有卡 / 追加排查记录 / 结案归档</span>
       </div>
       <p className="demo-hint-note">以上步骤默认走前端 /api → 本地 WSL backend → SQLite；若服务未启动，顶部会明确提示。</p>
     </div>
@@ -58,6 +58,7 @@ export function QuickIssueCreateBar({
   clearStorageFeedback: () => void;
 }) {
   const [line, setLine] = useState<string>("");
+  const [severity, setSeverity] = useState<IntakeSeverity>("medium");
   const [tagsInput, setTagsInput] = useState<string>("");
   const [status, setStatus] = useState<IntakeSubmitStatus>({ state: "idle" });
   const canSubmit = line.trim().length > 0;
@@ -68,6 +69,7 @@ export function QuickIssueCreateBar({
       line,
       defaultIntakeOptions(nowISO(), undefined, workspaceId),
       parseTagsInput(tagsInput),
+      severity,
     );
     if (!result.ok) {
       reportStorageError(
@@ -85,6 +87,7 @@ export function QuickIssueCreateBar({
     clearStorageFeedback();
     setStatus({ state: "saved", id: result.card.id, at: result.card.createdAt });
     setLine("");
+    setSeverity("medium");
     setTagsInput("");
     onCreated(result.card.id);
   };
@@ -110,6 +113,18 @@ export function QuickIssueCreateBar({
           data-testid="quick-issue-create-input"
           required
         />
+        <select
+          value={severity}
+          onChange={(event) => setSeverity(event.target.value as IntakeSeverity)}
+          aria-label="严重程度"
+          data-testid="quick-issue-severity-select"
+        >
+          {SEVERITIES.map((value) => (
+            <option key={value} value={value}>
+              {SEVERITY_LABELS[value]}
+            </option>
+          ))}
+        </select>
         <input
           type="text"
           value={tagsInput}
@@ -284,16 +299,15 @@ export function IssueCardListView({
           <h3>问题卡选择区</h3>
           <p>当前项目：{activeWorkspace.name}；默认只显示未归档问题卡，选中后在右侧继续追记或结案。</p>
         </div>
-        {selectedIssueId !== null && (
-          <button
-            type="button"
-            className="button-secondary issue-rail-create-button"
-            onClick={onCreateNew}
-            data-testid="issue-create-entry-button"
-          >
-            创建新问题卡
-          </button>
-        )}
+        <button
+          type="button"
+          className="button-secondary issue-rail-create-button"
+          onClick={onCreateNew}
+          disabled={selectedIssueId === null}
+          data-testid="issue-create-entry-button"
+        >
+          {selectedIssueId === null ? "新问题入口已打开" : "创建新问题卡"}
+        </button>
       </div>
       <div className="list-header">
         <button type="button" className="button-secondary" onClick={() => onRefresh()}>
@@ -319,7 +333,7 @@ export function IssueCardListView({
       )}
       {result && result.readError === null && activeCards.length === 0 && result.invalid.length === 0 && (
         <p className="empty-state" data-testid="issue-list-empty">
-          当前项目「{activeWorkspace.name}」暂无未归档问题卡。使用上方一句话快速建卡，或在右侧完整表单创建，数据会写入该项目。
+          当前项目「{activeWorkspace.name}」暂无未归档问题卡。使用中间的快速建卡入口记录现场问题，数据会写入该项目。
         </p>
       )}
       {result && activeCards.length > 0 && (

@@ -10,10 +10,9 @@ type KnowledgeAssistPanelProps = {
 type IssueMainFlowProps = {
   selectedIssueId: string | null;
   activeWorkspaceName: string;
-  createIssueForm: ReactNode;
+  quickIssueEntry: ReactNode;
   demoHint: ReactNode;
   mainlinePanel: ReactNode;
-  knowledgeAssistPanel: ReactNode;
   investigationAppendForm: ReactNode;
   investigationRecordList: ReactNode;
   closeoutForm: ReactNode;
@@ -27,22 +26,30 @@ export function KnowledgeAssistPanel({
   similarIssuesPanel,
 }: KnowledgeAssistPanelProps) {
   return (
-    <>
-      {searchPanel}
-      {recurrencePromptPanel}
-      {relatedHistoricalIssuesPanel}
-      {similarIssuesPanel}
-    </>
+    <section className="knowledge-assist-panel" aria-label="Knowledge Assist">
+      <div className="knowledge-assist-header">
+        <span className="knowledge-assist-badge">辅助判断</span>
+        <div>
+          <h3>Knowledge Assist</h3>
+          <p>汇总复发提示、相似历史、人工关联和搜索线索；只辅助判断，不自动判因或写入结案。</p>
+        </div>
+      </div>
+      <div className="knowledge-assist-body">
+        {recurrencePromptPanel}
+        {relatedHistoricalIssuesPanel}
+        {similarIssuesPanel}
+        {searchPanel}
+      </div>
+    </section>
   );
 }
 
 export function IssueMainFlow({
   selectedIssueId,
   activeWorkspaceName,
-  createIssueForm,
+  quickIssueEntry,
   demoHint,
   mainlinePanel,
-  knowledgeAssistPanel,
   investigationAppendForm,
   investigationRecordList,
   closeoutForm,
@@ -51,26 +58,25 @@ export function IssueMainFlow({
   return (
     <section className="issue-workspace" aria-label="问题处理区">
       {selectedIssueId === null && (
-        <>
-          {createIssueForm}
-          {demoHint}
-        </>
-      )}
-      {mainlinePanel}
-      {knowledgeAssistPanel}
-      {selectedIssueId === null && (
-        <p className="empty-state issue-next-step">
-          当前项目「{activeWorkspaceName}」还没有选中问题。创建问题卡后会自动选中最新一张，随即展开排查追记和结案归档表单；也可以在左侧点「刷新列表」从已有卡中挑选继续处理。
-        </p>
+        <div className="quick-issue-landing" data-testid="quick-issue-landing">
+          {quickIssueEntry}
+          <div className="quick-issue-supporting-grid">
+            {demoHint}
+            {issueStorageControls}
+          </div>
+          <p className="empty-state issue-next-step">
+            当前项目「{activeWorkspaceName}」还没有选中问题。先用快速建卡记录现场，也可以在左侧选择已有卡继续处理；创建后会自动展开追记和结案归档。
+          </p>
+        </div>
       )}
       {selectedIssueId !== null && (
         <>
+          {mainlinePanel}
           {investigationAppendForm}
           {investigationRecordList}
           {closeoutForm}
         </>
       )}
-      {selectedIssueId === null && issueStorageControls}
     </section>
   );
 }
