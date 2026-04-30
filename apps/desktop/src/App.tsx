@@ -67,6 +67,7 @@ import {
   type RecurrencePrompt,
 } from "./search/recurrence-prompt";
 import { orchestrateIssueCloseout } from "./use-cases/closeout-orchestrator";
+import { buildCloseoutFailureFeedbackCopy } from "./use-cases/closeout-failure-feedback";
 import {
   CHECKING_STORAGE_CONNECTION_STATE,
   LOCAL_STORAGE_CONNECTION_STATE,
@@ -1326,7 +1327,7 @@ function InvestigationRecordListView({
 type CloseoutSubmitStatus =
   | { state: "idle" }
   | { state: "saved"; fileName: string; errorCode: string; at: string }
-  | { state: "error"; reason: string };
+  | { state: "error"; reason: string; preservationHint?: string };
 
 type CloseoutSummary = {
   issueId: string;
@@ -1444,10 +1445,12 @@ function CloseoutForm({
     const input: CloseoutInput = { category, rootCause, resolution, prevention };
     const result = await orchestrateIssueCloseout(issueId, input, { repository });
     if (!result.ok) {
+      const failureCopy = buildCloseoutFailureFeedbackCopy(result);
       reportStorageError(closeoutFailureToFeedback(result));
       setStatus({
         state: "error",
-        reason: "请查看顶部统一存储提示",
+        reason: failureCopy.statusReason,
+        preservationHint: failureCopy.retryHint,
       });
       return;
     }
@@ -1661,6 +1664,11 @@ function CloseoutForm({
       <p className="storage-line" data-testid="closeout-status">
         结案状态：{renderCloseoutStatus(status)}
       </p>
+      {status.state === "error" && status.preservationHint !== undefined && (
+        <p className="storage-line" data-testid="closeout-failure-retry-hint">
+          {status.preservationHint}
+        </p>
+      )}
     </form>
   );
 }
