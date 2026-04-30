@@ -5,7 +5,7 @@
 > 硬限制：总长度建议不超过 120 行；不追加流水账；不复制 backlog 长任务表；不复制 product-roadmap 长路线图；最近完成只保留最近 10 条以内；blocked 只列当前关键 blocked；night-safe 只列前 5 个候选；每次任务结束只覆盖当前状态，不追加历史过程。
 
 ## 1. 一句话状态
-ProbeFlash 已具备本地 HTTP + SQLite + release 可部署基座、workspace UX 改善、最近活跃问题恢复、结案失败输入保留提示、规则草稿历史、基础知识检索、轻量相似问题提示、历史问题人工关联和复发提示；当前白天主线仍卡在真实服务器用户目录部署确认，B 组 night-safe 队列已完成，下一步停在 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` 人工视觉方向确认。
+ProbeFlash 已具备本地 HTTP + SQLite + release 可部署基座、workspace UX 改善、最近活跃问题恢复、结案失败输入保留提示、规则草稿历史、基础知识检索、轻量相似问题提示、历史问题人工关联和复发提示；当前白天主线仍卡在真实服务器用户目录部署确认，B 组与 `UI-GATE-01` 人工视觉方向确认已完成，下一步切到 `TECH-07-APP-TSX-MINIMAL-SPLIT` 支撑拆分。
 
 ## 2. 当前能力状态
 
@@ -37,16 +37,16 @@ ProbeFlash 已具备本地 HTTP + SQLite + release 可部署基座、workspace U
 | blocked 原因 | 需要真实服务器 SSH、release 下载或上传、写入 `/home/hurricane/probeflash`、启动临时进程和 4100 端口边界确认 |
 | 用户需要确认什么 | SSH 登录方式、release 获取方式、用户目录写入授权、临时进程启动授权、4100 端口授权 |
 
-## 4. 当前夜跑候选
-- 当前不自动认领新的 night-safe 任务：B 组已完成，必须先由用户处理 `UI-GATE-01-MANUAL-VISUAL-DIRECTION`。
-- `TECH-07-APP-TSX-MINIMAL-SPLIT`：仅在 `UI-GATE-01` 放行后可作为支撑拆分执行，不做视觉重设计。
-- 其它 night-safe 候选暂不越过 UI gate：`AIREADY-06-DRAFT-DIFF`、`CODECTX-01-BUNDLE-CLI`、`CODECTX-02-SECRETS-PROTECTION`、`CORE-07-ARCHIVE-FILTERS`。
+## 4. 当前 night-safe / repo-local 候选
+- `TECH-07-APP-TSX-MINIMAL-SPLIT`：当前唯一 repo-local 下一任务；`UI-GATE-01` 已放行，只能作为支撑拆分执行，不做视觉重设计。
+- 其它 night-safe 候选暂不越过 TECH-07：`AIREADY-06-DRAFT-DIFF`、`CODECTX-01-BUNDLE-CLI`、`CODECTX-02-SECRETS-PROTECTION`、`CORE-07-ARCHIVE-FILTERS`。
 
 ## 4.1 B 组后顺序
-- B 组功能完成后先修 UI，不先做 broad refactor；顺序是 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` -> `TECH-07-APP-TSX-MINIMAL-SPLIT` -> `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT`。
-- `UI-GATE-*` 为人工阻塞 / day-review，不能夜跑；`TECH-07` 只能在 UI 方向确认后作为支撑拆分，不能变成 App.tsx 全量重写。
+- B 组功能完成后先修 UI，不先做 broad refactor；当前顺序是 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` completed -> `TECH-07-APP-TSX-MINIMAL-SPLIT` current -> `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT`。
+- `UI-GATE-02` 为人工阻塞 / day-review，不能夜跑；`TECH-07` 只能按已确认 UI 方向做支撑拆分，不能变成 App.tsx 全量重写。
 
 ## 5. 最近完成
+- `UI-GATE-01-MANUAL-VISUAL-DIRECTION`：用户已确认首屏分区、真实边界约束、`TECH-07` 最小拆分目标和第一轮 UI 修改范围；确认结果已落盘到 `ui-redesign-brief.md`，TECH-07 可读取 execution contract。
 - `AIREADY-05-DRAFT-HISTORY`：规则 closeout 草稿会保存浏览器本地历史，可审阅多次生成的来源时间、问题边界和草稿内容，并可清除；不接真实 AI、不自动写 archive / error-entry / issue；`verify:ai-ready-closeout-draft-panel` 已覆盖。
 - `CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS`：结案写归档摘要、错误表或问题卡状态失败时，表单明确提示未归档成功，保留根因 / 修复结论 / 预防建议，并提示可重试或先处理 Repair Task；新增 `verify:core-closeout-partial-save-hints`。
 - `CORE-03-RECENT-ISSUE-REOPEN`：新增 workspace-scoped 最近活跃问题本地状态；刷新 / 重开后回到当前项目最近未归档问题，缺失、已归档或 workspace 切换时安全降级；新增 `verify:core-recent-issue-reopen`。
@@ -56,7 +56,6 @@ ProbeFlash 已具备本地 HTTP + SQLite + release 可部署基座、workspace U
 - `TECH-DEBT-SEARCH-KB-CLEANUP-LITE`：SEARCH-07/08/09 verify 共享 fixture / localStorage polyfill 已抽出，不改变搜索行为。
 - `SEARCH-09-RECURRENCE-PROMPT`：高相似历史问题会触发可忽略复发提示，可查看根因/处理摘要并显式关联，不接 AI、不自动写库。
 - `SEARCH-08-SEARCH-RESULT-LINKING`：搜索 / 相似结果可人工关联到当前问题，已关联历史问题可展示和取消；读写读回覆盖 localStorage 与 HTTP。
-- `SEARCH-07-SIMILAR-ISSUES-LITE`：新增可解释相似问题排序 helper、当前问题提示面板和 localStorage / HTTP verify，不接 embedding / RAG / 真实 AI。
 
 ## 6. 当前不要碰
 - 不创建 `apps/console`、dashboard UI 或新的项目管理 app。
@@ -65,10 +64,11 @@ ProbeFlash 已具备本地 HTTP + SQLite + release 可部署基座、workspace U
 - 不做 SSH、sudo、systemd、`/opt`、80/443、真实服务器部署或 release/tag 修改。
 - 不接真实 AI provider / API key，不把 AI-ready 说成真实 AI 已完成。
 - 不引入 RAG / embedding、权限系统、多租户、Electron / preload / fs / IPC。
-- 不在 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` 前执行 `TECH-07`；不把 TECH-07 做成 UI 重设计或全量重写。
+- 不把 `TECH-07` 做成 UI 重设计或全量重写；不在 TECH-07 完成前执行 `UI-GATE-02`。
 
 ## 7. 用户下一步
-- 今天完全不想动：停止自动推进，等用户人工处理 `UI-GATE-01-MANUAL-VISUAL-DIRECTION`；不碰服务器和真实 AI。
+- 今天完全不想动：停止自动推进；不碰服务器和真实 AI。
+- 想继续 repo-local：执行 `TECH-07-APP-TSX-MINIMAL-SPLIT`，先读 `ui-redesign-brief.md#ui-gate-01-confirmation`。
 - 只有 10 分钟：确认是否允许下一次白天操作 SSH、release 获取方式、`/home/hurricane/probeflash` 写入和 4100 临时进程。
 - 有 30 分钟清醒时间：一起执行 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY` 的服务器用户目录部署验证，并保留 no-sudo / no-systemd 边界。
 

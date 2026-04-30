@@ -4,6 +4,8 @@
 
 建议进入一个受控的 UI 改造小阶段，但它必须排在 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY` 的白天授权之后；无服务器授权或夜跑时，可以先推进 repo-local 的 UI 规划与局部实现任务。UI 改造主目标不是做新 dashboard，而是把现有 ProbeFlash 主流程重新整理成更清楚的现场问题闭环：当前项目、快速建卡、问题详情、排查时间线、Knowledge Assist、结案和归档复盘各有明确位置。不能直接大改 `App.tsx`，因为当前 2864 行文件同时承载 workspace、issue、search、closeout、archive 和 storage feedback 编排，整文件重写会扩大回归面并破坏已验证的 HTTP + SQLite 主链路。当前推荐顺序是：先做 `UI-01-INFORMATION-ARCHITECTURE-REVIEW`，再通过 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` 人工确认目标 UI，随后用 `TECH-07-APP-TSX-MINIMAL-SPLIT` 降低 `App.tsx` 冲突面，最后进入 `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT` 和后续 shell、issue flow、Knowledge Assist 局部 polish。
 
+当前交接更新：`UI-GATE-01-MANUAL-VISUAL-DIRECTION` 已在 2026-04-30 获得用户确认并落盘；下一 repo-local 任务是 `TECH-07-APP-TSX-MINIMAL-SPLIT`。TECH-07 必须读取本文末尾的 `UI-GATE-01 Confirmation`，只做支撑拆分，不做视觉重设计。
+
 ## Current UI Problems
 
 | Problem | Phenomenon | Impact | Evidence source | Fit next stage |
@@ -308,3 +310,68 @@ planning-only UI 任务可以不跑 typecheck/build/verify:all，但必须在汇
 - B 组功能完成后，UI 大问题优先级高于 broad refactor；执行顺序为 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` -> `TECH-07-APP-TSX-MINIMAL-SPLIT` -> `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT`。
 - `status.md` 只做摘要，不变成 UI backlog 副本。
 - 完整 UI 拆分以本文为 brief；`backlog.md` / `.agent-state/handoff.json` 只提升当前最小下一候选，避免同时推进多个 UI 任务。
+
+## UI-GATE-01 Confirmation
+
+确认时间：2026-04-30T14:30:51+08:00。
+
+人工确认标记：用户已认可本轮 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` 输出的视觉方向、首屏分区、真实边界约束、`TECH-07` 最小拆分目标和第一轮 UI 修改范围。该确认已用于放行 `TECH-07-APP-TSX-MINIMAL-SPLIT`。
+
+确认结论：下一阶段 UI 方向是 workspace-scoped issue workbench，不做 dashboard / console / new app。首屏从上到下保持：顶部产品与边界、Project context bar、issue rail + issue main flow + Knowledge Assist、结案面板、archive / footer 边界。Knowledge Assist 是 supporting 区，不抢当前 issue 处理主线。
+
+### Confirmed Problem Matrix
+
+| 编号 | 问题简述 | 当前严重度 | 建议修复阶段 | 人工确认结论 |
+|---|---|---|---|---|
+| 1 | 信息层级混合 | 高 | 第一轮 | Knowledge Assist 改为 supporting 区，不再压在主流程前。 |
+| 2 | `App.tsx` 冲突面 | 高 | `TECH-07` | 只做 1-3 个支撑抽取，不全量重写。 |
+| 3 | issue list / detail 拥挤 | 中 | 第二轮 | issue rail 与 issue main flow 分清主次，第一轮不大改 detail。 |
+| 4 | Search / similar / recurrence / linked history 分散 | 高 | 第一轮 | 统一为 Knowledge Assist 区。 |
+| 5 | closeout 表单压迫主流程 | 中 | 第二轮 | 第一轮暂不重排 closeout，只保留入口和真实边界。 |
+| 6 | archive review 与 issue 闭环割裂 | 中 | 后续 | archive drawer 暂不重做。 |
+| 7 | workspace 状态与 server 状态分散 | 高 | 第一轮 | Project context bar 是首屏强主区。 |
+| 8 | 空状态 / 错误态 / loading 态不统一 | 中 | 第二轮 | 后续统一状态语义，不改变错误语义。 |
+| 9 | LAN 演示口径偏工程化 | 中 | 第一轮 | 可产品化文案，但必须保留“独立部署未验证”。 |
+| 10 | CSS token 未形成轻量设计系统 | 低 | 后续 | 不引入组件库，不做 broad CSS reset。 |
+
+### Confirmed First Screen Regions
+
+| 区域 | 当前代码位置 | 主次关系 | 可见性 | 边界要求 |
+|---|---|---|---|---|
+| 顶部栏 | `apps/desktop/src/App.tsx:3059-3099` | primary | 首屏可见 | 保留独立部署未验证。 |
+| Project context bar | `StorageStatusBanner` `apps/desktop/src/App.tsx:211-273`，渲染 `3100-3106` | primary | 首屏可见 | 保留 HTTP + SQLite / error 状态。 |
+| 问题 rail / 快速建卡 | `QuickIssueCreateBar` `400-483`，`IssueCardListView` `643-738`，渲染 `2190-2217` | primary | 始终可达 | 显示当前项目归属。 |
+| 当前问题主线 | `MainlineResultPanel` `1840-1943`，渲染 `2232-2236` | primary | 选中问题后可见 | 显示真实状态和追记数。 |
+| 追记与时间线 | `InvestigationAppendForm` `1173-1265`，`InvestigationRecordListView` `1278-1334`，渲染 `2275-2285` | primary | 选中问题后可见 | 不隐藏排查记录读写状态。 |
+| Knowledge Assist | `SearchPanel` `740-944`，`RecurrencePromptPanel` `1079-1148`，`RelatedHistoricalIssuesPanel` `1031-1077`，`SimilarIssuesPanel` `946-1029` | secondary | 桌面侧栏，移动端下沉 | 标注规则提示 / 辅助判断。 |
+| 结案面板 | `CloseoutForm` `1355-1791`，入口 `CloseoutEntryButton` `2867-2889` | secondary | 入口可见，面板按需聚焦 | 规则草稿非真实 AI。 |
+| Archive review | `ArchiveListDrawer` `2503-2643`，入口 `2838-2864` | auxiliary | 不必首屏常驻 | 不隐藏 SQLite / `.debug_workspace` 未接入边界。 |
+| Footer boundary | `apps/desktop/src/App.tsx:3128-3130` | auxiliary | 低优先级可见 | 保留长期未接入边界。 |
+
+### Confirmed Real Boundaries
+
+| 边界 | 当前 UI 展示位置和文案 | 后续要求 |
+|---|---|---|
+| 服务器未独立部署 | Header `apps/desktop/src/App.tsx:3069-3072`；Footer `3128-3129`。 | 可产品化表达，但必须保留“独立部署未验证”。 |
+| localStorage 兼容路径仍存在 | Closeout 草稿历史 `1596-1653`、`1805-1815`。 | 不说成全部数据都只在服务器；保留浏览器本地草稿历史边界。 |
+| 真实 AI 未接入 | Closeout 草稿区 `1577-1582`。 | 不把规则草稿包装成模型能力。 |
+| AI-ready 是规则草稿 | Closeout 草稿区 `1580-1590`。 | 继续强调规则、草稿、人工审阅。 |
+| Code context 未接入 | 当前 UI 没有全局显式展示；相近边界在 `PANES` `2338-2339`。 | 第一轮若改 shell，应补低优先级边界：Code context 需用户显式生成 bundle，当前未接入。 |
+
+### TECH-07 Execution Contract
+
+`TECH-07-APP-TSX-MINIMAL-SPLIT` 的目标是让后续 UI implementation 有清楚落点，不做视觉实现。下一轮必须按以下最小抽取目标执行：
+
+| 抽取目标 | 从 `App.tsx` 哪段抽 | 后续收益最大任务 |
+|---|---|---|
+| `WorkspaceChrome` / `ProjectContextShell` | Header + toolbar + `StorageStatusBanner` 渲染：`3059-3106`；复用现有 `ProjectSelector` 和 `ArchiveEntryButton`。 | `UI-02-SHELL-LAYOUT-POLISH`。 |
+| `KnowledgeAssistPanel` | 当前 `SearchPanel` 渲染 `2197-2205`，以及 recurrence / related / similar 渲染 `2237-2267`。 | `UI-04-SEARCH-KB-PANEL-POLISH`。 |
+| `IssueMainFlow` | 当前问题主线、追记、时间线、结案渲染：`2218-2305`。 | `UI-GATE-02` 后的主流程 polish。 |
+
+`TECH-07` 明确不抽：`CloseoutForm` 内部、repository / storage hooks、`ArchiveListDrawer` 内部、CSS token 系统。原因分别是：closeout 字段多且第一轮不重排；storage 语义不得改变；archive 不是第一轮重点；CSS token 等视觉实现边界稳定后再做。
+
+`TECH-07` 禁止范围：不做视觉重设计、不改 `App.css` 主视觉、不改 schema / repository / HTTP API、不改 server、不接真实 AI、不做 RAG / Electron / preload / fs / IPC、不移除 localStorage compatibility verify path、不隐藏服务器未独立部署 / AI-ready / Code context 边界。
+
+### First UI Change After TECH-07
+
+`UI-GATE-02` 通过后的第一轮 UI 修改只优先做 shell / workspace 状态 / Knowledge Assist 主次关系。不得在第一轮做 closeout 重排、archive drawer 重做、真实 AI、RAG、Code context、Electron / fs / IPC 或 server / schema / repository / HTTP API 改动。

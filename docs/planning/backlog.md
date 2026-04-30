@@ -5,7 +5,7 @@
 ## 当前路线
 - 当前版本基座：v0.2.x 本地 HTTP + SQLite + release 可部署基座。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
-- 当前目标：近期 1 周先让部署可用、数据安全、可观测；B 组 night-safe 功能包已完成，下一步停在 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` 人工视觉方向确认；不得在 gate 放行前执行 `TECH-07` 或继续自动跳到其它 night-safe 任务。`SEARCH-01-BASIC-FULL-TEXT-SEARCH`、`SEARCH-02-FILTERS`、`SEARCH-04-TAGS`、`SEARCH-03-ARCHIVE-REVIEW-PAGE`、`SEARCH-07-SIMILAR-ISSUES-LITE`、`SEARCH-08-SEARCH-RESULT-LINKING`、`SEARCH-09-RECURRENCE-PROMPT`、`TECH-DEBT-SEARCH-KB-CLEANUP-LITE`、`UI-REDESIGN-STAGE-BRIEF`、`UI-01-INFORMATION-ARCHITECTURE-REVIEW`、`CORE-02-WORKSPACE-UX-IMPROVEMENTS`、`CORE-03-RECENT-ISSUE-REOPEN`、`CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS`、`AIREADY-05-DRAFT-HISTORY` 与 `PROJECT-STATUS-LEDGER-MINIMAL` 已完成，不再留在可认领池；UI 小阶段任务拆分见 `docs/planning/ui-redesign-brief.md`。
+- 当前目标：近期 1 周先让部署可用、数据安全、可观测；B 组 night-safe 功能包与 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` 人工视觉方向确认均已完成，当前 repo-local 下一任务是 `TECH-07-APP-TSX-MINIMAL-SPLIT`；不得在 TECH-07 完成前执行 `UI-GATE-02` 或跳到其它 broad refactor。`SEARCH-01-BASIC-FULL-TEXT-SEARCH`、`SEARCH-02-FILTERS`、`SEARCH-04-TAGS`、`SEARCH-03-ARCHIVE-REVIEW-PAGE`、`SEARCH-07-SIMILAR-ISSUES-LITE`、`SEARCH-08-SEARCH-RESULT-LINKING`、`SEARCH-09-RECURRENCE-PROMPT`、`TECH-DEBT-SEARCH-KB-CLEANUP-LITE`、`UI-REDESIGN-STAGE-BRIEF`、`UI-01-INFORMATION-ARCHITECTURE-REVIEW`、`CORE-02-WORKSPACE-UX-IMPROVEMENTS`、`CORE-03-RECENT-ISSUE-REOPEN`、`CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS`、`AIREADY-05-DRAFT-HISTORY`、`UI-GATE-01-MANUAL-VISUAL-DIRECTION` 与 `PROJECT-STATUS-LEDGER-MINIMAL` 已完成，不再留在可认领池；UI 小阶段任务拆分见 `docs/planning/ui-redesign-brief.md`。
 - 当前 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 AI provider/API key。
 
 ## 认领规则
@@ -31,8 +31,8 @@
 
 ## B 组后 UI / TECH 顺序
 
-- 结论：B 组功能完成后，先改 UI，但不是直接大改；先过人工 UI gate，再做 `TECH-07-APP-TSX-MINIMAL-SPLIT`，然后进入人工 review 的 UI implementation。
-- 顺序：`UI-GATE-01-MANUAL-VISUAL-DIRECTION` -> `TECH-07-APP-TSX-MINIMAL-SPLIT` -> `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT`。
+- 结论：B 组功能完成后，先改 UI，但不是直接大改；人工 UI gate 已通过，当前只允许做 `TECH-07-APP-TSX-MINIMAL-SPLIT` 支撑拆分，然后进入人工 review 的 UI implementation。
+- 顺序：`UI-GATE-01-MANUAL-VISUAL-DIRECTION` completed -> `TECH-07-APP-TSX-MINIMAL-SPLIT` current -> `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT` gated-after-TECH-07。
 - 暂不优先：`TECH-08-HTTP-REPOSITORY-SPLIT`、`TECH-09-SERVER-ROUTE-SPLIT`、`TECH-10-DATABASE-MODULE-SPLIT`，除非具体 storage / server 任务命中它们。
 
 ## 近期 1 周任务（最多 8 个）
@@ -86,8 +86,8 @@
 | 8 | CODECTX-05-BUNDLE-VIEWER | night-safe | P1 |
 | 9 | CODECTX-07-AI-ANALYZE-EXPLICIT-BUNDLE | blocked | P2 |
 | 10 | SEARCH-03-ARCHIVE-REVIEW-PAGE | completed | P1 |
-| 11 | UI-GATE-01-MANUAL-VISUAL-DIRECTION | day-only | P1 |
-| 12 | TECH-07-APP-TSX-MINIMAL-SPLIT | gated-night-safe | P1 |
+| 11 | UI-GATE-01-MANUAL-VISUAL-DIRECTION | completed | P1 |
+| 12 | TECH-07-APP-TSX-MINIMAL-SPLIT | current | P1 |
 | 13 | UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT | day-only | P1 |
 | 14 | TECH-09-SERVER-ROUTE-SPLIT | night-safe | P2 |
 
@@ -100,6 +100,7 @@
 - 更完整的局域网部署体验：反向代理、`.local`、HTTPS、美化域名。
 
 ## Night-safe pool
+- TECH-07-APP-TSX-MINIMAL-SPLIT（current）：`UI-GATE-01` 已人工确认；只能按 `docs/planning/ui-redesign-brief.md#ui-gate-01-confirmation` 做支撑拆分，不做视觉重设计。
 - CORE-07-ARCHIVE-FILTERS
 - CORE-08-ERROR-ENTRY-TAGS
 - CORE-09-DEMO-SEED-IMPORT
@@ -127,7 +128,7 @@
 - TECH-10-DATABASE-MODULE-SPLIT
 
 ## Gated night-safe pool
-- TECH-07-APP-TSX-MINIMAL-SPLIT：必须在 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` 人工确认后执行，只做支撑拆分，不做视觉重设计。
+- UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT：必须在 `TECH-07-APP-TSX-MINIMAL-SPLIT` 完成后执行；第一轮只做 shell / workspace 状态 / Knowledge Assist 主次关系。
 
 ## Day-only pool
 - DEP-02-STATIC-DIST-SERVER-PATH-VERIFY
@@ -136,7 +137,6 @@
 - DEP-05-SYSTEMD-AUTOSTART-PREP
 - DATA-01-SQLITE-BACKUP-SERVER-PATH-VERIFY
 - DATA-03-RESTORE-DRY-RUN-SERVER-PATH-VERIFY
-- UI-GATE-01-MANUAL-VISUAL-DIRECTION
 - UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT
 
 ## Blocked by external
@@ -172,4 +172,4 @@
 - 不做权限系统、账号体系、多租户、复杂协同或公网暴露。
 - 不做 Electron / preload / fs / IPC，不把 `.debug_workspace` 文件写盘当作当前主线。
 - 不把 `docs/planning/status.md` 变成 backlog 副本、路线图副本或历史流水账。
-- 不在 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` 之前执行 `TECH-07-APP-TSX-MINIMAL-SPLIT`；不把 TECH-07 做成视觉重设计或 `App.tsx` 全量重写。
+- 不把 `TECH-07-APP-TSX-MINIMAL-SPLIT` 做成视觉重设计或 `App.tsx` 全量重写；不在 TECH-07 完成前执行 `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT`。
