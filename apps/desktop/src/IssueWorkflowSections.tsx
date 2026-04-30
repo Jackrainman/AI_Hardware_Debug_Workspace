@@ -10,7 +10,6 @@ type KnowledgeAssistPanelProps = {
 type IssueMainFlowProps = {
   selectedIssueId: string | null;
   quickIssueEntry: ReactNode;
-  demoHint: ReactNode;
   mainlinePanel: ReactNode;
   investigationAppendForm: ReactNode;
   investigationRecordList: ReactNode;
@@ -46,7 +45,6 @@ export function KnowledgeAssistPanel({
 export function IssueMainFlow({
   selectedIssueId,
   quickIssueEntry,
-  demoHint,
   mainlinePanel,
   investigationAppendForm,
   investigationRecordList,
@@ -58,13 +56,12 @@ export function IssueMainFlow({
       {selectedIssueId === null && (
         <div className="quick-issue-landing" data-testid="quick-issue-landing">
           {quickIssueEntry}
-          <div className="quick-issue-supporting-grid">
-            {demoHint}
-            {issueStorageControls}
-          </div>
           <p className="empty-state issue-next-step">
             未选中问题。先快速建卡，或从左侧选择已有卡。
           </p>
+          <div className="quick-issue-test-controls">
+            {issueStorageControls}
+          </div>
         </div>
       )}
       {selectedIssueId !== null && (

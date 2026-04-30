@@ -5,14 +5,14 @@
 ## 当前阶段
 - 阶段：**R1：长期产品路线图执行启动**。
 - 当前模式：`server_storage_migration`（保留服务器部署安全边界）。
-- 阶段目标：以 v0.2.x 已完成的本地 HTTP + SQLite + release 可部署基座为起点，按 8 条产品主线推进；近期 P0 仍关注 **部署可用、数据安全、可观测**。B 组、`UI-GATE-01-MANUAL-VISUAL-DIRECTION`、`TECH-07-APP-TSX-MINIMAL-SPLIT`、`UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT` 与 `UI-RELAYOUT-01-WORKBENCH-FIRST-PASS` 均已完成；用户已在 `UI-GATE-04` 后指出讲解性文字过多并授权执行 `UI-POLISH-02-COPY-TRIM`，当前完成前端说明文案瘦身，停在 `UI-GATE-05-MANUAL-COPY-TRIM-REVIEW` 等待人工复查。
+- 阶段目标：以 v0.2.x 已完成的本地 HTTP + SQLite + release 可部署基座为起点，按 8 条产品主线推进；近期 P0 仍关注 **部署可用、数据安全、可观测**。B 组、`UI-GATE-01-MANUAL-VISUAL-DIRECTION`、`TECH-07-APP-TSX-MINIMAL-SPLIT`、`UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT` 与 `UI-RELAYOUT-01-WORKBENCH-FIRST-PASS` 均已完成；用户已在 `UI-GATE-05` 后授权调整快速建卡 landing，当前完成 `UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT`，停在 `UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW` 等待人工复查。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
-- 最近已完成：`UI-POLISH-02-COPY-TRIM`，已完成第二轮轻量 UI 文案瘦身：顶部成功态仅保留服务 / SQLite / 版本等关键状态，项目与工作台入口、Knowledge Assist、追记、归档和结案辅助说明均压缩；服务器 / 存储错误态、Repair Task、AI-ready 未接真实 AI、文件写盘未接入等状态边界保留；未改 schema、repository、HTTP API、server、真实 AI、RAG、Electron、fs/IPC 或业务数据流。
+- 最近已完成：`UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT`，已完成未选中问题时的快速建卡 landing 调整：快速建卡主卡放大并占据原“最小演示路径 / 辅助验证”区域，最小演示路径移除，辅助验证下移到“未选中问题”提示框下面并标注仅测试；未改 schema、repository、HTTP API、server、真实 AI、RAG、Electron、fs/IPC 或业务数据流。
 
 ## 当前真实状态
 - 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、workspace UX improvements、recent issue reopen、closeout failure input preservation hints、AI-ready draft history、issue / record / closeout / archive / error-entry 主路径、basic full-text search、search filters、search tags、archive review page、similar issues lite、search result linking、recurrence prompt、search / KB verify fixture cleanup、UI redesign stage brief、UI information architecture review、App.tsx minimal split、UI pre-relayout component split、UI relayout first pass、quick issue create、record timeline polish、closeout UX polish、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、server schema contract、HTTP feedback contract、restore dry-run、SQLite integrity check、JSON export hardening、partial closeout recovery verify、repair task generation、diagnostics bundle、night-run 安全规则、v0.2 历史文档归档、lightweight project status ledger、refactor necessity audit。
 - 技术债审计：`docs/planning/refactor-assessment.md` 仍作为 TECH-07 背景输入；`SEARCH-07` 与 `UI-GATE-01` 已完成，当前没有必须先做的 broad refactor gate；大文件和重复逻辑存在但不阻塞 DEP-01 / TECH-07。
-- UI 改造状态：`docs/planning/ui-redesign-brief.md` 已完成信息架构审查与 `UI-GATE-01` 人工确认记录，`TECH-07` 最小支撑拆分、`UI-MOD-01` 行为保持模块化拆分、`UI-RELAYOUT-01` 第一轮工作台重排和 `UI-POLISH-02-COPY-TRIM` 文案瘦身均已完成。当前必须停止在 `UI-GATE-05-MANUAL-COPY-TRIM-REVIEW`，等待用户人工检查桌面端和移动端观感，不得自动进入下一轮 UI polish。
+- UI 改造状态：`docs/planning/ui-redesign-brief.md` 已完成信息架构审查与 `UI-GATE-01` 人工确认记录，`TECH-07` 最小支撑拆分、`UI-MOD-01` 行为保持模块化拆分、`UI-RELAYOUT-01` 第一轮工作台重排、`UI-POLISH-02-COPY-TRIM` 文案瘦身和 `UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT` 均已完成。当前必须停止在 `UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW`，等待用户人工检查桌面端和移动端观感，不得自动进入下一轮 UI polish。
 - 仍 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 AI provider/API key 接入。
 - 服务器安全边界仍有效：不 sudo、不写 `/opt`、不抢 80、不升级系统 Node、不影响 filebrowser / vnt-cli / docker / Portainer；release 部署优先 `/home/hurricane/probeflash` + 独立 Node runtime + 4100。
 - AI 安全边界仍有效：B 组 AI-ready 草稿历史已完成；真实 AI 必须等用户确认 provider、API key/server env、timeout 和 mock/test provider 边界；AI 只返回草稿，不直接写库。
@@ -53,9 +53,15 @@
   - 已完成：顶部健康详情删除 DB class / 默认项目成功态信息，项目与工作台入口、Knowledge Assist、追记、归档和结案辅助说明压缩；服务器 / 存储错误态、Repair Task、AI-ready 未接真实 AI、文件写盘未接入等边界说明保留。
   - 明确未做：未改 schema、repository contract、HTTP API、server、真实 AI、RAG / embedding、Electron / fs / IPC、业务数据流或状态判断逻辑。
 
+- **UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT**
+  - 目标：在未选中问题时放大快速建卡主卡，让它占据原“最小演示路径 / 辅助验证”区域；辅助验证下移为测试入口。
+  - 当前状态：`completed`；repo-local；等待人工 review / smoke。
+  - 已完成：移除 landing 中的最小演示路径；快速建卡卡片加大；辅助验证移动到“未选中问题”提示框下方并标注“仅测试”。
+  - 明确未做：未改 schema、repository contract、HTTP API、server、真实 AI、RAG / embedding、Electron / fs / IPC、业务数据流或存储语义。
+
 ## 当前唯一人工检查门（day-only，AI 必须停止）
-- **UI-GATE-05-MANUAL-COPY-TRIM-REVIEW**
-  - 目标：用户在第二轮 UI 文案瘦身后人工检查桌面端和移动端观感，确认讲解文字是否足够少，同时服务器 / 存储状态仍便于判断。
+- **UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW**
+  - 目标：用户在快速建卡 landing 调整后人工检查桌面端和移动端观感，确认快速建卡面积、辅助验证下移和未选中提示位置是否符合预期。
   - 当前状态：`current`；day-only / manual smoke；不能夜跑。
   - 明确不做：AI 不自动越过此 gate 做下一轮 UI polish、closeout 视觉重排、archive drawer 重做或任何新的 UI implementation。
 
@@ -66,14 +72,14 @@
 - **UI-RELAYOUT-01-WORKBENCH-FIRST-PASS**
   - 状态：`completed`；P1；repo-local。
   - 选择理由：第一轮工作台重排已完成，下一步只能人工 review / smoke。
-- **UI-GATE-05-MANUAL-COPY-TRIM-REVIEW**
+- **UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW**
   - 状态：`current`；P1；day-only / manual smoke。
-  - 选择理由：第二轮 UI 文案瘦身完成后，必须由用户检查桌面端和移动端观感，再决定是否继续下一轮 UI polish。
+  - 选择理由：快速建卡 landing 调整完成后，必须由用户检查桌面端和移动端观感，再决定是否继续下一轮 UI polish。
 
 ## 下一步最小可执行动作
-- 下一轮默认：停在 `UI-GATE-05-MANUAL-COPY-TRIM-REVIEW`；用户需要人工启动 / 浏览 ProbeFlash，检查桌面端和移动端观感。
+- 下一轮默认：停在 `UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW`；用户需要人工启动 / 浏览 ProbeFlash，检查桌面端和移动端观感。
 - 无服务器授权或 repo-local 执行窗口：没有可自动顺推的 UI 任务；AI 必须停止，不能继续做下一轮 UI polish、closeout 视觉重构或任何新 UI implementation。
-- `UI-POLISH-02` 已完成：等待用户人工 review / smoke；不得自动顺推下一轮 UI 任务。
+- `UI-POLISH-03` 已完成：等待用户人工 review / smoke；不得自动顺推下一轮 UI 任务。
 - 真实 AI：仍 blocked，不得无人值守接 provider 或 API key。
 
 ## 下一任务选择流程

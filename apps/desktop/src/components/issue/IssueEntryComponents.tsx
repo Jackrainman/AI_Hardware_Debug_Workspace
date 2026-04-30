@@ -31,18 +31,6 @@ type IntakeSubmitStatus =
   | { state: "saved"; id: string; at: string }
   | { state: "error"; reason: string };
 
-export function DemoHint() {
-  return (
-    <div className="demo-hint" data-testid="demo-hint">
-      <div className="demo-hint-title">最小演示路径</div>
-      <div className="demo-hint-steps">
-        <span>快速建卡 / 选择已有卡 / 追加排查记录 / 结案归档</span>
-      </div>
-      <p className="demo-hint-note">服务异常会显示在顶部。</p>
-    </div>
-  );
-}
-
 export function QuickIssueCreateBar({
   repository,
   workspaceId,

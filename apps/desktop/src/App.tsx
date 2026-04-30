@@ -55,7 +55,6 @@ import {
   SimilarIssuesPanel,
 } from "./components/knowledge/KnowledgePanels";
 import {
-  DemoHint,
   IssueCardListView,
   QuickIssueCreateBar,
 } from "./components/issue/IssueEntryComponents";
@@ -308,8 +307,8 @@ function IssueStorageControls({
   return (
     <div className="storage-controls" data-testid="issue-storage-controls">
       <div className="form-caption form-caption-muted">
-        <h3>辅助验证</h3>
-        <p>HTTP 存储链路。</p>
+        <h3>辅助验证（仅测试）</h3>
+        <p>保存/读取示例卡。</p>
       </div>
       <div className="storage-buttons">
         <button type="button" className="button-secondary" onClick={handleSave}>
@@ -607,7 +606,6 @@ function IssuePane({
               clearStorageFeedback={clearStorageFeedback}
             />
           )}
-          demoHint={<DemoHint />}
           mainlinePanel={(
             <MainlineResultPanel
               selectedCard={selectedCard}

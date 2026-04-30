@@ -16,14 +16,14 @@
     "archive_state": "object - v0.2.0 前历史文档归档状态与读取条件",
     "notes": "string[] - 下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-05-01T00:53:50+08:00",
+  "timestamp": "2026-05-01T01:10:11+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "R1",
   "current_stage_name": "长期产品路线图执行启动",
-  "current_stage_goal": "从 v0.2.x 本地 HTTP + SQLite + release 可部署基座出发，按 8 条产品主线推进；近期 P0 仍是部署可用、数据安全、可观测；B 组、UI-GATE-01、TECH-07、UI-MOD-01、UI-RELAYOUT-01 第一轮工作台重排与 UI-POLISH-02 文案瘦身已完成；当前停在 UI-GATE-05 人工 copy trim review，等待用户检查桌面端和移动端观感，再决定是否进入下一轮 UI polish。",
-  "primary_track": "Deployment / Operability + Data Safety P0 remains blocked by server confirmation; UI repair window completed UI-POLISH-02 and must stop at UI-GATE-05 manual copy trim review before any next UI polish",
+  "current_stage_goal": "从 v0.2.x 本地 HTTP + SQLite + release 可部署基座出发，按 8 条产品主线推进；近期 P0 仍是部署可用、数据安全、可观测；B 组、UI-GATE-01、TECH-07、UI-MOD-01、UI-RELAYOUT-01 第一轮工作台重排、UI-POLISH-02 文案瘦身与 UI-POLISH-03 快速建卡 landing 调整已完成；当前停在 UI-GATE-06 人工 quick issue layout review，等待用户检查桌面端和移动端观感，再决定是否进入下一轮 UI polish。",
+  "primary_track": "Deployment / Operability + Data Safety P0 remains blocked by server confirmation; UI repair window completed UI-POLISH-03 and must stop at UI-GATE-06 manual quick issue layout review before any next UI polish",
   "deferred_track": "Real AI、repo connector、RAG/embedding、权限系统和硬件自动接入均后置到依赖满足或用户拍板后。",
-  "current_atomic_task": "UI-GATE-05-MANUAL-COPY-TRIM-REVIEW",
+  "current_atomic_task": "UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW",
   "roadmap_document": "docs/planning/product-roadmap.md",
   "roadmap_tracks": [
     {
@@ -98,6 +98,7 @@
     "ui_gate_03_manual_run_check_completed": true,
     "ui_relayout_01_workbench_first_pass_completed": true,
     "ui_polish_02_copy_trim_completed": true,
+    "ui_polish_03_quick_issue_landing_layout_completed": true,
     "project_status_ledger_completed": true,
     "night_run_rules_completed": true,
     "v0_2_history_docs_archived": true,
@@ -108,8 +109,8 @@
   "assessment_state": {
     "refactor_assessment_document": "docs/planning/refactor-assessment.md",
     "codebase_refine_necessity_audit_completed": true,
-    "conclusion": "No prerequisite broad refactor is needed before DEP-01 or the completed B group. SEARCH-07/08/09, UI-01, CORE-02, CORE-03, CORE-06, AIREADY-05, UI-GATE-01, TECH-07, UI-MOD-01, UI-RELAYOUT-01 and UI-POLISH-02 are complete. App.tsx, HTTP repository, server database and verify scripts have real friction; UI-POLISH-02 stayed a copy-trim pass, not a full rewrite or business-flow redesign.",
-    "recommended_next_task": "UI-GATE-05-MANUAL-COPY-TRIM-REVIEW is current/day-only/manual. AI must stop and wait for the user to inspect desktop and mobile layout before any next UI polish."
+    "conclusion": "No prerequisite broad refactor is needed before DEP-01 or the completed B group. SEARCH-07/08/09, UI-01, CORE-02, CORE-03, CORE-06, AIREADY-05, UI-GATE-01, TECH-07, UI-MOD-01, UI-RELAYOUT-01, UI-POLISH-02 and UI-POLISH-03 are complete. App.tsx, HTTP repository, server database and verify scripts have real friction; UI-POLISH-03 stayed a quick issue landing layout pass, not a full rewrite or business-flow redesign.",
+    "recommended_next_task": "UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW is current/day-only/manual. AI must stop and wait for the user to inspect desktop and mobile layout before any next UI polish."
   },
   "environment_facts": {
     "server": {
@@ -151,29 +152,29 @@
       ]
     },
     {
-      "id": "UI-POLISH-02-COPY-TRIM",
+      "id": "UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT",
       "track": "Technical Debt / Architecture",
-      "goal": "删除或压缩页面中过多的讲解性文字，只保留必要操作提示与状态判断信息。",
+      "goal": "放大未选中问题时的快速建卡主卡，并把辅助验证下移为仅测试入口。",
       "status": "completed",
       "priority": "P1",
       "lane": "completed",
       "night_safe": false,
       "ai_unattended_run": false,
       "requires_user_confirmation": [],
-      "execution_contract": "Completed copy-trim pass: top success state now keeps service/storage/version only, project/workbench/Knowledge Assist/investigation/archive/closeout explanatory copy compressed, server/storage error states, Repair Task, no-real-AI and no-file-write boundaries preserved; did not change schema, repository, HTTP API, server, true AI, RAG, Electron/fs/IPC or business data flow. Must stop at UI-GATE-05."
+      "execution_contract": "Completed quick issue landing layout pass: quick create card enlarged, minimal demo path removed, auxiliary verification moved below the no-selected-issue hint and marked test-only; did not change schema, repository, HTTP API, server, true AI, RAG, Electron/fs/IPC or business data flow. Must stop at UI-GATE-06."
     },
     {
-      "id": "UI-GATE-05-MANUAL-COPY-TRIM-REVIEW",
+      "id": "UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW",
       "track": "Technical Debt / Architecture",
-      "goal": "第二轮 UI 文案瘦身后由用户人工检查桌面端和移动端观感，再决定是否进入下一轮 UI polish。",
+      "goal": "快速建卡 landing 调整后由用户人工检查桌面端和移动端观感，再决定是否进入下一轮 UI polish。",
       "status": "current",
       "priority": "P1",
       "lane": "day-only/manual",
       "night_safe": false,
       "ai_unattended_run": false,
       "requires_user_confirmation": [
-        "desktop copy-trim visual review",
-        "mobile copy-trim smoke check",
+        "desktop quick issue landing visual review",
+        "mobile quick issue landing smoke check",
         "explicit approval before any next UI polish"
       ]
     }
@@ -198,11 +199,13 @@
       "UI-RELAYOUT-01-WORKBENCH-FIRST-PASS",
       "UI-GATE-04-MANUAL-RELAYOUT-REVIEW",
       "UI-POLISH-02-COPY-TRIM",
-      "UI-GATE-05-MANUAL-COPY-TRIM-REVIEW"
+      "UI-GATE-05-MANUAL-COPY-TRIM-REVIEW",
+      "UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT",
+      "UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW"
     ],
     "ui_gate_01_completed": true,
     "ui_gate_01_completed_at": "2026-04-30T14:30:51+08:00",
-    "decision": "After B group and UI-GATE-01, TECH-07 completed as an enabling split and the user accepted the split result. UI-MOD-01 behavior-preserving component extraction, UI-RELAYOUT-01 first-pass workbench relayout and UI-POLISH-02 copy trim are complete; AI must stop at UI-GATE-05 manual copy-trim review before any next UI polish. Do not prioritize TECH-08/09/10 broad refactors unless a concrete storage/server task requires them."
+    "decision": "After B group and UI-GATE-01, TECH-07 completed as an enabling split and the user accepted the split result. UI-MOD-01 behavior-preserving component extraction, UI-RELAYOUT-01 first-pass workbench relayout, UI-POLISH-02 copy trim and UI-POLISH-03 quick issue landing layout are complete; AI must stop at UI-GATE-06 manual quick issue layout review before any next UI polish. Do not prioritize TECH-08/09/10 broad refactors unless a concrete storage/server task requires them."
   },
   "ui_gate_01_confirmation": {
     "task_id": "UI-GATE-01-MANUAL-VISUAL-DIRECTION",
@@ -711,11 +714,37 @@
       "order": 37,
       "id": "UI-GATE-05-MANUAL-COPY-TRIM-REVIEW",
       "track": "Technical Debt / Architecture",
+      "status": "completed",
+      "priority": "P1",
+      "classification": "completed",
+      "depends_on": [
+        "UI-POLISH-02-COPY-TRIM"
+      ],
+      "completed_at": "2026-05-01T01:10:11+08:00",
+      "confirmation": "User requested quick issue create area enlargement and moving auxiliary verification below the no-selected-issue hint."
+    },
+    {
+      "order": 38,
+      "id": "UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT",
+      "track": "Technical Debt / Architecture",
+      "status": "completed",
+      "priority": "P1",
+      "classification": "completed",
+      "depends_on": [
+        "UI-GATE-05-MANUAL-COPY-TRIM-REVIEW"
+      ],
+      "execution_contract": "Enlarged quick issue create card in the no-selected-issue landing, removed minimal demo path, and moved auxiliary verification below the no-selected-issue hint as a test-only block; no schema/repository/HTTP API/server/business flow changes.",
+      "completed_at": "2026-05-01T01:10:11+08:00"
+    },
+    {
+      "order": 39,
+      "id": "UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW",
+      "track": "Technical Debt / Architecture",
       "status": "current",
       "priority": "P1",
       "classification": "day-only/manual",
       "depends_on": [
-        "UI-POLISH-02-COPY-TRIM"
+        "UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT"
       ]
     }
   ],
@@ -771,6 +800,8 @@
       "UI-GATE-04-MANUAL-RELAYOUT-REVIEW",
       "UI-POLISH-02-COPY-TRIM",
       "UI-GATE-05-MANUAL-COPY-TRIM-REVIEW",
+      "UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT",
+      "UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW",
       "TECH-09-SERVER-ROUTE-SPLIT"
     ]
   },
@@ -809,7 +840,7 @@
     "DEP-05-SYSTEMD-AUTOSTART-PREP",
     "DATA-01-SQLITE-BACKUP-SERVER-PATH-VERIFY",
     "DATA-03-RESTORE-DRY-RUN-SERVER-PATH-VERIFY",
-    "UI-GATE-05-MANUAL-COPY-TRIM-REVIEW"
+    "UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW"
   ],
   "blocked_by_external": [
     "DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY",
@@ -889,7 +920,9 @@
     "UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT",
     "UI-RELAYOUT-01-WORKBENCH-FIRST-PASS",
     "UI-GATE-04-MANUAL-RELAYOUT-REVIEW",
-    "UI-POLISH-02-COPY-TRIM"
+    "UI-POLISH-02-COPY-TRIM",
+    "UI-GATE-05-MANUAL-COPY-TRIM-REVIEW",
+    "UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -909,15 +942,15 @@
       "docs/product/产品介绍.md：产品定义 / 领域语言变化",
       "docs/archive/v0.2-closeout/：仅 v0.2.0 前历史背景、专项追溯或归档审计"
     ],
-    "recommended_next_daytime": "UI-GATE-05-MANUAL-COPY-TRIM-REVIEW is current/day-only/manual; user must inspect desktop and mobile layout after copy trim before any next UI polish. DEP-01 should not be auto-selected unless the user explicitly overrides this UI manual-review gate and reauthorizes server deployment boundaries.",
-    "recommended_next_daytime_status": "UI-GATE-05 is current/day-only/manual; DEP-01 remains blocked_until_user_confirms_server_boundaries and is not the default next task.",
+    "recommended_next_daytime": "UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW is current/day-only/manual; user must inspect desktop and mobile layout after quick issue landing adjustment before any next UI polish. DEP-01 should not be auto-selected unless the user explicitly overrides this UI manual-review gate and reauthorizes server deployment boundaries.",
+    "recommended_next_daytime_status": "UI-GATE-06 is current/day-only/manual; DEP-01 remains blocked_until_user_confirms_server_boundaries and is not the default next task.",
     "recommended_next_night_safe": "none",
-    "recommended_next_ui_task": "UI-GATE-05-MANUAL-COPY-TRIM-REVIEW; manual copy-trim review only, no AI implementation.",
-    "b_group_order": "UI-01, CORE-02, CORE-03, CORE-06, AIREADY-05, UI-GATE-01, TECH-07, UI-GATE-02, UI-MOD-01, UI-GATE-03, UI-RELAYOUT-01 and UI-POLISH-02 are complete; B group, manual visual gate, enabling split review, first-pass relayout and copy trim are closed.",
-    "after_b_group_order": "UI-GATE-01-MANUAL-VISUAL-DIRECTION completed -> TECH-07-APP-TSX-MINIMAL-SPLIT completed -> UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT completed/manual accepted -> UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT completed -> UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT completed/user approved -> UI-RELAYOUT-01-WORKBENCH-FIRST-PASS completed -> UI-GATE-04 user authorized copy trim -> UI-POLISH-02-COPY-TRIM completed -> UI-GATE-05-MANUAL-COPY-TRIM-REVIEW current/day-only/manual.",
-    "alternative_night_safe": "Do not choose AIREADY/CODECTX/CORE alternatives or next UI implementation before UI-GATE-05 manual copy-trim review unless the user explicitly redirects; AI must stop at UI-GATE-05.",
-    "refactor_gate": "CODEBASE-REFINE-NECESSITY-AUDIT found no required broad refactor gate before DEP-01 or the B group. SEARCH-07, UI-01, UI-GATE-01, TECH-07, UI-MOD-01, UI-RELAYOUT-01 and UI-POLISH-02 are complete. TECH-07 stayed an enabling split; UI-POLISH-02 stayed a copy-trim pass, not a full App.tsx rewrite or business redesign.",
-    "selection_rule": "当前停在 UI-GATE-05-MANUAL-COPY-TRIM-REVIEW。AI 必须停止，等待用户人工检查桌面端和移动端观感；不得自动进入下一轮 UI polish、closeout 视觉重构、archive drawer 重做或任何新的 UI implementation。只有用户明确推翻本轮约束并重新授权服务器部署，才可改选 DEP-01。真实 AI/API key 和 systemd/sudo 任务不得 unattended。"
+    "recommended_next_ui_task": "UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW; manual quick issue layout review only, no AI implementation.",
+    "b_group_order": "UI-01, CORE-02, CORE-03, CORE-06, AIREADY-05, UI-GATE-01, TECH-07, UI-GATE-02, UI-MOD-01, UI-GATE-03, UI-RELAYOUT-01, UI-POLISH-02 and UI-POLISH-03 are complete; B group, manual visual gate, enabling split review, first-pass relayout, copy trim and quick issue landing layout are closed.",
+    "after_b_group_order": "UI-GATE-01-MANUAL-VISUAL-DIRECTION completed -> TECH-07-APP-TSX-MINIMAL-SPLIT completed -> UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT completed/manual accepted -> UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT completed -> UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT completed/user approved -> UI-RELAYOUT-01-WORKBENCH-FIRST-PASS completed -> UI-GATE-04 user authorized copy trim -> UI-POLISH-02-COPY-TRIM completed -> UI-GATE-05 user authorized quick issue layout -> UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT completed -> UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW current/day-only/manual.",
+    "alternative_night_safe": "Do not choose AIREADY/CODECTX/CORE alternatives or next UI implementation before UI-GATE-06 manual quick issue layout review unless the user explicitly redirects; AI must stop at UI-GATE-06.",
+    "refactor_gate": "CODEBASE-REFINE-NECESSITY-AUDIT found no required broad refactor gate before DEP-01 or the B group. SEARCH-07, UI-01, UI-GATE-01, TECH-07, UI-MOD-01, UI-RELAYOUT-01, UI-POLISH-02 and UI-POLISH-03 are complete. TECH-07 stayed an enabling split; UI-POLISH-03 stayed a quick issue landing layout pass, not a full App.tsx rewrite or business redesign.",
+    "selection_rule": "当前停在 UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW。AI 必须停止，等待用户人工检查桌面端和移动端观感；不得自动进入下一轮 UI polish、closeout 视觉重构、archive drawer 重做或任何新的 UI implementation。只有用户明确推翻本轮约束并重新授权服务器部署，才可改选 DEP-01。真实 AI/API key 和 systemd/sudo 任务不得 unattended。"
   },
   "night_run_mode": {
     "policy": "Night run / unattended mode may only execute repo-local, automatically verifiable and rollback-friendly atomic tasks. External systems, real servers, privileged operations, destructive data operations and product decisions must stop with handoff.",
@@ -1173,18 +1206,19 @@
     "Code context 第一阶段只能处理用户显式提供的 bundle，不允许 server 任意扫描路径。",
     "路线图较长，current.md 只允许保留最多 3 个前沿候选，完整字段必须回到 product-roadmap.md。",
     "docs/planning/status.md 只是快速状态索引，不得替代 current/backlog/product-roadmap/handoff.json。",
-    "UI-GATE-01 已人工确认，TECH-07、UI-MOD-01、UI-RELAYOUT-01 与 UI-POLISH-02 均已按 contract 完成；不得直接全量重写 App.tsx、引入组件库或改变业务数据流。",
-    "当前任务 UI-GATE-05 只能由用户人工检查桌面端和移动端观感；不得混入下一轮 UI polish、closeout 视觉重构、archive drawer 重做或业务改动。",
-    "UI-GATE-05 通过前必须停止，不能自动进入新的 UI implementation。"
+    "UI-GATE-01 已人工确认，TECH-07、UI-MOD-01、UI-RELAYOUT-01、UI-POLISH-02 与 UI-POLISH-03 均已按 contract 完成；不得直接全量重写 App.tsx、引入组件库或改变业务数据流。",
+    "当前任务 UI-GATE-06 只能由用户人工检查桌面端和移动端观感；不得混入下一轮 UI polish、closeout 视觉重构、archive drawer 重做或业务改动。",
+    "UI-GATE-06 通过前必须停止，不能自动进入新的 UI implementation。"
   ],
   "notes": [
     "TECH-07-APP-TSX-MINIMAL-SPLIT 已完成且用户已认可：抽取 WorkspaceChrome/ProjectContextShell、KnowledgeAssistPanel、IssueMainFlow 纯展示壳；保留原 render 顺序、条件渲染、业务触发和真实边界。",
     "UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT 已完成：快速建卡、完整建卡、问题列表、Knowledge Assist 四个面板、追记表单、排查时间线、结案表单和主线结果面板已抽为 UI 模块；保持 render 顺序、className、test id、文案和数据流不变。",
     "UI-RELAYOUT-01-WORKBENCH-FIRST-PASS 已完成：默认主界面改为 QuickIssue landing，快速建卡新增 severity select，Issue rail / Issue main flow / Knowledge Assist supporting rail 已形成，旧 3/4 编号文案已删除；未改 schema / repository / HTTP API / server / AI。",
     "UI-POLISH-02-COPY-TRIM 已完成：压缩顶部成功态、项目弹窗、工作台入口、Knowledge Assist、追记、归档和结案辅助说明；保留服务器/存储错误态、Repair Task、真实 AI 未接入和文件写盘未接入等状态边界。",
-    "当前必须停在 UI-GATE-05-MANUAL-COPY-TRIM-REVIEW；等待用户人工检查桌面端和移动端观感，AI 不得自动继续下一轮 UI polish。",
+    "UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT 已完成：未选中问题时快速建卡主卡已放大，最小演示路径已移除，辅助验证已移到未选中提示框下方并标注仅测试。",
+    "当前必须停在 UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW；等待用户人工检查桌面端和移动端观感，AI 不得自动继续下一轮 UI polish。",
     "如果用户明确切回服务器部署并确认 SSH、release 获取、/home/hurricane/probeflash 写入、临时进程和 4100 端口边界，DEP-01 仍可作为 P0 白天主线；但下一轮默认不要改选 DEP-01。",
     "真实 AI/API key 仍 blocked；AI-ready 草稿历史不代表真实 AI 已接入。",
-    "UI 小阶段禁止 dashboard/console/new app、App.tsx full rewrite、业务逻辑重写、server change、真实 AI、embedding/RAG、Electron/fs/IPC、schema migration、组件库和 broad CSS reset；UI-GATE-05 人工 review 通过前不得进入下一轮 UI polish。"
+    "UI 小阶段禁止 dashboard/console/new app、App.tsx full rewrite、业务逻辑重写、server change、真实 AI、embedding/RAG、Electron/fs/IPC、schema migration、组件库和 broad CSS reset；UI-GATE-06 人工 review 通过前不得进入下一轮 UI polish。"
   ]
 }
