@@ -77,6 +77,8 @@ import {
 } from "./search/recurrence-prompt";
 import { orchestrateIssueCloseout } from "./use-cases/closeout-orchestrator";
 import { buildCloseoutFailureFeedbackCopy } from "./use-cases/closeout-failure-feedback";
+import { IssueMainFlow, KnowledgeAssistPanel } from "./IssueWorkflowSections";
+import { WorkspaceChrome } from "./WorkspaceChrome";
 import {
   CHECKING_STORAGE_CONNECTION_STATE,
   LOCAL_STORAGE_CONNECTION_STATE,
@@ -2194,14 +2196,18 @@ function IssuePane({
         reportStorageError={reportStorageError}
         clearStorageFeedback={clearStorageFeedback}
       />
-      <SearchPanel
-        repository={repository}
-        currentIssueId={selectedIssueId}
-        relatedHistoricalIssueIds={relatedHistoricalIssueIds}
-        onOpenIssue={handleSelect}
-        onLinkHistoricalIssue={handleLinkHistoricalIssue}
-        reportStorageError={reportStorageError}
-        clearStorageFeedback={clearStorageFeedback}
+      <KnowledgeAssistPanel
+        searchPanel={(
+          <SearchPanel
+            repository={repository}
+            currentIssueId={selectedIssueId}
+            relatedHistoricalIssueIds={relatedHistoricalIssueIds}
+            onOpenIssue={handleSelect}
+            onLinkHistoricalIssue={handleLinkHistoricalIssue}
+            reportStorageError={reportStorageError}
+            clearStorageFeedback={clearStorageFeedback}
+          />
+        )}
       />
       <div className="issue-workbench">
         <aside className="issue-rail" aria-label="问题卡选择区">
@@ -2215,86 +2221,91 @@ function IssuePane({
             onSelect={handleSelect}
           />
         </aside>
-        <section className="issue-workspace" aria-label="问题处理区">
-          {selectedIssueId === null && (
-            <>
-              <IssueIntakeForm
-                repository={repository}
-                workspaceId={activeWorkspace.id}
-                isDefaultMode
-                onCreated={handleCardCreated}
-                reportStorageError={reportStorageError}
-                clearStorageFeedback={clearStorageFeedback}
-              />
-              <DemoHint />
-            </>
-          )}
-          <MainlineResultPanel
-            selectedCard={selectedCard}
-            recordCount={recordCount}
-            lastCloseout={lastCloseout}
-          />
-          {selectedIssueId !== null && !isLoadingSimilarIssues && (
-            <RecurrencePromptPanel
-              prompt={recurrencePrompt}
-              relatedHistoricalIssueIds={relatedHistoricalIssueIds}
-              onOpenIssue={handleSelect}
-              onLinkHistoricalIssue={handleLinkHistoricalIssue}
-              onDismiss={() => {
-                if (selectedIssueId !== null && recurrencePrompt !== null) {
-                  setDismissedRecurrencePrompt({
-                    currentIssueId: selectedIssueId,
-                    historicalIssueId: recurrencePrompt.issueId,
-                  });
-                }
-              }}
+        <IssueMainFlow
+          selectedIssueId={selectedIssueId}
+          activeWorkspaceName={activeWorkspace.name}
+          createIssueForm={(
+            <IssueIntakeForm
+              repository={repository}
+              workspaceId={activeWorkspace.id}
+              isDefaultMode
+              onCreated={handleCardCreated}
+              reportStorageError={reportStorageError}
+              clearStorageFeedback={clearStorageFeedback}
             />
           )}
-          <RelatedHistoricalIssuesPanel
-            issue={selectedCard}
-            onOpenIssue={handleSelect}
-            onUnlinkHistoricalIssue={handleUnlinkHistoricalIssue}
-          />
-          {selectedIssueId !== null && (
-            <SimilarIssuesPanel
-              result={similarIssues}
-              isLoading={isLoadingSimilarIssues}
-              currentIssueId={selectedIssueId}
-              relatedHistoricalIssueIds={relatedHistoricalIssueIds}
-              onOpenIssue={handleSelect}
-              onLinkHistoricalIssue={handleLinkHistoricalIssue}
+          demoHint={<DemoHint />}
+          mainlinePanel={(
+            <MainlineResultPanel
+              selectedCard={selectedCard}
+              recordCount={recordCount}
+              lastCloseout={lastCloseout}
             />
           )}
-          {selectedIssueId === null && (
-            <p className="empty-state issue-next-step">
-              当前项目「{activeWorkspace.name}」还没有选中问题。创建问题卡后会自动选中最新一张，随即展开排查追记和结案归档表单；也可以在左侧点「刷新列表」从已有卡中挑选继续处理。
-            </p>
+          knowledgeAssistPanel={(
+            <KnowledgeAssistPanel
+              recurrencePromptPanel={selectedIssueId !== null && !isLoadingSimilarIssues ? (
+                <RecurrencePromptPanel
+                  prompt={recurrencePrompt}
+                  relatedHistoricalIssueIds={relatedHistoricalIssueIds}
+                  onOpenIssue={handleSelect}
+                  onLinkHistoricalIssue={handleLinkHistoricalIssue}
+                  onDismiss={() => {
+                    if (selectedIssueId !== null && recurrencePrompt !== null) {
+                      setDismissedRecurrencePrompt({
+                        currentIssueId: selectedIssueId,
+                        historicalIssueId: recurrencePrompt.issueId,
+                      });
+                    }
+                  }}
+                />
+              ) : null}
+              relatedHistoricalIssuesPanel={(
+                <RelatedHistoricalIssuesPanel
+                  issue={selectedCard}
+                  onOpenIssue={handleSelect}
+                  onUnlinkHistoricalIssue={handleUnlinkHistoricalIssue}
+                />
+              )}
+              similarIssuesPanel={selectedIssueId !== null ? (
+                <SimilarIssuesPanel
+                  result={similarIssues}
+                  isLoading={isLoadingSimilarIssues}
+                  currentIssueId={selectedIssueId}
+                  relatedHistoricalIssueIds={relatedHistoricalIssueIds}
+                  onOpenIssue={handleSelect}
+                  onLinkHistoricalIssue={handleLinkHistoricalIssue}
+                />
+              ) : null}
+            />
           )}
-          {selectedIssueId !== null && (
-            <>
-              <InvestigationAppendForm
-                repository={repository}
-                issueId={selectedIssueId}
-                onAppended={handleRecordAppended}
-                reportStorageError={reportStorageError}
-                clearStorageFeedback={clearStorageFeedback}
-              />
-              <InvestigationRecordListView
-                result={recordList}
-                onRefresh={refreshRecordList}
-              />
-              <CloseoutForm
-                repository={repository}
-                issueId={selectedIssueId}
-                issueCard={selectedCard}
-                records={recordList?.valid ?? []}
-                onClosed={handleIssueClosed}
-                reportStorageError={reportStorageError}
-                clearStorageFeedback={clearStorageFeedback}
-              />
-            </>
+          investigationAppendForm={selectedIssueId !== null ? (
+            <InvestigationAppendForm
+              repository={repository}
+              issueId={selectedIssueId}
+              onAppended={handleRecordAppended}
+              reportStorageError={reportStorageError}
+              clearStorageFeedback={clearStorageFeedback}
+            />
+          ) : null}
+          investigationRecordList={(
+            <InvestigationRecordListView
+              result={recordList}
+              onRefresh={refreshRecordList}
+            />
           )}
-          {selectedIssueId === null && (
+          closeoutForm={selectedIssueId !== null ? (
+            <CloseoutForm
+              repository={repository}
+              issueId={selectedIssueId}
+              issueCard={selectedCard}
+              records={recordList?.valid ?? []}
+              onClosed={handleIssueClosed}
+              reportStorageError={reportStorageError}
+              clearStorageFeedback={clearStorageFeedback}
+            />
+          ) : null}
+          issueStorageControls={(
             <IssueStorageControls
               repository={repository}
               workspaceId={activeWorkspace.id}
@@ -2302,7 +2313,7 @@ function IssuePane({
               clearStorageFeedback={clearStorageFeedback}
             />
           )}
-        </section>
+        />
       </div>
     </div>
   );
@@ -3056,53 +3067,36 @@ export default function App() {
 
   return (
     <div className="app-root">
-      <header className="app-header">
-        <div className="app-header-top">
-          <div className="app-title-block">
-            <p className="app-eyebrow">嵌入式调试现场 · 问题闪记</p>
-            <h1>ProbeFlash</h1>
-            <p className="app-subtitle">
-              面向嵌入式调试现场的问题闪记与知识归档系统。当前主路径已切到本地 HTTP + SQLite 联调版。
-            </p>
-          </div>
-          <div className="header-status-stack">
-            <p className="stage-tag" data-testid="stage-tag">
-              S3：本地 HTTP + SQLite 闭环
-            </p>
-            <p className="header-boundary">前端 /api + 本地 WSL backend + SQLite；独立部署未验证</p>
-          </div>
-        </div>
-        <div className="app-header-toolbar" data-testid="app-header-toolbar">
-          <div className="header-entry-slot header-entry-slot-left">
-            <ProjectSelector
-              pane={projectPane}
-              open={isProjectEntryOpen}
-              activeWorkspace={activeWorkspace}
-              workspaceList={workspaceList}
-              onToggle={() => setIsProjectEntryOpen((prev) => !prev)}
-              onClose={() => setIsProjectEntryOpen(false)}
-              onRefreshWorkspaces={() => void refreshWorkspaceList()}
-              onSelectWorkspace={handleWorkspaceSelected}
-              onCreateWorkspace={handleWorkspaceCreate}
-            />
-          </div>
-          <div className="header-entry-slot header-entry-slot-right">
-            <div className="header-entry-actions">
-              <CloseoutEntryButton issueId={activeIssueId} />
-              <ArchiveEntryButton
-                count={archiveTotal}
-                onClick={() => setIsArchiveListOpen(true)}
-              />
-            </div>
-          </div>
-        </div>
-      </header>
-      <StorageStatusBanner
-        connectionState={storageConnectionState}
-        error={storageFeedbackError}
-        healthStatus={storageHealthStatus}
-        activeWorkspace={activeWorkspace}
-        workspaceList={workspaceList}
+      <WorkspaceChrome
+        projectSelector={(
+          <ProjectSelector
+            pane={projectPane}
+            open={isProjectEntryOpen}
+            activeWorkspace={activeWorkspace}
+            workspaceList={workspaceList}
+            onToggle={() => setIsProjectEntryOpen((prev) => !prev)}
+            onClose={() => setIsProjectEntryOpen(false)}
+            onRefreshWorkspaces={() => void refreshWorkspaceList()}
+            onSelectWorkspace={handleWorkspaceSelected}
+            onCreateWorkspace={handleWorkspaceCreate}
+          />
+        )}
+        closeoutEntryButton={<CloseoutEntryButton issueId={activeIssueId} />}
+        archiveEntryButton={(
+          <ArchiveEntryButton
+            count={archiveTotal}
+            onClick={() => setIsArchiveListOpen(true)}
+          />
+        )}
+        storageStatusBanner={(
+          <StorageStatusBanner
+            connectionState={storageConnectionState}
+            error={storageFeedbackError}
+            healthStatus={storageHealthStatus}
+            activeWorkspace={activeWorkspace}
+            workspaceList={workspaceList}
+          />
+        )}
       />
       <main className="app-main">
         <section className="pane" data-pane="issue">

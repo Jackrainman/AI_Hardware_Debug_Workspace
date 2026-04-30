@@ -5,14 +5,14 @@
 ## 当前阶段
 - 阶段：**R1：长期产品路线图执行启动**。
 - 当前模式：`server_storage_migration`（保留服务器部署安全边界）。
-- 阶段目标：以 v0.2.x 已完成的本地 HTTP + SQLite + release 可部署基座为起点，按 8 条产品主线推进；近期 P0 只聚焦 **部署可用、数据安全、可观测**。B 组 night-safe 队列与人工 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` 均已完成；无服务器授权时，当前唯一 repo-local 下一任务切到 `TECH-07-APP-TSX-MINIMAL-SPLIT`，它只做 UI 支撑拆分，不做视觉重设计。
+- 阶段目标：以 v0.2.x 已完成的本地 HTTP + SQLite + release 可部署基座为起点，按 8 条产品主线推进；近期 P0 只聚焦 **部署可用、数据安全、可观测**。B 组 night-safe 队列、人工 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` 与 `TECH-07-APP-TSX-MINIMAL-SPLIT` 均已完成；下一任务切到 `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT`，必须等待用户人工验收拆分结果和第一轮 UI 方向。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
-- 最近已完成：`UI-GATE-01-MANUAL-VISUAL-DIRECTION`，用户已确认首屏分区、真实边界约束、`TECH-07` 最小拆分目标和第一轮 UI 修改范围；确认结果已落盘到 `docs/planning/ui-redesign-brief.md`，下一轮 TECH-07 必须按该 execution contract 执行。
+- 最近已完成：`TECH-07-APP-TSX-MINIMAL-SPLIT`，已按 `docs/planning/ui-redesign-brief.md#ui-gate-01-confirmation` 抽取 `WorkspaceChrome` / `ProjectContextShell`、`KnowledgeAssistPanel` 与 `IssueMainFlow` 纯展示壳；未做视觉重设计，未改业务数据流、CSS 主视觉、schema、repository、HTTP API 或 server。
 
 ## 当前真实状态
-- 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、workspace UX improvements、recent issue reopen、closeout failure input preservation hints、AI-ready draft history、issue / record / closeout / archive / error-entry 主路径、basic full-text search、search filters、search tags、archive review page、similar issues lite、search result linking、recurrence prompt、search / KB verify fixture cleanup、UI redesign stage brief、UI information architecture review、quick issue create、record timeline polish、closeout UX polish、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、server schema contract、HTTP feedback contract、restore dry-run、SQLite integrity check、JSON export hardening、partial closeout recovery verify、repair task generation、diagnostics bundle、night-run 安全规则、v0.2 历史文档归档、lightweight project status ledger、refactor necessity audit。
+- 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、workspace UX improvements、recent issue reopen、closeout failure input preservation hints、AI-ready draft history、issue / record / closeout / archive / error-entry 主路径、basic full-text search、search filters、search tags、archive review page、similar issues lite、search result linking、recurrence prompt、search / KB verify fixture cleanup、UI redesign stage brief、UI information architecture review、App.tsx minimal split、quick issue create、record timeline polish、closeout UX polish、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、server schema contract、HTTP feedback contract、restore dry-run、SQLite integrity check、JSON export hardening、partial closeout recovery verify、repair task generation、diagnostics bundle、night-run 安全规则、v0.2 历史文档归档、lightweight project status ledger、refactor necessity audit。
 - 技术债审计：`docs/planning/refactor-assessment.md` 仍作为 TECH-07 背景输入；`SEARCH-07` 与 `UI-GATE-01` 已完成，当前没有必须先做的 broad refactor gate；大文件和重复逻辑存在但不阻塞 DEP-01 / TECH-07。
-- UI 改造准备：`docs/planning/ui-redesign-brief.md` 已完成信息架构审查与 `UI-GATE-01` 人工确认记录，`CORE-02` 已完成 workspace / storage UX 最小改善，`CORE-03` 已完成最近活跃问题本地恢复，`CORE-06` 已完成结案失败输入保留提示，`AIREADY-05` 已完成规则草稿历史审阅。B 组与 GATE-01 已关闭；下一步只能执行 `TECH-07-APP-TSX-MINIMAL-SPLIT` 支撑拆分，完成后再进入 `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT`，而不是先做 TECH-08 / TECH-09 / TECH-10 broad refactor。
+- UI 改造准备：`docs/planning/ui-redesign-brief.md` 已完成信息架构审查与 `UI-GATE-01` 人工确认记录，`CORE-02` 已完成 workspace / storage UX 最小改善，`CORE-03` 已完成最近活跃问题本地恢复，`CORE-06` 已完成结案失败输入保留提示，`AIREADY-05` 已完成规则草稿历史审阅，`TECH-07` 已完成最小支撑拆分。B 组、GATE-01 与 TECH-07 已关闭；下一步只能进入 `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT` 人工验收，不得自动顺推到 UI implementation 或 TECH-08 / TECH-09 / TECH-10 broad refactor。
 - 仍 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 AI provider/API key 接入。
 - 服务器安全边界仍有效：不 sudo、不写 `/opt`、不抢 80、不升级系统 Node、不影响 filebrowser / vnt-cli / docker / Portainer；release 部署优先 `/home/hurricane/probeflash` + 独立 Node runtime + 4100。
 - AI 安全边界仍有效：B 组 AI-ready 草稿历史已完成；真实 AI 必须等用户确认 provider、API key/server env、timeout 和 mock/test provider 边界；AI 只返回草稿，不直接写库。
@@ -38,31 +38,30 @@
   - 验证方式：SHA256 校验；`curl http://127.0.0.1:4100/`；`curl http://127.0.0.1:4100/api/health`；`curl http://192.168.2.2:4100/`；`curl http://192.168.2.2:4100/api/health`；创建 workspace / issue；停止重启后读回；确认 `shared/data/probeflash.sqlite` 被使用；确认 filebrowser:80 正常。
   - 完成定义：固定 release 资产在用户目录运行；4100 可本机与 LAN 访问 Web UI 和 `/api`；SQLite 重启后可读回；`shared/data` / `shared/env` / `shared/logs` 不随 release 删除；未执行 sudo / systemd / `/opt` / 服务器 `git pull`。
 
-## 当前唯一 UI/TECH 支撑原子任务
-- **TECH-07-APP-TSX-MINIMAL-SPLIT**
-  - 目标：按 `docs/planning/ui-redesign-brief.md#ui-gate-01-confirmation` 中已确认的 visual direction execution contract，对 `App.tsx` 做最小组件 / hook 支撑拆分，降低后续 UI implementation 冲突面。
-  - 当前状态：`current`；gated-night-safe 已放行；依赖 B 组与 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` 均已完成。
-  - 允许改动：`apps/desktop/src/App.tsx` 内最小组件 / hook 抽取；必要的同目录小组件文件；必要 import/export 调整；planning sync。
-  - 明确不做：不做视觉重设计；不改 CSS 主视觉；不改 schema / repository / HTTP API / server；不接真实 AI；不做 RAG / Electron / preload / fs / IPC；不移除 localStorage compatibility verify path；不隐藏服务器未独立部署、AI-ready 或 Code context 边界。
-  - 必须优先参考的拆分目标：`WorkspaceChrome` / `ProjectContextShell`、`KnowledgeAssistPanel`、`IssueMainFlow`；若发现其中某一项会放大回归面，必须保留原因并选择更小切片。
-  - 验证方式：`git diff --check`、`.agent-state/handoff.json` 可解析、`cd apps/desktop && npm run typecheck`、`cd apps/desktop && npm run build`、`cd apps/desktop && npm run verify:handoff`、`cd apps/desktop && npm run verify:all`；必要时补 issue / search / closeout 相关 smoke。
-  - 完成定义：`App.tsx` 职责边界变清楚，后续 `UI-GATE-02` 能只围绕 shell / workspace 状态 / Knowledge Assist 主次关系实施；主流程行为不回归；planning sync 与单任务 commit 完成。
+## 当前唯一 UI 人工验收任务（day-only，不能自动顺推）
+- **UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT**
+  - 目标：用户人工验收 `TECH-07-APP-TSX-MINIMAL-SPLIT` 拆分结果，并确认第一轮 UI polish 是否仍只聚焦 shell / workspace 状态 / Knowledge Assist 主次关系。
+  - 当前状态：`current`；day-only / manual review；依赖 `TECH-07-APP-TSX-MINIMAL-SPLIT` 已完成。
+  - 允许动作：人工阅读拆分结果、确认是否接受当前组件边界、决定第一轮 UI polish 是否继续按 `UI-GATE-01` contract 执行。
+  - 明确不做：AI 不自动执行 UI polish；不做视觉重设计；不重排 closeout；不重做 archive drawer；不改 schema / repository / HTTP API / server；不接真实 AI / RAG / Electron / preload / fs / IPC。
+  - 验收重点：`WorkspaceChrome` / `ProjectContextShell` 是否足够支撑 UI-02；`KnowledgeAssistPanel` 是否足够支撑 UI-04；`IssueMainFlow` 是否足够支撑后续主流程 polish；现有 render 顺序和真实边界是否保持。
+  - 完成定义：用户明确放行或要求调整；放行后才能选择下一 UI implementation 原子任务。
 
 ## 当前前沿任务窗口（最多 3 个候选）
 - **DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY**
   - 状态：`blocked`；P0；白天主线；不能夜跑。
   - 选择理由：真实服务器部署仍是产品可用性的最大缺口。
 - **TECH-07-APP-TSX-MINIMAL-SPLIT**
-  - 状态：`current`；P1；GATE-01 已放行；repo-local；可自动验证。
-  - 选择理由：只作为已确认 UI 方向后的支撑拆分，不做视觉重设计或业务改动。
+  - 状态：`completed`；P1；已按 GATE-01 contract 完成最小支撑拆分。
+  - 选择理由：作为已确认 UI 方向后的支撑拆分，不做视觉重设计或业务改动。
 - **UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT**
-  - 状态：`gated-after-TECH-07`；P1；不能在 `TECH-07` 完成前执行。
+  - 状态：`current`；P1；day-only / manual review；AI 已停止，不能自动顺推。
   - 选择理由：第一轮视觉实现必须等拆分后人工 review，范围只聚焦 shell / workspace 状态 / Knowledge Assist 主次关系。
 
 ## 下一步最小可执行动作
 - 白天有用户参与：认领 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`，执行前再次复述 SSH / release assets / 写入路径 / 临时进程 / 4100 授权边界。
-- 无服务器授权或 repo-local 执行窗口：认领 `TECH-07-APP-TSX-MINIMAL-SPLIT`；执行前必须读取 `docs/planning/ui-redesign-brief.md#ui-gate-01-confirmation`，只做支撑拆分，不得做视觉重设计或业务改动。
-- `TECH-07` 完成后：停止并等待 / 进入 `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT` 人工 review；不得自动顺推到 broad UI implementation。
+- 无服务器授权或 repo-local 执行窗口：当前不要自动认领新的 UI implementation；`TECH-07` 已完成，AI 已停止。
+- `TECH-07` 完成后：下一任务是 `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT` 人工 review；必须等待用户验收拆分结果和第一轮 UI 方向，不得自动顺推到 broad UI implementation。
 - 真实 AI：仍 blocked，不得无人值守接 provider 或 API key。
 
 ## 下一任务选择流程
