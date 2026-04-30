@@ -190,15 +190,11 @@ function StorageStatusBanner({
   activeWorkspace: Workspace;
   workspaceList: WorkspaceListResult | null;
 }) {
-  const workspaceListStatus = describeWorkspaceListStatus(workspaceList, activeWorkspace);
+  const workspaceListStatus = describeWorkspaceListStatus(workspaceList);
   const healthDetail = healthStatus
     ? [
         healthStatus.serverReady ? "服务就绪" : "服务未就绪",
         `${healthStatus.storageKind} ${healthStatus.storageReady ? "就绪" : "未就绪"}`,
-        healthStatus.dbPathClass ? `DB=${healthStatus.dbPathClass}` : null,
-        healthStatus.defaultWorkspaceName
-          ? `默认项目=${healthStatus.defaultWorkspaceName}`
-          : null,
         healthStatus.releaseVersion
           ? `版本=${healthStatus.releaseVersion} / ${healthStatus.releaseTag ?? "no tag"}`
           : null,
@@ -244,18 +240,17 @@ function StorageStatusBanner({
 
 function describeWorkspaceListStatus(
   workspaceList: WorkspaceListResult | null,
-  activeWorkspace: Workspace,
 ): string {
   if (workspaceList === null) {
-    return `当前项目「${activeWorkspace.name}」可用；项目列表正在读取。`;
+    return "项目列表读取中。";
   }
   if (workspaceList.readError !== null) {
-    return `当前仍停留在「${activeWorkspace.name}」；项目列表读取失败，请修复存储状态后重试。`;
+    return "项目列表读取失败，请修复存储状态后重试。";
   }
   const invalidNote = workspaceList.invalid.length > 0
     ? `，${workspaceList.invalid.length} 个异常项目已跳过`
     : "";
-  return `当前项目「${activeWorkspace.name}」；可切换项目 ${workspaceList.valid.length} 个${invalidNote}。`;
+  return `可切换项目 ${workspaceList.valid.length} 个${invalidNote}。`;
 }
 
 function renderProjectStorageMessage(
@@ -264,12 +259,12 @@ function renderProjectStorageMessage(
   activeWorkspace: Workspace,
 ): string {
   if (error !== null) {
-    return `${formatStorageFeedbackError(error)} 当前项目「${activeWorkspace.name}」的读写可能受影响；请按提示修复后刷新或重试。`;
+    return `${formatStorageFeedbackError(error)} 当前项目「${activeWorkspace.name}」读写可能受影响；请按提示修复后刷新或重试。`;
   }
   if (connectionState.state === "checking") {
-    return `正在检查 /api 与「${activeWorkspace.name}」的长期存储状态…`;
+    return "正在检查 /api 与长期存储状态…";
   }
-  return `当前项目「${activeWorkspace.name}」通过 HTTP + SQLite 读写；创建或切换项目不会删除、迁移已有数据。`;
+  return "HTTP + SQLite 可读写。";
 }
 
 function IssueStorageControls({
@@ -314,7 +309,7 @@ function IssueStorageControls({
     <div className="storage-controls" data-testid="issue-storage-controls">
       <div className="form-caption form-caption-muted">
         <h3>辅助验证</h3>
-        <p>保存/读取示例卡，验证 HTTP 存储链路。</p>
+        <p>HTTP 存储链路。</p>
       </div>
       <div className="storage-buttons">
         <button type="button" className="button-secondary" onClick={handleSave}>
@@ -594,7 +589,6 @@ function IssuePane({
         <aside className="issue-rail" aria-label="问题卡选择区">
           <IssueCardListView
             result={cardList}
-            activeWorkspace={activeWorkspace}
             selectedIssueId={selectedIssueId}
             recentIssueReopenState={recentIssueReopenState}
             onCreateNew={handleCreateNew}
@@ -604,7 +598,6 @@ function IssuePane({
         </aside>
         <IssueMainFlow
           selectedIssueId={selectedIssueId}
-          activeWorkspaceName={activeWorkspace.name}
           quickIssueEntry={(
             <QuickIssueCreateBar
               repository={repository}
@@ -732,8 +725,8 @@ const PANES: Pane[] = [
     id: "project",
     title: "项目区",
     badge: "上下文",
-    hint: "选择或创建当前调试项目，后续问题卡都落在该项目边界内。",
-    status: "当前联调：项目列表与创建走 /api + 本地 WSL backend + SQLite",
+    hint: "选择或创建调试项目。",
+    status: "项目列表 / 创建：HTTP + SQLite",
     bullets: [
       `默认工作区：${DEFAULT_WORKSPACE_NAME} 保留`,
       "新项目：创建成功后自动切换",
@@ -745,16 +738,16 @@ const PANES: Pane[] = [
     id: "issue",
     title: "问题卡区",
     badge: "主流程",
-    hint: "创建问题卡、追加排查记录、结案生成本地归档摘要。",
-    status: "当前可用：问题卡、排查记录、结案归档经 HTTP 写入 SQLite",
+    hint: "建卡、追记、结案。",
+    status: "问题卡 / 排查记录 / 结案归档：HTTP + SQLite",
     bullets: [],
   },
   {
     id: "archive",
     title: "归档区",
     badge: "沉淀物",
-    hint: "结案后会沉淀的归档资产。",
-    status: "当前演示：服务器 SQLite，后续补文件双写",
+    hint: "结案后的归档资产。",
+    status: "归档摘要 / 错误表：SQLite",
     bullets: [
       "归档文档：结案摘要（SQLite）",
       "错误表条目：复发检索入口（SQLite）",
@@ -820,7 +813,7 @@ export function ArchivePaneShell({
       )}
       {latest === null ? (
         <p className="empty-state archive-empty-state" data-testid="archive-empty-state">
-          尚无归档结果。完成问题卡区的“结案并生成归档摘要”后，这里会显示累计归档数量与最近一次归档摘要，刷新也不会丢失。
+          尚无归档结果。结案后显示累计数量和最近摘要。
         </p>
       ) : (
         <section className="archive-result-panel" data-testid="archive-result-panel">
@@ -829,7 +822,7 @@ export function ArchivePaneShell({
             <h3>最近一次归档摘要</h3>
           </header>
           <p className="archive-result-status" data-testid="archive-result-status">
-            已生成 ArchiveDocument 与 ErrorEntry，已写入本地 WSL 后端 SQLite；刷新页面仍可读回。
+            ArchiveDocument / ErrorEntry 已写入 SQLite。
           </p>
           <dl className="archive-result-fields">
             <div>
@@ -858,7 +851,7 @@ export function ArchivePaneShell({
             </div>
           </dl>
           <p className="archive-result-note">
-            后续文件写盘位置：{latest.filePath}。当前阶段不伪装为已接入 .debug_workspace。
+            文件写盘未接入：{latest.filePath}
           </p>
         </section>
       )}
@@ -1125,7 +1118,7 @@ function ProjectSelector({
             <strong>{activeWorkspace.name}</strong>
             <span className="project-current-id">{activeWorkspace.id}</span>
             <p className="project-current-note" data-testid="project-current-note">
-              问题卡、排查记录、归档和错误表都会写入这个项目；切换项目会清空当前选中问题，但不会删除已有数据。
+              切换项目只清空当前选中问题，不删除数据。
             </p>
           </section>
           <div className="project-selector-section">
@@ -1137,12 +1130,12 @@ function ProjectSelector({
             </div>
             {workspaceListReadFailed && (
               <p className="empty-state project-state-warning" data-testid="workspace-list-error">
-                项目列表读取失败；当前仍停留在「{activeWorkspace.name}」。下一步：确认上方项目与存储状态后点击刷新。
+                项目列表读取失败。确认上方项目与存储状态后刷新。
               </p>
             )}
             {workspaceListEmpty && (
               <p className="empty-state project-state-empty" data-testid="workspace-list-empty">
-                服务器暂未返回可切换项目；当前使用「{activeWorkspace.name}」。可以在下方创建新项目，创建后会自动切换。
+                暂无可切换项目，当前使用「{activeWorkspace.name}」。
               </p>
             )}
             {workspaceList !== null && workspaceList.invalid.length > 0 && (
@@ -1180,7 +1173,7 @@ function ProjectSelector({
                 placeholder="例如：27年 R1 / 舵轮调试"
               />
               <small className="field-help">
-                适用于不同赛季、机器人或调试分支；不会删除或迁移已有项目数据。
+                按赛季、机器人或调试分支区分。
               </small>
             </label>
             <div className="intake-actions">
@@ -1192,9 +1185,6 @@ function ProjectSelector({
               创建状态：{renderWorkspaceCreateStatus(createStatus)}
             </p>
           </form>
-          <p className="project-selector-note">
-            当前只做创建与切换；删除、重命名、成员和权限后续再接入。
-          </p>
         </div>
       )}
     </div>

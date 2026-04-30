@@ -37,7 +37,7 @@ const requiredAppMarkers = [
   'data-testid="issue-list-error"',
   "当前数据归属",
   "创建新项目（创建后自动切换）",
-  "当前项目「{activeWorkspace.name}」暂无未归档问题卡",
+  "暂无未归档问题卡",
 ];
 
 for (const marker of requiredAppMarkers) {

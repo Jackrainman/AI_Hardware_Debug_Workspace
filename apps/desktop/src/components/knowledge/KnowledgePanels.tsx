@@ -88,7 +88,7 @@ export function SearchPanel({
       <form className="search-form" onSubmit={handleSubmit} data-testid="knowledge-search-form">
         <div className="form-caption">
           <h3>历史问题搜索</h3>
-          <p>按关键词搜索当前项目的问题卡、排查记录、归档摘要与错误表；不会跨项目读取。</p>
+          <p>当前项目内搜索。</p>
         </div>
         <div className="search-input-row">
           <input
@@ -172,7 +172,7 @@ export function SearchPanel({
           </p>
           {result.query.length > 0 && result.items.length === 0 && (
             <p className="empty-state" data-testid="knowledge-search-empty">
-              当前项目没有匹配结果。可以换一个关键词，或先完成结案归档让错误表可被搜索。
+              无匹配结果。
             </p>
           )}
           {result.items.length > 0 && (
@@ -248,13 +248,13 @@ export function SimilarIssuesPanel({
         <span className="similar-issues-badge">规则匹配</span>
         <div>
           <h3>相似历史问题</h3>
-          <p>基于标题、现象、标签、根因和处理方式的可解释重合；不做 AI 判因。</p>
+          <p>规则匹配，不做 AI 判因。</p>
         </div>
       </header>
       {isLoading && <p className="storage-line">正在扫描当前项目历史问题...</p>}
       {!isLoading && result !== null && result.items.length === 0 && (
         <p className="empty-state" data-testid="similar-issues-empty">
-          当前项目暂未发现足够相似的已解决 / 已归档历史问题。
+          暂无相似历史问题。
         </p>
       )}
       {!isLoading && result !== null && result.items.length > 0 && (
@@ -328,7 +328,7 @@ export function RelatedHistoricalIssuesPanel({
         <span className="similar-issues-badge">人工关联</span>
         <div>
           <h3>已关联历史问题</h3>
-          <p>这些引用只帮助人工复盘，不会自动改根因、解决方案或结案状态。</p>
+          <p>人工复盘引用，不自动改结案。</p>
         </div>
       </header>
       <ul className="related-history-list" data-testid="related-history-list">
@@ -380,7 +380,7 @@ export function RecurrencePromptPanel({
         <span className="recurrence-prompt-badge">可能复发</span>
         <div>
           <h3>可参考历史处理方式</h3>
-          <p>这是规则提示，不是事实判断；请人工确认后再复用处理方案。</p>
+          <p>规则提示，请人工确认。</p>
         </div>
       </header>
       <div className="recurrence-prompt-body">

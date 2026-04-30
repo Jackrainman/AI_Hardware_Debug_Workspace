@@ -108,7 +108,7 @@ const appSource = readFileSync(resolve(process.cwd(), "src", "App.tsx"), "utf8")
 if (!appSource.includes('data-testid="storage-health-detail"')) {
   fail("App.tsx should render a storage-health-detail summary");
 }
-for (const expectedText of ["默认项目=", "版本=", "DB="]) {
+for (const expectedText of ["服务就绪", "版本="]) {
   if (!appSource.includes(expectedText)) {
     fail(`storage health detail should include ${expectedText}`);
   }

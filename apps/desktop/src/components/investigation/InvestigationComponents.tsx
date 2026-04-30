@@ -97,7 +97,7 @@ export function InvestigationAppendForm({
     <form className="intake-form" onSubmit={handleSubmit} data-testid="investigation-append-form">
       <div className="form-caption">
         <h3>追加排查记录</h3>
-        <p>把观察、假设、动作和结果按时间线沉淀下来。</p>
+        <p>记录观察、动作和结果。</p>
       </div>
       <p className="storage-line" data-testid="investigation-target">
         当前问题：{issueId}
@@ -145,7 +145,7 @@ export function InvestigationRecordListView({
     <div className="list-view" data-testid="investigation-record-list">
       <div className="form-caption">
         <h3>排查时间线</h3>
-        <p>读回当前问题卡下的排查记录，按创建时间从早到晚展示。</p>
+        <p>按创建时间展示。</p>
       </div>
       <div className="list-header">
         <button type="button" className="button-secondary" onClick={onRefresh}>
@@ -158,7 +158,7 @@ export function InvestigationRecordListView({
         </span>
       </div>
       {result && result.readError === null && result.valid.length === 0 && result.invalid.length === 0 && (
-        <p className="empty-state">还没有排查记录。选中问题后，在上方追加第一条记录。</p>
+        <p className="empty-state">还没有排查记录。</p>
       )}
       {result && result.valid.length > 0 && (
         <ol className="record-timeline" data-testid="record-timeline">

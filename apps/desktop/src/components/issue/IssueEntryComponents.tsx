@@ -8,7 +8,6 @@ import {
   type IntakeResult,
   type IntakeSeverity,
 } from "../../domain/issue-intake";
-import type { Workspace } from "../../domain/workspace";
 import type {
   IssueCardListResult,
   StorageRepository,
@@ -39,7 +38,7 @@ export function DemoHint() {
       <div className="demo-hint-steps">
         <span>快速建卡 / 选择已有卡 / 追加排查记录 / 结案归档</span>
       </div>
-      <p className="demo-hint-note">以上步骤默认走前端 /api → 本地 WSL backend → SQLite；若服务未启动，顶部会明确提示。</p>
+      <p className="demo-hint-note">服务异常会显示在顶部。</p>
     </div>
   );
 }
@@ -101,7 +100,7 @@ export function QuickIssueCreateBar({
       <div className="quick-issue-copy">
         <span className="quick-issue-label">快速建卡</span>
         <strong>一句话记录现场问题</strong>
-        <p>只填标题即可创建 open issue，创建后自动选中并展开追记 / 结案区。</p>
+        <p>创建后自动打开追记 / 结案区。</p>
       </div>
       <div className="quick-issue-input-row">
         <input
@@ -215,8 +214,8 @@ export function IssueIntakeForm({
         </div>
         <p>
           {isDefaultMode
-            ? "首次进入或未选中问题时，先从这里记录现场现象。"
-            : "处理中也可以随时另开一张问题卡，创建后会自动切换到新卡。"}
+            ? "先记录现场现象。"
+            : "创建后自动切换到新卡。"}
         </p>
       </div>
       <label className="intake-field">
@@ -260,7 +259,7 @@ export function IssueIntakeForm({
           placeholder="例如：CAN, 底盘, 电机"
           data-testid="issue-tags-input"
         />
-        <small className="field-help">用逗号分隔；标签只在当前项目内搜索和筛选。</small>
+        <small className="field-help">逗号分隔。</small>
       </label>
       <div className="intake-actions">
         <button type="submit">创建问题卡</button>
@@ -274,7 +273,6 @@ export function IssueIntakeForm({
 
 export function IssueCardListView({
   result,
-  activeWorkspace,
   selectedIssueId,
   recentIssueReopenState,
   onCreateNew,
@@ -282,7 +280,6 @@ export function IssueCardListView({
   onSelect,
 }: {
   result: IssueCardListResult | null;
-  activeWorkspace: Workspace;
   selectedIssueId: string | null;
   recentIssueReopenState: RecentIssueReopenState;
   onCreateNew: () => void;
@@ -297,7 +294,7 @@ export function IssueCardListView({
       <div className="issue-rail-header">
         <div className="form-caption">
           <h3>问题卡选择区</h3>
-          <p>当前项目：{activeWorkspace.name}；默认只显示未归档问题卡，选中后在右侧继续追记或结案。</p>
+          <p>未归档问题卡。</p>
         </div>
         <button
           type="button"
@@ -315,8 +312,8 @@ export function IssueCardListView({
         </button>
         <span className="storage-line" data-testid="list-summary">
           {result === null
-            ? `当前项目「${activeWorkspace.name}」· 正在读取问题卡`
-            : `当前项目「${activeWorkspace.name}」· 未归档 ${activeCards.length} 条 · 异常 ${result.invalid.length} 条`}
+            ? "正在读取问题卡"
+            : `未归档 ${activeCards.length} 条 · 异常 ${result.invalid.length} 条`}
         </span>
         <span
           className="storage-line"
@@ -328,12 +325,12 @@ export function IssueCardListView({
       </div>
       {result && result.readError !== null && (
         <p className="empty-state issue-list-error" data-testid="issue-list-error">
-          当前项目「{activeWorkspace.name}」的问题卡读取失败。下一步：先查看上方项目与存储状态，确认 /api 可用后点击刷新列表。
+          问题卡读取失败。确认上方项目与存储状态后刷新。
         </p>
       )}
       {result && result.readError === null && activeCards.length === 0 && result.invalid.length === 0 && (
         <p className="empty-state" data-testid="issue-list-empty">
-          当前项目「{activeWorkspace.name}」暂无未归档问题卡。使用中间的快速建卡入口记录现场问题，数据会写入该项目。
+          暂无未归档问题卡。
         </p>
       )}
       {result && activeCards.length > 0 && (

@@ -44,7 +44,7 @@ export function WorkspaceChrome({
             <p className="app-eyebrow">嵌入式调试现场 · 问题闪记</p>
             <h1>ProbeFlash</h1>
             <p className="app-subtitle">
-              面向嵌入式调试现场的问题闪记与知识归档系统。当前主路径已切到本地 HTTP + SQLite 联调版。
+              嵌入式调试现场的问题闪记与知识归档。
             </p>
           </div>
           <div className="header-status-stack">

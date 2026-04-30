@@ -233,7 +233,7 @@ export function CloseoutForm({
     >
       <div className="form-caption">
         <h3>结案归档</h3>
-        <p>填写根因和处理结论，经 HTTP 写入归档摘要与错误表条目。</p>
+        <p>写入归档摘要与错误表。</p>
       </div>
       <p className="storage-line" data-testid="closeout-target">
         结案对象：{issueId}
@@ -241,7 +241,7 @@ export function CloseoutForm({
       <section className="closeout-quality-panel" data-testid="closeout-quality-panel" aria-label="结案填写检查">
         <div className="closeout-quality-header">
           <span>结案填写检查</span>
-          <p>提交前至少补齐根因和修复/结论；分类和预防建议会提升后续检索复用。</p>
+          <p>根因和修复/结论必填。</p>
         </div>
         <div className="closeout-quality-grid">
           {closeoutQualityItems.map((item) => (
@@ -270,7 +270,7 @@ export function CloseoutForm({
         <div className="closeout-draft-header">
           <div>
             <span className="closeout-draft-eyebrow">AI-ready 规则草稿</span>
-            <p>本区只用本地规则生成可审阅草稿，不调用外部 AI，也不会自动写库。</p>
+            <p>本地规则草稿，不调用外部 AI，不自动写库。</p>
           </div>
           <button
             type="button"
@@ -341,7 +341,7 @@ export function CloseoutForm({
           </div>
           {draftHistory.length === 0 ? (
             <p className="storage-line" data-testid="closeout-draft-history-empty">
-              尚无本问题的草稿历史；生成后会保存在浏览器本地，便于对比多次规则输出。
+              尚无本问题的草稿历史。
             </p>
           ) : (
             <ol className="closeout-draft-history-list" data-testid="closeout-draft-history-list">
@@ -406,7 +406,7 @@ export function CloseoutForm({
           aria-describedby="closeout-category-help"
         />
         <small id="closeout-category-help" className="field-help">
-          用模块、故障类型或场景命名，后续错误表和搜索会更容易复用。
+          用于后续筛选复用。
         </small>
       </label>
       <label className="intake-field">
@@ -423,7 +423,7 @@ export function CloseoutForm({
           aria-invalid={hasAttemptedSubmit && !rootCauseReady}
         />
         <small id="closeout-root-cause-help" className="field-help">
-          写“为什么发生”，不要只写“已修好”或复述现象。
+          写为什么发生。
         </small>
         {hasAttemptedSubmit && !rootCauseReady && (
           <small className="field-error" data-testid="closeout-root-cause-error">
@@ -445,7 +445,7 @@ export function CloseoutForm({
           aria-invalid={hasAttemptedSubmit && !resolutionReady}
         />
         <small id="closeout-resolution-help" className="field-help">
-          写清实际动作、验证结果或为什么可以结案。
+          写实际动作、验证结果或结案依据。
         </small>
         {hasAttemptedSubmit && !resolutionReady && (
           <small className="field-error" data-testid="closeout-resolution-error">
@@ -465,7 +465,7 @@ export function CloseoutForm({
           aria-describedby="closeout-prevention-help"
         />
         <small id="closeout-prevention-help" className="field-help">
-          可留空；系统会按修复/结论生成默认预防项，但人工填写通常更可执行。
+          可留空；默认按修复/结论生成。
         </small>
       </label>
       <div className="intake-actions">

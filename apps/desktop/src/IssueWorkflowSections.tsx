@@ -9,7 +9,6 @@ type KnowledgeAssistPanelProps = {
 
 type IssueMainFlowProps = {
   selectedIssueId: string | null;
-  activeWorkspaceName: string;
   quickIssueEntry: ReactNode;
   demoHint: ReactNode;
   mainlinePanel: ReactNode;
@@ -31,7 +30,7 @@ export function KnowledgeAssistPanel({
         <span className="knowledge-assist-badge">辅助判断</span>
         <div>
           <h3>Knowledge Assist</h3>
-          <p>汇总复发提示、相似历史、人工关联和搜索线索；只辅助判断，不自动判因或写入结案。</p>
+          <p>规则辅助，不自动判因或写库。</p>
         </div>
       </div>
       <div className="knowledge-assist-body">
@@ -46,7 +45,6 @@ export function KnowledgeAssistPanel({
 
 export function IssueMainFlow({
   selectedIssueId,
-  activeWorkspaceName,
   quickIssueEntry,
   demoHint,
   mainlinePanel,
@@ -65,7 +63,7 @@ export function IssueMainFlow({
             {issueStorageControls}
           </div>
           <p className="empty-state issue-next-step">
-            当前项目「{activeWorkspaceName}」还没有选中问题。先用快速建卡记录现场，也可以在左侧选择已有卡继续处理；创建后会自动展开追记和结案归档。
+            未选中问题。先快速建卡，或从左侧选择已有卡。
           </p>
         </div>
       )}
