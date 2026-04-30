@@ -182,6 +182,11 @@ if (readCloseoutDraftHistory(historyStorage, issue.id).length !== 0) {
 }
 
 const appSource = readFileSync(resolve(process.cwd(), "src", "App.tsx"), "utf8");
+const closeoutSource = readFileSync(
+  resolve(process.cwd(), "src", "components", "closeout", "CloseoutForm.tsx"),
+  "utf8",
+);
+const uiSource = [appSource, closeoutSource].join("\n");
 for (const expected of [
   'data-testid="closeout-draft-panel"',
   'data-testid="closeout-draft-generate"',
@@ -194,8 +199,8 @@ for (const expected of [
   "appendCloseoutDraftHistoryEntry",
   "labelCloseoutDraftHistorySource",
 ]) {
-  if (!appSource.includes(expected)) {
-    fail(`App.tsx should expose closeout draft panel marker: ${expected}`);
+  if (!uiSource.includes(expected)) {
+    fail(`UI source should expose closeout draft panel marker: ${expected}`);
   }
 }
 

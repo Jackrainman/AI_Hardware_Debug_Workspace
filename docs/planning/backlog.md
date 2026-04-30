@@ -5,7 +5,7 @@
 ## 当前路线
 - 当前版本基座：v0.2.x 本地 HTTP + SQLite + release 可部署基座。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
-- 当前目标：近期 1 周先让部署可用、数据安全、可观测；B 组 night-safe 功能包、`UI-GATE-01-MANUAL-VISUAL-DIRECTION` 人工视觉方向确认与 `TECH-07-APP-TSX-MINIMAL-SPLIT` 均已完成，下一任务是 day-only 的 `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT` 人工验收；不得在用户验收前执行后续 UI implementation 或跳到其它 broad refactor。`SEARCH-01-BASIC-FULL-TEXT-SEARCH`、`SEARCH-02-FILTERS`、`SEARCH-04-TAGS`、`SEARCH-03-ARCHIVE-REVIEW-PAGE`、`SEARCH-07-SIMILAR-ISSUES-LITE`、`SEARCH-08-SEARCH-RESULT-LINKING`、`SEARCH-09-RECURRENCE-PROMPT`、`TECH-DEBT-SEARCH-KB-CLEANUP-LITE`、`UI-REDESIGN-STAGE-BRIEF`、`UI-01-INFORMATION-ARCHITECTURE-REVIEW`、`CORE-02-WORKSPACE-UX-IMPROVEMENTS`、`CORE-03-RECENT-ISSUE-REOPEN`、`CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS`、`AIREADY-05-DRAFT-HISTORY`、`UI-GATE-01-MANUAL-VISUAL-DIRECTION`、`TECH-07-APP-TSX-MINIMAL-SPLIT` 与 `PROJECT-STATUS-LEDGER-MINIMAL` 已完成，不再留在可认领池；UI 小阶段任务拆分见 `docs/planning/ui-redesign-brief.md`。
+- 当前目标：近期 1 周先让部署可用、数据安全、可观测；B 组 night-safe 功能包、`UI-GATE-01-MANUAL-VISUAL-DIRECTION`、`TECH-07-APP-TSX-MINIMAL-SPLIT`、`UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT` 与 `UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT` 均已完成。当前停在 day-only 的 `UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT`，等待用户人工运行检查；不得在该检查前执行后续 UI implementation 或跳到其它 broad refactor。`SEARCH-01-BASIC-FULL-TEXT-SEARCH`、`SEARCH-02-FILTERS`、`SEARCH-04-TAGS`、`SEARCH-03-ARCHIVE-REVIEW-PAGE`、`SEARCH-07-SIMILAR-ISSUES-LITE`、`SEARCH-08-SEARCH-RESULT-LINKING`、`SEARCH-09-RECURRENCE-PROMPT`、`TECH-DEBT-SEARCH-KB-CLEANUP-LITE`、`UI-REDESIGN-STAGE-BRIEF`、`UI-01-INFORMATION-ARCHITECTURE-REVIEW`、`CORE-02-WORKSPACE-UX-IMPROVEMENTS`、`CORE-03-RECENT-ISSUE-REOPEN`、`CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS`、`AIREADY-05-DRAFT-HISTORY`、`UI-GATE-01-MANUAL-VISUAL-DIRECTION`、`TECH-07-APP-TSX-MINIMAL-SPLIT` 与 `PROJECT-STATUS-LEDGER-MINIMAL` 已完成，不再留在可认领池；UI 小阶段任务拆分见 `docs/planning/ui-redesign-brief.md`。
 - 当前 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 AI provider/API key。
 
 ## 认领规则
@@ -31,8 +31,8 @@
 
 ## B 组后 UI / TECH 顺序
 
-- 结论：B 组功能完成后，先进入受控 UI 修复链路，但不是直接大改；人工 UI gate 已通过，`TECH-07-APP-TSX-MINIMAL-SPLIT` 支撑拆分已完成且用户已认可。下一步必须先做行为保持模块化拆分，完成后停在 UI 重构前人工运行检查。
-- 顺序：`UI-GATE-01-MANUAL-VISUAL-DIRECTION` completed -> `TECH-07-APP-TSX-MINIMAL-SPLIT` completed -> `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT` completed/manual accepted -> `UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT` current / night-safe -> `UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT` day-only。
+- 结论：B 组功能完成后，先进入受控 UI 修复链路，但不是直接大改；人工 UI gate 已通过，`TECH-07-APP-TSX-MINIMAL-SPLIT` 支撑拆分已完成且用户已认可，`UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT` 行为保持模块化拆分已完成。当前必须停在 UI 重构前人工运行检查。
+- 顺序：`UI-GATE-01-MANUAL-VISUAL-DIRECTION` completed -> `TECH-07-APP-TSX-MINIMAL-SPLIT` completed -> `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT` completed/manual accepted -> `UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT` completed -> `UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT` current/day-only。
 - 暂不优先：`TECH-08-HTTP-REPOSITORY-SPLIT`、`TECH-09-SERVER-ROUTE-SPLIT`、`TECH-10-DATABASE-MODULE-SPLIT`，除非具体 storage / server 任务命中它们。
 
 ## 近期 1 周任务（最多 8 个）
@@ -89,8 +89,8 @@
 | 11 | UI-GATE-01-MANUAL-VISUAL-DIRECTION | completed | P1 |
 | 12 | TECH-07-APP-TSX-MINIMAL-SPLIT | completed | P1 |
 | 13 | UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT | completed | P1 |
-| 14 | UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT | night-safe | P1 |
-| 15 | UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT | day-only | P1 |
+| 14 | UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT | completed | P1 |
+| 15 | UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT | current/day-only | P1 |
 | 16 | TECH-09-SERVER-ROUTE-SPLIT | night-safe | P2 |
 
 ## 长期方向
@@ -102,7 +102,6 @@
 - 更完整的局域网部署体验：反向代理、`.local`、HTTPS、美化域名。
 
 ## Night-safe pool
-- UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT
 - CORE-07-ARCHIVE-FILTERS
 - CORE-08-ERROR-ENTRY-TAGS
 - CORE-09-DEMO-SEED-IMPORT
@@ -130,8 +129,8 @@
 - TECH-10-DATABASE-MODULE-SPLIT
 
 ## Gated night-safe pool
-- 当前可自动顺推的唯一 UI 相关 repo-local 任务是 `UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT`；它只做模块化拆分，不做 UI 重排。
-- `UI-MOD-01` 完成后必须停在 `UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT`，不能夜跑越过人工检查门。
+- 当前没有可自动顺推的 UI 相关 repo-local 任务；`UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT` 已完成。
+- 当前必须停在 `UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT`，不能夜跑越过人工检查门。
 
 ## Day-only pool
 - DEP-02-STATIC-DIST-SERVER-PATH-VERIFY
@@ -175,4 +174,4 @@
 - 不做权限系统、账号体系、多租户、复杂协同或公网暴露。
 - 不做 Electron / preload / fs / IPC，不把 `.debug_workspace` 文件写盘当作当前主线。
 - 不把 `docs/planning/status.md` 变成 backlog 副本、路线图副本或历史流水账。
-- 不在 `UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT` 完成并通过 `UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT` 人工运行检查前执行后续 UI implementation；不把模块化拆分扩展成视觉重设计或 `App.tsx` 全量重写。
+- 不在 `UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT` 人工运行检查通过前执行后续 UI implementation；不把模块化拆分扩展成视觉重设计或 `App.tsx` 全量重写。

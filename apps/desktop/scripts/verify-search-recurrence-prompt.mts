@@ -139,9 +139,11 @@ assert(
 );
 
 const appSource = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
-assert(appSource.includes("recurrence-prompt-panel"), "App should expose recurrence prompt panel marker");
-assert(appSource.includes("recurrence-prompt-dismiss"), "App should expose recurrence prompt dismiss marker");
-assert(appSource.includes("recurrence-prompt-link"), "App should expose recurrence prompt link marker");
+const knowledgeSource = readFileSync(new URL("../src/components/knowledge/KnowledgePanels.tsx", import.meta.url), "utf8");
+const uiSource = [appSource, knowledgeSource].join("\n");
+assert(uiSource.includes("recurrence-prompt-panel"), "UI should expose recurrence prompt panel marker");
+assert(uiSource.includes("recurrence-prompt-dismiss"), "UI should expose recurrence prompt dismiss marker");
+assert(uiSource.includes("recurrence-prompt-link"), "UI should expose recurrence prompt link marker");
 
 console.log("[SEARCH-RECURRENCE desktop verify] PASS: high similarity creates an explainable recurrence prompt");
 console.log("[SEARCH-RECURRENCE desktop verify] PASS: empty, ignored, low-score, and cross-workspace cases do not prompt");

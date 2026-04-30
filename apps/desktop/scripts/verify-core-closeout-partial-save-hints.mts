@@ -204,25 +204,30 @@ await verifyFailureStep("error_entry", "error_entry_save_failed", ["archive_docu
 await verifyFailureStep("issue_card", "issue_card_save_failed", ["archive_document", "error_entry"]);
 
 const appSource = readFileSync(resolve(process.cwd(), "src", "App.tsx"), "utf8");
+const closeoutSource = readFileSync(
+  resolve(process.cwd(), "src", "components", "closeout", "CloseoutForm.tsx"),
+  "utf8",
+);
+const uiSource = [appSource, closeoutSource].join("\n");
 for (const marker of [
   "buildCloseoutFailureFeedbackCopy(result)",
   "preservationHint: failureCopy.retryHint",
   'data-testid="closeout-failure-retry-hint"',
   "status.preservationHint",
 ]) {
-  assert(appSource.includes(marker), `App.tsx missing closeout failure marker: ${marker}`);
+  assert(uiSource.includes(marker), `UI source missing closeout failure marker: ${marker}`);
 }
 
-const failureBranchStart = appSource.indexOf("if (!result.ok) {");
-assert(failureBranchStart >= 0, "App.tsx should keep explicit closeout failure branch");
-const failureBranchEnd = appSource.indexOf("return;", failureBranchStart);
+const failureBranchStart = closeoutSource.indexOf("if (!result.ok) {");
+assert(failureBranchStart >= 0, "CloseoutForm should keep explicit closeout failure branch");
+const failureBranchEnd = closeoutSource.indexOf("return;", failureBranchStart);
 assert(failureBranchEnd > failureBranchStart, "closeout failure branch should return before success cleanup");
-const failureBranch = appSource.slice(failureBranchStart, failureBranchEnd);
+const failureBranch = closeoutSource.slice(failureBranchStart, failureBranchEnd);
 for (const forbidden of ['setCategory("")', 'setRootCause("")', 'setResolution("")', 'setPrevention("")']) {
   assert(!failureBranch.includes(forbidden), `failure branch must not clear closeout input: ${forbidden}`);
 }
 
-const successBranch = appSource.slice(failureBranchEnd);
+const successBranch = closeoutSource.slice(failureBranchEnd);
 for (const expected of ['setRootCause("")', 'setResolution("")', 'setPrevention("")']) {
   assert(successBranch.includes(expected), `success branch should still clear closeout input after archive success: ${expected}`);
 }

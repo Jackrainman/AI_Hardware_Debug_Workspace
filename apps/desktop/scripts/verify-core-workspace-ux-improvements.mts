@@ -21,6 +21,11 @@ function assert(condition: unknown, reason: string, detail?: unknown): asserts c
 }
 
 const appSource = readFileSync(resolve("src/App.tsx"), "utf8");
+const issueComponentsSource = readFileSync(
+  resolve("src/components/issue/IssueEntryComponents.tsx"),
+  "utf8",
+);
+const uiSource = [appSource, issueComponentsSource].join("\n");
 const cssSource = readFileSync(resolve("src/App.css"), "utf8");
 
 const requiredAppMarkers = [
@@ -36,7 +41,7 @@ const requiredAppMarkers = [
 ];
 
 for (const marker of requiredAppMarkers) {
-  if (!appSource.includes(marker)) fail(`App.tsx missing workspace UX marker: ${marker}`);
+  if (!uiSource.includes(marker)) fail(`UI source missing workspace UX marker: ${marker}`);
 }
 
 for (const selector of [

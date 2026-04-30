@@ -103,6 +103,11 @@ if (missingResolution.ok || missingResolution.path?.join(".") !== "resolution") 
 }
 
 const appSource = readFileSync(resolve(process.cwd(), "src", "App.tsx"), "utf8");
+const closeoutSource = readFileSync(
+  resolve(process.cwd(), "src", "components", "closeout", "CloseoutForm.tsx"),
+  "utf8",
+);
+const uiSource = [appSource, closeoutSource].join("\n");
 const cssSource = readFileSync(resolve(process.cwd(), "src", "App.css"), "utf8");
 
 for (const marker of [
@@ -121,7 +126,7 @@ for (const marker of [
   "missingRequiredLabels.join",
   "空格不会被视为有效内容",
 ]) {
-  if (!appSource.includes(marker)) fail(`App.tsx missing closeout UX marker: ${marker}`);
+  if (!uiSource.includes(marker)) fail(`UI source missing closeout UX marker: ${marker}`);
 }
 
 for (const marker of [

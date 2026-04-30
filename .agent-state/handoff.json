@@ -16,14 +16,14 @@
     "archive_state": "object - v0.2.0 前历史文档归档状态与读取条件",
     "notes": "string[] - 下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-04-30T15:42:15+08:00",
+  "timestamp": "2026-04-30T16:10:03+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "R1",
   "current_stage_name": "长期产品路线图执行启动",
-  "current_stage_goal": "从 v0.2.x 本地 HTTP + SQLite + release 可部署基座出发，按 8 条产品主线推进；近期 P0 仍是部署可用、数据安全、可观测；B 组、UI-GATE-01 与 TECH-07 最小支撑拆分已完成且用户已认可拆分结果；下一轮只自动认领 UI-MOD-01 行为保持模块化拆分，完成后停在 UI-GATE-03 人工运行检查，再进入真正 UI 重排。",
-  "primary_track": "Deployment / Operability + Data Safety P0 remains blocked by server confirmation; UI repair window must run UI-MOD-01 behavior-preserving modular split before any relayout, then stop at UI-GATE-03 manual run check",
+  "current_stage_goal": "从 v0.2.x 本地 HTTP + SQLite + release 可部署基座出发，按 8 条产品主线推进；近期 P0 仍是部署可用、数据安全、可观测；B 组、UI-GATE-01、TECH-07 与 UI-MOD-01 行为保持模块化拆分已完成；当前停在 UI-GATE-03 人工运行检查，等待用户确认页面能否正常跑，再决定是否进入真正 UI 重排。",
+  "primary_track": "Deployment / Operability + Data Safety P0 remains blocked by server confirmation; UI repair window completed UI-MOD-01 and must stop at UI-GATE-03 manual run check before any relayout",
   "deferred_track": "Real AI、repo connector、RAG/embedding、权限系统和硬件自动接入均后置到依赖满足或用户拍板后。",
-  "current_atomic_task": "UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT",
+  "current_atomic_task": "UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT",
   "roadmap_document": "docs/planning/product-roadmap.md",
   "roadmap_tracks": [
     {
@@ -94,6 +94,7 @@
     "ui_information_architecture_review_completed": true,
     "ui_gate_01_visual_direction_completed": true,
     "app_tsx_minimal_split_completed": true,
+    "ui_mod_01_pre_relayout_component_split_completed": true,
     "project_status_ledger_completed": true,
     "night_run_rules_completed": true,
     "v0_2_history_docs_archived": true,
@@ -104,8 +105,8 @@
   "assessment_state": {
     "refactor_assessment_document": "docs/planning/refactor-assessment.md",
     "codebase_refine_necessity_audit_completed": true,
-    "conclusion": "No prerequisite broad refactor is needed before DEP-01 or the completed B group. SEARCH-07/08/09, UI-01, CORE-02, CORE-03, CORE-06, AIREADY-05, UI-GATE-01 and TECH-07 are complete. App.tsx, HTTP repository, server database and verify scripts have real friction; TECH-07 was limited to an enabling split, not a full rewrite or visual redesign.",
-    "recommended_next_task": "UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT is the next task and may be auto-claimed; it must only do behavior-preserving module extraction and must stop at UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT before any UI relayout."
+    "conclusion": "No prerequisite broad refactor is needed before DEP-01 or the completed B group. SEARCH-07/08/09, UI-01, CORE-02, CORE-03, CORE-06, AIREADY-05, UI-GATE-01, TECH-07 and UI-MOD-01 are complete. App.tsx, HTTP repository, server database and verify scripts have real friction; UI-MOD-01 was limited to behavior-preserving component extraction, not a full rewrite or visual redesign.",
+    "recommended_next_task": "UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT is current/day-only/manual. AI must stop and wait for the user to run and inspect the page before any UI relayout."
   },
   "environment_facts": {
     "server": {
@@ -150,21 +151,21 @@
       "id": "UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT",
       "track": "Technical Debt / Architecture",
       "goal": "在真正 UI 重排前，对 App.tsx 中与下一轮 UI 改造直接相关的组件做行为保持模块化拆分。",
-      "status": "current",
+      "status": "completed",
       "priority": "P1",
-      "lane": "night-safe",
-      "night_safe": true,
-      "ai_unattended_run": true,
+      "lane": "completed",
+      "night_safe": false,
+      "ai_unattended_run": false,
       "requires_user_confirmation": [],
-      "execution_contract": "Only move/extract UI components and direct label/render helpers; do not change render order, CSS visual design, QuickIssue landing, severity interaction, 3/4 copy, schema, repository, HTTP API or server. Commit and stop at UI-GATE-03."
+      "execution_contract": "Completed as behavior-preserving UI component extraction; did not change render order, CSS visual design, QuickIssue landing, severity interaction, 3/4 copy, schema, repository, HTTP API or server. Commit must stop at UI-GATE-03."
     },
     {
       "id": "UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT",
       "track": "Technical Debt / Architecture",
       "goal": "模块化拆分后由用户人工启动 / 浏览 ProbeFlash，确认现有主流程仍能正常跑，再决定是否进入 UI 重排。",
-      "status": "pending_after_UI-MOD-01",
+      "status": "current",
       "priority": "P1",
-      "lane": "day-only",
+      "lane": "day-only/manual",
       "night_safe": false,
       "ai_unattended_run": false,
       "requires_user_confirmation": [
@@ -193,7 +194,7 @@
     ],
     "ui_gate_01_completed": true,
     "ui_gate_01_completed_at": "2026-04-30T14:30:51+08:00",
-    "decision": "After B group and UI-GATE-01, TECH-07 has completed as an enabling split and the user accepted the split result. Next auto-claim is UI-MOD-01 behavior-preserving component extraction; after that AI must stop at UI-GATE-03 manual run check before any UI relayout. Do not prioritize TECH-08/09/10 broad refactors unless a concrete storage/server task requires them."
+    "decision": "After B group and UI-GATE-01, TECH-07 completed as an enabling split and the user accepted the split result. UI-MOD-01 behavior-preserving component extraction is now complete; AI must stop at UI-GATE-03 manual run check before any UI relayout. Do not prioritize TECH-08/09/10 broad refactors unless a concrete storage/server task requires them."
   },
   "ui_gate_01_confirmation": {
     "task_id": "UI-GATE-01-MANUAL-VISUAL-DIRECTION",
@@ -636,22 +637,23 @@
       "order": 32,
       "id": "UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT",
       "track": "Technical Debt / Architecture",
-      "status": "current",
+      "status": "completed",
       "priority": "P1",
-      "classification": "night-safe",
+      "classification": "completed",
       "depends_on": [
         "TECH-07-APP-TSX-MINIMAL-SPLIT",
         "UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT"
       ],
-      "execution_contract": "Behavior-preserving UI component extraction only; no relayout, copy changes, interaction changes, CSS visual redesign, schema, repository, HTTP API or server changes."
+      "execution_contract": "Completed as behavior-preserving UI component extraction only; no relayout, copy changes, interaction changes, CSS visual redesign, schema, repository, HTTP API or server changes.",
+      "completed_at": "2026-04-30T16:10:03+08:00"
     },
     {
       "order": 33,
       "id": "UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT",
       "track": "Technical Debt / Architecture",
-      "status": "pending_after_UI-MOD-01",
+      "status": "current",
       "priority": "P1",
-      "classification": "day-only",
+      "classification": "day-only/manual",
       "depends_on": [
         "UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT"
       ]
@@ -709,7 +711,6 @@
     ]
   },
   "night_safe_pool": [
-    "UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT",
     "CORE-07-ARCHIVE-FILTERS",
     "CORE-08-ERROR-ENTRY-TAGS",
     "CORE-09-DEMO-SEED-IMPORT",
@@ -819,7 +820,8 @@
     "AIREADY-05-DRAFT-HISTORY",
     "UI-GATE-01-MANUAL-VISUAL-DIRECTION",
     "TECH-07-APP-TSX-MINIMAL-SPLIT",
-    "UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT"
+    "UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT",
+    "UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -839,15 +841,15 @@
       "docs/product/产品介绍.md：产品定义 / 领域语言变化",
       "docs/archive/v0.2-closeout/：仅 v0.2.0 前历史背景、专项追溯或归档审计"
     ],
-    "recommended_next_daytime": "UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT is the next task even during daytime; DEP-01 should not be auto-selected unless the user explicitly overrides this UI modularization priority and reauthorizes server deployment boundaries.",
-    "recommended_next_daytime_status": "UI-MOD-01 is current/night-safe; DEP-01 remains blocked_until_user_confirms_server_boundaries and is not the default next task.",
-    "recommended_next_night_safe": "UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT",
-    "recommended_next_ui_task": "UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT; behavior-preserving component extraction only, then stop at UI-GATE-03 before any relayout.",
+    "recommended_next_daytime": "UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT is current/day-only/manual; user must run and inspect the page before any UI relayout. DEP-01 should not be auto-selected unless the user explicitly overrides this UI manual-check gate and reauthorizes server deployment boundaries.",
+    "recommended_next_daytime_status": "UI-GATE-03 is current/day-only/manual; DEP-01 remains blocked_until_user_confirms_server_boundaries and is not the default next task.",
+    "recommended_next_night_safe": "none_until_user_manual_run_check",
+    "recommended_next_ui_task": "UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT; manual run/smoke check only, no AI implementation.",
     "b_group_order": "UI-01, CORE-02, CORE-03, CORE-06, AIREADY-05, UI-GATE-01, TECH-07 and UI-GATE-02 acceptance are complete; B group, manual visual gate and enabling split review are closed.",
-    "after_b_group_order": "UI-GATE-01-MANUAL-VISUAL-DIRECTION completed -> TECH-07-APP-TSX-MINIMAL-SPLIT completed -> UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT completed/manual accepted -> UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT current/night-safe -> UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT day-only.",
-    "alternative_night_safe": "Do not choose AIREADY/CODECTX/CORE alternatives or UI implementation before UI-MOD-01 unless the user explicitly redirects; UI-MOD-01 must stop at UI-GATE-03.",
+    "after_b_group_order": "UI-GATE-01-MANUAL-VISUAL-DIRECTION completed -> TECH-07-APP-TSX-MINIMAL-SPLIT completed -> UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT completed/manual accepted -> UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT completed -> UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT current/day-only/manual.",
+    "alternative_night_safe": "Do not choose AIREADY/CODECTX/CORE alternatives or UI implementation before UI-GATE-03 manual run check unless the user explicitly redirects; AI must stop at UI-GATE-03.",
     "refactor_gate": "CODEBASE-REFINE-NECESSITY-AUDIT found no required broad refactor gate before DEP-01 or the B group. SEARCH-07, UI-01, UI-GATE-01 and TECH-07 are complete. TECH-07 stayed an enabling split, not a full App.tsx rewrite or visual redesign.",
-    "selection_rule": "下一任务只允许自动认领 UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT。该任务只做行为保持模块化拆分，不做 UI 重排、QuickIssue landing、severity 交互、删除 3/4 编号文案或 CSS 主视觉变化。完成、验证、planning sync 和 commit 后必须停止在 UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT，等待用户人工检查能否正常跑。只有用户明确推翻本轮约束并重新授权服务器部署，才可改选 DEP-01。真实 AI/API key 和 systemd/sudo 任务不得 unattended。"
+    "selection_rule": "当前停在 UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT。AI 必须停止，等待用户人工启动 / 浏览检查页面能否正常跑；不得自动进入 UI 重排、三栏布局、QuickIssue landing、Knowledge Assist 合并、closeout 视觉重构、severity 交互、删除 3/4 编号文案或 CSS 主视觉变化。只有用户明确推翻本轮约束并重新授权服务器部署，才可改选 DEP-01。真实 AI/API key 和 systemd/sudo 任务不得 unattended。"
   },
   "night_run_mode": {
     "policy": "Night run / unattended mode may only execute repo-local, automatically verifiable and rollback-friendly atomic tasks. External systems, real servers, privileged operations, destructive data operations and product decisions must stop with handoff.",
@@ -1103,15 +1105,16 @@
     "Code context 第一阶段只能处理用户显式提供的 bundle，不允许 server 任意扫描路径。",
     "路线图较长，current.md 只允许保留最多 3 个前沿候选，完整字段必须回到 product-roadmap.md。",
     "docs/planning/status.md 只是快速状态索引，不得替代 current/backlog/product-roadmap/handoff.json。",
-    "UI-GATE-01 已人工确认且 TECH-07 已按 contract 完成；用户已认可 TECH-07 拆分结果，但不得直接全量重写 App.tsx、引入组件库或改变业务数据流。",
-    "下一任务 UI-MOD-01 只允许行为保持模块化拆分；不得混入三栏布局、QuickIssue landing、severity 交互、删除 3/4 编号文案、CSS 主视觉变化或业务改动。",
-    "UI-MOD-01 完成后必须停在 UI-GATE-03 人工运行检查，不能自动进入 UI 重排 implementation。"
+    "UI-GATE-01 已人工确认，TECH-07 与 UI-MOD-01 均已按 contract 完成；不得直接全量重写 App.tsx、引入组件库或改变业务数据流。",
+    "当前任务 UI-GATE-03 只能由用户人工运行检查；不得混入三栏布局、QuickIssue landing、severity 交互、删除 3/4 编号文案、CSS 主视觉变化或业务改动。",
+    "UI-GATE-03 通过前必须停止，不能自动进入 UI 重排 implementation。"
   ],
   "notes": [
     "TECH-07-APP-TSX-MINIMAL-SPLIT 已完成且用户已认可：抽取 WorkspaceChrome/ProjectContextShell、KnowledgeAssistPanel、IssueMainFlow 纯展示壳；保留原 render 顺序、条件渲染、业务触发和真实边界。",
-    "下一轮只自动认领 UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT；该任务只做行为保持模块化拆分，完成后必须提交并停止。",
+    "UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT 已完成：快速建卡、完整建卡、问题列表、Knowledge Assist 四个面板、追记表单、排查时间线、结案表单和主线结果面板已抽为 UI 模块；保持 render 顺序、className、test id、文案和数据流不变。",
+    "当前必须停在 UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT；等待用户人工启动 / 浏览检查页面能否正常跑，AI 不得自动继续 UI 重排。",
     "如果用户明确切回服务器部署并确认 SSH、release 获取、/home/hurricane/probeflash 写入、临时进程和 4100 端口边界，DEP-01 仍可作为 P0 白天主线；但下一轮默认不要改选 DEP-01。",
     "真实 AI/API key 仍 blocked；AI-ready 草稿历史不代表真实 AI 已接入。",
-    "UI 小阶段禁止 dashboard/console/new app、App.tsx full rewrite、业务逻辑重写、server change、真实 AI、embedding/RAG、Electron/fs/IPC、schema migration、组件库和 broad CSS reset；UI-MOD-01 后需 UI-GATE-03 人工检查能否正常跑，再决定 UI 重排。"
+    "UI 小阶段禁止 dashboard/console/new app、App.tsx full rewrite、业务逻辑重写、server change、真实 AI、embedding/RAG、Electron/fs/IPC、schema migration、组件库和 broad CSS reset；UI-GATE-03 人工检查通过前不得进入 UI 重排。"
   ]
 }

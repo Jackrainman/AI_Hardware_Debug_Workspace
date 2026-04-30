@@ -85,6 +85,11 @@ if (actualOrder.join(",") !== expectedOrder.join(",")) {
 }
 
 const appSource = readFileSync(resolve("src/App.tsx"), "utf8");
+const investigationComponentsSource = readFileSync(
+  resolve("src/components/investigation/InvestigationComponents.tsx"),
+  "utf8",
+);
+const uiSource = [appSource, investigationComponentsSource].join("\n");
 const cssSource = readFileSync(resolve("src/App.css"), "utf8");
 const requiredAppMarkers = [
   'data-testid="record-timeline"',
@@ -95,7 +100,7 @@ const requiredAppMarkers = [
   "record-timeline-time",
 ];
 for (const marker of requiredAppMarkers) {
-  if (!appSource.includes(marker)) fail(`App.tsx missing timeline marker: ${marker}`);
+  if (!uiSource.includes(marker)) fail(`UI source missing timeline marker: ${marker}`);
 }
 
 for (const type of ["observation", "hypothesis", "action", "result", "conclusion", "note"]) {

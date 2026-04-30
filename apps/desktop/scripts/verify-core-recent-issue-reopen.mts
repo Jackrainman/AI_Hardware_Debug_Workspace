@@ -43,6 +43,11 @@ function assert(condition: unknown, reason: string, detail?: unknown): asserts c
 }
 
 const appSource = readFileSync(resolve("src/App.tsx"), "utf8");
+const issueComponentsSource = readFileSync(
+  resolve("src/components/issue/IssueEntryComponents.tsx"),
+  "utf8",
+);
+const uiSource = [appSource, issueComponentsSource].join("\n");
 const requiredAppMarkers = [
   'data-testid="recent-issue-reopen-state"',
   "resolveRecentIssueReopen(recentIssueStorage, activeWorkspace.id, result.valid)",
@@ -52,7 +57,7 @@ const requiredAppMarkers = [
 ];
 
 for (const marker of requiredAppMarkers) {
-  if (!appSource.includes(marker)) fail(`App.tsx missing recent issue reopen marker: ${marker}`);
+  if (!uiSource.includes(marker)) fail(`UI source missing recent issue reopen marker: ${marker}`);
 }
 
 const workdir = mkdtempSync(join(tmpdir(), "probeflash-core-recent-issue-reopen-"));

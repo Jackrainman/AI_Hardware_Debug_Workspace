@@ -131,9 +131,11 @@ const pureUnlinked = removeRelatedHistoricalIssue(pureLinked, "issue-link-pure-h
 assert(pureUnlinked.relatedHistoricalIssueIds.length === 0, "pure helper should unlink issue id", pureUnlinked);
 
 const appSource = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
-assert(appSource.includes("knowledge-search-link-result"), "App should expose search result link action marker");
-assert(appSource.includes("similar-issues-link-result"), "App should expose similar result link action marker");
-assert(appSource.includes("related-history-unlink"), "App should expose unlink action marker");
+const knowledgeSource = readFileSync(new URL("../src/components/knowledge/KnowledgePanels.tsx", import.meta.url), "utf8");
+const uiSource = [appSource, knowledgeSource].join("\n");
+assert(uiSource.includes("knowledge-search-link-result"), "UI should expose search result link action marker");
+assert(uiSource.includes("similar-issues-link-result"), "UI should expose similar result link action marker");
+assert(uiSource.includes("related-history-unlink"), "UI should expose unlink action marker");
 
 installSearchVerifyLocalStorage();
 
