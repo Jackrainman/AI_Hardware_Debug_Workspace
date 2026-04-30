@@ -4,6 +4,15 @@ import {
   buildRuleCloseoutDraft,
   type RuleCloseoutDraft,
 } from "./ai/rule-closeout-draft";
+import {
+  appendCloseoutDraftHistoryEntry,
+  clearCloseoutDraftHistory,
+  createCloseoutDraftHistoryEntry,
+  getBrowserCloseoutDraftHistoryStorage,
+  labelCloseoutDraftHistorySource,
+  readCloseoutDraftHistory,
+  type CloseoutDraftHistoryEntry,
+} from "./ai/rule-closeout-draft-history";
 import type { IssueCard } from "./domain/schemas/issue-card";
 import type { InvestigationRecord } from "./domain/schemas/investigation-record";
 import {
@@ -1341,6 +1350,8 @@ type CloseoutSummary = {
   markdownPreview: string;
 };
 
+type DraftHistoryStatus = "idle" | "stored" | "session-only" | "cleared";
+
 function CloseoutForm({
   repository,
   issueId,
@@ -1363,6 +1374,9 @@ function CloseoutForm({
   const [resolution, setResolution] = useState<string>("");
   const [prevention, setPrevention] = useState<string>("");
   const [draft, setDraft] = useState<RuleCloseoutDraft | null>(null);
+  const [activeDraftEntryId, setActiveDraftEntryId] = useState<string | null>(null);
+  const [draftHistory, setDraftHistory] = useState<CloseoutDraftHistoryEntry[]>([]);
+  const [draftHistoryStatus, setDraftHistoryStatus] = useState<DraftHistoryStatus>("idle");
   const [status, setStatus] = useState<CloseoutSubmitStatus>({ state: "idle" });
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
 
@@ -1411,15 +1425,35 @@ function CloseoutForm({
         : "建议补充可执行检查项；留空时会按修复结论生成默认预防项。",
     },
   ] as const;
+  const activeDraftHistoryEntry = draftHistory.find((entry) => entry.id === activeDraftEntryId) ?? null;
 
   useEffect(() => {
     setDraft(null);
+    setActiveDraftEntryId(null);
+    setDraftHistory(readCloseoutDraftHistory(getBrowserCloseoutDraftHistoryStorage(), issueId));
+    setDraftHistoryStatus("idle");
     setHasAttemptedSubmit(false);
   }, [issueId]);
 
   const handleGenerateDraft = () => {
     if (issueCard === null) return;
-    setDraft(buildRuleCloseoutDraft(issueCard, records));
+    const generatedDraft = buildRuleCloseoutDraft(issueCard, records);
+    const historyEntry = createCloseoutDraftHistoryEntry({
+      issueId,
+      issueTitle: issueCard.title,
+      generatedAt: new Date().toISOString(),
+      recordCount: records.length,
+      draft: generatedDraft,
+      sequence: draftHistory.length + 1,
+    });
+    const historyResult = appendCloseoutDraftHistoryEntry(
+      getBrowserCloseoutDraftHistoryStorage(),
+      historyEntry,
+    );
+    setDraft(generatedDraft);
+    setActiveDraftEntryId(historyEntry.id);
+    setDraftHistory(historyResult.entries);
+    setDraftHistoryStatus(historyResult.persisted ? "stored" : "session-only");
   };
 
   const handleApplyDraft = () => {
@@ -1430,6 +1464,19 @@ function CloseoutForm({
     setPrevention(draft.prevention);
     setStatus({ state: "idle" });
     setHasAttemptedSubmit(false);
+  };
+
+  const handleReviewDraftHistoryEntry = (entry: CloseoutDraftHistoryEntry) => {
+    setDraft(entry.draft);
+    setActiveDraftEntryId(entry.id);
+  };
+
+  const handleClearDraftHistory = () => {
+    clearCloseoutDraftHistory(getBrowserCloseoutDraftHistoryStorage(), issueId);
+    setDraft(null);
+    setActiveDraftEntryId(null);
+    setDraftHistory([]);
+    setDraftHistoryStatus("cleared");
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -1546,6 +1593,9 @@ function CloseoutForm({
         {issueCard === null && (
           <p className="storage-line">问题卡详情仍在读取中，稍后可生成草稿。</p>
         )}
+        <p className="storage-line" data-testid="closeout-draft-history-state">
+          草稿历史：{renderDraftHistoryStatus(draftHistoryStatus)}
+        </p>
         {draft !== null && (
           <div className="closeout-draft-body">
             <div className="closeout-draft-grid" data-testid="closeout-draft-preview">
@@ -1570,6 +1620,7 @@ function CloseoutForm({
               <span>置信度：{labelDraftConfidence(draft.confidence)}</span>
               <span>关键信号：{draft.keySignals.length} 条</span>
               <span>检查项：{draft.checklistItems.length} 条</span>
+              {activeDraftHistoryEntry !== null && <span>正在审阅：{activeDraftHistoryEntry.generatedAt}</span>}
             </div>
             <div className="intake-actions">
               <button
@@ -1583,6 +1634,73 @@ function CloseoutForm({
             </div>
           </div>
         )}
+        <div className="closeout-draft-history" data-testid="closeout-draft-history">
+          <div className="closeout-draft-history-header">
+            <span>草稿历史</span>
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={handleClearDraftHistory}
+              disabled={draftHistory.length === 0 && draft === null}
+              data-testid="closeout-draft-history-clear"
+            >
+              清除草稿历史
+            </button>
+          </div>
+          {draftHistory.length === 0 ? (
+            <p className="storage-line" data-testid="closeout-draft-history-empty">
+              尚无本问题的草稿历史；生成后会保存在浏览器本地，便于对比多次规则输出。
+            </p>
+          ) : (
+            <ol className="closeout-draft-history-list" data-testid="closeout-draft-history-list">
+              {draftHistory.map((entry, index) => (
+                <li
+                  key={entry.id}
+                  className="closeout-draft-history-item"
+                  data-active={entry.id === activeDraftEntryId}
+                  data-testid="closeout-draft-history-item"
+                >
+                  <div className="closeout-draft-history-item-header">
+                    <span>第 {draftHistory.length - index} 版 · {entry.generatedAt}</span>
+                    <button
+                      type="button"
+                      className="button-secondary"
+                      onClick={() => handleReviewDraftHistoryEntry(entry)}
+                      data-testid="closeout-draft-history-review"
+                    >
+                      查看此版
+                    </button>
+                  </div>
+                  <p className="closeout-draft-history-boundary">
+                    来源：{labelCloseoutDraftHistorySource(entry.source)}；问题边界：{entry.issueTitle || entry.issueId}；
+                    排查记录：{entry.recordCount} 条。
+                  </p>
+                  <details>
+                    <summary>展开草稿内容</summary>
+                    <div className="closeout-draft-grid">
+                      <div>
+                        <span>问题描述优化</span>
+                        <p>{entry.draft.problemSummary}</p>
+                      </div>
+                      <div>
+                        <span>根因总结草稿</span>
+                        <p>{entry.draft.rootCause}</p>
+                      </div>
+                      <div>
+                        <span>解决方案草稿</span>
+                        <p>{entry.draft.resolution}</p>
+                      </div>
+                      <div>
+                        <span>预防建议草稿</span>
+                        <p>{entry.draft.prevention}</p>
+                      </div>
+                    </div>
+                  </details>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
       </section>
       <label className="intake-field">
         <span className="field-label-row">
@@ -1681,6 +1799,19 @@ function labelDraftConfidence(confidence: RuleCloseoutDraft["confidence"]): stri
       return "中，建议复核后使用";
     case "high":
       return "高，仍需人工确认";
+  }
+}
+
+function renderDraftHistoryStatus(status: DraftHistoryStatus): string {
+  switch (status) {
+    case "idle":
+      return "浏览器本地保存，仅用于审阅，不写入归档 / 错误表 / 问题卡。";
+    case "stored":
+      return "已保存到浏览器本地历史；仍是规则草稿，未调用真实 AI。";
+    case "session-only":
+      return "localStorage 不可用，本次会话内可审阅；未调用真实 AI。";
+    case "cleared":
+      return "已清除当前问题的本地草稿历史。";
   }
 }
 

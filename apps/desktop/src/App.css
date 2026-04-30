@@ -2163,7 +2163,8 @@ select:focus-visible {
 }
 
 .closeout-draft-header p,
-.closeout-draft-grid p {
+.closeout-draft-grid p,
+.closeout-draft-history-boundary {
   margin: 0;
   color: var(--text-muted);
   font-size: 12px;
@@ -2172,7 +2173,9 @@ select:focus-visible {
 
 .closeout-draft-eyebrow,
 .closeout-draft-grid span,
-.closeout-draft-meta span {
+.closeout-draft-meta span,
+.closeout-draft-history-header span,
+.closeout-draft-history-item-header span {
   color: var(--text-strong);
   font-size: 11px;
   font-weight: 750;
@@ -2213,6 +2216,59 @@ select:focus-visible {
   border-radius: 999px;
   background: var(--surface);
   color: var(--text-muted);
+}
+
+.closeout-draft-history {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.closeout-draft-history-header,
+.closeout-draft-history-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.closeout-draft-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.closeout-draft-history-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.closeout-draft-history-item[data-active="true"] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-soft);
+}
+
+.closeout-draft-history-item details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.closeout-draft-history-item summary {
+  cursor: pointer;
+  color: var(--text-strong);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .intake-actions,

@@ -5,7 +5,7 @@
 > 硬限制：总长度建议不超过 120 行；不追加流水账；不复制 backlog 长任务表；不复制 product-roadmap 长路线图；最近完成只保留最近 10 条以内；blocked 只列当前关键 blocked；night-safe 只列前 5 个候选；每次任务结束只覆盖当前状态，不追加历史过程。
 
 ## 1. 一句话状态
-ProbeFlash 已具备本地 HTTP + SQLite + release 可部署基座、workspace UX 改善、最近活跃问题恢复、结案失败输入保留提示、基础知识检索、轻量相似问题提示、历史问题人工关联和复发提示；当前白天主线仍卡在真实服务器用户目录部署确认，无服务器授权时继续跑 B 组 night-safe 队列，当前项是 `AIREADY-05-DRAFT-HISTORY`。
+ProbeFlash 已具备本地 HTTP + SQLite + release 可部署基座、workspace UX 改善、最近活跃问题恢复、结案失败输入保留提示、规则草稿历史、基础知识检索、轻量相似问题提示、历史问题人工关联和复发提示；当前白天主线仍卡在真实服务器用户目录部署确认，B 组 night-safe 队列已完成，下一步停在 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` 人工视觉方向确认。
 
 ## 2. 当前能力状态
 
@@ -38,17 +38,16 @@ ProbeFlash 已具备本地 HTTP + SQLite + release 可部署基座、workspace U
 | 用户需要确认什么 | SSH 登录方式、release 获取方式、用户目录写入授权、临时进程启动授权、4100 端口授权 |
 
 ## 4. 当前夜跑候选
-- `AIREADY-05-DRAFT-HISTORY`：补规则草稿历史审阅，不接真实 AI。
-- `AIREADY-06-DRAFT-DIFF`：B 组后可选的草稿对比能力；仍不接真实 AI。
-- `CODECTX-01-BUNDLE-CLI`：B 组后可选的显式代码上下文包；不自动扫仓、不上传。
-- `CODECTX-02-SECRETS-PROTECTION`：显式代码上下文包后的 secrets 保护；不上传、不扫仓。
-- `CORE-07-ARCHIVE-FILTERS`：后续可选归档筛选；不替代搜索。
+- 当前不自动认领新的 night-safe 任务：B 组已完成，必须先由用户处理 `UI-GATE-01-MANUAL-VISUAL-DIRECTION`。
+- `TECH-07-APP-TSX-MINIMAL-SPLIT`：仅在 `UI-GATE-01` 放行后可作为支撑拆分执行，不做视觉重设计。
+- 其它 night-safe 候选暂不越过 UI gate：`AIREADY-06-DRAFT-DIFF`、`CODECTX-01-BUNDLE-CLI`、`CODECTX-02-SECRETS-PROTECTION`、`CORE-07-ARCHIVE-FILTERS`。
 
 ## 4.1 B 组后顺序
 - B 组功能完成后先修 UI，不先做 broad refactor；顺序是 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` -> `TECH-07-APP-TSX-MINIMAL-SPLIT` -> `UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT`。
 - `UI-GATE-*` 为人工阻塞 / day-review，不能夜跑；`TECH-07` 只能在 UI 方向确认后作为支撑拆分，不能变成 App.tsx 全量重写。
 
 ## 5. 最近完成
+- `AIREADY-05-DRAFT-HISTORY`：规则 closeout 草稿会保存浏览器本地历史，可审阅多次生成的来源时间、问题边界和草稿内容，并可清除；不接真实 AI、不自动写 archive / error-entry / issue；`verify:ai-ready-closeout-draft-panel` 已覆盖。
 - `CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS`：结案写归档摘要、错误表或问题卡状态失败时，表单明确提示未归档成功，保留根因 / 修复结论 / 预防建议，并提示可重试或先处理 Repair Task；新增 `verify:core-closeout-partial-save-hints`。
 - `CORE-03-RECENT-ISSUE-REOPEN`：新增 workspace-scoped 最近活跃问题本地状态；刷新 / 重开后回到当前项目最近未归档问题，缺失、已归档或 workspace 切换时安全降级；新增 `verify:core-recent-issue-reopen`。
 - `CORE-02-WORKSPACE-UX-IMPROVEMENTS`：顶部项目 / 存储状态并入当前 workspace 身份，项目选择 / 创建入口、workspace 列表空态 / 错误态和 issue list 空态 / 错误态更清楚；新增 `verify:core-workspace-ux-improvements`。
@@ -58,7 +57,6 @@ ProbeFlash 已具备本地 HTTP + SQLite + release 可部署基座、workspace U
 - `SEARCH-09-RECURRENCE-PROMPT`：高相似历史问题会触发可忽略复发提示，可查看根因/处理摘要并显式关联，不接 AI、不自动写库。
 - `SEARCH-08-SEARCH-RESULT-LINKING`：搜索 / 相似结果可人工关联到当前问题，已关联历史问题可展示和取消；读写读回覆盖 localStorage 与 HTTP。
 - `SEARCH-07-SIMILAR-ISSUES-LITE`：新增可解释相似问题排序 helper、当前问题提示面板和 localStorage / HTTP verify，不接 embedding / RAG / 真实 AI。
-- `CODEBASE-REFINE-NECESSITY-AUDIT`：新增 `docs/planning/refactor-assessment.md`，确认当前无必须先做的小型重构 gate；大文件和重复逻辑后置到任务命中时最小处理。
 
 ## 6. 当前不要碰
 - 不创建 `apps/console`、dashboard UI 或新的项目管理 app。
@@ -70,7 +68,7 @@ ProbeFlash 已具备本地 HTTP + SQLite + release 可部署基座、workspace U
 - 不在 `UI-GATE-01-MANUAL-VISUAL-DIRECTION` 前执行 `TECH-07`；不把 TECH-07 做成 UI 重设计或全量重写。
 
 ## 7. 用户下一步
-- 今天完全不想动：让 AI 继续夜跑 B 组当前项 `AIREADY-05-DRAFT-HISTORY`，不碰服务器和真实 AI。
+- 今天完全不想动：停止自动推进，等用户人工处理 `UI-GATE-01-MANUAL-VISUAL-DIRECTION`；不碰服务器和真实 AI。
 - 只有 10 分钟：确认是否允许下一次白天操作 SSH、release 获取方式、`/home/hurricane/probeflash` 写入和 4100 临时进程。
 - 有 30 分钟清醒时间：一起执行 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY` 的服务器用户目录部署验证，并保留 no-sudo / no-systemd 边界。
 
