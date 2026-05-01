@@ -12,8 +12,12 @@ export type ArchivedCloseoutDisplayData = {
 
 export function ArchivedCloseoutSummary({
   data,
+  onUnarchive,
+  isUnarchiving = false,
 }: {
   data: ArchivedCloseoutDisplayData;
+  onUnarchive: () => void;
+  isUnarchiving?: boolean;
 }) {
   return (
     <section
@@ -24,6 +28,20 @@ export function ArchivedCloseoutSummary({
         <span className="mainline-panel-badge">已归档</span>
         <h3>归档结案摘要</h3>
       </header>
+      <div className="list-header">
+        <p className="storage-line">
+          取消归档只会重新打开问题卡；已生成的归档摘要和错误表仍保留。
+        </p>
+        <button
+          type="button"
+          className="button-secondary"
+          onClick={onUnarchive}
+          disabled={isUnarchiving}
+          data-testid="unarchive-issue-button"
+        >
+          {isUnarchiving ? "正在取消归档..." : "取消归档，继续排查"}
+        </button>
+      </div>
       <div className="mainline-panel-section" data-testid="archived-closeout-body">
         <dl className="mainline-closeout-fields">
           <div>

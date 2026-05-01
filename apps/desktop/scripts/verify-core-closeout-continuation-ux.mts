@@ -8,6 +8,12 @@ import {
   type FormDraftStorage,
   writeFormDraft,
 } from "../src/storage/form-draft-store.ts";
+import type { ArchiveDocument } from "../src/domain/schemas/archive-document.ts";
+import type { ErrorEntry } from "../src/domain/schemas/error-entry.ts";
+import type { IssueCard } from "../src/domain/schemas/issue-card.ts";
+import { listArchiveDocuments, saveArchiveDocument } from "../src/storage/archive-document-store.ts";
+import { listErrorEntries, saveErrorEntry } from "../src/storage/error-entry-store.ts";
+import { loadIssueCard, saveIssueCard } from "../src/storage/issue-card-store.ts";
 
 class MemoryDraftStorage implements FormDraftStorage {
   private readonly values = new Map<string, string>();
@@ -89,7 +95,87 @@ if (readFormDraft(storage, scope, () => draft).state !== "empty") {
   fail("cleared form draft should read as empty");
 }
 
+const issue: IssueCard = {
+  id: "issue-continuation-unarchive",
+  projectId: "workspace-26-r1",
+  title: "Archived issue can reopen",
+  rawInput: "archive reopen smoke",
+  normalizedSummary: "archive reopen smoke",
+  symptomSummary: "archive reopen smoke",
+  suspectedDirections: [],
+  suggestedActions: [],
+  status: "archived",
+  severity: "medium",
+  tags: ["archive"],
+  repoSnapshot: {
+    branch: "master",
+    headCommitHash: "0000000000000000000000000000000000000000",
+    headCommitMessage: "verify fixture",
+    hasUncommittedChanges: false,
+    changedFiles: [],
+    recentCommits: [],
+    capturedAt: "2026-05-01T12:00:00+08:00",
+  },
+  relatedFiles: [],
+  relatedCommits: [],
+  relatedHistoricalIssueIds: [],
+  createdAt: "2026-05-01T12:00:00+08:00",
+  updatedAt: "2026-05-01T12:10:00+08:00",
+};
+const archive: ArchiveDocument = {
+  issueId: issue.id,
+  projectId: issue.projectId,
+  fileName: "2026-05-01_archived-issue-can-reopen.md",
+  filePath: ".debug_workspace/archive/2026-05-01_archived-issue-can-reopen.md",
+  markdownContent: "# archived issue",
+  generatedBy: "hybrid",
+  generatedAt: "2026-05-01T12:15:00+08:00",
+};
+const entry: ErrorEntry = {
+  id: "error-entry-continuation-unarchive",
+  projectId: issue.projectId,
+  sourceIssueId: issue.id,
+  errorCode: "DBG-20260501-901",
+  title: issue.title,
+  category: "archive",
+  symptom: issue.symptomSummary,
+  rootCause: "verify root cause",
+  resolution: "verify resolution",
+  prevention: "verify prevention",
+  tags: issue.tags,
+  relatedFiles: [],
+  relatedCommits: [],
+  archiveFilePath: archive.filePath,
+  createdAt: archive.generatedAt,
+  updatedAt: archive.generatedAt,
+};
+if (!saveIssueCard(issue).ok || !saveArchiveDocument(archive).ok || !saveErrorEntry(entry).ok) {
+  fail("verify fixture should save issue/archive/error-entry");
+}
+const reopened: IssueCard = {
+  ...issue,
+  status: "investigating",
+  updatedAt: "2026-05-01T12:30:00+08:00",
+};
+if (!saveIssueCard(reopened).ok) {
+  fail("unarchive should update issue status without deleting history");
+}
+const loaded = loadIssueCard(issue.id);
+if (!loaded.ok || loaded.card.status !== "investigating") {
+  fail("reopened issue should read back as investigating", loaded);
+}
+if (!listArchiveDocuments().valid.some((doc) => doc.issueId === issue.id)) {
+  fail("archive document should remain after unarchive");
+}
+if (!listErrorEntries().valid.some((item) => item.sourceIssueId === issue.id)) {
+  fail("error entry should remain after unarchive");
+}
+
 const appSource = readFileSync(resolve(process.cwd(), "src", "App.tsx"), "utf8");
+const archivedSummarySource = readFileSync(
+  resolve(process.cwd(), "src", "components", "closeout", "ArchivedCloseoutSummary.tsx"),
+  "utf8",
+);
 const closeoutSource = readFileSync(
   resolve(process.cwd(), "src", "components", "closeout", "CloseoutForm.tsx"),
   "utf8",
@@ -103,17 +189,20 @@ const issueEntrySource = readFileSync(
   "utf8",
 );
 for (const expected of [
+  "unarchive-issue-button",
+  'status: "investigating"',
   "clearFormDraft",
   "closeout-form-draft-state",
   "investigation-form-draft-state",
   "quick-issue-draft-status",
   "issue-intake-draft-status",
 ]) {
-  const source = [appSource, closeoutSource, investigationSource, issueEntrySource].join("\n");
+  const source = [appSource, archivedSummarySource, closeoutSource, investigationSource, issueEntrySource].join("\n");
   if (!source.includes(expected)) {
-    fail(`UI source should contain form draft marker: ${expected}`);
+    fail(`UI source should contain continuation marker: ${expected}`);
   }
 }
 
 console.log("[CORE-CLOSEOUT-CONTINUATION-UX verify] PASS: form drafts write, restore and clear by scoped key");
-console.log("[CORE-CLOSEOUT-CONTINUATION-UX verify] PASS: UI exposes local draft persistence markers");
+console.log("[CORE-CLOSEOUT-CONTINUATION-UX verify] PASS: unarchive reopens issue while preserving archive/error history");
+console.log("[CORE-CLOSEOUT-CONTINUATION-UX verify] PASS: UI exposes unarchive and local draft markers");

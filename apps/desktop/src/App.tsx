@@ -366,6 +366,7 @@ function IssuePane({
   const [recordList, setRecordList] = useState<InvestigationRecordListResult | null>(null);
   const [lastCloseout, setLastCloseout] = useState<CloseoutSummary | null>(null);
   const [archivedCloseoutData, setArchivedCloseoutData] = useState<ArchivedCloseoutDisplayData | null>(null);
+  const [isUnarchivingIssue, setIsUnarchivingIssue] = useState(false);
   const [similarIssues, setSimilarIssues] = useState<SimilarIssuesResult | null>(null);
   const [isLoadingSimilarIssues, setIsLoadingSimilarIssues] = useState<boolean>(false);
   const [recentIssueReopenState, setRecentIssueReopenState] = useState<RecentIssueReopenState>({
@@ -491,6 +492,7 @@ function IssuePane({
     void loadRecordList(id);
     setLastCloseout(null);
     setArchivedCloseoutData(null);
+    setIsUnarchivingIssue(false);
   };
 
   const loadArchivedCloseoutData = async (issueId: string) => {
@@ -543,6 +545,7 @@ function IssuePane({
     setRecordList(null);
     setLastCloseout(null);
     setArchivedCloseoutData(null);
+    setIsUnarchivingIssue(false);
     setSimilarIssues(null);
     setDismissedRecurrencePrompt(null);
   };
@@ -555,6 +558,7 @@ function IssuePane({
     void loadRecordList(id);
     setLastCloseout(null);
     setArchivedCloseoutData(null);
+    setIsUnarchivingIssue(false);
     setSimilarIssues(null);
     setDismissedRecurrencePrompt(null);
   };
@@ -583,6 +587,22 @@ function IssuePane({
     void refreshCardList({ restoreRecent: false });
     clearStorageFeedback();
     return true;
+  };
+
+  const handleUnarchiveIssue = async () => {
+    if (selectedCard === null || selectedCard.status !== "archived") return;
+    setIsUnarchivingIssue(true);
+    const updatedCard: IssueCard = {
+      ...selectedCard,
+      status: "investigating",
+      updatedAt: new Date().toISOString(),
+    };
+    const saved = await saveSelectedCardUpdate(updatedCard);
+    setIsUnarchivingIssue(false);
+    if (!saved) return;
+    setLastCloseout(null);
+    setArchivedCloseoutData(null);
+    void loadRecordList(updatedCard.id);
   };
 
   const handleLinkHistoricalIssue = (issueId: string) => {
@@ -667,7 +687,11 @@ function IssuePane({
             />
           )}
           closeoutForm={selectedIssueId !== null && selectedCard?.status === "archived" && archivedCloseoutData !== null ? (
-            <ArchivedCloseoutSummary data={archivedCloseoutData} />
+            <ArchivedCloseoutSummary
+              data={archivedCloseoutData}
+              onUnarchive={handleUnarchiveIssue}
+              isUnarchiving={isUnarchivingIssue}
+            />
           ) : selectedIssueId !== null && selectedCard?.status !== "archived" ? (
             <CloseoutForm
               key={`${activeWorkspace.id}:${selectedIssueId}`}
