@@ -5,7 +5,7 @@
 ## 当前阶段
 - 阶段：**R1：长期产品路线图执行启动**。
 - 当前模式：`server_storage_migration`（保留服务器部署安全边界）。
-- 阶段目标：**v0.3.0 已发布**（59 commits since v0.2.0），包含 DeepSeek AI 草稿接入、搜索能力套件、workflow 表单持久化、服务器备份/恢复/诊断、release 部署准备。已知 DeepSeek AI 草稿存在 `output.task` 类型校验边界问题（代码侧已分析，fix plan 已制定），不影响本地规则降级路径。近期 P0 仍关注 **部署可用、数据安全、可观测**。
+- 阶段目标：**v0.3.0 已发布**（59 commits since v0.2.0），包含 DeepSeek AI 草稿接入、搜索能力套件、workflow 表单持久化、服务器备份/恢复/诊断、release 部署准备。已知 DeepSeek AI 草稿存在 `output.task` 类型校验边界问题（代码侧已分析，fix plan 已制定），不影响本地规则降级路径。post-0.3 / Hermes 备案项 `AI-DRAFT-DEEPSEEK-SCHEMA-GUARD` 与 `HERMES-EXPERIMENT-BOOTSTRAP` 已登记到 planning / handoff，但当前不进入执行窗口。近期 P0 仍关注 **部署可用、数据安全、可观测**。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
 - 最近已完成：`CORE-CLOSEOUT-CONTINUATION-UX`、追记入口 UI hotfix、`CORE-FORM-DRAFT-SERVER-PERSISTENCE`，已完成 workflow 表单 localStorage 草稿保存 / 恢复 / 清除、已归档问题卡取消归档后回到 investigating 且保留 ArchiveDocument / ErrorEntry 历史、DeepSeek closeout prompt 改为 server-side 基于 issue/records 构造、问题卡详情页只保留一个“排查追记”卡片并默认收起字段、保留草稿提示；追记表单与结案表单兄弟 key 已拆分命名空间，浏览器 DOM 验证连续切换问题卡后追记表单数量保持 1；未读取或提交真实 key，未做真实 provider smoke，未自动写库。
 
@@ -17,6 +17,7 @@
 - 服务器安全边界仍有效：不 sudo、不写 `/opt`、不抢 80、不升级系统 Node、不影响 filebrowser / vnt-cli / docker / Portainer；release 部署优先 `/home/hurricane/probeflash` + 独立 Node runtime + 4100。
 - AI 安全边界仍有效：DeepSeek closeout 草稿最小链路已完成；API key 只来自 server env，AI 不读取密钥文件，不把 key 写入代码 / Git / 日志；AI 只返回草稿，不直接写库。
 - Code context 安全边界仍有效：先做用户显式生成的 bundle；server 不任意扫描仓库；repo connector 只作为后续 decision-needed 项。
+- release notes 里的 post-0.3 / Hermes 备案项 `AI-DRAFT-DEEPSEEK-SCHEMA-GUARD`、`HERMES-EXPERIMENT-BOOTSTRAP` 已补入 backlog / handoff；当前不进入执行窗口，也不影响 DEP-01 / UI-GATE-06。
 
 ## 8 条产品主线
 1. Deployment / Operability：服务器稳定运行、可更新、可诊断。
@@ -75,12 +76,6 @@
 - **UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW**
   - 状态：`manual-review`；P1；day-only。
   - 选择理由：快速建卡 landing 调整后仍只能由用户人工检查桌面端和移动端观感，不得自动进入下一轮 UI polish。
-- **CORE-FORM-DRAFT-SERVER-PERSISTENCE**
-  - 状态：`completed`；P1；repo-local。
-  - 选择理由：四类表单草稿已扩展为 HTTP + SQLite 持久化 + localStorage mirror/fallback；不得自动顺推其他功能。
-- **CORE-CLOSEOUT-CONTINUATION-UX**
-  - 状态：`completed`；P1；repo-local。
-  - 选择理由：已完成取消归档保留历史、表单草稿持久化与 DeepSeek prompt server-side hardening；不得自动顺推真实 provider smoke。
 
 ## 下一步最小可执行动作
 - 本轮默认：`CORE-FORM-DRAFT-SERVER-PERSISTENCE` 已完成；不得自动做真实 provider smoke 或继续下一项功能。

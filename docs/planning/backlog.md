@@ -99,6 +99,10 @@
 | 21 | UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW | current/day-only | P1 |
 | 22 | TECH-09-SERVER-ROUTE-SPLIT | night-safe | P2 |
 
+## Post-0.3 / Hermes registry
+- `AI-DRAFT-DEEPSEEK-SCHEMA-GUARD`：P1，bug / AI provider schema guard。closeout draft 只有在 task === `polish_closeout` 且字段完整时才显示 DeepSeek source；task mismatch / schema mismatch / 非法 JSON / 字段不完整时必须 fallback 到 rules/local，并新增 mock verify 覆盖 mismatch；live smoke 不进入 `verify:all`。
+- `HERMES-EXPERIMENT-BOOTSTRAP`：P2，harness / experiment setup。登记 `experiment/hermes-post-0.3` 的实验接管说明与边界；source of truth 仍是 `AGENTS.md` / planning / handoff；不自动生成永久 skill、不改业务代码；分支创建和 `docs/hermes/BOOTSTRAP.md` 写入是后续手工动作，当前只登记不执行。
+
 ## 长期方向
 - 团队级多项目知识库与轻量权限。
 - 串口日志、CAN 报文、ROS topic、截图 / 照片 / 波形附件接入。

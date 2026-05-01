@@ -20,9 +20,9 @@
   "current_mode": "server_storage_migration",
   "current_stage": "R1",
   "current_stage_name": "长期产品路线图执行启动",
-  "current_stage_goal": "v0.3.0 已发布（59 commits since v0.2.0）：DeepSeek AI 草稿接入、搜索能力套件、workflow 表单持久化、服务器备份/恢复/诊断、release 部署准备。已知 DeepSeek 草稿存在 task 类型校验边界问题，不影响规则降级路径。下一步需用户确认 DeepSeek 实际返回的 output.task 后再执行修复。",
+  "current_stage_goal": "v0.3.0 已发布（59 commits since v0.2.0）：DeepSeek AI 草稿接入、搜索能力套件、workflow 表单持久化、服务器备份/恢复/诊断、release 部署准备。已知 DeepSeek 草稿存在 task 类型校验边界问题，不影响规则降级路径。post-0.3 / Hermes 备案项 `AI-DRAFT-DEEPSEEK-SCHEMA-GUARD` 与 `HERMES-EXPERIMENT-BOOTSTRAP` 已登记到 planning / handoff，但当前不进入执行窗口。下一步需用户确认 DeepSeek 实际返回的 output.task 后再执行修复。",
   "primary_track": "v0.3.0 released with 59 commits; AI draft task-type mismatch bug identified but not fixed; DEP-01 remains blocked by server confirmation",
-  "deferred_track": "DeepSeek draft task-type fix、real-provider smoke、REALAI-05/06、repo connector、RAG/embedding、权限系统和硬件自动接入均后置到依赖满足或用户拍板后。",
+  "deferred_track": "DeepSeek draft task-type fix、real-provider smoke、AI-DRAFT-DEEPSEEK-SCHEMA-GUARD、HERMES-EXPERIMENT-BOOTSTRAP、REALAI-05/06、repo connector、RAG/embedding、权限系统和硬件自动接入均后置到依赖满足或用户拍板后。",
   "current_atomic_task": "V0.3.0-RELEASE",
   "roadmap_document": "docs/planning/product-roadmap.md",
   "roadmap_tracks": [
@@ -141,18 +141,6 @@
   },
   "frontier_tasks": [
     {
-      "id": "CORE-FORM-DRAFT-SERVER-PERSISTENCE",
-      "track": "Core Debug Workflow",
-      "goal": "把 workflow 表单草稿（InvestigationAppendForm/CloseoutForm/QuickIssue/IssueIntake）从未提交 localStorage only 扩展为 HTTP + SQLite 持久化草稿，保留 localStorage fallback，提交后清除。",
-      "status": "completed",
-      "priority": "P1",
-      "lane": "completed",
-      "night_safe": true,
-      "ai_unattended_run": true,
-      "requires_user_confirmation": [],
-      "execution_contract": "在现有 HTTP + SQLite 主链路上新增 form_drafts 表、HTTP API、repository adapter 接缝与 async persisted read/write/clear helper；四个表单改为后台优先 + localStorage mirror/fallback；完成定义包含保存草稿、刷新恢复、切换 workspace 隔离、提交后清除、HTTP 不可用 fallback 五种场景的 verify 自动化验证。未读取或处理真实 key，未接 AI/RAG/Electron/fs。"
-    },
-    {
       "id": "DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY",
       "legacy_id": "S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY",
       "track": "Deployment / Operability",
@@ -169,18 +157,6 @@
         "permission to start a temporary user-owned process",
         "permission to use port 4100"
       ]
-    },
-    {
-      "id": "CORE-CLOSEOUT-CONTINUATION-UX",
-      "track": "Core Debug Workflow",
-      "goal": "让结案流程可中断、可恢复、可重新打开；取消归档只重开问题卡，表单草稿同 origin 恢复，DeepSeek prompt server-side 构造。",
-      "status": "completed",
-      "priority": "P1",
-      "lane": "completed",
-      "night_safe": true,
-      "ai_unattended_run": true,
-      "requires_user_confirmation": [],
-      "execution_contract": "Completed in three functional commits: form draft local persistence, archived issue reopen preserving ArchiveDocument/ErrorEntry history, and server-side DeepSeek prompt construction from issue/records. Did not read or commit a real key; real provider smoke remains user-run."
     },
     {
       "id": "UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW",
@@ -1241,6 +1217,8 @@
     "当前不能由 AI 执行真实 DeepSeek smoke；用户需自行创建 /home/rainman/.config/probeflash/deepseek.env 并 source 到 server env 后启动服务。",
     "如果用户明确切回服务器部署并确认 SSH、release 获取、/home/hurricane/probeflash 写入、临时进程和 4100 端口边界，DEP-01 仍可作为 P0 白天主线；但下一轮默认不要改选 DEP-01。",
     "REALAI-05/06、真实 provider opt-in smoke、code context AI 分析仍需用户明确选择；不得机械顺推。",
-    "UI 小阶段禁止 dashboard/console/new app、App.tsx full rewrite、业务逻辑重写、embedding/RAG、Electron/fs/IPC、schema migration、组件库和 broad CSS reset；UI-GATE-06 人工 review 通过前不得进入下一轮 UI polish。"
+    "UI 小阶段禁止 dashboard/console/new app、App.tsx full rewrite、业务逻辑重写、embedding/RAG、Electron/fs/IPC、schema migration、组件库和 broad CSS reset；UI-GATE-06 人工 review 通过前不得进入下一轮 UI polish。",
+    "AI-DRAFT-DEEPSEEK-SCHEMA-GUARD 已按 release notes 备案；当前只登记，不执行 DeepSeek 修复。",
+    "HERMES-EXPERIMENT-BOOTSTRAP 已按 release notes 备案；当前不创建分支、不写 docs/hermes/BOOTSTRAP.md，不自动生成永久 skill。"
   ]
 }

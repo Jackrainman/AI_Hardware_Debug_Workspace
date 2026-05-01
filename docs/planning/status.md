@@ -5,7 +5,7 @@
 > 硬限制：总长度建议不超过 120 行；不追加流水账；不复制 backlog 长任务表；不复制 product-roadmap 长路线图；最近完成只保留最近 10 条以内；blocked 只列当前关键 blocked；night-safe 只列前 5 个候选；每次任务结束只覆盖当前状态，不追加历史过程。
 
 ## 1. 一句话状态
-ProbeFlash 已具备本地 HTTP + SQLite + release 可部署基座、核心问题闭环、基础知识检索、轻量相似问题提示、历史问题人工关联和复发提示；`REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL` 已完成代码侧接入，DeepSeek key 只走 server env 且 AI 不读取密钥文件，真实 provider smoke 仍需用户本地执行；服务器主线仍卡在真实服务器用户目录部署确认。
+ProbeFlash 已具备本地 HTTP + SQLite + release 可部署基座、核心问题闭环、基础知识检索、轻量相似问题提示、历史问题人工关联和复发提示；`REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL` 已完成代码侧接入，DeepSeek key 只走 server env 且 AI 不读取密钥文件，真实 provider smoke 仍需用户本地执行；服务器主线仍卡在真实服务器用户目录部署确认；Post-0.3 / Hermes 备案项 `AI-DRAFT-DEEPSEEK-SCHEMA-GUARD`、`HERMES-EXPERIMENT-BOOTSTRAP` 已登记到 planning / handoff，但当前仍不进入执行窗口。
 
 ## 2. 当前能力状态
 
