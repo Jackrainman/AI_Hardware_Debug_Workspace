@@ -96,8 +96,8 @@ export function InvestigationAppendForm({
   return (
     <form className="intake-form" onSubmit={handleSubmit} data-testid="investigation-append-form">
       <div className="form-caption">
-        <h3>追加排查记录</h3>
-        <p>记录观察、动作和结果。</p>
+        <h3>结案补充</h3>
+        <p>归档后补充排查记录。</p>
       </div>
       <p className="storage-line" data-testid="investigation-target">
         当前问题：{issueId}

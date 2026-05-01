@@ -45,6 +45,10 @@ import {
   type CloseoutSummary,
 } from "./components/closeout/CloseoutForm";
 import {
+  ArchivedCloseoutSummary,
+  type ArchivedCloseoutDisplayData,
+} from "./components/closeout/ArchivedCloseoutSummary";
+import {
   InvestigationAppendForm,
   InvestigationRecordListView,
 } from "./components/investigation/InvestigationComponents";
@@ -361,6 +365,7 @@ function IssuePane({
   const [selectedCard, setSelectedCard] = useState<IssueCard | null>(null);
   const [recordList, setRecordList] = useState<InvestigationRecordListResult | null>(null);
   const [lastCloseout, setLastCloseout] = useState<CloseoutSummary | null>(null);
+  const [archivedCloseoutData, setArchivedCloseoutData] = useState<ArchivedCloseoutDisplayData | null>(null);
   const [similarIssues, setSimilarIssues] = useState<SimilarIssuesResult | null>(null);
   const [isLoadingSimilarIssues, setIsLoadingSimilarIssues] = useState<boolean>(false);
   const [recentIssueReopenState, setRecentIssueReopenState] = useState<RecentIssueReopenState>({
@@ -485,6 +490,25 @@ function IssuePane({
     void reloadSelectedCard(id, { recentState: "recorded" });
     void loadRecordList(id);
     setLastCloseout(null);
+    setArchivedCloseoutData(null);
+  };
+
+  const loadArchivedCloseoutData = async (issueId: string) => {
+    const errorList = await repository.errorEntries.list();
+    const entry = errorList.valid.find((e) => e.sourceIssueId === issueId);
+    if (entry) {
+      setArchivedCloseoutData({
+        errorCode: entry.errorCode,
+        archivedAt: entry.createdAt,
+        category: entry.category,
+        rootCause: entry.rootCause,
+        resolution: entry.resolution,
+        prevention: entry.prevention,
+        tags: entry.tags ?? [],
+      });
+    } else {
+      setArchivedCloseoutData(null);
+    }
   };
 
   useEffect(() => {
@@ -498,10 +522,19 @@ function IssuePane({
     if (selectedCard === null) {
       setSimilarIssues(null);
       setIsLoadingSimilarIssues(false);
+      setArchivedCloseoutData(null);
       return;
     }
     void loadSimilarIssues(selectedCard);
   }, [selectedCard?.id, selectedCard?.updatedAt, repository]);
+
+  useEffect(() => {
+    if (selectedCard === null || selectedCard.status !== "archived") {
+      setArchivedCloseoutData(null);
+      return;
+    }
+    void loadArchivedCloseoutData(selectedCard.id);
+  }, [selectedCard?.id, selectedCard?.status]);
 
   const handleCreateNew = () => {
     setSelectedIssueId(null);
@@ -509,6 +542,7 @@ function IssuePane({
     setSelectedCard(null);
     setRecordList(null);
     setLastCloseout(null);
+    setArchivedCloseoutData(null);
     setSimilarIssues(null);
     setDismissedRecurrencePrompt(null);
   };
@@ -628,7 +662,9 @@ function IssuePane({
               onRefresh={refreshRecordList}
             />
           )}
-          closeoutForm={selectedIssueId !== null ? (
+          closeoutForm={selectedIssueId !== null && selectedCard?.status === "archived" && archivedCloseoutData !== null ? (
+            <ArchivedCloseoutSummary data={archivedCloseoutData} />
+          ) : selectedIssueId !== null && selectedCard?.status !== "archived" ? (
             <CloseoutForm
               repository={repository}
               issueId={selectedIssueId}
