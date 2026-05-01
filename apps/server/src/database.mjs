@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { basename, dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 export const DEFAULT_WORKSPACE = {
   id: "workspace-26-r1",
   name: "26年 R1",
@@ -25,6 +25,7 @@ const CHANGED_FILE_STATUSES = new Set(["added", "modified", "deleted", "renamed"
 const ARCHIVE_GENERATED_BY = new Set(["ai", "manual", "hybrid"]);
 const ARCHIVE_FILE_NAME_PATTERN = /^\d{4}-\d{2}-\d{2}_[a-z0-9-]+\.md$/;
 const ERROR_CODE_PATTERN = /^DBG-\d{8}-\d{3}$/;
+const FORM_DRAFT_SCOPE_PATTERN = /^[A-Za-z0-9._:-]+$/;
 const DATETIME_WITH_OFFSET_PATTERN =
   /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-](\d{2}):(\d{2}))$/;
 
@@ -327,6 +328,45 @@ function normalizeErrorEntryPayload(workspaceId, payload) {
   return {
     ...payload,
     tags,
+  };
+}
+
+function assertFormDraftScopePart(value, fieldName) {
+  assertString(value, fieldName);
+  if (value.length > 160) {
+    throw createValidationError(`${fieldName} must be at most 160 characters`);
+  }
+  if (!FORM_DRAFT_SCOPE_PATTERN.test(value)) {
+    throw createValidationError(`${fieldName} contains unsupported characters`);
+  }
+}
+
+function normalizeFormDraftPayload(workspaceId, formKind, itemId, payload) {
+  assertObject(payload, "formDraft payload must be an object");
+  assertString(payload.workspaceId, "formDraft.workspaceId");
+  if (payload.workspaceId !== workspaceId) {
+    throw createValidationError("formDraft.workspaceId must match workspaceId");
+  }
+  assertString(payload.formKind, "formDraft.formKind");
+  assertString(payload.itemId, "formDraft.itemId");
+  if (payload.formKind !== formKind || payload.itemId !== itemId) {
+    throw createValidationError("formDraft scope must match path");
+  }
+  assertFormDraftScopePart(payload.formKind, "formDraft.formKind");
+  assertFormDraftScopePart(payload.itemId, "formDraft.itemId");
+  assertString(payload.payloadJson, "formDraft.payloadJson", { allowEmpty: true });
+  try {
+    JSON.parse(payload.payloadJson);
+  } catch {
+    throw createValidationError("formDraft.payloadJson must be valid JSON");
+  }
+  assertDatetime(payload.updatedAt, "formDraft.updatedAt");
+  return {
+    workspaceId,
+    formKind,
+    itemId,
+    payloadJson: payload.payloadJson,
+    updatedAt: payload.updatedAt,
   };
 }
 
@@ -638,6 +678,19 @@ export function createProbeFlashDatabase(dbPath, options = {}) {
 
     CREATE UNIQUE INDEX IF NOT EXISTS idx_error_entries_workspace_error_code
     ON error_entries (workspace_id, error_code);
+
+    CREATE TABLE IF NOT EXISTS form_drafts (
+      workspace_id TEXT NOT NULL,
+      form_kind TEXT NOT NULL,
+      item_id TEXT NOT NULL,
+      payload_json TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (workspace_id, form_kind, item_id),
+      FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE RESTRICT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_form_drafts_workspace_updated
+    ON form_drafts (workspace_id, updated_at DESC);
   `);
 
   const now = new Date().toISOString();
@@ -1113,6 +1166,55 @@ export function createProbeFlashDatabase(dbPath, options = {}) {
         throw createStorageError(`error entry ${entryId} not found`, "NOT_FOUND");
       }
       return parsePayload(row);
+    },
+    getFormDraft(workspaceId, formKind, itemId) {
+      requireWorkspace(workspaceId);
+      assertFormDraftScopePart(formKind, "formDraft.formKind");
+      assertFormDraftScopePart(itemId, "formDraft.itemId");
+      const row = db
+        .prepare(
+          `SELECT workspace_id, form_kind, item_id, payload_json, updated_at
+           FROM form_drafts
+           WHERE workspace_id = ? AND form_kind = ? AND item_id = ?`,
+        )
+        .get(workspaceId, formKind, itemId);
+      if (!row) return null;
+      return {
+        workspaceId: row.workspace_id,
+        formKind: row.form_kind,
+        itemId: row.item_id,
+        payloadJson: row.payload_json,
+        updatedAt: row.updated_at,
+      };
+    },
+    saveFormDraft(workspaceId, formKind, itemId, payload) {
+      requireWorkspace(workspaceId);
+      assertFormDraftScopePart(formKind, "formDraft.formKind");
+      assertFormDraftScopePart(itemId, "formDraft.itemId");
+      const draft = normalizeFormDraftPayload(workspaceId, formKind, itemId, structuredClone(payload));
+      db.prepare(`
+        INSERT INTO form_drafts (workspace_id, form_kind, item_id, payload_json, updated_at)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(workspace_id, form_kind, item_id) DO UPDATE SET
+          payload_json = excluded.payload_json,
+          updated_at = excluded.updated_at
+      `).run(
+        workspaceId,
+        formKind,
+        itemId,
+        draft.payloadJson,
+        draft.updatedAt,
+      );
+      return draft;
+    },
+    deleteFormDraft(workspaceId, formKind, itemId) {
+      requireWorkspace(workspaceId);
+      assertFormDraftScopePart(formKind, "formDraft.formKind");
+      assertFormDraftScopePart(itemId, "formDraft.itemId");
+      db.prepare(
+        `DELETE FROM form_drafts WHERE workspace_id = ? AND form_kind = ? AND item_id = ?`,
+      ).run(workspaceId, formKind, itemId);
+      return { cleared: true };
     },
   };
 }

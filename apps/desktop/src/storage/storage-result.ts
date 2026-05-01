@@ -5,7 +5,8 @@ export type StorageEntity =
   | "issue_card"
   | "investigation_record"
   | "archive_document"
-  | "error_entry";
+  | "error_entry"
+  | "form_draft";
 
 export interface StorageErrorConnection {
   state: "online" | "degraded" | "unreachable";

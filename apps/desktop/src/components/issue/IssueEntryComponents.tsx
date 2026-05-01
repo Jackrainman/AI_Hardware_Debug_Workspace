@@ -19,10 +19,10 @@ import {
   type StorageFeedbackError,
 } from "../../storage/storage-feedback";
 import {
-  clearFormDraft,
+  clearPersistedFormDraft,
   getBrowserFormDraftStorage,
-  readFormDraft,
-  writeFormDraft,
+  readPersistedFormDraft,
+  writePersistedFormDraft,
 } from "../../storage/form-draft-store";
 import {
   labelIssueStatus,
@@ -37,7 +37,14 @@ type IntakeSubmitStatus =
   | { state: "saved"; id: string; at: string }
   | { state: "error"; reason: string };
 
-type IssueFormDraftStatus = "idle" | "restored" | "stored" | "unavailable" | "cleared";
+type IssueFormDraftStatus =
+  | "idle"
+  | "restored-server"
+  | "restored-local"
+  | "stored-server"
+  | "stored-local"
+  | "unavailable"
+  | "cleared";
 
 type QuickIssueFormDraft = {
   line: string;
@@ -75,31 +82,61 @@ export function QuickIssueCreateBar({
   const draftScope = { workspaceId, formKind: "quick-issue", itemId: "new" };
 
   useEffect(() => {
-    const restored = readFormDraft(getBrowserFormDraftStorage(), draftScope, parseQuickIssueDraft);
-    if (restored.state === "restored") {
-      setLine(restored.data.line);
-      setSeverity(restored.data.severity);
-      setTagsInput(restored.data.tagsInput);
-      setDraftStatus("restored");
-    } else {
-      setDraftStatus(restored.state === "unavailable" ? "unavailable" : "idle");
-    }
-    setIsDraftReady(true);
-  }, [workspaceId]);
+    let cancelled = false;
+    setIsDraftReady(false);
+    void readPersistedFormDraft(
+      repository.formDrafts,
+      getBrowserFormDraftStorage(),
+      draftScope,
+      parseQuickIssueDraft,
+    ).then((restored) => {
+      if (cancelled) return;
+      if (restored.state === "restored") {
+        setLine(restored.data.line);
+        setSeverity(restored.data.severity);
+        setTagsInput(restored.data.tagsInput);
+        setDraftStatus(restored.source === "server" ? "restored-server" : "restored-local");
+      } else {
+        setLine("");
+        setSeverity("medium");
+        setTagsInput("");
+        setDraftStatus(restored.state === "unavailable" ? "unavailable" : "idle");
+      }
+      setIsDraftReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [repository.formDrafts, workspaceId]);
 
   useEffect(() => {
     if (!isDraftReady) return;
+    let cancelled = false;
     const draftValue: QuickIssueFormDraft = { line, severity, tagsInput };
     if (!hasQuickIssueDraftContent(draftValue)) {
-      clearFormDraft(getBrowserFormDraftStorage(), draftScope);
-      return;
+      void clearPersistedFormDraft(repository.formDrafts, getBrowserFormDraftStorage(), draftScope);
+      return () => {
+        cancelled = true;
+      };
     }
-    const stored = writeFormDraft(getBrowserFormDraftStorage(), draftScope, draftValue);
-    setDraftStatus(stored ? "stored" : "unavailable");
-  }, [workspaceId, line, severity, tagsInput, isDraftReady]);
+    void writePersistedFormDraft(
+      repository.formDrafts,
+      getBrowserFormDraftStorage(),
+      draftScope,
+      draftValue,
+    ).then((stored) => {
+      if (cancelled) return;
+      setDraftStatus(
+        stored === "server" ? "stored-server" : stored === "local" ? "stored-local" : "unavailable",
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [repository.formDrafts, workspaceId, line, severity, tagsInput, isDraftReady]);
 
-  const handleClearFormDraft = () => {
-    clearFormDraft(getBrowserFormDraftStorage(), draftScope);
+  const handleClearFormDraft = async () => {
+    await clearPersistedFormDraft(repository.formDrafts, getBrowserFormDraftStorage(), draftScope);
     setLine("");
     setSeverity("medium");
     setTagsInput("");
@@ -128,7 +165,7 @@ export function QuickIssueCreateBar({
       return;
     }
     clearStorageFeedback();
-    clearFormDraft(getBrowserFormDraftStorage(), draftScope);
+    await clearPersistedFormDraft(repository.formDrafts, getBrowserFormDraftStorage(), draftScope);
     setStatus({ state: "saved", id: result.card.id, at: result.card.createdAt });
     setLine("");
     setSeverity("medium");
@@ -187,7 +224,7 @@ export function QuickIssueCreateBar({
           创建并打开
         </button>
         <button type="button" className="button-secondary" onClick={handleClearFormDraft}>
-          清除本地草稿
+          清除草稿
         </button>
       </div>
     </form>
@@ -223,32 +260,63 @@ export function IssueIntakeForm({
   };
 
   useEffect(() => {
-    const restored = readFormDraft(getBrowserFormDraftStorage(), draftScope, parseIssueIntakeDraft);
-    if (restored.state === "restored") {
-      setTitle(restored.data.title);
-      setDescription(restored.data.description);
-      setSeverity(restored.data.severity);
-      setTagsInput(restored.data.tagsInput);
-      setDraftStatus("restored");
-    } else {
-      setDraftStatus(restored.state === "unavailable" ? "unavailable" : "idle");
-    }
-    setIsDraftReady(true);
-  }, [workspaceId, isDefaultMode]);
+    let cancelled = false;
+    setIsDraftReady(false);
+    void readPersistedFormDraft(
+      repository.formDrafts,
+      getBrowserFormDraftStorage(),
+      draftScope,
+      parseIssueIntakeDraft,
+    ).then((restored) => {
+      if (cancelled) return;
+      if (restored.state === "restored") {
+        setTitle(restored.data.title);
+        setDescription(restored.data.description);
+        setSeverity(restored.data.severity);
+        setTagsInput(restored.data.tagsInput);
+        setDraftStatus(restored.source === "server" ? "restored-server" : "restored-local");
+      } else {
+        setTitle("");
+        setDescription("");
+        setSeverity("medium");
+        setTagsInput("");
+        setDraftStatus(restored.state === "unavailable" ? "unavailable" : "idle");
+      }
+      setIsDraftReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [repository.formDrafts, workspaceId, isDefaultMode]);
 
   useEffect(() => {
     if (!isDraftReady) return;
+    let cancelled = false;
     const draftValue: IssueIntakeFormDraft = { title, description, severity, tagsInput };
     if (!hasIssueIntakeDraftContent(draftValue)) {
-      clearFormDraft(getBrowserFormDraftStorage(), draftScope);
-      return;
+      void clearPersistedFormDraft(repository.formDrafts, getBrowserFormDraftStorage(), draftScope);
+      return () => {
+        cancelled = true;
+      };
     }
-    const stored = writeFormDraft(getBrowserFormDraftStorage(), draftScope, draftValue);
-    setDraftStatus(stored ? "stored" : "unavailable");
-  }, [workspaceId, isDefaultMode, title, description, severity, tagsInput, isDraftReady]);
+    void writePersistedFormDraft(
+      repository.formDrafts,
+      getBrowserFormDraftStorage(),
+      draftScope,
+      draftValue,
+    ).then((stored) => {
+      if (cancelled) return;
+      setDraftStatus(
+        stored === "server" ? "stored-server" : stored === "local" ? "stored-local" : "unavailable",
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [repository.formDrafts, workspaceId, isDefaultMode, title, description, severity, tagsInput, isDraftReady]);
 
-  const handleClearFormDraft = () => {
-    clearFormDraft(getBrowserFormDraftStorage(), draftScope);
+  const handleClearFormDraft = async () => {
+    await clearPersistedFormDraft(repository.formDrafts, getBrowserFormDraftStorage(), draftScope);
     setTitle("");
     setDescription("");
     setSeverity("medium");
@@ -280,7 +348,7 @@ export function IssueIntakeForm({
       return;
     }
     clearStorageFeedback();
-    clearFormDraft(getBrowserFormDraftStorage(), draftScope);
+    await clearPersistedFormDraft(repository.formDrafts, getBrowserFormDraftStorage(), draftScope);
     setStatus({ state: "saved", id: result.card.id, at: result.card.createdAt });
     setTitle("");
     setDescription("");
@@ -365,7 +433,7 @@ export function IssueIntakeForm({
           未提交内容：{renderIssueDraftStatus(draftStatus)}
         </span>
         <button type="button" className="button-secondary" onClick={handleClearFormDraft}>
-          清除本地草稿
+          清除草稿
         </button>
       </div>
     </form>
@@ -513,15 +581,19 @@ function hasIssueIntakeDraftContent(draft: IssueIntakeFormDraft): boolean {
 function renderIssueDraftStatus(status: IssueFormDraftStatus): string {
   switch (status) {
     case "idle":
-      return "同一域名 / 地址下会自动暂存。";
-    case "restored":
-      return "已恢复上次未提交内容。";
-    case "stored":
-      return "已暂存在本地浏览器。";
+      return "后台可用时写入 SQLite；不可用时回退浏览器本地暂存。";
+    case "restored-server":
+      return "已从后台 / SQLite 恢复上次未提交内容。";
+    case "restored-local":
+      return "后台不可用或无后台草稿，已从浏览器本地恢复。";
+    case "stored-server":
+      return "已暂存到后台 / SQLite。";
+    case "stored-local":
+      return "后台不可用，已暂存在浏览器本地。";
     case "unavailable":
-      return "浏览器本地暂存不可用；当前填写仍可提交。";
+      return "后台和浏览器本地暂存都不可用；当前填写仍可提交。";
     case "cleared":
-      return "已清除本地未提交内容。";
+      return "已清除未提交草稿。";
   }
 }
 

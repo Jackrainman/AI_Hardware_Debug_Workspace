@@ -17,10 +17,10 @@ import {
   type StorageFeedbackError,
 } from "../../storage/storage-feedback";
 import {
-  clearFormDraft,
+  clearPersistedFormDraft,
   getBrowserFormDraftStorage,
-  readFormDraft,
-  writeFormDraft,
+  readPersistedFormDraft,
+  writePersistedFormDraft,
 } from "../../storage/form-draft-store";
 
 const INVESTIGATION_TYPES: InvestigationType[] = [
@@ -46,7 +46,14 @@ type InvestigationSubmitStatus =
   | { state: "saved"; id: string; at: string }
   | { state: "error"; reason: string };
 
-type InvestigationFormDraftStatus = "idle" | "restored" | "stored" | "unavailable" | "cleared";
+type InvestigationFormDraftStatus =
+  | "idle"
+  | "restored-server"
+  | "restored-local"
+  | "stored-server"
+  | "stored-local"
+  | "unavailable"
+  | "cleared";
 
 type InvestigationFormDraft = {
   type: InvestigationType;
@@ -79,37 +86,59 @@ export function InvestigationAppendForm({
   const draftScope = { workspaceId, formKind: "investigation", itemId: issueId };
 
   useEffect(() => {
+    let cancelled = false;
     setIsExpanded(false);
     setIsDraftReady(false);
-    const restored = readFormDraft(
+    void readPersistedFormDraft(
+      repository.formDrafts,
       getBrowserFormDraftStorage(),
       draftScope,
       parseInvestigationFormDraft,
-    );
-    if (restored.state === "restored") {
-      setType(restored.data.type);
-      setNote(restored.data.note);
-      setDraftStatus("restored");
-    } else {
-      setType("observation");
-      setNote("");
-      setDraftStatus(restored.state === "unavailable" ? "unavailable" : "idle");
-    }
-    setIsDraftReady(true);
-  }, [workspaceId, issueId]);
+    ).then((restored) => {
+      if (cancelled) return;
+      if (restored.state === "restored") {
+        setType(restored.data.type);
+        setNote(restored.data.note);
+        setDraftStatus(restored.source === "server" ? "restored-server" : "restored-local");
+      } else {
+        setType("observation");
+        setNote("");
+        setDraftStatus(restored.state === "unavailable" ? "unavailable" : "idle");
+      }
+      setIsDraftReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [repository.formDrafts, workspaceId, issueId]);
 
   useEffect(() => {
     if (!isDraftReady) return;
+    let cancelled = false;
     if (note.trim().length === 0 && type === "observation") {
-      clearFormDraft(getBrowserFormDraftStorage(), draftScope);
-      return;
+      void clearPersistedFormDraft(repository.formDrafts, getBrowserFormDraftStorage(), draftScope);
+      return () => {
+        cancelled = true;
+      };
     }
-    const stored = writeFormDraft(getBrowserFormDraftStorage(), draftScope, { type, note });
-    setDraftStatus(stored ? "stored" : "unavailable");
-  }, [workspaceId, issueId, type, note, isDraftReady]);
+    void writePersistedFormDraft(
+      repository.formDrafts,
+      getBrowserFormDraftStorage(),
+      draftScope,
+      { type, note },
+    ).then((stored) => {
+      if (cancelled) return;
+      setDraftStatus(
+        stored === "server" ? "stored-server" : stored === "local" ? "stored-local" : "unavailable",
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [repository.formDrafts, workspaceId, issueId, type, note, isDraftReady]);
 
-  const handleClearFormDraft = () => {
-    clearFormDraft(getBrowserFormDraftStorage(), draftScope);
+  const handleClearFormDraft = async () => {
+    await clearPersistedFormDraft(repository.formDrafts, getBrowserFormDraftStorage(), draftScope);
     setNote("");
     setType("observation");
     setDraftStatus("cleared");
@@ -118,7 +147,7 @@ export function InvestigationAppendForm({
   const title = isArchived ? "结案补充" : "创建排查记录";
   const description = isArchived ? "归档后补充排查记录。" : "把当前观察、动作或判断追加到排查时间线。";
   const hasLocalDraft =
-    draftStatus === "restored" || hasInvestigationFormDraftContent({ type, note });
+    draftStatus === "restored-server" || draftStatus === "restored-local" || hasInvestigationFormDraftContent({ type, note });
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -150,7 +179,7 @@ export function InvestigationAppendForm({
       return;
     }
     clearStorageFeedback();
-    clearFormDraft(getBrowserFormDraftStorage(), draftScope);
+    await clearPersistedFormDraft(repository.formDrafts, getBrowserFormDraftStorage(), draftScope);
     setStatus({ state: "saved", id: result.record.id, at: result.record.createdAt });
     setNote("");
     setType("observation");
@@ -197,7 +226,7 @@ export function InvestigationAppendForm({
               未提交内容：{renderInvestigationDraftStatus(draftStatus)}
             </span>
             <button type="button" className="button-secondary" onClick={handleClearFormDraft}>
-              清除本地草稿
+              清除草稿
             </button>
           </div>
           <label className="intake-field">
@@ -320,15 +349,19 @@ function hasInvestigationFormDraftContent(draft: InvestigationFormDraft): boolea
 function renderInvestigationDraftStatus(status: InvestigationFormDraftStatus): string {
   switch (status) {
     case "idle":
-      return "同一域名 / 地址下会自动暂存。";
-    case "restored":
-      return "已恢复上次未提交内容。";
-    case "stored":
-      return "已暂存在本地浏览器。";
+      return "后台可用时写入 SQLite；不可用时回退浏览器本地暂存。";
+    case "restored-server":
+      return "已从后台 / SQLite 恢复上次未提交内容。";
+    case "restored-local":
+      return "后台不可用或无后台草稿，已从浏览器本地恢复。";
+    case "stored-server":
+      return "已暂存到后台 / SQLite。";
+    case "stored-local":
+      return "后台不可用，已暂存在浏览器本地。";
     case "unavailable":
-      return "浏览器本地暂存不可用；当前填写仍可提交。";
+      return "后台和浏览器本地暂存都不可用；当前填写仍可提交。";
     case "cleared":
-      return "已清除本地未提交内容。";
+      return "已清除未提交草稿。";
   }
 }
 

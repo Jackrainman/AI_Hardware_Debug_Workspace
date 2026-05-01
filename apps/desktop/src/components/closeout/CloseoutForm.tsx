@@ -23,10 +23,10 @@ import type { IssueCard } from "../../domain/schemas/issue-card";
 import type { InvestigationRecord } from "../../domain/schemas/investigation-record";
 import type { StorageRepository } from "../../storage/storage-repository";
 import {
-  clearFormDraft,
+  clearPersistedFormDraft,
   getBrowserFormDraftStorage,
-  readFormDraft,
-  writeFormDraft,
+  readPersistedFormDraft,
+  writePersistedFormDraft,
 } from "../../storage/form-draft-store";
 import {
   closeoutFailureToFeedback,
@@ -62,7 +62,14 @@ type DraftGenerateStatus =
   | { state: "deepseek"; model: string }
   | { state: "fallback"; reason: string };
 
-type FormDraftStatus = "idle" | "restored" | "stored" | "unavailable" | "cleared";
+type FormDraftStatus =
+  | "idle"
+  | "restored-server"
+  | "restored-local"
+  | "stored-server"
+  | "stored-local"
+  | "unavailable"
+  | "cleared";
 
 type CloseoutFormDraft = {
   category: string;
@@ -162,38 +169,60 @@ export function CloseoutForm({
   }, [issueId]);
 
   useEffect(() => {
+    let cancelled = false;
     setIsFormDraftReady(false);
-    const restored = readFormDraft(
+    void readPersistedFormDraft(
+      repository.formDrafts,
       getBrowserFormDraftStorage(),
       formDraftScope,
       parseCloseoutFormDraft,
-    );
-    if (restored.state === "restored") {
-      setCategory(restored.data.category);
-      setRootCause(restored.data.rootCause);
-      setResolution(restored.data.resolution);
-      setPrevention(restored.data.prevention);
-      setFormDraftStatus("restored");
-    } else {
-      setCategory("");
-      setRootCause("");
-      setResolution("");
-      setPrevention("");
-      setFormDraftStatus(restored.state === "unavailable" ? "unavailable" : "idle");
-    }
-    setIsFormDraftReady(true);
-  }, [workspaceId, issueId]);
+    ).then((restored) => {
+      if (cancelled) return;
+      if (restored.state === "restored") {
+        setCategory(restored.data.category);
+        setRootCause(restored.data.rootCause);
+        setResolution(restored.data.resolution);
+        setPrevention(restored.data.prevention);
+        setFormDraftStatus(restored.source === "server" ? "restored-server" : "restored-local");
+      } else {
+        setCategory("");
+        setRootCause("");
+        setResolution("");
+        setPrevention("");
+        setFormDraftStatus(restored.state === "unavailable" ? "unavailable" : "idle");
+      }
+      setIsFormDraftReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [repository.formDrafts, workspaceId, issueId]);
 
   useEffect(() => {
     if (!isFormDraftReady) return;
+    let cancelled = false;
     const draftValue: CloseoutFormDraft = { category, rootCause, resolution, prevention };
     if (!hasCloseoutFormDraftContent(draftValue)) {
-      clearFormDraft(getBrowserFormDraftStorage(), formDraftScope);
-      return;
+      void clearPersistedFormDraft(repository.formDrafts, getBrowserFormDraftStorage(), formDraftScope);
+      return () => {
+        cancelled = true;
+      };
     }
-    const stored = writeFormDraft(getBrowserFormDraftStorage(), formDraftScope, draftValue);
-    setFormDraftStatus(stored ? "stored" : "unavailable");
-  }, [workspaceId, issueId, category, rootCause, resolution, prevention, isFormDraftReady]);
+    void writePersistedFormDraft(
+      repository.formDrafts,
+      getBrowserFormDraftStorage(),
+      formDraftScope,
+      draftValue,
+    ).then((stored) => {
+      if (cancelled) return;
+      setFormDraftStatus(
+        stored === "server" ? "stored-server" : stored === "local" ? "stored-local" : "unavailable",
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [repository.formDrafts, workspaceId, issueId, category, rootCause, resolution, prevention, isFormDraftReady]);
 
   const handleGenerateDraft = async () => {
     if (issueCard === null) return;
@@ -256,8 +285,8 @@ export function CloseoutForm({
     setDraftHistoryStatus("cleared");
   };
 
-  const handleClearFormDraft = () => {
-    clearFormDraft(getBrowserFormDraftStorage(), formDraftScope);
+  const handleClearFormDraft = async () => {
+    await clearPersistedFormDraft(repository.formDrafts, getBrowserFormDraftStorage(), formDraftScope);
     setCategory("");
     setRootCause("");
     setResolution("");
@@ -288,7 +317,7 @@ export function CloseoutForm({
       return;
     }
     clearStorageFeedback();
-    clearFormDraft(getBrowserFormDraftStorage(), formDraftScope);
+    await clearPersistedFormDraft(repository.formDrafts, getBrowserFormDraftStorage(), formDraftScope);
     setStatus({
       state: "saved",
       fileName: result.archiveDocument.fileName,
@@ -338,7 +367,7 @@ export function CloseoutForm({
           未提交内容：{renderFormDraftStatus(formDraftStatus)}
         </span>
         <button type="button" className="button-secondary" onClick={handleClearFormDraft}>
-          清除本地草稿
+          清除草稿
         </button>
       </div>
       <section className="closeout-quality-panel" data-testid="closeout-quality-panel" aria-label="结案填写检查">
@@ -673,15 +702,19 @@ function hasCloseoutFormDraftContent(draft: CloseoutFormDraft): boolean {
 function renderFormDraftStatus(status: FormDraftStatus): string {
   switch (status) {
     case "idle":
-      return "同一域名 / 地址下会自动暂存。";
-    case "restored":
-      return "已恢复上次未提交内容。";
-    case "stored":
-      return "已暂存在本地浏览器。";
+      return "后台可用时写入 SQLite；不可用时回退浏览器本地暂存。";
+    case "restored-server":
+      return "已从后台 / SQLite 恢复上次未提交内容。";
+    case "restored-local":
+      return "后台不可用或无后台草稿，已从浏览器本地恢复。";
+    case "stored-server":
+      return "已暂存到后台 / SQLite。";
+    case "stored-local":
+      return "后台不可用，已暂存在浏览器本地。";
     case "unavailable":
-      return "浏览器本地暂存不可用；当前填写仍可提交。";
+      return "后台和浏览器本地暂存都不可用；当前填写仍可提交。";
     case "cleared":
-      return "已清除本地未提交内容。";
+      return "已清除未提交草稿。";
   }
 }
 

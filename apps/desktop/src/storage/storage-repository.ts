@@ -20,6 +20,13 @@ import {
   type HttpStorageHealthStatus,
 } from "./http-storage-repository.ts";
 import {
+  formDraftStorageKey,
+  getBrowserFormDraftStorage,
+  type FormDraftLoadResult,
+  type FormDraftRecord,
+  type FormDraftScope,
+} from "./form-draft-store.ts";
+import {
   listInvestigationRecordsByIssueId,
   saveInvestigationRecord,
   type InvestigationRecordListResult,
@@ -37,11 +44,14 @@ import type {
   StorageWriteError,
   StorageWriteResult,
 } from "./storage-result.ts";
-import { createReadFailed, createRemoteValidationFailed, createUnexpectedWriteError } from "./storage-result.ts";
+import { createReadFailed, createRemoteValidationFailed, createUnexpectedWriteError, storageWriteOk } from "./storage-result.ts";
 
 export type {
   ArchiveDocumentListResult,
   ErrorEntryListResult,
+  FormDraftLoadResult,
+  FormDraftRecord,
+  FormDraftScope,
   InvestigationRecordListResult,
   IssueCardListResult,
   LoadIssueCardResult,
@@ -445,6 +455,11 @@ export interface StorageRepository {
     list(): Promise<ErrorEntryListResult>;
     save(entry: ErrorEntry): Promise<StorageWriteResult>;
   };
+  formDrafts: {
+    load(scope: FormDraftScope): Promise<FormDraftLoadResult>;
+    save(record: FormDraftRecord): Promise<StorageWriteResult>;
+    clear(scope: FormDraftScope): Promise<StorageWriteResult>;
+  };
 }
 
 function createLocalStorageRepository(workspaceId: string = DEFAULT_WORKSPACE.id): StorageRepository {
@@ -521,6 +536,53 @@ function createLocalStorageRepository(workspaceId: string = DEFAULT_WORKSPACE.id
       },
       async save(entry: ErrorEntry): Promise<StorageWriteResult> {
         return saveErrorEntry(entry);
+      },
+    },
+    formDrafts: {
+      async load(scope: FormDraftScope): Promise<FormDraftLoadResult> {
+        const storage = getBrowserFormDraftStorage();
+        if (storage === null) return { ok: true, draft: null };
+        try {
+          const payloadJson = storage.getItem(formDraftStorageKey(scope));
+          return {
+            ok: true,
+            draft: payloadJson === null
+              ? null
+              : { ...scope, payloadJson, updatedAt: new Date().toISOString() },
+          };
+        } catch (error) {
+          return { ok: false, error: createReadFailed("form_draft", formDraftStorageKey(scope), error) };
+        }
+      },
+      async save(record: FormDraftRecord): Promise<StorageWriteResult> {
+        const storage = getBrowserFormDraftStorage();
+        if (storage === null) {
+          return {
+            ok: false,
+            error: createUnexpectedWriteError("form_draft", formDraftStorageKey(record), "localStorage is unavailable"),
+          };
+        }
+        try {
+          storage.setItem(formDraftStorageKey(record), record.payloadJson);
+          return storageWriteOk();
+        } catch (error) {
+          return { ok: false, error: createUnexpectedWriteError("form_draft", formDraftStorageKey(record), error) };
+        }
+      },
+      async clear(scope: FormDraftScope): Promise<StorageWriteResult> {
+        const storage = getBrowserFormDraftStorage();
+        if (storage === null) {
+          return {
+            ok: false,
+            error: createUnexpectedWriteError("form_draft", formDraftStorageKey(scope), "localStorage is unavailable"),
+          };
+        }
+        try {
+          storage.removeItem(formDraftStorageKey(scope));
+          return storageWriteOk();
+        } catch (error) {
+          return { ok: false, error: createUnexpectedWriteError("form_draft", formDraftStorageKey(scope), error) };
+        }
       },
     },
   };

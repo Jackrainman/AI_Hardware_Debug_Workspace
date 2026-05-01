@@ -13,6 +13,7 @@ const REQUIRED_TABLES = [
   "records",
   "archives",
   "error_entries",
+  "form_drafts",
 ];
 
 function parseArgs(argv) {
@@ -256,6 +257,16 @@ function checkRelationshipQueries(db, checks) {
       `,
     },
     {
+      id: "form_drafts.workspace_fk",
+      message: "form_drafts must reference an existing workspace",
+      sql: `
+        SELECT form_drafts.workspace_id, form_drafts.form_kind, form_drafts.item_id
+        FROM form_drafts
+        LEFT JOIN workspaces ON workspaces.id = form_drafts.workspace_id
+        WHERE workspaces.id IS NULL
+      `,
+    },
+    {
       id: "issues.archived_has_archive",
       message: "archived issues must have an archive document row",
       sql: `
@@ -364,6 +375,20 @@ function checkPayloads(db, checks) {
     ) {
       pushCheck(checks, "error_entries.payload_row_match", "fail", "error", "error-entry payload must match indexed row fields", {
         rowId: row.id,
+      });
+    }
+  }
+
+  const formDraftRows = runCheckedQuery(checks, "form_drafts.payload_scan", () =>
+    db.prepare("SELECT workspace_id, form_kind, item_id, payload_json FROM form_drafts ORDER BY form_kind ASC, item_id ASC").all(),
+  );
+  for (const row of formDraftRows ?? []) {
+    const key = `${row.form_kind}/${row.item_id}`;
+    const payload = parsePayload(checks, "form_drafts", key, row.payload_json);
+    if (!payload) continue;
+    if (payload.workspaceId !== undefined && payload.workspaceId !== row.workspace_id) {
+      pushCheck(checks, "form_drafts.payload_workspace_match", "fail", "error", "form_draft payload workspaceId must match indexed workspace_id", {
+        rowKey: key,
       });
     }
   }

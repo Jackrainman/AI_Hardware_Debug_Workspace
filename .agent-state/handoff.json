@@ -16,14 +16,14 @@
     "archive_state": "object - v0.2.0 前历史文档归档状态与读取条件",
     "notes": "string[] - 下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-05-01T20:04:02+08:00",
+  "timestamp": "2026-05-01T20:35:00+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "R1",
   "current_stage_name": "长期产品路线图执行启动",
-  "current_stage_goal": "从 v0.2.x 本地 HTTP + SQLite + release 可部署基座出发，按 8 条产品主线推进；近期 P0 仍是部署可用、数据安全、可观测；B 组、第一轮 UI 修补、REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL 与 CORE-CLOSEOUT-CONTINUATION-UX 已完成；问题卡详情页追记入口单卡片默认折叠 hotfix 与 sibling key namespace fix 已完成；真实 DeepSeek smoke 仍需用户本地注入 key 后执行。",
+  "current_stage_goal": "从 v0.2.x 本地 HTTP + SQLite + release 可部署基座出发，按 8 条产品主线推进；近期 P0 仍是部署可用、数据安全、可观测；B 组、第一轮 UI 修补、REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL、CORE-CLOSEOUT-CONTINUATION-UX 与 CORE-FORM-DRAFT-SERVER-PERSISTENCE 已完成；问题卡详情页追记入口单卡片默认折叠 hotfix 与 sibling key namespace fix 已完成；真实 DeepSeek smoke 仍需用户本地注入 key 后执行。",
   "primary_track": "Core closeout continuation UX completed including one-card collapsed investigation append hotfix plus sibling key namespace fix; Real AI minimal DeepSeek closeout draft integration completed code-side; Deployment / Operability + Data Safety P0 remains blocked by server confirmation",
   "deferred_track": "DeepSeek real-provider smoke、REALAI-05/06、repo connector、RAG/embedding、权限系统和硬件自动接入均后置到依赖满足或用户拍板后。",
-  "current_atomic_task": "CORE-CLOSEOUT-CONTINUATION-UX",
+  "current_atomic_task": "CORE-FORM-DRAFT-SERVER-PERSISTENCE",
   "roadmap_document": "docs/planning/product-roadmap.md",
   "roadmap_tracks": [
     {
@@ -108,7 +108,8 @@
     "realai_deepseek_closeout_draft_minimal_completed": true,
     "core_closeout_continuation_ux_completed": true,
     "core_closeout_continuation_ux_investigation_entry_collapsed": true,
-    "core_closeout_continuation_ux_investigation_entry_key_namespace_fixed": true
+    "core_closeout_continuation_ux_investigation_entry_key_namespace_fixed": true,
+    "core_form_draft_server_persistence_completed": true
   },
   "assessment_state": {
     "refactor_assessment_document": "docs/planning/refactor-assessment.md",
@@ -137,6 +138,18 @@
     }
   },
   "frontier_tasks": [
+    {
+      "id": "CORE-FORM-DRAFT-SERVER-PERSISTENCE",
+      "track": "Core Debug Workflow",
+      "goal": "把 workflow 表单草稿（InvestigationAppendForm/CloseoutForm/QuickIssue/IssueIntake）从未提交 localStorage only 扩展为 HTTP + SQLite 持久化草稿，保留 localStorage fallback，提交后清除。",
+      "status": "completed",
+      "priority": "P1",
+      "lane": "completed",
+      "night_safe": true,
+      "ai_unattended_run": true,
+      "requires_user_confirmation": [],
+      "execution_contract": "在现有 HTTP + SQLite 主链路上新增 form_drafts 表、HTTP API、repository adapter 接缝与 async persisted read/write/clear helper；四个表单改为后台优先 + localStorage mirror/fallback；完成定义包含保存草稿、刷新恢复、切换 workspace 隔离、提交后清除、HTTP 不可用 fallback 五种场景的 verify 自动化验证。未读取或处理真实 key，未接 AI/RAG/Electron/fs。"
+    },
     {
       "id": "DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY",
       "legacy_id": "S3-SERVER-RELEASE-USER-DIR-DEPLOY-VERIFY",

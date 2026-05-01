@@ -5,12 +5,12 @@
 ## 当前阶段
 - 阶段：**R1：长期产品路线图执行启动**。
 - 当前模式：`server_storage_migration`（保留服务器部署安全边界）。
-- 阶段目标：以 v0.2.x 已完成的本地 HTTP + SQLite + release 可部署基座为起点，按 8 条产品主线推进；近期 P0 仍关注 **部署可用、数据安全、可观测**。DeepSeek 最小真实 AI 草稿接入已完成代码侧闭环；`CORE-CLOSEOUT-CONTINUATION-UX` 已完成，结案连续性增强包括取消归档只重开问题卡、未提交表单本地恢复、DeepSeek prompt server-side 构造；问题卡详情页追记表单默认展开回归已修复为单卡片折叠入口；后续读回排查发现兄弟组件 key 冲突，已补唯一 key 命名空间并用浏览器 DOM 验证切换问题卡时追记表单数量保持 1。
+- 阶段目标：以 v0.2.x 已完成的本地 HTTP + SQLite + release 可部署基座为起点，按 8 条产品主线推进；近期 P0 仍关注 **部署可用、数据安全、可观测**。DeepSeek 最小真实 AI 草稿接入已完成代码侧闭环；`CORE-CLOSEOUT-CONTINUATION-UX` 已完成；`CORE-FORM-DRAFT-SERVER-PERSISTENCE` 已完成，四类 workflow 表单草稿已从 localStorage only 扩展为 HTTP + SQLite 持久化草稿，保留 localStorage fallback，四类表单均走后台优先 + browser mirror/fallback 路径，提交后清除双重草稿。问题卡详情页追记表单默认展开回归已修复为单卡片折叠入口；后续读回排查发现兄弟组件 key 冲突，已补唯一 key 命名空间并用浏览器 DOM 验证切换问题卡时追记表单数量保持 1。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
-- 最近已完成：`CORE-CLOSEOUT-CONTINUATION-UX` 与追记入口 UI hotfix，已完成 workflow 表单 localStorage 草稿保存 / 恢复 / 清除、已归档问题卡取消归档后回到 investigating 且保留 ArchiveDocument / ErrorEntry 历史、DeepSeek closeout prompt 改为 server-side 基于 issue/records 构造、问题卡详情页只保留一个“排查追记”卡片并默认收起字段、保留草稿提示；追记表单与结案表单兄弟 key 已拆分命名空间，浏览器 DOM 验证连续切换问题卡后追记表单数量保持 1；未读取或提交真实 key，未做真实 provider smoke，未自动写库。
+- 最近已完成：`CORE-CLOSEOUT-CONTINUATION-UX`、追记入口 UI hotfix、`CORE-FORM-DRAFT-SERVER-PERSISTENCE`，已完成 workflow 表单 localStorage 草稿保存 / 恢复 / 清除、已归档问题卡取消归档后回到 investigating 且保留 ArchiveDocument / ErrorEntry 历史、DeepSeek closeout prompt 改为 server-side 基于 issue/records 构造、问题卡详情页只保留一个“排查追记”卡片并默认收起字段、保留草稿提示；追记表单与结案表单兄弟 key 已拆分命名空间，浏览器 DOM 验证连续切换问题卡后追记表单数量保持 1；未读取或提交真实 key，未做真实 provider smoke，未自动写库。
 
 ## 当前真实状态
-- 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、workspace UX improvements、recent issue reopen、closeout failure input preservation hints、AI-ready draft history、issue / record / closeout / archive / error-entry 主路径、basic full-text search、search filters、search tags、archive review page、similar issues lite、search result linking、recurrence prompt、search / KB verify fixture cleanup、UI redesign stage brief、UI information architecture review、App.tsx minimal split、UI pre-relayout component split、UI relayout first pass、quick issue create、record timeline polish、closeout UX polish、closeout continuation UX、investigation append collapsed entry hotfix 与 sibling key namespace fix、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、DeepSeek closeout draft minimal integration、server schema contract、HTTP feedback contract、restore dry-run、SQLite integrity check、JSON export hardening、partial closeout recovery verify、repair task generation、diagnostics bundle、night-run 安全规则、v0.2 历史文档归档、lightweight project status ledger、refactor necessity audit。
+- 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、workspace UX improvements、recent issue reopen、closeout failure input preservation hints、AI-ready draft history、issue / record / closeout / archive / error-entry 主路径、basic full-text search、search filters、search tags、archive review page、similar issues lite、search result linking、recurrence prompt、search / KB verify fixture cleanup、UI redesign stage brief、UI information architecture review、App.tsx minimal split、UI pre-relayout component split、UI relayout first pass、quick issue create、record timeline polish、closeout UX polish、closeout continuation UX、investigation append collapsed entry hotfix 与 sibling key namespace fix、form draft server persistence（四类表单草稿 HTTP + SQLite 持久化 + localStorage fallback）、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、DeepSeek closeout draft minimal integration、server schema contract、HTTP feedback contract、restore dry-run、SQLite integrity check、JSON export hardening、partial closeout recovery verify、repair task generation、diagnostics bundle、night-run 安全规则、v0.2 历史文档归档、lightweight project status ledger、refactor necessity audit。
 - 技术债审计：`docs/planning/refactor-assessment.md` 仍作为 TECH-07 背景输入；`SEARCH-07` 与 `UI-GATE-01` 已完成，当前没有必须先做的 broad refactor gate；大文件和重复逻辑存在但不阻塞 DEP-01 / TECH-07。
 - UI 改造状态：`docs/planning/ui-redesign-brief.md` 已完成信息架构审查与 `UI-GATE-01` 人工确认记录，`TECH-07` 最小支撑拆分、`UI-MOD-01` 行为保持模块化拆分、`UI-RELAYOUT-01` 第一轮工作台重排、`UI-POLISH-02-COPY-TRIM` 文案瘦身和 `UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT` 均已完成。当前必须停止在 `UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW`，等待用户人工检查桌面端和移动端观感，不得自动进入下一轮 UI polish。
 - 仍 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 DeepSeek provider opt-in smoke（需要用户本地创建 env 并启动 server；AI 不读取 key）。
@@ -60,13 +60,13 @@
   - 明确未做：未改 schema、repository contract、HTTP API、server、真实 AI、RAG / embedding、Electron / fs / IPC、业务数据流或存储语义。
 
 ## 当前唯一执行中的原子任务
-- **CORE-CLOSEOUT-CONTINUATION-UX**
-  - 目标：让结案流程可中断、可恢复、可重新打开；已归档卡可“取消归档，继续排查”，未提交表单刷新/重开同域名后可恢复，DeepSeek prompt 改由 server 根据 issue/records 构造。
-  - 当前状态：`completed`；repo-local；用户已确认取消归档语义为“只重开问题卡，保留归档和错误表历史”；本轮 UI hotfix 已把追记表单改为单卡片默认折叠入口，并补充修复 `InvestigationAppendForm` / `CloseoutForm` 同级重复 key 导致 React 切换问题卡时 stale DOM 累积的问题。
-  - 直接输入边界：只改 closeout / investigation / issue create 表单草稿、本地网页端 localStorage、server AI prompt 构造与 mock 验证；不读取真实密钥文件。
-  - 明确不做：不删除 ArchiveDocument / ErrorEntry；不自动写库；不做真实 provider smoke；不接 RAG/embedding；不做服务器部署。
-  - 验证方式：新增/更新 verify 覆盖本地草稿恢复、取消归档保留历史、server-side prompt route、追记入口单入口结构检查与默认折叠；`typecheck`、`build`、`verify:all`、server 相关 verify、`git diff --check`、handoff JSON parse。
-  - 完成定义：取消归档后问题卡回到 investigating 且历史归档仍可读；closeout/结案补充/建卡表单未提交内容同 origin 可恢复且成功提交后清除；前端不再向 AI route 传完整 messages；选中/切换问题卡不会默认展开完整追记表单，且浏览器 DOM 中 `[data-testid="investigation-append-form"]` 数量在连续切换后保持 1。
+- **CORE-FORM-DRAFT-SERVER-PERSISTENCE**
+  - 目标：把 workflow 表单草稿（InvestigationAppendForm/CloseoutForm/QuickIssue/IssueIntake）从未提交 localStorage only 扩展为 HTTP + SQLite 持久化草稿，保留 localStorage mirror/fallback；workspace/formKind/itemId 维度隔离；表单提交成功时清除后端与本地双重草稿；后端不可用时自动回退 localStorage；不进入 IssueCard/InvestigationRecord/ErrorEntry/ArchiveDocument schema。
+  - 当前状态：`completed`；repo-local；已验证保存草稿、刷新恢复、切换 workspace 隔离、提交后清除、HTTP 不可用 fallback 五种场景。
+  - 直接输入边界：只改 form-draft-store.ts、storage-repository.ts、http-storage-repository.ts、storage-result.ts、database.mjs、server.mjs、integrity-check.mjs、四类表单组件、verify、package.json、planning sync；不碰追记默认折叠 UI、不读真实 key、不接 AI/RAG/Electron/fs。
+  - 明确不做：不改变 IssueCard/InvestigationRecord/ErrorEntry/ArchiveDocument schema；不做 UI bug 修复；不触发表单默认折叠改动。
+  - 验证方式：新增 `verify:core-workflow-form-drafts` 覆盖五种场景；全量 `verify:all`、`typecheck`、`build`、`git diff --check` 通过。
+  - 完成定义：server-side `form_drafts` 表 + API + repository adapter 接缝可工作；四类表单后台优先保存与恢复；localStorage mirror/fallback 保留；表单提交后清除；workspace 隔离；新增 verify 5 种场景通过且 verify:all 全量通过。
 
 ## 当前前沿任务窗口（最多 3 个候选）
 - **DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY**
@@ -75,13 +75,16 @@
 - **UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW**
   - 状态：`manual-review`；P1；day-only。
   - 选择理由：快速建卡 landing 调整后仍只能由用户人工检查桌面端和移动端观感，不得自动进入下一轮 UI polish。
+- **CORE-FORM-DRAFT-SERVER-PERSISTENCE**
+  - 状态：`completed`；P1；repo-local。
+  - 选择理由：四类表单草稿已扩展为 HTTP + SQLite 持久化 + localStorage mirror/fallback；不得自动顺推其他功能。
 - **CORE-CLOSEOUT-CONTINUATION-UX**
   - 状态：`completed`；P1；repo-local。
-  - 选择理由：已完成取消归档保留历史、网页端表单草稿恢复和 DeepSeek prompt server-side hardening；不得自动顺推真实 provider smoke。
+  - 选择理由：已完成取消归档保留历史、表单草稿持久化与 DeepSeek prompt server-side hardening；不得自动顺推真实 provider smoke。
 
 ## 下一步最小可执行动作
-- 本轮默认：`CORE-CLOSEOUT-CONTINUATION-UX` 追加 key namespace 修复已完成；不得自动做真实 provider smoke 或继续下一项 AI 能力。
-- 用户侧最小动作：用同一个域名/地址刷新验证表单草稿恢复；如需测 DeepSeek，用户自行 source env 后启动 server。
+- 本轮默认：`CORE-FORM-DRAFT-SERVER-PERSISTENCE` 已完成；不得自动做真实 provider smoke 或继续下一项功能。
+- 用户侧最小动作：用同一个域名/地址刷新验证表单草稿恢复（包括后台 SQLite 优先路径）；如需测 DeepSeek，用户自行 source env 后启动 server。
 - 下一轮选择：回到 planning 重新判断是否继续真实 provider smoke、服务器部署验证或 UI-GATE-06 人工 review；不得机械顺推。
 
 ## 下一任务选择流程

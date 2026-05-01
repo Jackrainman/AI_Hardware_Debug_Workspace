@@ -57,6 +57,9 @@ import {
 } from "./storage-result.ts";
 import type {
   CreateWorkspaceResult,
+  FormDraftLoadResult,
+  FormDraftRecord,
+  FormDraftScope,
   NormalizedStorageSearchFilters,
   StorageRepository,
   StorageSearchFilters,
@@ -124,6 +127,18 @@ const SearchResponseSchema = z.object({
   items: z.array(SearchResultItemSchema),
 });
 
+const FormDraftRecordSchema = z.object({
+  workspaceId: z.string().min(1),
+  formKind: z.string().min(1),
+  itemId: z.string().min(1),
+  payloadJson: z.string(),
+  updatedAt: z.string().datetime({ offset: true }),
+});
+
+const FormDraftLoadResponseSchema = z.object({
+  draft: FormDraftRecordSchema.nullable(),
+});
+
 const ReleaseMetadataSchema = z.object({
   version: z.string().min(1),
   commit: z.string().min(1),
@@ -181,6 +196,10 @@ export interface HttpStorageHealthStatus {
 
 function workspaceBasePath(workspaceId: string): string {
   return `/workspaces/${encodeURIComponent(workspaceId)}`;
+}
+
+function formDraftPath(basePath: string, scope: FormDraftScope): string {
+  return `${basePath}/form-drafts/${encodeURIComponent(scope.formKind)}/${encodeURIComponent(scope.itemId)}`;
 }
 
 function normalizeSearchFilters(filters: StorageSearchFilters = {}): NormalizedStorageSearchFilters {
@@ -822,6 +841,54 @@ export function createHttpStorageRepository(
             }),
           "error_entry",
           parsed.data.id,
+        );
+      },
+    },
+    formDrafts: {
+      async load(scope: FormDraftScope): Promise<FormDraftLoadResult> {
+        const target = formDraftPath(basePath, scope);
+        try {
+          const data = await client.request<unknown>(target);
+          const parsed = FormDraftLoadResponseSchema.safeParse(data);
+          if (!parsed.success) {
+            return {
+              ok: false,
+              error: dataValidationReadError(
+                "form_draft",
+                target,
+                "form draft response must contain data.draft or null",
+              ),
+            };
+          }
+          return { ok: true, draft: parsed.data.draft as FormDraftRecord | null };
+        } catch (error) {
+          if (isRequestError(error)) {
+            return { ok: false, error: mapRequestErrorToReadError("form_draft", target, error) };
+          }
+          return { ok: false, error: createReadFailed("form_draft", target, error) };
+        }
+      },
+      async save(record: FormDraftRecord): Promise<StorageWriteResult> {
+        const target = formDraftPath(basePath, record);
+        return performWrite(
+          () =>
+            client.request(target, {
+              method: "PUT",
+              body: JSON.stringify(record),
+            }),
+          "form_draft",
+          target,
+        );
+      },
+      async clear(scope: FormDraftScope): Promise<StorageWriteResult> {
+        const target = formDraftPath(basePath, scope);
+        return performWrite(
+          () =>
+            client.request(target, {
+              method: "DELETE",
+            }),
+          "form_draft",
+          target,
         );
       },
     },

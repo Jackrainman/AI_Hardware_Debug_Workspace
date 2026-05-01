@@ -106,6 +106,7 @@ function labelStorageEntity(entity: StorageEntity): string {
     investigation_record: "排查记录",
     archive_document: "归档摘要",
     error_entry: "错误表条目",
+    form_draft: "表单草稿",
   };
   return labels[entity];
 }

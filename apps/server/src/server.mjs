@@ -280,6 +280,9 @@ function createRequestHandler({ store, storeInitError, staticDir, releaseMetadat
     const errorEntryDetailMatch = url.pathname.match(
       /^\/api\/workspaces\/([^/]+)\/error-entries\/([^/]+)$/,
     );
+    const formDraftDetailMatch = url.pathname.match(
+      /^\/api\/workspaces\/([^/]+)\/form-drafts\/([^/]+)\/([^/]+)$/,
+    );
     const workspaceDetailMatch = url.pathname.match(/^\/api\/workspaces\/([^/]+)$/);
 
     try {
@@ -441,6 +444,28 @@ function createRequestHandler({ store, storeInitError, staticDir, releaseMetadat
         const workspaceId = decodeURIComponent(errorEntryDetailMatch[1]);
         const entryId = decodeURIComponent(errorEntryDetailMatch[2]);
         return ok(res, store.getErrorEntry(workspaceId, entryId));
+      }
+
+      if (formDraftDetailMatch && method === "GET") {
+        const workspaceId = decodeURIComponent(formDraftDetailMatch[1]);
+        const formKind = decodeURIComponent(formDraftDetailMatch[2]);
+        const itemId = decodeURIComponent(formDraftDetailMatch[3]);
+        return ok(res, { draft: store.getFormDraft(workspaceId, formKind, itemId) });
+      }
+
+      if (formDraftDetailMatch && method === "PUT") {
+        const workspaceId = decodeURIComponent(formDraftDetailMatch[1]);
+        const formKind = decodeURIComponent(formDraftDetailMatch[2]);
+        const itemId = decodeURIComponent(formDraftDetailMatch[3]);
+        const payload = await readJson(req);
+        return ok(res, store.saveFormDraft(workspaceId, formKind, itemId, payload));
+      }
+
+      if (formDraftDetailMatch && method === "DELETE") {
+        const workspaceId = decodeURIComponent(formDraftDetailMatch[1]);
+        const formKind = decodeURIComponent(formDraftDetailMatch[2]);
+        const itemId = decodeURIComponent(formDraftDetailMatch[3]);
+        return ok(res, store.deleteFormDraft(workspaceId, formKind, itemId));
       }
 
       return fail(res, 404, "NOT_FOUND", "route not found", "route_lookup", false, {
