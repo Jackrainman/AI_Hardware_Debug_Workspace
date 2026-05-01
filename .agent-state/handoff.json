@@ -16,14 +16,14 @@
     "archive_state": "object - v0.2.0 前历史文档归档状态与读取条件",
     "notes": "string[] - 下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-05-01T20:35:00+08:00",
+  "timestamp": "2026-05-01T21:50:00+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "R1",
   "current_stage_name": "长期产品路线图执行启动",
-  "current_stage_goal": "从 v0.2.x 本地 HTTP + SQLite + release 可部署基座出发，按 8 条产品主线推进；近期 P0 仍是部署可用、数据安全、可观测；B 组、第一轮 UI 修补、REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL、CORE-CLOSEOUT-CONTINUATION-UX 与 CORE-FORM-DRAFT-SERVER-PERSISTENCE 已完成；问题卡详情页追记入口单卡片默认折叠 hotfix 与 sibling key namespace fix 已完成；真实 DeepSeek smoke 仍需用户本地注入 key 后执行。",
-  "primary_track": "Core closeout continuation UX completed including one-card collapsed investigation append hotfix plus sibling key namespace fix; Real AI minimal DeepSeek closeout draft integration completed code-side; Deployment / Operability + Data Safety P0 remains blocked by server confirmation",
-  "deferred_track": "DeepSeek real-provider smoke、REALAI-05/06、repo connector、RAG/embedding、权限系统和硬件自动接入均后置到依赖满足或用户拍板后。",
-  "current_atomic_task": "CORE-FORM-DRAFT-SERVER-PERSISTENCE",
+  "current_stage_goal": "v0.3.0 已发布（59 commits since v0.2.0）：DeepSeek AI 草稿接入、搜索能力套件、workflow 表单持久化、服务器备份/恢复/诊断、release 部署准备。已知 DeepSeek 草稿存在 task 类型校验边界问题，不影响规则降级路径。下一步需用户确认 DeepSeek 实际返回的 output.task 后再执行修复。",
+  "primary_track": "v0.3.0 released with 59 commits; AI draft task-type mismatch bug identified but not fixed; DEP-01 remains blocked by server confirmation",
+  "deferred_track": "DeepSeek draft task-type fix、real-provider smoke、REALAI-05/06、repo connector、RAG/embedding、权限系统和硬件自动接入均后置到依赖满足或用户拍板后。",
+  "current_atomic_task": "V0.3.0-RELEASE",
   "roadmap_document": "docs/planning/product-roadmap.md",
   "roadmap_tracks": [
     {
@@ -60,7 +60,9 @@
     }
   ],
   "release_state": {
-    "version_base": "v0.2.x",
+    "version_base": "v0.3.x",
+    "release_v0_3_0_completed": true,
+    "realai_deepseek_closeout_draft_task_type_bug_identified": true,
     "local_http_sqlite_mainline_completed": true,
     "workspace_create_and_switch_completed": true,
     "issue_record_closeout_archive_error_entry_main_path_completed": true,
@@ -939,7 +941,8 @@
     "REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL",
     "CORE-CLOSEOUT-CONTINUATION-UX",
     "CORE-CLOSEOUT-CONTINUATION-UX-INVESTIGATION-ENTRY-COLLAPSE-HOTFIX",
-    "CORE-CLOSEOUT-CONTINUATION-UX-INVESTIGATION-KEY-NAMESPACE-FIX"
+    "CORE-CLOSEOUT-CONTINUATION-UX-INVESTIGATION-KEY-NAMESPACE-FIX",
+    "V0.3.0-RELEASE"
   ],
   "next_task_selection_basis": {
     "required_inputs": [

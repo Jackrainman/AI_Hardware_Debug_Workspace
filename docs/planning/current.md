@@ -5,7 +5,7 @@
 ## 当前阶段
 - 阶段：**R1：长期产品路线图执行启动**。
 - 当前模式：`server_storage_migration`（保留服务器部署安全边界）。
-- 阶段目标：以 v0.2.x 已完成的本地 HTTP + SQLite + release 可部署基座为起点，按 8 条产品主线推进；近期 P0 仍关注 **部署可用、数据安全、可观测**。DeepSeek 最小真实 AI 草稿接入已完成代码侧闭环；`CORE-CLOSEOUT-CONTINUATION-UX` 已完成；`CORE-FORM-DRAFT-SERVER-PERSISTENCE` 已完成，四类 workflow 表单草稿已从 localStorage only 扩展为 HTTP + SQLite 持久化草稿，保留 localStorage fallback，四类表单均走后台优先 + browser mirror/fallback 路径，提交后清除双重草稿。问题卡详情页追记表单默认展开回归已修复为单卡片折叠入口；后续读回排查发现兄弟组件 key 冲突，已补唯一 key 命名空间并用浏览器 DOM 验证切换问题卡时追记表单数量保持 1。
+- 阶段目标：**v0.3.0 已发布**（59 commits since v0.2.0），包含 DeepSeek AI 草稿接入、搜索能力套件、workflow 表单持久化、服务器备份/恢复/诊断、release 部署准备。已知 DeepSeek AI 草稿存在 `output.task` 类型校验边界问题（代码侧已分析，fix plan 已制定），不影响本地规则降级路径。近期 P0 仍关注 **部署可用、数据安全、可观测**。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
 - 最近已完成：`CORE-CLOSEOUT-CONTINUATION-UX`、追记入口 UI hotfix、`CORE-FORM-DRAFT-SERVER-PERSISTENCE`，已完成 workflow 表单 localStorage 草稿保存 / 恢复 / 清除、已归档问题卡取消归档后回到 investigating 且保留 ArchiveDocument / ErrorEntry 历史、DeepSeek closeout prompt 改为 server-side 基于 issue/records 构造、问题卡详情页只保留一个“排查追记”卡片并默认收起字段、保留草稿提示；追记表单与结案表单兄弟 key 已拆分命名空间，浏览器 DOM 验证连续切换问题卡后追记表单数量保持 1；未读取或提交真实 key，未做真实 provider smoke，未自动写库。
 
