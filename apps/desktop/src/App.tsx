@@ -671,7 +671,7 @@ function IssuePane({
           )}
           investigationAppendForm={selectedIssueId !== null ? (
             <InvestigationAppendForm
-              key={`${activeWorkspace.id}:${selectedIssueId}`}
+              key={`investigation:${activeWorkspace.id}:${selectedIssueId}`}
               repository={repository}
               workspaceId={activeWorkspace.id}
               issueId={selectedIssueId}
@@ -695,7 +695,7 @@ function IssuePane({
             />
           ) : selectedIssueId !== null && selectedCard?.status !== "archived" ? (
             <CloseoutForm
-              key={`${activeWorkspace.id}:${selectedIssueId}`}
+              key={`closeout:${activeWorkspace.id}:${selectedIssueId}`}
               repository={repository}
               workspaceId={activeWorkspace.id}
               issueId={selectedIssueId}

@@ -310,9 +310,23 @@ for (const forbidden of [
   assertSourceDoesNotContain("main flow investigation append sources", mainFlowSources, forbidden);
 }
 
-if (!appSource.includes('key={`${activeWorkspace.id}:${selectedIssueId}`}')) {
-  fail("InvestigationAppendForm should be keyed by workspace and selected issue to force issue switch remount");
-}
+assertSourceContainsExactly(
+  "App.tsx",
+  appSource,
+  'key={`investigation:${activeWorkspace.id}:${selectedIssueId}`}',
+  1,
+);
+assertSourceContainsExactly(
+  "App.tsx",
+  appSource,
+  'key={`closeout:${activeWorkspace.id}:${selectedIssueId}`}',
+  1,
+);
+assertSourceDoesNotContain(
+  "App.tsx",
+  appSource,
+  'key={`${activeWorkspace.id}:${selectedIssueId}`}',
+);
 if (!investigationAppendFormSource.includes('const title = isArchived ? "结案补充" : "创建排查记录"')) {
   fail("investigation append entry should keep archived and active issue titles distinct");
 }
