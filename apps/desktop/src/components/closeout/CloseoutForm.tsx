@@ -4,6 +4,11 @@ import {
   type RuleCloseoutDraft,
 } from "../../ai/rule-closeout-draft";
 import {
+  generateAiCloseoutDraft,
+  type AiDraftFailure,
+} from "../../ai/ai-draft-client";
+import type { AiDraftOutput } from "../../ai/prompt-templates";
+import {
   appendCloseoutDraftHistoryEntry,
   clearCloseoutDraftHistory,
   createCloseoutDraftHistoryEntry,
@@ -11,6 +16,7 @@ import {
   labelCloseoutDraftHistorySource,
   readCloseoutDraftHistory,
   type CloseoutDraftHistoryEntry,
+  type CloseoutDraftHistorySource,
 } from "../../ai/rule-closeout-draft-history";
 import { type CloseoutInput } from "../../domain/closeout";
 import type { IssueCard } from "../../domain/schemas/issue-card";
@@ -44,6 +50,12 @@ export type CloseoutSummary = {
 
 type DraftHistoryStatus = "idle" | "stored" | "session-only" | "cleared";
 
+type DraftGenerateStatus =
+  | { state: "idle" }
+  | { state: "generating" }
+  | { state: "deepseek"; model: string }
+  | { state: "fallback"; reason: string };
+
 export function CloseoutForm({
   repository,
   issueId,
@@ -69,6 +81,7 @@ export function CloseoutForm({
   const [activeDraftEntryId, setActiveDraftEntryId] = useState<string | null>(null);
   const [draftHistory, setDraftHistory] = useState<CloseoutDraftHistoryEntry[]>([]);
   const [draftHistoryStatus, setDraftHistoryStatus] = useState<DraftHistoryStatus>("idle");
+  const [draftGenerateStatus, setDraftGenerateStatus] = useState<DraftGenerateStatus>({ state: "idle" });
   const [status, setStatus] = useState<CloseoutSubmitStatus>({ state: "idle" });
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
 
@@ -124,16 +137,35 @@ export function CloseoutForm({
     setActiveDraftEntryId(null);
     setDraftHistory(readCloseoutDraftHistory(getBrowserCloseoutDraftHistoryStorage(), issueId));
     setDraftHistoryStatus("idle");
+    setDraftGenerateStatus({ state: "idle" });
     setHasAttemptedSubmit(false);
   }, [issueId]);
 
-  const handleGenerateDraft = () => {
+  const handleGenerateDraft = async () => {
     if (issueCard === null) return;
-    const generatedDraft = buildRuleCloseoutDraft(issueCard, records);
+    setDraftGenerateStatus({ state: "generating" });
+    let generatedDraft = buildRuleCloseoutDraft(issueCard, records);
+    let source: CloseoutDraftHistorySource = "local-rule";
+    const aiResult = await generateAiCloseoutDraft({
+      issue: issueCard,
+      records,
+      closeoutDraft: { category, rootCause, resolution, prevention },
+    });
+    if (aiResult.ok) {
+      generatedDraft = closeoutDraftFromAiOutput(aiResult.output, generatedDraft);
+      source = "deepseek";
+      setDraftGenerateStatus({ state: "deepseek", model: aiResult.model });
+    } else {
+      setDraftGenerateStatus({
+        state: "fallback",
+        reason: describeAiDraftFailure(aiResult.failure),
+      });
+    }
     const historyEntry = createCloseoutDraftHistoryEntry({
       issueId,
       issueTitle: issueCard.title,
       generatedAt: new Date().toISOString(),
+      source,
       recordCount: records.length,
       draft: generatedDraft,
       sequence: draftHistory.length + 1,
@@ -269,17 +301,17 @@ export function CloseoutForm({
       <section className="closeout-draft-panel" data-testid="closeout-draft-panel">
         <div className="closeout-draft-header">
           <div>
-            <span className="closeout-draft-eyebrow">AI-ready 规则草稿</span>
-            <p>本地规则草稿，不调用外部 AI，不自动写库。</p>
+            <span className="closeout-draft-eyebrow">DeepSeek AI 草稿</span>
+            <p>优先调用 server-side DeepSeek；失败或无 key 时使用本地规则兜底，不自动写库。</p>
           </div>
           <button
             type="button"
             className="button-secondary"
             onClick={handleGenerateDraft}
-            disabled={issueCard === null}
+            disabled={issueCard === null || draftGenerateStatus.state === "generating"}
             data-testid="closeout-draft-generate"
           >
-            生成规则草稿
+            {draftGenerateStatus.state === "generating" ? "生成中..." : "生成 AI 草稿"}
           </button>
         </div>
         {issueCard === null && (
@@ -287,6 +319,9 @@ export function CloseoutForm({
         )}
         <p className="storage-line" data-testid="closeout-draft-history-state">
           草稿历史：{renderDraftHistoryStatus(draftHistoryStatus)}
+        </p>
+        <p className="storage-line" data-testid="closeout-draft-generate-state">
+          草稿来源：{renderDraftGenerateStatus(draftGenerateStatus)}
         </p>
         {draft !== null && (
           <div className="closeout-draft-body">
@@ -494,14 +529,59 @@ function labelDraftConfidence(confidence: RuleCloseoutDraft["confidence"]): stri
   }
 }
 
+function closeoutDraftFromAiOutput(
+  output: AiDraftOutput,
+  fallback: RuleCloseoutDraft,
+): RuleCloseoutDraft {
+  if (output.task !== "polish_closeout") return fallback;
+  return {
+    ...fallback,
+    category: output.category,
+    rootCause: output.rootCause,
+    resolution: output.resolution,
+    prevention: output.prevention,
+    caveats: Array.from(new Set([...output.caveats, "DeepSeek AI 草稿，需人工确认后才能结案写库"])),
+    confidence: output.confidence,
+  };
+}
+
+function describeAiDraftFailure(failure: AiDraftFailure): string {
+  switch (failure.code) {
+    case "AI_NOT_CONFIGURED":
+      return "server 未配置 DeepSeek API key，已使用本地规则草稿。";
+    case "AI_TIMEOUT":
+    case "AI_CLIENT_TIMEOUT":
+      return "DeepSeek 请求超时，已使用本地规则草稿。";
+    case "AI_DRAFT_SCHEMA_ERROR":
+    case "AI_RESPONSE_SCHEMA_ERROR":
+    case "AI_INVALID_JSON":
+      return "AI 返回结构未通过校验，已使用本地规则草稿。";
+    default:
+      return `${failure.message}；已使用本地规则草稿。`;
+  }
+}
+
+function renderDraftGenerateStatus(status: DraftGenerateStatus): string {
+  switch (status.state) {
+    case "idle":
+      return "尚未生成；点击后优先调用 DeepSeek，失败时本地规则兜底。";
+    case "generating":
+      return "正在请求 server-side DeepSeek；不会暴露 API key 到浏览器。";
+    case "deepseek":
+      return `DeepSeek 已生成 · ${status.model} · 仍需人工确认。`;
+    case "fallback":
+      return status.reason;
+  }
+}
+
 function renderDraftHistoryStatus(status: DraftHistoryStatus): string {
   switch (status) {
     case "idle":
       return "浏览器本地保存，仅用于审阅，不写入归档 / 错误表 / 问题卡。";
     case "stored":
-      return "已保存到浏览器本地历史；仍是规则草稿，未调用真实 AI。";
+      return "已保存到浏览器本地历史；仅供审阅，不自动写库。";
     case "session-only":
-      return "localStorage 不可用，本次会话内可审阅；未调用真实 AI。";
+      return "localStorage 不可用，本次会话内可审阅；不会自动写库。";
     case "cleared":
       return "已清除当前问题的本地草稿历史。";
   }

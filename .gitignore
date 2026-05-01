@@ -15,6 +15,13 @@
 # Local backend runtime data
 apps/server/.runtime/
 
+# Local secrets and API keys. Never commit real provider credentials.
+.env
+.env.*
+.secrets/
+*.key
+deepseek.env
+
 # Dependency directories
 node_modules/
 

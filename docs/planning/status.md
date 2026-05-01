@@ -5,7 +5,7 @@
 > 硬限制：总长度建议不超过 120 行；不追加流水账；不复制 backlog 长任务表；不复制 product-roadmap 长路线图；最近完成只保留最近 10 条以内；blocked 只列当前关键 blocked；night-safe 只列前 5 个候选；每次任务结束只覆盖当前状态，不追加历史过程。
 
 ## 1. 一句话状态
-ProbeFlash 已具备本地 HTTP + SQLite + release 可部署基座、workspace UX 改善、最近活跃问题恢复、结案失败输入保留提示、规则草稿历史、基础知识检索、轻量相似问题提示、历史问题人工关联和复发提示；当前白天服务器主线仍卡在真实服务器用户目录部署确认，B 组、`UI-GATE-01`、`TECH-07`、`UI-MOD-01`、`UI-RELAYOUT-01` 第一轮工作台重排、`UI-POLISH-02-COPY-TRIM` 文案瘦身与 `UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT` 均已完成；现在停在 `UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW`，等待用户人工检查桌面端和移动端观感。
+ProbeFlash 已具备本地 HTTP + SQLite + release 可部署基座、核心问题闭环、基础知识检索、轻量相似问题提示、历史问题人工关联和复发提示；`REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL` 已完成代码侧接入，DeepSeek key 只走 server env 且 AI 不读取密钥文件，真实 provider smoke 仍需用户本地执行；服务器主线仍卡在真实服务器用户目录部署确认。
 
 ## 2. 当前能力状态
 
@@ -24,9 +24,10 @@ ProbeFlash 已具备本地 HTTP + SQLite + release 可部署基座、workspace U
 | 复发提示 | ✅ 已可用 |
 | 归档复盘 | ✅ 已可用 |
 | 数据备份 / 恢复 / 一致性检查 | 🟡 部分可用 |
-| AI-ready 草稿 | 🟡 部分可用 |
+| AI-ready 草稿 | ✅ 已可用 |
+| DeepSeek 结案草稿 | 🟡 代码已接，待用户 key smoke |
 | 真实服务器部署 | 🔒 被阻塞 |
-| 真实 AI | 🔒 被阻塞 |
+| 真实 AI | 🟡 closeout 草稿最小链路已接 |
 
 ## 3. 当前主线
 
@@ -36,12 +37,12 @@ ProbeFlash 已具备本地 HTTP + SQLite + release 可部署基座、workspace U
 | 状态 | `blocked`，不能夜跑 |
 | blocked 原因 | 需要真实服务器 SSH、release 下载或上传、写入 `/home/hurricane/probeflash`、启动临时进程和 4100 端口边界确认 |
 | 用户需要确认什么 | SSH 登录方式、release 获取方式、用户目录写入授权、临时进程启动授权、4100 端口授权 |
-| 下一轮默认认领 | 无；停在 `UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW` |
+| 下一轮默认认领 | 无；先由用户本地执行 DeepSeek key smoke，或回到 planning 重新选择 |
 | UI 停止点 | `UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW`，由用户人工检查快速建卡 landing 调整后的桌面端和移动端观感 |
 
 ## 4. 当前 night-safe / repo-local 候选
-- 当前没有可自动顺推的 UI 任务；`UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT` 已完成，必须等待 `UI-GATE-06` 人工 review / smoke。
-- 其它 night-safe 候选暂不自动越过 UI 人工检查门：`AIREADY-06-DRAFT-DIFF`、`CODECTX-01-BUNDLE-CLI`、`CODECTX-02-SECRETS-PROTECTION`、`CORE-07-ARCHIVE-FILTERS`。
+- 当前没有可自动顺推的 UI 或真实 AI 任务；DeepSeek 真实 key smoke 需要用户本地执行，AI 不读取密钥文件。
+- 其它 night-safe 候选暂不自动认领：`AIREADY-06-DRAFT-DIFF`、`CODECTX-01-BUNDLE-CLI`、`CODECTX-02-SECRETS-PROTECTION`、`CORE-07-ARCHIVE-FILTERS`。
 
 ## 4.1 B 组后顺序
 - B 组功能完成后先修 UI，当前顺序为：`UI-GATE-01` completed -> `TECH-07` completed -> `UI-GATE-02` completed/manual accepted -> `UI-MOD-01` completed -> `UI-GATE-03` completed/user approved -> `UI-RELAYOUT-01` completed -> `UI-GATE-04` user-authorized copy trim -> `UI-POLISH-02` completed -> `UI-GATE-05` user-authorized quick issue layout -> `UI-POLISH-03` completed -> `UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW` current/day-only。
@@ -49,6 +50,7 @@ ProbeFlash 已具备本地 HTTP + SQLite + release 可部署基座、workspace U
 
 ## 5. 最近完成
 - `UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT`：未选中问题时快速建卡主卡已放大，移除最小演示路径，辅助验证移到“未选中问题”提示框下方并标注仅测试；未改业务数据流、schema、repository、HTTP API 或 server。
+- `REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL`：server-side DeepSeek adapter、AI status/draft route、desktop AI draft client、CloseoutForm DeepSeek 优先 / 本地规则兜底、DeepSeek 草稿历史来源与密钥禁读规则已完成；未读取或提交真实 key，真实 provider smoke 需用户本地执行。
 - `UI-POLISH-02-COPY-TRIM`：已压缩顶部项目/存储成功态、项目弹窗、工作台入口、Knowledge Assist、追记、归档和结案辅助说明；保留服务器/存储错误态、Repair Task、真实 AI 未接入和文件写盘未接入等状态边界；未改业务数据流、schema、repository、HTTP API 或 server。
 - `UI-RELAYOUT-01-WORKBENCH-FIRST-PASS`：默认主界面已从完整建卡大表单改为 QuickIssue landing；快速建卡新增 severity 选择；workbench 形成 Issue rail / 当前问题主线 / Knowledge Assist supporting 区；recurrence、related、similar、search 已统一到 Knowledge Assist；旧 `3.` / `4.` 编号文案已删除；未改 schema / repository / HTTP API / server / AI。
 - `UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT`：已把快速建卡、完整建卡、问题列表、Knowledge Assist 四个面板、追记表单、排查时间线、结案表单和主线结果面板抽到独立 UI 模块；保持 render 顺序、className、test id、文案和数据流不变。
@@ -66,15 +68,16 @@ ProbeFlash 已具备本地 HTTP + SQLite + release 可部署基座、workspace U
 - 不把项目管理 UI 塞进 ProbeFlash 产品本体。
 - 不改 `apps/desktop` / `apps/server` 业务代码来满足本状态页。
 - 不做 SSH、sudo、systemd、`/opt`、80/443、真实服务器部署或 release/tag 修改。
-- 不接真实 AI provider / API key，不把 AI-ready 说成真实 AI 已完成。
+- 不读取、搜索、打印、总结或提交真实 API key；真实 DeepSeek smoke 只能由用户本地 source env 后执行。
 - 不引入 RAG / embedding、权限系统、多租户、Electron / preload / fs / IPC。
 - 不在 `UI-GATE-06` 人工 review / smoke 通过前执行下一轮 UI polish；不把快速建卡 landing 调整扩展成全量重写。
 
 ## 7. 用户下一步
-- 今天完全不想动：停止自动推进；不碰服务器和真实 AI。
+- 今天完全不想动：停止自动推进；不碰服务器，不做真实 key smoke。
 - 想继续 UI：先人工启动 / 浏览检查快速建卡 landing 调整后的桌面端和移动端观感，再决定是否进入下一轮 UI polish。
 - 只有 10 分钟：先执行 `UI-GATE-06` 人工 quick issue layout review，不切服务器。
 - 如果明确想推翻本轮 UI 模块化优先约束：再单独确认是否允许白天操作 SSH、release 获取方式、`/home/hurricane/probeflash` 写入和 4100 临时进程。
+- 想测 DeepSeek：用户自行创建并 source `/home/rainman/.config/probeflash/deepseek.env` 后启动 server，再在结案表单点“生成 AI 草稿”。
 
 ## 8. 状态来源
 - `AGENTS.md`

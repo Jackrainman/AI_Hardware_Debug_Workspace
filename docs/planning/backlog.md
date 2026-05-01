@@ -5,14 +5,14 @@
 ## 当前路线
 - 当前版本基座：v0.2.x 本地 HTTP + SQLite + release 可部署基座。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
-- 当前目标：近期 1 周先让部署可用、数据安全、可观测；B 组 night-safe 功能包、`UI-GATE-01-MANUAL-VISUAL-DIRECTION`、`TECH-07-APP-TSX-MINIMAL-SPLIT`、`UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT`、`UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT`、`UI-RELAYOUT-01-WORKBENCH-FIRST-PASS`、`UI-POLISH-02-COPY-TRIM` 与 `UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT` 均已完成。当前停在 day-only 的 `UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW`，等待用户人工检查快速建卡 landing 调整后的桌面端和移动端观感；不得自动执行下一轮 UI polish 或跳到其它 broad refactor。`SEARCH-01-BASIC-FULL-TEXT-SEARCH`、`SEARCH-02-FILTERS`、`SEARCH-04-TAGS`、`SEARCH-03-ARCHIVE-REVIEW-PAGE`、`SEARCH-07-SIMILAR-ISSUES-LITE`、`SEARCH-08-SEARCH-RESULT-LINKING`、`SEARCH-09-RECURRENCE-PROMPT`、`TECH-DEBT-SEARCH-KB-CLEANUP-LITE`、`UI-REDESIGN-STAGE-BRIEF`、`UI-01-INFORMATION-ARCHITECTURE-REVIEW`、`CORE-02-WORKSPACE-UX-IMPROVEMENTS`、`CORE-03-RECENT-ISSUE-REOPEN`、`CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS`、`AIREADY-05-DRAFT-HISTORY`、`UI-GATE-01-MANUAL-VISUAL-DIRECTION`、`TECH-07-APP-TSX-MINIMAL-SPLIT` 与 `PROJECT-STATUS-LEDGER-MINIMAL` 已完成，不再留在可认领池；UI 小阶段任务拆分见 `docs/planning/ui-redesign-brief.md`。
-- 当前 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 AI provider/API key。
+- 当前目标：近期 1 周先让部署可用、数据安全、可观测；B 组 night-safe 功能包、第一轮 UI 修补与 `REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL` 均已完成。当前不得自动执行下一轮 UI polish 或跳到其它 broad refactor。`SEARCH-01-BASIC-FULL-TEXT-SEARCH`、`SEARCH-02-FILTERS`、`SEARCH-04-TAGS`、`SEARCH-03-ARCHIVE-REVIEW-PAGE`、`SEARCH-07-SIMILAR-ISSUES-LITE`、`SEARCH-08-SEARCH-RESULT-LINKING`、`SEARCH-09-RECURRENCE-PROMPT`、`TECH-DEBT-SEARCH-KB-CLEANUP-LITE`、`UI-REDESIGN-STAGE-BRIEF`、`UI-01-INFORMATION-ARCHITECTURE-REVIEW`、`CORE-02-WORKSPACE-UX-IMPROVEMENTS`、`CORE-03-RECENT-ISSUE-REOPEN`、`CORE-06-CLOSEOUT-PARTIAL-SAVE-HINTS`、`AIREADY-05-DRAFT-HISTORY`、`UI-GATE-01-MANUAL-VISUAL-DIRECTION`、`TECH-07-APP-TSX-MINIMAL-SPLIT` 与 `PROJECT-STATUS-LEDGER-MINIMAL` 已完成，不再留在可认领池；UI 小阶段任务拆分见 `docs/planning/ui-redesign-brief.md`。
+- 当前 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 DeepSeek provider opt-in smoke（需要用户本地注入 key；AI 不读取密钥文件）。
 
 ## 认领规则
 1. 每次只认领一个原子任务，完成前必须最小验证、planning sync、单任务 commit。
 2. 白天主线优先 `DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY`，但该任务需要用户确认真实服务器边界。
 3. 无服务器授权或夜跑时，只能从 `Night-safe pool` 认领第一个依赖已满足、repo-local、可自动验证、可回滚的任务。
-4. 真实 AI 任务在用户确认 provider、API key/server env、timeout 与 mock/test provider 边界前均保持 blocked。
+4. 真实 AI 后续任务必须保持 server env key 边界；真实 key smoke 只能由用户本地执行，AI 不读取密钥文件。
 5. Code context 先做 explicit bundle，不允许 server 任意扫描仓库路径。
 6. 需要产品方向、数据保留、taxonomy、repo connector、权限/RAG 等拍板时，任务保持 `decision-needed`。
 7. `docs/planning/status.md` 只用于快速概览，不得替代本文件、`current.md`、`product-roadmap.md` 或 `.agent-state/handoff.json` 做任务认领依据。
@@ -76,10 +76,10 @@
 
 | 顺序 | 任务 ID | 类型 | P |
 |---|---|---|---|
-| 1 | REALAI-01-PROVIDER-ABSTRACTION | blocked | P1 |
-| 2 | REALAI-02-SERVER-ENV-API-KEY-BOUNDARY | blocked | P1 |
-| 3 | REALAI-03-TIMEOUT-ERROR-STATE | blocked | P1 |
-| 4 | REALAI-04-POLISH-CLOSEOUT | blocked | P1 |
+| 1 | REALAI-01-PROVIDER-ABSTRACTION | completed | P1 |
+| 2 | REALAI-02-SERVER-ENV-API-KEY-BOUNDARY | completed | P1 |
+| 3 | REALAI-03-TIMEOUT-ERROR-STATE | completed | P1 |
+| 4 | REALAI-04-POLISH-CLOSEOUT | completed | P1 |
 | 5 | REALAI-05-SUMMARIZE-RECORDS | blocked | P1 |
 | 6 | REALAI-06-SUGGEST-PREVENTION | blocked | P1 |
 | 7 | CODECTX-04-ATTACH-BUNDLE-TO-ISSUE | night-safe | P1 |
@@ -151,10 +151,6 @@
 - DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY
 - DEP-06-SYSTEMD-AUTOSTART-VERIFY
 - DEP-08-RELEASE-UPDATE-ROLLBACK-VERIFY
-- REALAI-01-PROVIDER-ABSTRACTION
-- REALAI-02-SERVER-ENV-API-KEY-BOUNDARY
-- REALAI-03-TIMEOUT-ERROR-STATE
-- REALAI-04-POLISH-CLOSEOUT
 - REALAI-05-SUMMARIZE-RECORDS
 - REALAI-06-SUGGEST-PREVENTION
 - REALAI-07-USER-REVIEW-BEFORE-APPLY

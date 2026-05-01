@@ -5,6 +5,7 @@ import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path
 import { fileURLToPath } from "node:url";
 
 import { DEFAULT_WORKSPACE, createProbeFlashDatabase } from "./database.mjs";
+import { generateDeepSeekDraft, getDeepSeekStatus } from "./ai/deepseek-client.mjs";
 import { getReleaseMetadata } from "./release-metadata.mjs";
 
 const SERVER_SRC_DIR = dirname(fileURLToPath(import.meta.url));
@@ -264,6 +265,10 @@ function createRequestHandler({ store, storeInitError, staticDir, releaseMetadat
     const recordListMatch = url.pathname.match(
       /^\/api\/workspaces\/([^/]+)\/issues\/([^/]+)\/records$/,
     );
+    const aiStatusMatch = url.pathname.match(/^\/api\/workspaces\/([^/]+)\/ai\/status$/);
+    const aiCloseoutDraftMatch = url.pathname.match(
+      /^\/api\/workspaces\/([^/]+)\/ai\/closeout-draft$/,
+    );
     const searchMatch = url.pathname.match(/^\/api\/workspaces\/([^/]+)\/search$/);
     const archiveListMatch = url.pathname.match(/^\/api\/workspaces\/([^/]+)\/archives$/);
     const archiveDetailMatch = url.pathname.match(/^\/api\/workspaces\/([^/]+)\/archives\/(.+)$/);
@@ -307,6 +312,32 @@ function createRequestHandler({ store, storeInitError, staticDir, releaseMetadat
 
       if (workspaceDetailMatch && method === "GET") {
         return ok(res, store.getWorkspace(decodeURIComponent(workspaceDetailMatch[1])));
+      }
+
+      if (aiStatusMatch && method === "GET") {
+        return ok(res, getDeepSeekStatus());
+      }
+
+      if (aiCloseoutDraftMatch && method === "POST") {
+        const payload = await readJson(req);
+        const result = await generateDeepSeekDraft(payload);
+        if (!result.ok) {
+          return fail(
+            res,
+            result.statusCode,
+            result.error.code,
+            result.error.message,
+            "ai_closeout_draft",
+            result.error.retryable,
+            result.error.details,
+          );
+        }
+        return ok(res, {
+          provider: result.provider,
+          model: result.model,
+          task: result.task,
+          output: result.output,
+        });
       }
 
       if (issueListMatch && method === "GET") {

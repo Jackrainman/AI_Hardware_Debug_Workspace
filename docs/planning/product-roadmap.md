@@ -176,17 +176,17 @@ ProbeFlash 不是单纯的问题记录工具，而是面向机器人 / 嵌入式
 ### 大任务
 | ID | 所属主线 | 目标 | 用户价值 | 前置依赖 | 允许修改 | 明确不做 | 验证方式 | 完成定义 | 执行类型 | 建议优先级 | 是否适合 AI unattended run |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| REALAI-M1 | Real AI Assistance | provider abstraction 与 server env API key boundary | 安全接入真实 AI | AIREADY-M3；用户确认 provider/key | server env；provider adapter；docs；verify | browser 不持 key；不直接写库；不做 RAG | mock/no-key/timeout/error；真实 key 人工 smoke | AI key 只在 server，失败可降级 | blocked | P1 | 否 |
-| REALAI-M2 | Real AI Assistance | polish closeout / summarize records / suggest prevention | 减少结案总结负担 | REALAI-M1 | server draft endpoints；desktop draft UI；verify | 不替代人工验证；不自动入库 | mock + real opt-in；用户 review | AI 产出草稿，用户确认后应用 | blocked | P1 | 否 |
+| REALAI-M1 | Real AI Assistance | provider abstraction 与 server env API key boundary | 安全接入真实 AI | AIREADY-M3；用户确认 provider/key | server env；provider adapter；docs；verify | browser 不持 key；不直接写库；不做 RAG | mock/no-key/timeout/error；真实 key 人工 smoke | AI key 只在 server，失败可降级 | completed | P1 | 否 |
+| REALAI-M2 | Real AI Assistance | polish closeout / summarize records / suggest prevention | 减少结案总结负担 | REALAI-M1 | server draft endpoints；desktop draft UI；verify | 不替代人工验证；不自动入库 | mock + real opt-in；用户 review | AI 产出草稿，用户确认后应用 | partial | P1 | 否 |
 | REALAI-M3 | Real AI Assistance | timeout/error state 与 user review before apply | AI 不稳定时主流程仍可靠 | REALAI-M1/M2 | UI state；audit metadata；verify | 不把草稿当事实；不隐藏 provider 错误 | timeout/error/no-key/apply review | 所有 AI 输出都有来源、状态和确认门 | blocked | P1 | 否 |
 
 ### 小任务
 | ID | 所属主线 | 目标 | 用户价值 | 前置依赖 | 允许修改 | 明确不做 | 验证方式 | 完成定义 | 执行类型 | 建议优先级 | 是否适合 AI unattended run |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| REALAI-01-PROVIDER-ABSTRACTION | Real AI Assistance | provider abstraction | 后续可换 provider 不重写 UI | AIREADY-08；用户确认 provider 范围 | server provider port；mock implementation | 不做多 provider 复杂配置；不外呼无授权 API | mock provider contract；error fixture | server 有统一 draft provider interface | blocked | P1 | 否 |
-| REALAI-02-SERVER-ENV-API-KEY-BOUNDARY | Real AI Assistance | server env API key boundary | 避免 API key 泄露到浏览器 | 用户确认 key 放置方式 | server env docs；config validation | 不写入 localStorage；不提交 key | no-key health；redaction；docs check | key 只来自 server env 且日志脱敏 | blocked | P1 | 否 |
-| REALAI-03-TIMEOUT-ERROR-STATE | Real AI Assistance | timeout/error state | AI 挂了也不影响结案 | REALAI-01/02 | server timeout；UI status；verify | 不无限等待；不 silent fallback | timeout fixture；provider error fixture | 用户看到失败原因并可继续手写 | blocked | P1 | 否 |
-| REALAI-04-POLISH-CLOSEOUT | Real AI Assistance | polish closeout | 根因/解决描述更清楚 | REALAI-01-03；AIREADY-04 | draft endpoint；draft panel | 不自动提交；不改原始记录 | mock/real draft；apply review | closeout polish 草稿可审阅应用 | blocked | P1 | 否 |
+| REALAI-01-PROVIDER-ABSTRACTION | Real AI Assistance | provider abstraction | 后续可换 provider 不重写 UI | AIREADY-08；用户确认 provider 范围 | server provider port；mock implementation | 不做多 provider 复杂配置；不外呼无授权 API | mock provider contract；error fixture | server 有统一 draft provider interface | completed | P1 | 否 |
+| REALAI-02-SERVER-ENV-API-KEY-BOUNDARY | Real AI Assistance | server env API key boundary | 避免 API key 泄露到浏览器 | 用户确认 key 放置方式 | server env docs；config validation | 不写入 localStorage；不提交 key | no-key health；redaction；docs check | key 只来自 server env 且日志脱敏 | completed | P1 | 否 |
+| REALAI-03-TIMEOUT-ERROR-STATE | Real AI Assistance | timeout/error state | AI 挂了也不影响结案 | REALAI-01/02 | server timeout；UI status；verify | 不无限等待；不 silent fallback | timeout fixture；provider error fixture | 用户看到失败原因并可继续手写 | completed | P1 | 否 |
+| REALAI-04-POLISH-CLOSEOUT | Real AI Assistance | polish closeout | 根因/解决描述更清楚 | REALAI-01-03；AIREADY-04 | draft endpoint；draft panel | 不自动提交；不改原始记录 | mock/real draft；apply review | closeout polish 草稿可审阅应用 | completed | P1 | 否 |
 | REALAI-05-SUMMARIZE-RECORDS | Real AI Assistance | summarize records | 长时间线快速收束 | REALAI-04 | summarize endpoint；UI section | 不删除原记录；不替代事实 | 多 record fixture；空 record 状态 | 生成排查摘要草稿并可追溯来源 | blocked | P1 | 否 |
 | REALAI-06-SUGGEST-PREVENTION | Real AI Assistance | suggest prevention | 减少同类问题复发 | REALAI-04/05 | prevention prompt；draft UI | 不自动写 `ErrorEntry.prevention` | 有/无 records；provider failure | 预防建议草稿需用户确认 | blocked | P1 | 否 |
 | REALAI-07-USER-REVIEW-BEFORE-APPLY | Real AI Assistance | user review before apply | 保留人工责任边界 | REALAI-04-06 | UI confirmation；audit metadata | 不自动写库；不批量覆盖 | review gate fixture | 所有 AI 草稿入表单前都有确认 | blocked | P1 | 否 |

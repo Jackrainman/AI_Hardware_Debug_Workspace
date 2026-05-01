@@ -9,6 +9,7 @@ export interface CloseoutDraftHistoryStorage {
 
 export const CLOSEOUT_DRAFT_HISTORY_LIMIT = 8;
 export const CLOSEOUT_DRAFT_HISTORY_SOURCE = "local-rule";
+export const CLOSEOUT_DRAFT_HISTORY_SOURCES = ["local-rule", "deepseek"] as const;
 export const CLOSEOUT_DRAFT_HISTORY_STORAGE_KEY_PREFIX = "probeflash:closeout-draft-history:";
 
 const RuleCloseoutDraftSchema = z.object({
@@ -28,7 +29,7 @@ const CloseoutDraftHistoryEntrySchema = z.object({
   issueId: z.string().trim().min(1),
   issueTitle: z.string(),
   generatedAt: z.string().trim().min(1),
-  source: z.literal(CLOSEOUT_DRAFT_HISTORY_SOURCE),
+  source: z.enum(CLOSEOUT_DRAFT_HISTORY_SOURCES),
   recordCount: z.number().int().nonnegative(),
   draft: RuleCloseoutDraftSchema,
 });
@@ -36,6 +37,7 @@ const CloseoutDraftHistoryEntrySchema = z.object({
 const CloseoutDraftHistorySchema = z.array(CloseoutDraftHistoryEntrySchema);
 
 export type CloseoutDraftHistoryEntry = z.infer<typeof CloseoutDraftHistoryEntrySchema>;
+export type CloseoutDraftHistorySource = CloseoutDraftHistoryEntry["source"];
 
 export function getBrowserCloseoutDraftHistoryStorage(): CloseoutDraftHistoryStorage | null {
   if (typeof window === "undefined") return null;
@@ -62,7 +64,7 @@ export function createCloseoutDraftHistoryEntry({
   issueId: string;
   issueTitle: string;
   generatedAt: string;
-  source?: typeof CLOSEOUT_DRAFT_HISTORY_SOURCE;
+  source?: CloseoutDraftHistorySource;
   recordCount: number;
   draft: RuleCloseoutDraft;
   sequence: number;
@@ -146,5 +148,7 @@ export function labelCloseoutDraftHistorySource(source: CloseoutDraftHistoryEntr
   switch (source) {
     case "local-rule":
       return "本地规则生成（未调用 AI）";
+    case "deepseek":
+      return "DeepSeek 生成（草稿，未自动写库）";
   }
 }

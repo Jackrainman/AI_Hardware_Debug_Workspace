@@ -15,6 +15,12 @@
 - `.agents/skills/` 只放可执行流程规则；一个 skill 只做一件事。
 - 禁止把临时思考散落到仓库根目录或无关路径。
 
+## 2.1 Secrets / API Key Handling
+- AI / Agent 禁止读取、搜索、打印、总结、复制或提交任何真实密钥文件，包括但不限于 `/home/rainman/.config/probeflash/deepseek.env`、`/home/rainman/.config/probeflash/*.env`、仓库内 `.env`、`.env.*`、`.secrets/**`、`*.key`、`*secret*`、`*api-key*`。
+- AI 不得要求用户粘贴 API key；真实 provider key 只能由用户手动写入仓库外文件或 shell 环境变量。
+- 代码只能通过 server 进程环境变量读取 provider key，例如 `process.env.DEEPSEEK_API_KEY`；禁止把 key 放入浏览器、localStorage、planning、handoff、README、日志或 commit message。
+- AI 可修改文档说明和环境变量名称，但不得读取密钥文件内容来验证配置；真实 provider smoke 必须由用户本地执行。
+
 ## 3. Delivery-Priority Mode（交差优先模式）
 - 当 `.agent-state/handoff.json.current_mode = "delivery_priority"` 或 `current.md` 写明当前阶段为交差优先时，当前最高优先级是：先交付一个“好看、中文、能用、像产品壳”的可演示版本。
 - 在该模式下，UI 壳层、中文化、空状态、演示友好性优先于继续扩展深层闭环功能。
