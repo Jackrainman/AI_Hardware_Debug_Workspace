@@ -5,12 +5,12 @@
 ## 当前阶段
 - 阶段：**R1：长期产品路线图执行启动**。
 - 当前模式：`server_storage_migration`（保留服务器部署安全边界）。
-- 阶段目标：以 v0.2.x 已完成的本地 HTTP + SQLite + release 可部署基座为起点，按 8 条产品主线推进；近期 P0 仍关注 **部署可用、数据安全、可观测**。B 组与第一轮 UI 修补已完成；DeepSeek 最小真实 AI 草稿接入已完成代码侧闭环，等待用户本地放置 key 并做真实 provider smoke。
+- 阶段目标：以 v0.2.x 已完成的本地 HTTP + SQLite + release 可部署基座为起点，按 8 条产品主线推进；近期 P0 仍关注 **部署可用、数据安全、可观测**。DeepSeek 最小真实 AI 草稿接入已完成代码侧闭环；`CORE-CLOSEOUT-CONTINUATION-UX` 已完成，结案连续性增强包括取消归档只重开问题卡、未提交表单本地恢复、DeepSeek prompt server-side 构造。
 - 路线图事实源：`docs/planning/product-roadmap.md`。
-- 最近已完成：`REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL`，已完成 server-side DeepSeek provider adapter、server env key 边界、AI closeout draft route、desktop AI draft client、CloseoutForm DeepSeek 优先 / 本地规则兜底、DeepSeek 草稿历史来源、密钥禁读规则与 mock/no-key/timeout/schema 验证；未读取或提交真实 key，未做真实 provider smoke，未自动写库。
+- 最近已完成：`CORE-CLOSEOUT-CONTINUATION-UX`，已完成 workflow 表单 localStorage 草稿保存 / 恢复 / 清除、已归档问题卡取消归档后回到 investigating 且保留 ArchiveDocument / ErrorEntry 历史、DeepSeek closeout prompt 改为 server-side 基于 issue/records 构造；未读取或提交真实 key，未做真实 provider smoke，未自动写库。
 
 ## 当前真实状态
-- 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、workspace UX improvements、recent issue reopen、closeout failure input preservation hints、AI-ready draft history、issue / record / closeout / archive / error-entry 主路径、basic full-text search、search filters、search tags、archive review page、similar issues lite、search result linking、recurrence prompt、search / KB verify fixture cleanup、UI redesign stage brief、UI information architecture review、App.tsx minimal split、UI pre-relayout component split、UI relayout first pass、quick issue create、record timeline polish、closeout UX polish、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、DeepSeek closeout draft minimal integration、server schema contract、HTTP feedback contract、restore dry-run、SQLite integrity check、JSON export hardening、partial closeout recovery verify、repair task generation、diagnostics bundle、night-run 安全规则、v0.2 历史文档归档、lightweight project status ledger、refactor necessity audit。
+- 已完成：本地 HTTP + SQLite 主链路、workspace 创建 / 切换、workspace UX improvements、recent issue reopen、closeout failure input preservation hints、AI-ready draft history、issue / record / closeout / archive / error-entry 主路径、basic full-text search、search filters、search tags、archive review page、similar issues lite、search result linking、recurrence prompt、search / KB verify fixture cleanup、UI redesign stage brief、UI information architecture review、App.tsx minimal split、UI pre-relayout component split、UI relayout first pass、quick issue create、record timeline polish、closeout UX polish、closeout continuation UX、`ErrorEntry.prevention` 非空修复、release tarball 部署规划、server 同端口服务 `dist` + `/api`、AI-ready prompt templates、rule-based closeout draft panel、DeepSeek closeout draft minimal integration、server schema contract、HTTP feedback contract、restore dry-run、SQLite integrity check、JSON export hardening、partial closeout recovery verify、repair task generation、diagnostics bundle、night-run 安全规则、v0.2 历史文档归档、lightweight project status ledger、refactor necessity audit。
 - 技术债审计：`docs/planning/refactor-assessment.md` 仍作为 TECH-07 背景输入；`SEARCH-07` 与 `UI-GATE-01` 已完成，当前没有必须先做的 broad refactor gate；大文件和重复逻辑存在但不阻塞 DEP-01 / TECH-07。
 - UI 改造状态：`docs/planning/ui-redesign-brief.md` 已完成信息架构审查与 `UI-GATE-01` 人工确认记录，`TECH-07` 最小支撑拆分、`UI-MOD-01` 行为保持模块化拆分、`UI-RELAYOUT-01` 第一轮工作台重排、`UI-POLISH-02-COPY-TRIM` 文案瘦身和 `UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT` 均已完成。当前必须停止在 `UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW`，等待用户人工检查桌面端和移动端观感，不得自动进入下一轮 UI polish。
 - 仍 blocked：真实服务器 release 用户目录部署验证、systemd 自启、真实 DeepSeek provider opt-in smoke（需要用户本地创建 env 并启动 server；AI 不读取 key）。
@@ -60,29 +60,29 @@
   - 明确未做：未改 schema、repository contract、HTTP API、server、真实 AI、RAG / embedding、Electron / fs / IPC、业务数据流或存储语义。
 
 ## 当前唯一执行中的原子任务
-- **REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL**
-  - 目标：在不暴露 API key 的前提下，接入 server-side DeepSeek closeout 草稿生成，前端仍保留人工审阅与本地规则兜底。
-  - 当前状态：`completed`；repo-local；等待单任务 commit 完成 completion gate。
-  - 直接输入边界：只读取 server 环境变量 `DEEPSEEK_API_KEY` / `DEEPSEEK_BASE_URL` / `DEEPSEEK_MODEL` / timeout；不读取用户密钥文件内容。
-  - 明确不做：不提交真实 key；不把 key 放浏览器/localStorage；不做 RAG/embedding；不自动写库；不替代人工结案；不接代码上下文分析。
-  - 验证方式：server no-key / mock provider verify、desktop schema/fallback verify、`npm run typecheck`、`npm run build`、`git diff --check`、handoff JSON parse。
-  - 完成定义：无 key 时清楚降级；有 server route / provider adapter；DeepSeek 输出经 schema 校验后才进入草稿；失败不阻断手写结案；planning sync + 单任务 commit。
+- **CORE-CLOSEOUT-CONTINUATION-UX**
+  - 目标：让结案流程可中断、可恢复、可重新打开；已归档卡可“取消归档，继续排查”，未提交表单刷新/重开同域名后可恢复，DeepSeek prompt 改由 server 根据 issue/records 构造。
+  - 当前状态：`completed`；repo-local；用户已确认取消归档语义为“只重开问题卡，保留归档和错误表历史”。
+  - 直接输入边界：只改 closeout / investigation / issue create 表单草稿、本地网页端 localStorage、server AI prompt 构造与 mock 验证；不读取真实密钥文件。
+  - 明确不做：不删除 ArchiveDocument / ErrorEntry；不自动写库；不做真实 provider smoke；不接 RAG/embedding；不做服务器部署。
+  - 验证方式：新增/更新 verify 覆盖本地草稿恢复、取消归档保留历史、server-side prompt route；`typecheck`、`build`、`verify:all`、server 相关 verify、`git diff --check`、handoff JSON parse。
+  - 完成定义：取消归档后问题卡回到 investigating 且历史归档仍可读；closeout/结案补充/建卡表单未提交内容同 origin 可恢复且成功提交后清除；前端不再向 AI route 传完整 messages。
 
 ## 当前前沿任务窗口（最多 3 个候选）
 - **DEP-01-RELEASE-USER-DIR-DEPLOY-VERIFY**
   - 状态：`blocked`；P0；白天主线；不能夜跑。
   - 选择理由：真实服务器部署仍是产品可用性的最大缺口。
-- **UI-RELAYOUT-01-WORKBENCH-FIRST-PASS**
+- **UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW**
+  - 状态：`manual-review`；P1；day-only。
+  - 选择理由：快速建卡 landing 调整后仍只能由用户人工检查桌面端和移动端观感，不得自动进入下一轮 UI polish。
+- **CORE-CLOSEOUT-CONTINUATION-UX**
   - 状态：`completed`；P1；repo-local。
-  - 选择理由：第一轮工作台重排已完成，下一步只能人工 review / smoke。
-- **REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL**
-  - 状态：`completed`；P1；repo-local。
-  - 选择理由：用户已明确要用 DeepSeek API，并要求先提交脏工作区再修改；当前最小价值是把 AI-ready 草稿升级为真实 AI 草稿且保留安全边界。
+  - 选择理由：已完成取消归档保留历史、网页端表单草稿恢复和 DeepSeek prompt server-side hardening；不得自动顺推真实 provider smoke。
 
 ## 下一步最小可执行动作
-- 本轮默认：提交 `REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL`，然后停止；不得自动做真实 provider smoke 或继续下一项 AI 能力。
-- 用户侧最小动作：自行创建 `/home/rainman/.config/probeflash/deepseek.env` 并通过 shell source 注入 `DEEPSEEK_API_KEY` 后启动 server，再在浏览器点“生成 AI 草稿”做真实 smoke。
-- 下一轮选择：回到 planning 重新判断是否继续 `REALAI-05/06`、真实 provider opt-in smoke、服务器部署验证或 UI-GATE-06 人工 review；不得机械顺推。
+- 本轮默认：`CORE-CLOSEOUT-CONTINUATION-UX` 已完成并提交；不得自动做真实 provider smoke 或继续下一项 AI 能力。
+- 用户侧最小动作：用同一个域名/地址刷新验证表单草稿恢复；如需测 DeepSeek，用户自行 source env 后启动 server。
+- 下一轮选择：回到 planning 重新判断是否继续真实 provider smoke、服务器部署验证或 UI-GATE-06 人工 review；不得机械顺推。
 
 ## 下一任务选择流程
 1. 可以先读 `docs/planning/status.md` 获取概览，但不得只凭它认领或执行任务。

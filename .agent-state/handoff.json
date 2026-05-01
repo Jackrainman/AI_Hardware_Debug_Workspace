@@ -16,14 +16,14 @@
     "archive_state": "object - v0.2.0 前历史文档归档状态与读取条件",
     "notes": "string[] - 下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-05-01T10:44:23+08:00",
+  "timestamp": "2026-05-01T11:16:01+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "R1",
   "current_stage_name": "长期产品路线图执行启动",
-  "current_stage_goal": "从 v0.2.x 本地 HTTP + SQLite + release 可部署基座出发，按 8 条产品主线推进；近期 P0 仍是部署可用、数据安全、可观测；B 组、第一轮 UI 修补与 REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL 已完成；真实 DeepSeek smoke 仍需用户本地注入 key 后执行。",
-  "primary_track": "Real AI Assistance minimal DeepSeek closeout draft integration completed code-side; Deployment / Operability + Data Safety P0 remains blocked by server confirmation",
+  "current_stage_goal": "从 v0.2.x 本地 HTTP + SQLite + release 可部署基座出发，按 8 条产品主线推进；近期 P0 仍是部署可用、数据安全、可观测；B 组、第一轮 UI 修补、REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL 与 CORE-CLOSEOUT-CONTINUATION-UX 已完成；真实 DeepSeek smoke 仍需用户本地注入 key 后执行。",
+  "primary_track": "Core closeout continuation UX completed; Real AI minimal DeepSeek closeout draft integration completed code-side; Deployment / Operability + Data Safety P0 remains blocked by server confirmation",
   "deferred_track": "DeepSeek real-provider smoke、REALAI-05/06、repo connector、RAG/embedding、权限系统和硬件自动接入均后置到依赖满足或用户拍板后。",
-  "current_atomic_task": "REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL",
+  "current_atomic_task": "CORE-CLOSEOUT-CONTINUATION-UX",
   "roadmap_document": "docs/planning/product-roadmap.md",
   "roadmap_tracks": [
     {
@@ -105,7 +105,8 @@
     "real_server_release_user_dir_deploy_verify_completed": false,
     "systemd_autostart_completed": false,
     "real_ai_provider_api_key_completed": false,
-    "realai_deepseek_closeout_draft_minimal_completed": true
+    "realai_deepseek_closeout_draft_minimal_completed": true,
+    "core_closeout_continuation_ux_completed": true
   },
   "assessment_state": {
     "refactor_assessment_document": "docs/planning/refactor-assessment.md",
@@ -153,16 +154,16 @@
       ]
     },
     {
-      "id": "REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL",
-      "track": "Real AI Assistance",
-      "goal": "接入 server-side DeepSeek closeout 草稿生成，保留本地规则兜底和人工确认边界。",
+      "id": "CORE-CLOSEOUT-CONTINUATION-UX",
+      "track": "Core Debug Workflow",
+      "goal": "让结案流程可中断、可恢复、可重新打开；取消归档只重开问题卡，表单草稿同 origin 恢复，DeepSeek prompt server-side 构造。",
       "status": "completed",
       "priority": "P1",
       "lane": "completed",
-      "night_safe": false,
-      "ai_unattended_run": false,
+      "night_safe": true,
+      "ai_unattended_run": true,
       "requires_user_confirmation": [],
-      "execution_contract": "Completed code-side DeepSeek closeout draft path: server provider adapter, env-only key boundary, AI status/draft route, desktop client, CloseoutForm DeepSeek-first/local-rule fallback, draft source history, no-key/mock/timeout/schema verifies. Did not read or commit a real key; real provider smoke remains user-run."
+      "execution_contract": "Completed in three functional commits: form draft local persistence, archived issue reopen preserving ArchiveDocument/ErrorEntry history, and server-side DeepSeek prompt construction from issue/records. Did not read or commit a real key; real provider smoke remains user-run."
     },
     {
       "id": "UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW",
@@ -920,7 +921,8 @@
     "UI-POLISH-02-COPY-TRIM",
     "UI-GATE-05-MANUAL-COPY-TRIM-REVIEW",
     "UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT",
-    "REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL"
+    "REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL",
+    "CORE-CLOSEOUT-CONTINUATION-UX"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -940,15 +942,15 @@
       "docs/product/产品介绍.md：产品定义 / 领域语言变化",
       "docs/archive/v0.2-closeout/：仅 v0.2.0 前历史背景、专项追溯或归档审计"
     ],
-    "recommended_next_daytime": "After committing REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL, stop and ask the user to run real DeepSeek smoke locally by sourcing /home/rainman/.config/probeflash/deepseek.env into the server environment. DEP-01 remains blocked until server deployment boundaries are reconfirmed; UI-GATE-06 remains available as manual review only.",
-    "recommended_next_daytime_status": "REALAI code-side minimal integration completed; real provider smoke is user-run because AI must not read or handle the API key.",
+    "recommended_next_daytime": "After CORE-CLOSEOUT-CONTINUATION-UX completion, stop and re-run planning before choosing any next task. Real DeepSeek smoke remains user-run by sourcing /home/rainman/.config/probeflash/deepseek.env into the server environment; DEP-01 remains blocked until server deployment boundaries are reconfirmed; UI-GATE-06 remains manual review only.",
+    "recommended_next_daytime_status": "Core closeout continuation UX and REALAI code-side minimal integration are completed; real provider smoke is user-run because AI must not read or handle the API key.",
     "recommended_next_night_safe": "none",
     "recommended_next_ui_task": "UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW remains manual review only; do not auto-start new UI polish.",
     "b_group_order": "UI-01, CORE-02, CORE-03, CORE-06, AIREADY-05, UI-GATE-01, TECH-07, UI-GATE-02, UI-MOD-01, UI-GATE-03, UI-RELAYOUT-01, UI-POLISH-02 and UI-POLISH-03 are complete; B group, manual visual gate, enabling split review, first-pass relayout, copy trim and quick issue landing layout are closed.",
     "after_b_group_order": "UI-GATE-01-MANUAL-VISUAL-DIRECTION completed -> TECH-07-APP-TSX-MINIMAL-SPLIT completed -> UI-GATE-02-MANUAL-UI-POLISH-AFTER-SPLIT completed/manual accepted -> UI-MOD-01-PRE-RELAYOUT-COMPONENT-SPLIT completed -> UI-GATE-03-MANUAL-RUN-CHECK-BEFORE-RELAYOUT completed/user approved -> UI-RELAYOUT-01-WORKBENCH-FIRST-PASS completed -> UI-GATE-04 user authorized copy trim -> UI-POLISH-02-COPY-TRIM completed -> UI-GATE-05 user authorized quick issue layout -> UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT completed -> UI-GATE-06-MANUAL-QUICK-ISSUE-LAYOUT-REVIEW current/day-only/manual.",
     "alternative_night_safe": "Do not choose AIREADY/CODECTX/CORE alternatives, REALAI-05/06, or next UI implementation unless the user explicitly redirects; real provider smoke requires user-owned API key setup.",
     "refactor_gate": "CODEBASE-REFINE-NECESSITY-AUDIT found no required broad refactor gate before DEP-01 or the B group. SEARCH-07, UI-01, UI-GATE-01, TECH-07, UI-MOD-01, UI-RELAYOUT-01, UI-POLISH-02 and UI-POLISH-03 are complete. TECH-07 stayed an enabling split; UI-POLISH-03 stayed a quick issue landing layout pass, not a full App.tsx rewrite or business redesign.",
-    "selection_rule": "当前完成 REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL 后必须停止；不得读取 /home/rainman/.config/probeflash/deepseek.env 或任何真实密钥文件。下一步若要真实 smoke，用户自行 source env 并启动 server；若要继续开发 REALAI-05/06、DEP-01 或 UI-GATE-06，必须重新经过 planning 选择。"
+    "selection_rule": "当前完成 CORE-CLOSEOUT-CONTINUATION-UX 后必须停止；不得读取 /home/rainman/.config/probeflash/deepseek.env 或任何真实密钥文件。下一步若要真实 smoke，用户自行 source env 并启动 server；若要继续开发 REALAI-05/06、DEP-01 或 UI-GATE-06，必须重新经过 planning 选择。"
   },
   "night_run_mode": {
     "policy": "Night run / unattended mode may only execute repo-local, automatically verifiable and rollback-friendly atomic tasks. External systems, real servers, privileged operations, destructive data operations and product decisions must stop with handoff.",
@@ -1215,6 +1217,7 @@
     "UI-POLISH-02-COPY-TRIM 已完成：压缩顶部成功态、项目弹窗、工作台入口、Knowledge Assist、追记、归档和结案辅助说明；保留服务器/存储错误态、Repair Task、真实 AI 未接入和文件写盘未接入等状态边界。",
     "UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT 已完成：未选中问题时快速建卡主卡已放大，最小演示路径已移除，辅助验证已移到未选中提示框下方并标注仅测试。",
     "REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL 已完成代码侧闭环：server-side DeepSeek adapter / AI route / desktop client / CloseoutForm DeepSeek 优先 + 本地规则兜底 / source history / mock no-key timeout schema verify。",
+    "CORE-CLOSEOUT-CONTINUATION-UX 已完成：workflow 表单本地草稿同 origin 保存 / 恢复 / 清除；取消归档只把问题卡重开为 investigating，保留 ArchiveDocument 和 ErrorEntry 历史；DeepSeek closeout prompt 已改为 server 根据 issue/records 构造，前端不再传完整 messages。",
     "当前不能由 AI 执行真实 DeepSeek smoke；用户需自行创建 /home/rainman/.config/probeflash/deepseek.env 并 source 到 server env 后启动服务。",
     "如果用户明确切回服务器部署并确认 SSH、release 获取、/home/hurricane/probeflash 写入、临时进程和 4100 端口边界，DEP-01 仍可作为 P0 白天主线；但下一轮默认不要改选 DEP-01。",
     "REALAI-05/06、真实 provider opt-in smoke、code context AI 分析仍需用户明确选择；不得机械顺推。",
