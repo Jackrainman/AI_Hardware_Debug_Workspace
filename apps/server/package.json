@@ -1,7 +1,7 @@
 {
   "name": "@probeflash/server",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "ProbeFlash local WSL backend scaffold for LAN storage migration.",
   "type": "module",
   "scripts": {

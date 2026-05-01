@@ -1,7 +1,7 @@
 {
   "name": "@probeflash/desktop",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.3.0",
   "description": "ProbeFlash desktop shell for embedded debugging flash notes and knowledge archiving.",
   "type": "module",
   "scripts": {
