@@ -16,12 +16,12 @@
     "archive_state": "object - v0.2.0 前历史文档归档状态与读取条件",
     "notes": "string[] - 下一轮必须保留的关键说明"
   },
-  "timestamp": "2026-05-01T11:16:01+08:00",
+  "timestamp": "2026-05-01T18:59:16+08:00",
   "current_mode": "server_storage_migration",
   "current_stage": "R1",
   "current_stage_name": "长期产品路线图执行启动",
-  "current_stage_goal": "从 v0.2.x 本地 HTTP + SQLite + release 可部署基座出发，按 8 条产品主线推进；近期 P0 仍是部署可用、数据安全、可观测；B 组、第一轮 UI 修补、REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL 与 CORE-CLOSEOUT-CONTINUATION-UX 已完成；真实 DeepSeek smoke 仍需用户本地注入 key 后执行。",
-  "primary_track": "Core closeout continuation UX completed; Real AI minimal DeepSeek closeout draft integration completed code-side; Deployment / Operability + Data Safety P0 remains blocked by server confirmation",
+  "current_stage_goal": "从 v0.2.x 本地 HTTP + SQLite + release 可部署基座出发，按 8 条产品主线推进；近期 P0 仍是部署可用、数据安全、可观测；B 组、第一轮 UI 修补、REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL 与 CORE-CLOSEOUT-CONTINUATION-UX 已完成；问题卡详情页追记入口单卡片默认折叠 hotfix 已完成；真实 DeepSeek smoke 仍需用户本地注入 key 后执行。",
+  "primary_track": "Core closeout continuation UX completed including one-card collapsed investigation append hotfix; Real AI minimal DeepSeek closeout draft integration completed code-side; Deployment / Operability + Data Safety P0 remains blocked by server confirmation",
   "deferred_track": "DeepSeek real-provider smoke、REALAI-05/06、repo connector、RAG/embedding、权限系统和硬件自动接入均后置到依赖满足或用户拍板后。",
   "current_atomic_task": "CORE-CLOSEOUT-CONTINUATION-UX",
   "roadmap_document": "docs/planning/product-roadmap.md",
@@ -106,7 +106,8 @@
     "systemd_autostart_completed": false,
     "real_ai_provider_api_key_completed": false,
     "realai_deepseek_closeout_draft_minimal_completed": true,
-    "core_closeout_continuation_ux_completed": true
+    "core_closeout_continuation_ux_completed": true,
+    "core_closeout_continuation_ux_investigation_entry_collapsed": true
   },
   "assessment_state": {
     "refactor_assessment_document": "docs/planning/refactor-assessment.md",
@@ -922,7 +923,8 @@
     "UI-GATE-05-MANUAL-COPY-TRIM-REVIEW",
     "UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT",
     "REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL",
-    "CORE-CLOSEOUT-CONTINUATION-UX"
+    "CORE-CLOSEOUT-CONTINUATION-UX",
+    "CORE-CLOSEOUT-CONTINUATION-UX-INVESTIGATION-ENTRY-COLLAPSE-HOTFIX"
   ],
   "next_task_selection_basis": {
     "required_inputs": [
@@ -1217,7 +1219,7 @@
     "UI-POLISH-02-COPY-TRIM 已完成：压缩顶部成功态、项目弹窗、工作台入口、Knowledge Assist、追记、归档和结案辅助说明；保留服务器/存储错误态、Repair Task、真实 AI 未接入和文件写盘未接入等状态边界。",
     "UI-POLISH-03-QUICK-ISSUE-LANDING-LAYOUT 已完成：未选中问题时快速建卡主卡已放大，最小演示路径已移除，辅助验证已移到未选中提示框下方并标注仅测试。",
     "REALAI-DEEPSEEK-CLOSEOUT-DRAFT-MINIMAL 已完成代码侧闭环：server-side DeepSeek adapter / AI route / desktop client / CloseoutForm DeepSeek 优先 + 本地规则兜底 / source history / mock no-key timeout schema verify。",
-    "CORE-CLOSEOUT-CONTINUATION-UX 已完成：workflow 表单本地草稿同 origin 保存 / 恢复 / 清除；取消归档只把问题卡重开为 investigating，保留 ArchiveDocument 和 ErrorEntry 历史；DeepSeek closeout prompt 已改为 server 根据 issue/records 构造，前端不再传完整 messages。",
+    "CORE-CLOSEOUT-CONTINUATION-UX 已完成：workflow 表单本地草稿同 origin 保存 / 恢复 / 清除；取消归档只把问题卡重开为 investigating，保留 ArchiveDocument 和 ErrorEntry 历史；DeepSeek closeout prompt 已改为 server 根据 issue/records 构造，前端不再传完整 messages；问题卡详情页追记入口单卡片默认折叠 hotfix 已完成，并由 verify 覆盖主流程单入口、无 wrapper+form 双入口、默认折叠和切换 issue 复位。",
     "当前不能由 AI 执行真实 DeepSeek smoke；用户需自行创建 /home/rainman/.config/probeflash/deepseek.env 并 source 到 server env 后启动服务。",
     "如果用户明确切回服务器部署并确认 SSH、release 获取、/home/hurricane/probeflash 写入、临时进程和 4100 端口边界，DEP-01 仍可作为 P0 白天主线；但下一轮默认不要改选 DEP-01。",
     "REALAI-05/06、真实 provider opt-in smoke、code context AI 分析仍需用户明确选择；不得机械顺推。",

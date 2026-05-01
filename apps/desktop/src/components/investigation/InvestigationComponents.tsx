@@ -57,6 +57,7 @@ export function InvestigationAppendForm({
   repository,
   workspaceId,
   issueId,
+  isArchived = false,
   onAppended,
   reportStorageError,
   clearStorageFeedback,
@@ -64,6 +65,7 @@ export function InvestigationAppendForm({
   repository: StorageRepository;
   workspaceId: string;
   issueId: string;
+  isArchived?: boolean;
   onAppended: () => void;
   reportStorageError: (error: StorageFeedbackError) => void;
   clearStorageFeedback: () => void;
@@ -73,9 +75,11 @@ export function InvestigationAppendForm({
   const [status, setStatus] = useState<InvestigationSubmitStatus>({ state: "idle" });
   const [draftStatus, setDraftStatus] = useState<InvestigationFormDraftStatus>("idle");
   const [isDraftReady, setIsDraftReady] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const draftScope = { workspaceId, formKind: "investigation", itemId: issueId };
 
   useEffect(() => {
+    setIsExpanded(false);
     setIsDraftReady(false);
     const restored = readFormDraft(
       getBrowserFormDraftStorage(),
@@ -110,6 +114,11 @@ export function InvestigationAppendForm({
     setType("observation");
     setDraftStatus("cleared");
   };
+
+  const title = isArchived ? "结案补充" : "创建排查记录";
+  const description = isArchived ? "归档后补充排查记录。" : "把当前观察、动作或判断追加到排查时间线。";
+  const hasLocalDraft =
+    draftStatus === "restored" || hasInvestigationFormDraftContent({ type, note });
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -149,50 +158,78 @@ export function InvestigationAppendForm({
   };
 
   return (
-    <form className="intake-form" onSubmit={handleSubmit} data-testid="investigation-append-form">
-      <div className="form-caption">
-        <h3>结案补充</h3>
-        <p>归档后补充排查记录。</p>
+    <form
+      className="intake-form"
+      onSubmit={handleSubmit}
+      data-testid="investigation-append-form"
+      data-expanded={isExpanded ? "true" : "false"}
+    >
+      <div className="form-caption investigation-append-caption">
+        <div className="investigation-append-caption-row">
+          <div>
+            <h3>{isExpanded ? title : "排查追记"}</h3>
+            <p>{isExpanded ? description : "需要补充观察、动作或判断时再打开。"}</p>
+          </div>
+          {!isExpanded && (
+            <button
+              type="button"
+              className="button-secondary"
+              data-testid="open-investigation-append-form"
+              onClick={() => setIsExpanded(true)}
+            >
+              {title}
+            </button>
+          )}
+        </div>
+        {!isExpanded && hasLocalDraft ? (
+          <p className="storage-line investigation-append-draft-hint">
+            有未提交草稿，可继续编辑。
+          </p>
+        ) : null}
       </div>
-      <p className="storage-line" data-testid="investigation-target">
-        当前问题：{issueId}
-      </p>
-      <div className="list-header">
-        <span className="storage-line" data-testid="investigation-form-draft-state">
-          未提交内容：{renderInvestigationDraftStatus(draftStatus)}
-        </span>
-        <button type="button" className="button-secondary" onClick={handleClearFormDraft}>
-          清除本地草稿
-        </button>
-      </div>
-      <label className="intake-field">
-        <span>记录类型</span>
-        <select
-          value={type}
-          onChange={(event) => setType(event.target.value as InvestigationType)}
-        >
-          {INVESTIGATION_TYPES.map((value) => (
-            <option key={value} value={value}>
-              {INVESTIGATION_TYPE_LABELS[value]}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="intake-field">
-        <span>排查记录</span>
-        <textarea
-          value={note}
-          onChange={(event) => setNote(event.target.value)}
-          rows={3}
-          placeholder="写下刚看到的现象、尝试过的动作或下一步判断"
-        />
-      </label>
-      <div className="intake-actions">
-        <button type="submit">追加记录</button>
-      </div>
-      <p className="storage-line" data-testid="investigation-status">
-        追记状态：{renderInvestigationStatus(status)}
-      </p>
+      {isExpanded && (
+        <>
+          <p className="storage-line" data-testid="investigation-target">
+            当前问题：{issueId}
+          </p>
+          <div className="list-header">
+            <span className="storage-line" data-testid="investigation-form-draft-state">
+              未提交内容：{renderInvestigationDraftStatus(draftStatus)}
+            </span>
+            <button type="button" className="button-secondary" onClick={handleClearFormDraft}>
+              清除本地草稿
+            </button>
+          </div>
+          <label className="intake-field">
+            <span>记录类型</span>
+            <select
+              value={type}
+              onChange={(event) => setType(event.target.value as InvestigationType)}
+            >
+              {INVESTIGATION_TYPES.map((value) => (
+                <option key={value} value={value}>
+                  {INVESTIGATION_TYPE_LABELS[value]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="intake-field">
+            <span>排查记录</span>
+            <textarea
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+              rows={3}
+              placeholder="写下刚看到的现象、尝试过的动作或下一步判断"
+            />
+          </label>
+          <div className="intake-actions">
+            <button type="submit">追加记录</button>
+          </div>
+          <p className="storage-line" data-testid="investigation-status">
+            追记状态：{renderInvestigationStatus(status)}
+          </p>
+        </>
+      )}
     </form>
   );
 }
@@ -274,6 +311,10 @@ function parseInvestigationFormDraft(value: unknown): InvestigationFormDraft | n
     return null;
   }
   return { type: draft.type as InvestigationType, note: draft.note };
+}
+
+function hasInvestigationFormDraftContent(draft: InvestigationFormDraft): boolean {
+  return draft.note.trim().length > 0 || draft.type !== "observation";
 }
 
 function renderInvestigationDraftStatus(status: InvestigationFormDraftStatus): string {

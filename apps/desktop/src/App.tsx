@@ -675,6 +675,7 @@ function IssuePane({
               repository={repository}
               workspaceId={activeWorkspace.id}
               issueId={selectedIssueId}
+              isArchived={selectedCard?.status === "archived"}
               onAppended={handleRecordAppended}
               reportStorageError={reportStorageError}
               clearStorageFeedback={clearStorageFeedback}

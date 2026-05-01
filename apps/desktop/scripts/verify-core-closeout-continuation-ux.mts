@@ -65,6 +65,50 @@ function fail(reason: string, detail?: unknown): never {
   process.exit(1);
 }
 
+function countOccurrences(source: string, needle: string): number {
+  return source.split(needle).length - 1;
+}
+
+function assertSourceContainsExactly(
+  sourceName: string,
+  source: string,
+  needle: string,
+  expectedCount: number,
+): void {
+  const actualCount = countOccurrences(source, needle);
+  if (actualCount !== expectedCount) {
+    fail(`${sourceName} should contain "${needle}" exactly ${expectedCount} time(s)`, {
+      actualCount,
+    });
+  }
+}
+
+function assertSourceDoesNotContain(sourceName: string, source: string, needle: string): void {
+  if (source.includes(needle)) {
+    fail(`${sourceName} should not contain duplicate investigation append entry marker: ${needle}`);
+  }
+}
+
+function extractFunctionSource(sourceName: string, source: string, signature: string): string {
+  const start = source.indexOf(signature);
+  if (start < 0) {
+    fail(`${sourceName} should contain function signature: ${signature}`);
+  }
+  const bodyMarkerStart = source.indexOf(") {", start);
+  const bodyStart = bodyMarkerStart >= 0 ? bodyMarkerStart + 2 : source.indexOf("{", start);
+  if (bodyStart < 0) {
+    fail(`${sourceName} function should have a body: ${signature}`);
+  }
+  let depth = 0;
+  for (let index = bodyStart; index < source.length; index += 1) {
+    const char = source[index];
+    if (char === "{") depth += 1;
+    if (char === "}") depth -= 1;
+    if (depth === 0) return source.slice(start, index + 1);
+  }
+  fail(`${sourceName} function body should be balanced: ${signature}`);
+}
+
 const storage = new MemoryDraftStorage();
 const scope = { workspaceId: "workspace-26-r1", formKind: "closeout", itemId: "issue-continuation" };
 const key = formDraftStorageKey(scope);
@@ -172,6 +216,10 @@ if (!listErrorEntries().valid.some((item) => item.sourceIssueId === issue.id)) {
 }
 
 const appSource = readFileSync(resolve(process.cwd(), "src", "App.tsx"), "utf8");
+const issueWorkflowSource = readFileSync(
+  resolve(process.cwd(), "src", "IssueWorkflowSections.tsx"),
+  "utf8",
+);
 const archivedSummarySource = readFileSync(
   resolve(process.cwd(), "src", "components", "closeout", "ArchivedCloseoutSummary.tsx"),
   "utf8",
@@ -191,6 +239,23 @@ const issueEntrySource = readFileSync(
 for (const expected of [
   "unarchive-issue-button",
   'status: "investigating"',
+  'investigationAppendForm={selectedIssueId !== null ? (',
+  "<InvestigationAppendForm",
+  'isArchived={selectedCard?.status === "archived"}',
+  "InvestigationAppendForm",
+  "const [isExpanded, setIsExpanded] = useState(false)",
+  "setIsExpanded(false)",
+  "onClick={() => setIsExpanded(true)}",
+  'data-testid="investigation-append-form"',
+  'data-expanded={isExpanded ? "true" : "false"}',
+  'data-testid="open-investigation-append-form"',
+  "investigation-append-caption-row",
+  "investigation-append-draft-hint",
+  "hasInvestigationFormDraftContent",
+  "排查追记",
+  "有未提交草稿，可继续编辑。",
+  "创建排查记录",
+  "结案补充",
   "clearFormDraft",
   "closeout-form-draft-state",
   "investigation-form-draft-state",
@@ -203,6 +268,89 @@ for (const expected of [
   }
 }
 
+const issueMainFlowSource = extractFunctionSource(
+  "IssueWorkflowSections.tsx",
+  issueWorkflowSource,
+  "export function IssueMainFlow",
+);
+const investigationAppendFormSource = extractFunctionSource(
+  "InvestigationComponents.tsx",
+  investigationSource,
+  "export function InvestigationAppendForm",
+);
+const mainFlowSources = [appSource, issueWorkflowSource, investigationSource].join("\n");
+
+assertSourceContainsExactly("App.tsx", appSource, "<InvestigationAppendForm", 1);
+assertSourceContainsExactly(
+  "App.tsx",
+  appSource,
+  "investigationAppendForm={selectedIssueId !== null ? (",
+  1,
+);
+assertSourceContainsExactly("IssueMainFlow", issueMainFlowSource, "{investigationAppendForm}", 1);
+assertSourceContainsExactly(
+  "InvestigationAppendForm",
+  investigationAppendFormSource,
+  'data-testid="investigation-append-form"',
+  1,
+);
+assertSourceContainsExactly(
+  "InvestigationAppendForm",
+  investigationAppendFormSource,
+  'data-testid="open-investigation-append-form"',
+  1,
+);
+
+for (const forbidden of [
+  "InvestigationAppendSection",
+  'data-testid="investigation-append-entry"',
+  'className="investigation-append-action"',
+  "investigation-append-entry-body",
+]) {
+  assertSourceDoesNotContain("main flow investigation append sources", mainFlowSources, forbidden);
+}
+
+if (!appSource.includes('key={`${activeWorkspace.id}:${selectedIssueId}`}')) {
+  fail("InvestigationAppendForm should be keyed by workspace and selected issue to force issue switch remount");
+}
+if (!investigationAppendFormSource.includes('const title = isArchived ? "结案补充" : "创建排查记录"')) {
+  fail("investigation append entry should keep archived and active issue titles distinct");
+}
+if (
+  !/useEffect\(\(\) => \{\s*setIsExpanded\(false\);[\s\S]*?\}, \[workspaceId, issueId\]\);/.test(
+    investigationAppendFormSource,
+  )
+) {
+  fail("InvestigationAppendForm should reset collapsed state when workspaceId or issueId changes");
+}
+
+const expandedFieldsGateIndex = investigationAppendFormSource.indexOf("{isExpanded && (");
+if (expandedFieldsGateIndex < 0) {
+  fail("InvestigationAppendForm should gate detailed fields behind collapsed/expanded state");
+}
+const collapsedOpenButtonIndex = investigationAppendFormSource.indexOf(
+  'data-testid="open-investigation-append-form"',
+);
+if (collapsedOpenButtonIndex < 0 || collapsedOpenButtonIndex > expandedFieldsGateIndex) {
+  fail("collapsed investigation append button should render before the expanded detailed field gate");
+}
+for (const detailedFieldMarker of [
+  'data-testid="investigation-target"',
+  'data-testid="investigation-form-draft-state"',
+  "<select",
+  "<textarea",
+  "<button type=\"submit\">追加记录</button>",
+  'data-testid="investigation-status"',
+]) {
+  const markerIndex = investigationAppendFormSource.indexOf(detailedFieldMarker);
+  if (markerIndex < 0) {
+    fail(`InvestigationAppendForm should contain detailed field marker: ${detailedFieldMarker}`);
+  }
+  if (markerIndex < expandedFieldsGateIndex) {
+    fail(`InvestigationAppendForm detailed field should be hidden while collapsed: ${detailedFieldMarker}`);
+  }
+}
+
 console.log("[CORE-CLOSEOUT-CONTINUATION-UX verify] PASS: form drafts write, restore and clear by scoped key");
 console.log("[CORE-CLOSEOUT-CONTINUATION-UX verify] PASS: unarchive reopens issue while preserving archive/error history");
-console.log("[CORE-CLOSEOUT-CONTINUATION-UX verify] PASS: UI exposes unarchive and local draft markers");
+console.log("[CORE-CLOSEOUT-CONTINUATION-UX verify] PASS: UI exposes one-card collapsed investigation append flow and local draft markers");

@@ -2033,6 +2033,25 @@ select:focus-visible {
   background: var(--surface);
 }
 
+.investigation-append-caption-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.investigation-append-caption-row > div {
+  min-width: 0;
+}
+
+.investigation-append-draft-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .form-caption {
   display: flex;
   flex-direction: column;
