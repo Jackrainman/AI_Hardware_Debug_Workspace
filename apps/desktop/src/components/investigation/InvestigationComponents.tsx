@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   buildInvestigationRecordFromIntake,
   defaultInvestigationIntakeOptions,
@@ -16,6 +16,12 @@ import {
   storageWriteErrorToFeedback,
   type StorageFeedbackError,
 } from "../../storage/storage-feedback";
+import {
+  clearFormDraft,
+  getBrowserFormDraftStorage,
+  readFormDraft,
+  writeFormDraft,
+} from "../../storage/form-draft-store";
 
 const INVESTIGATION_TYPES: InvestigationType[] = [
   "observation",
@@ -40,14 +46,23 @@ type InvestigationSubmitStatus =
   | { state: "saved"; id: string; at: string }
   | { state: "error"; reason: string };
 
+type InvestigationFormDraftStatus = "idle" | "restored" | "stored" | "unavailable" | "cleared";
+
+type InvestigationFormDraft = {
+  type: InvestigationType;
+  note: string;
+};
+
 export function InvestigationAppendForm({
   repository,
+  workspaceId,
   issueId,
   onAppended,
   reportStorageError,
   clearStorageFeedback,
 }: {
   repository: StorageRepository;
+  workspaceId: string;
   issueId: string;
   onAppended: () => void;
   reportStorageError: (error: StorageFeedbackError) => void;
@@ -56,6 +71,45 @@ export function InvestigationAppendForm({
   const [type, setType] = useState<InvestigationType>("observation");
   const [note, setNote] = useState<string>("");
   const [status, setStatus] = useState<InvestigationSubmitStatus>({ state: "idle" });
+  const [draftStatus, setDraftStatus] = useState<InvestigationFormDraftStatus>("idle");
+  const [isDraftReady, setIsDraftReady] = useState(false);
+  const draftScope = { workspaceId, formKind: "investigation", itemId: issueId };
+
+  useEffect(() => {
+    setIsDraftReady(false);
+    const restored = readFormDraft(
+      getBrowserFormDraftStorage(),
+      draftScope,
+      parseInvestigationFormDraft,
+    );
+    if (restored.state === "restored") {
+      setType(restored.data.type);
+      setNote(restored.data.note);
+      setDraftStatus("restored");
+    } else {
+      setType("observation");
+      setNote("");
+      setDraftStatus(restored.state === "unavailable" ? "unavailable" : "idle");
+    }
+    setIsDraftReady(true);
+  }, [workspaceId, issueId]);
+
+  useEffect(() => {
+    if (!isDraftReady) return;
+    if (note.trim().length === 0 && type === "observation") {
+      clearFormDraft(getBrowserFormDraftStorage(), draftScope);
+      return;
+    }
+    const stored = writeFormDraft(getBrowserFormDraftStorage(), draftScope, { type, note });
+    setDraftStatus(stored ? "stored" : "unavailable");
+  }, [workspaceId, issueId, type, note, isDraftReady]);
+
+  const handleClearFormDraft = () => {
+    clearFormDraft(getBrowserFormDraftStorage(), draftScope);
+    setNote("");
+    setType("observation");
+    setDraftStatus("cleared");
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -87,6 +141,7 @@ export function InvestigationAppendForm({
       return;
     }
     clearStorageFeedback();
+    clearFormDraft(getBrowserFormDraftStorage(), draftScope);
     setStatus({ state: "saved", id: result.record.id, at: result.record.createdAt });
     setNote("");
     setType("observation");
@@ -102,6 +157,14 @@ export function InvestigationAppendForm({
       <p className="storage-line" data-testid="investigation-target">
         当前问题：{issueId}
       </p>
+      <div className="list-header">
+        <span className="storage-line" data-testid="investigation-form-draft-state">
+          未提交内容：{renderInvestigationDraftStatus(draftStatus)}
+        </span>
+        <button type="button" className="button-secondary" onClick={handleClearFormDraft}>
+          清除本地草稿
+        </button>
+      </div>
       <label className="intake-field">
         <span>记录类型</span>
         <select
@@ -200,6 +263,31 @@ function renderInvestigationStatus(status: InvestigationSubmitStatus): string {
       return `已追加 · ${status.id} · ${status.at}`;
     case "error":
       return `追加失败：${status.reason}`;
+  }
+}
+
+function parseInvestigationFormDraft(value: unknown): InvestigationFormDraft | null {
+  if (typeof value !== "object" || value === null) return null;
+  const draft = value as Partial<Record<keyof InvestigationFormDraft, unknown>>;
+  if (typeof draft.note !== "string") return null;
+  if (typeof draft.type !== "string" || !INVESTIGATION_TYPES.includes(draft.type as InvestigationType)) {
+    return null;
+  }
+  return { type: draft.type as InvestigationType, note: draft.note };
+}
+
+function renderInvestigationDraftStatus(status: InvestigationFormDraftStatus): string {
+  switch (status) {
+    case "idle":
+      return "同一域名 / 地址下会自动暂存。";
+    case "restored":
+      return "已恢复上次未提交内容。";
+    case "stored":
+      return "已暂存在本地浏览器。";
+    case "unavailable":
+      return "浏览器本地暂存不可用；当前填写仍可提交。";
+    case "cleared":
+      return "已清除本地未提交内容。";
   }
 }
 

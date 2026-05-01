@@ -554,6 +554,7 @@ function IssuePane({
     void reloadSelectedCard(id, { recentState: "recorded" });
     void loadRecordList(id);
     setLastCloseout(null);
+    setArchivedCloseoutData(null);
     setSimilarIssues(null);
     setDismissedRecurrencePrompt(null);
   };
@@ -633,6 +634,7 @@ function IssuePane({
           selectedIssueId={selectedIssueId}
           quickIssueEntry={(
             <QuickIssueCreateBar
+              key={activeWorkspace.id}
               repository={repository}
               workspaceId={activeWorkspace.id}
               onCreated={handleCardCreated}
@@ -649,7 +651,9 @@ function IssuePane({
           )}
           investigationAppendForm={selectedIssueId !== null ? (
             <InvestigationAppendForm
+              key={`${activeWorkspace.id}:${selectedIssueId}`}
               repository={repository}
+              workspaceId={activeWorkspace.id}
               issueId={selectedIssueId}
               onAppended={handleRecordAppended}
               reportStorageError={reportStorageError}
@@ -666,7 +670,9 @@ function IssuePane({
             <ArchivedCloseoutSummary data={archivedCloseoutData} />
           ) : selectedIssueId !== null && selectedCard?.status !== "archived" ? (
             <CloseoutForm
+              key={`${activeWorkspace.id}:${selectedIssueId}`}
               repository={repository}
+              workspaceId={activeWorkspace.id}
               issueId={selectedIssueId}
               issueCard={selectedCard}
               records={recordList?.valid ?? []}

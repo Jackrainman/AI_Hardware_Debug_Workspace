@@ -23,6 +23,12 @@ import type { IssueCard } from "../../domain/schemas/issue-card";
 import type { InvestigationRecord } from "../../domain/schemas/investigation-record";
 import type { StorageRepository } from "../../storage/storage-repository";
 import {
+  clearFormDraft,
+  getBrowserFormDraftStorage,
+  readFormDraft,
+  writeFormDraft,
+} from "../../storage/form-draft-store";
+import {
   closeoutFailureToFeedback,
   type StorageFeedbackError,
 } from "../../storage/storage-feedback";
@@ -56,8 +62,18 @@ type DraftGenerateStatus =
   | { state: "deepseek"; model: string }
   | { state: "fallback"; reason: string };
 
+type FormDraftStatus = "idle" | "restored" | "stored" | "unavailable" | "cleared";
+
+type CloseoutFormDraft = {
+  category: string;
+  rootCause: string;
+  resolution: string;
+  prevention: string;
+};
+
 export function CloseoutForm({
   repository,
+  workspaceId,
   issueId,
   issueCard,
   records,
@@ -66,6 +82,7 @@ export function CloseoutForm({
   clearStorageFeedback,
 }: {
   repository: StorageRepository;
+  workspaceId: string;
   issueId: string;
   issueCard: IssueCard | null;
   records: InvestigationRecord[];
@@ -82,6 +99,8 @@ export function CloseoutForm({
   const [draftHistory, setDraftHistory] = useState<CloseoutDraftHistoryEntry[]>([]);
   const [draftHistoryStatus, setDraftHistoryStatus] = useState<DraftHistoryStatus>("idle");
   const [draftGenerateStatus, setDraftGenerateStatus] = useState<DraftGenerateStatus>({ state: "idle" });
+  const [formDraftStatus, setFormDraftStatus] = useState<FormDraftStatus>("idle");
+  const [isFormDraftReady, setIsFormDraftReady] = useState(false);
   const [status, setStatus] = useState<CloseoutSubmitStatus>({ state: "idle" });
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
 
@@ -131,6 +150,7 @@ export function CloseoutForm({
     },
   ] as const;
   const activeDraftHistoryEntry = draftHistory.find((entry) => entry.id === activeDraftEntryId) ?? null;
+  const formDraftScope = { workspaceId, formKind: "closeout", itemId: issueId };
 
   useEffect(() => {
     setDraft(null);
@@ -140,6 +160,40 @@ export function CloseoutForm({
     setDraftGenerateStatus({ state: "idle" });
     setHasAttemptedSubmit(false);
   }, [issueId]);
+
+  useEffect(() => {
+    setIsFormDraftReady(false);
+    const restored = readFormDraft(
+      getBrowserFormDraftStorage(),
+      formDraftScope,
+      parseCloseoutFormDraft,
+    );
+    if (restored.state === "restored") {
+      setCategory(restored.data.category);
+      setRootCause(restored.data.rootCause);
+      setResolution(restored.data.resolution);
+      setPrevention(restored.data.prevention);
+      setFormDraftStatus("restored");
+    } else {
+      setCategory("");
+      setRootCause("");
+      setResolution("");
+      setPrevention("");
+      setFormDraftStatus(restored.state === "unavailable" ? "unavailable" : "idle");
+    }
+    setIsFormDraftReady(true);
+  }, [workspaceId, issueId]);
+
+  useEffect(() => {
+    if (!isFormDraftReady) return;
+    const draftValue: CloseoutFormDraft = { category, rootCause, resolution, prevention };
+    if (!hasCloseoutFormDraftContent(draftValue)) {
+      clearFormDraft(getBrowserFormDraftStorage(), formDraftScope);
+      return;
+    }
+    const stored = writeFormDraft(getBrowserFormDraftStorage(), formDraftScope, draftValue);
+    setFormDraftStatus(stored ? "stored" : "unavailable");
+  }, [workspaceId, issueId, category, rootCause, resolution, prevention, isFormDraftReady]);
 
   const handleGenerateDraft = async () => {
     if (issueCard === null) return;
@@ -203,6 +257,15 @@ export function CloseoutForm({
     setDraftHistoryStatus("cleared");
   };
 
+  const handleClearFormDraft = () => {
+    clearFormDraft(getBrowserFormDraftStorage(), formDraftScope);
+    setCategory("");
+    setRootCause("");
+    setResolution("");
+    setPrevention("");
+    setFormDraftStatus("cleared");
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setHasAttemptedSubmit(true);
@@ -226,6 +289,7 @@ export function CloseoutForm({
       return;
     }
     clearStorageFeedback();
+    clearFormDraft(getBrowserFormDraftStorage(), formDraftScope);
     setStatus({
       state: "saved",
       fileName: result.archiveDocument.fileName,
@@ -270,6 +334,14 @@ export function CloseoutForm({
       <p className="storage-line" data-testid="closeout-target">
         结案对象：{issueId}
       </p>
+      <div className="list-header">
+        <span className="storage-line" data-testid="closeout-form-draft-state">
+          未提交内容：{renderFormDraftStatus(formDraftStatus)}
+        </span>
+        <button type="button" className="button-secondary" onClick={handleClearFormDraft}>
+          清除本地草稿
+        </button>
+      </div>
       <section className="closeout-quality-panel" data-testid="closeout-quality-panel" aria-label="结案填写检查">
         <div className="closeout-quality-header">
           <span>结案填写检查</span>
@@ -571,6 +643,46 @@ function renderDraftGenerateStatus(status: DraftGenerateStatus): string {
       return `DeepSeek 已生成 · ${status.model} · 仍需人工确认。`;
     case "fallback":
       return status.reason;
+  }
+}
+
+function parseCloseoutFormDraft(value: unknown): CloseoutFormDraft | null {
+  if (typeof value !== "object" || value === null) return null;
+  const draft = value as Partial<Record<keyof CloseoutFormDraft, unknown>>;
+  if (
+    typeof draft.category !== "string" ||
+    typeof draft.rootCause !== "string" ||
+    typeof draft.resolution !== "string" ||
+    typeof draft.prevention !== "string"
+  ) {
+    return null;
+  }
+  return {
+    category: draft.category,
+    rootCause: draft.rootCause,
+    resolution: draft.resolution,
+    prevention: draft.prevention,
+  };
+}
+
+function hasCloseoutFormDraftContent(draft: CloseoutFormDraft): boolean {
+  return [draft.category, draft.rootCause, draft.resolution, draft.prevention].some(
+    (value) => value.trim().length > 0,
+  );
+}
+
+function renderFormDraftStatus(status: FormDraftStatus): string {
+  switch (status) {
+    case "idle":
+      return "同一域名 / 地址下会自动暂存。";
+    case "restored":
+      return "已恢复上次未提交内容。";
+    case "stored":
+      return "已暂存在本地浏览器。";
+    case "unavailable":
+      return "浏览器本地暂存不可用；当前填写仍可提交。";
+    case "cleared":
+      return "已清除本地未提交内容。";
   }
 }
 

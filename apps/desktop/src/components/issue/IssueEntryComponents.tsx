@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   buildIssueCardFromIntake,
   buildQuickIssueCardFromLine,
@@ -19,6 +19,12 @@ import {
   type StorageFeedbackError,
 } from "../../storage/storage-feedback";
 import {
+  clearFormDraft,
+  getBrowserFormDraftStorage,
+  readFormDraft,
+  writeFormDraft,
+} from "../../storage/form-draft-store";
+import {
   labelIssueStatus,
   labelSeverity,
   parseTagsInput,
@@ -30,6 +36,21 @@ type IntakeSubmitStatus =
   | { state: "idle" }
   | { state: "saved"; id: string; at: string }
   | { state: "error"; reason: string };
+
+type IssueFormDraftStatus = "idle" | "restored" | "stored" | "unavailable" | "cleared";
+
+type QuickIssueFormDraft = {
+  line: string;
+  severity: IntakeSeverity;
+  tagsInput: string;
+};
+
+type IssueIntakeFormDraft = {
+  title: string;
+  description: string;
+  severity: IntakeSeverity;
+  tagsInput: string;
+};
 
 export function QuickIssueCreateBar({
   repository,
@@ -48,7 +69,42 @@ export function QuickIssueCreateBar({
   const [severity, setSeverity] = useState<IntakeSeverity>("medium");
   const [tagsInput, setTagsInput] = useState<string>("");
   const [status, setStatus] = useState<IntakeSubmitStatus>({ state: "idle" });
+  const [draftStatus, setDraftStatus] = useState<IssueFormDraftStatus>("idle");
+  const [isDraftReady, setIsDraftReady] = useState(false);
   const canSubmit = line.trim().length > 0;
+  const draftScope = { workspaceId, formKind: "quick-issue", itemId: "new" };
+
+  useEffect(() => {
+    const restored = readFormDraft(getBrowserFormDraftStorage(), draftScope, parseQuickIssueDraft);
+    if (restored.state === "restored") {
+      setLine(restored.data.line);
+      setSeverity(restored.data.severity);
+      setTagsInput(restored.data.tagsInput);
+      setDraftStatus("restored");
+    } else {
+      setDraftStatus(restored.state === "unavailable" ? "unavailable" : "idle");
+    }
+    setIsDraftReady(true);
+  }, [workspaceId]);
+
+  useEffect(() => {
+    if (!isDraftReady) return;
+    const draftValue: QuickIssueFormDraft = { line, severity, tagsInput };
+    if (!hasQuickIssueDraftContent(draftValue)) {
+      clearFormDraft(getBrowserFormDraftStorage(), draftScope);
+      return;
+    }
+    const stored = writeFormDraft(getBrowserFormDraftStorage(), draftScope, draftValue);
+    setDraftStatus(stored ? "stored" : "unavailable");
+  }, [workspaceId, line, severity, tagsInput, isDraftReady]);
+
+  const handleClearFormDraft = () => {
+    clearFormDraft(getBrowserFormDraftStorage(), draftScope);
+    setLine("");
+    setSeverity("medium");
+    setTagsInput("");
+    setDraftStatus("cleared");
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -72,6 +128,7 @@ export function QuickIssueCreateBar({
       return;
     }
     clearStorageFeedback();
+    clearFormDraft(getBrowserFormDraftStorage(), draftScope);
     setStatus({ state: "saved", id: result.card.id, at: result.card.createdAt });
     setLine("");
     setSeverity("medium");
@@ -91,6 +148,9 @@ export function QuickIssueCreateBar({
         <p>创建后自动打开追记 / 结案区。</p>
         <p className="storage-line" data-testid="quick-issue-create-status">
           快速建卡状态：{renderIntakeStatus(status)}
+        </p>
+        <p className="storage-line" data-testid="quick-issue-draft-status">
+          未提交内容：{renderIssueDraftStatus(draftStatus)}
         </p>
       </div>
       <div className="quick-issue-input-row">
@@ -126,6 +186,9 @@ export function QuickIssueCreateBar({
         <button type="submit" disabled={!canSubmit} data-testid="quick-issue-create-submit">
           创建并打开
         </button>
+        <button type="button" className="button-secondary" onClick={handleClearFormDraft}>
+          清除本地草稿
+        </button>
       </div>
     </form>
   );
@@ -151,6 +214,47 @@ export function IssueIntakeForm({
   const [severity, setSeverity] = useState<IntakeSeverity>("medium");
   const [tagsInput, setTagsInput] = useState<string>("");
   const [status, setStatus] = useState<IntakeSubmitStatus>({ state: "idle" });
+  const [draftStatus, setDraftStatus] = useState<IssueFormDraftStatus>("idle");
+  const [isDraftReady, setIsDraftReady] = useState(false);
+  const draftScope = {
+    workspaceId,
+    formKind: "issue-intake",
+    itemId: isDefaultMode ? "new-default" : "new-active",
+  };
+
+  useEffect(() => {
+    const restored = readFormDraft(getBrowserFormDraftStorage(), draftScope, parseIssueIntakeDraft);
+    if (restored.state === "restored") {
+      setTitle(restored.data.title);
+      setDescription(restored.data.description);
+      setSeverity(restored.data.severity);
+      setTagsInput(restored.data.tagsInput);
+      setDraftStatus("restored");
+    } else {
+      setDraftStatus(restored.state === "unavailable" ? "unavailable" : "idle");
+    }
+    setIsDraftReady(true);
+  }, [workspaceId, isDefaultMode]);
+
+  useEffect(() => {
+    if (!isDraftReady) return;
+    const draftValue: IssueIntakeFormDraft = { title, description, severity, tagsInput };
+    if (!hasIssueIntakeDraftContent(draftValue)) {
+      clearFormDraft(getBrowserFormDraftStorage(), draftScope);
+      return;
+    }
+    const stored = writeFormDraft(getBrowserFormDraftStorage(), draftScope, draftValue);
+    setDraftStatus(stored ? "stored" : "unavailable");
+  }, [workspaceId, isDefaultMode, title, description, severity, tagsInput, isDraftReady]);
+
+  const handleClearFormDraft = () => {
+    clearFormDraft(getBrowserFormDraftStorage(), draftScope);
+    setTitle("");
+    setDescription("");
+    setSeverity("medium");
+    setTagsInput("");
+    setDraftStatus("cleared");
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -176,6 +280,7 @@ export function IssueIntakeForm({
       return;
     }
     clearStorageFeedback();
+    clearFormDraft(getBrowserFormDraftStorage(), draftScope);
     setStatus({ state: "saved", id: result.card.id, at: result.card.createdAt });
     setTitle("");
     setDescription("");
@@ -255,6 +360,14 @@ export function IssueIntakeForm({
       <p className="storage-line" data-testid="intake-status">
         创建状态：{renderIntakeStatus(status)}
       </p>
+      <div className="list-header">
+        <span className="storage-line" data-testid="issue-intake-draft-status">
+          未提交内容：{renderIssueDraftStatus(draftStatus)}
+        </span>
+        <button type="button" className="button-secondary" onClick={handleClearFormDraft}>
+          清除本地草稿
+        </button>
+      </div>
     </form>
   );
 }
@@ -350,6 +463,66 @@ export function IssueCardListView({
       )}
     </div>
   );
+}
+
+function parseSeverity(value: unknown): IntakeSeverity | null {
+  return typeof value === "string" && SEVERITIES.includes(value as IntakeSeverity)
+    ? value as IntakeSeverity
+    : null;
+}
+
+function parseQuickIssueDraft(value: unknown): QuickIssueFormDraft | null {
+  if (typeof value !== "object" || value === null) return null;
+  const draft = value as Partial<Record<keyof QuickIssueFormDraft, unknown>>;
+  const severity = parseSeverity(draft.severity);
+  if (typeof draft.line !== "string" || typeof draft.tagsInput !== "string" || severity === null) {
+    return null;
+  }
+  return { line: draft.line, severity, tagsInput: draft.tagsInput };
+}
+
+function parseIssueIntakeDraft(value: unknown): IssueIntakeFormDraft | null {
+  if (typeof value !== "object" || value === null) return null;
+  const draft = value as Partial<Record<keyof IssueIntakeFormDraft, unknown>>;
+  const severity = parseSeverity(draft.severity);
+  if (
+    typeof draft.title !== "string" ||
+    typeof draft.description !== "string" ||
+    typeof draft.tagsInput !== "string" ||
+    severity === null
+  ) {
+    return null;
+  }
+  return {
+    title: draft.title,
+    description: draft.description,
+    severity,
+    tagsInput: draft.tagsInput,
+  };
+}
+
+function hasQuickIssueDraftContent(draft: QuickIssueFormDraft): boolean {
+  return draft.line.trim().length > 0 || draft.tagsInput.trim().length > 0 || draft.severity !== "medium";
+}
+
+function hasIssueIntakeDraftContent(draft: IssueIntakeFormDraft): boolean {
+  return [draft.title, draft.description, draft.tagsInput].some((value) => value.trim().length > 0) ||
+    draft.severity !== "medium";
+}
+
+function renderIssueDraftStatus(status: IssueFormDraftStatus): string {
+  switch (status) {
+    case "idle":
+      return "同一域名 / 地址下会自动暂存。";
+    case "restored":
+      return "已恢复上次未提交内容。";
+    case "stored":
+      return "已暂存在本地浏览器。";
+    case "unavailable":
+      return "浏览器本地暂存不可用；当前填写仍可提交。";
+    case "cleared":
+      return "已清除本地未提交内容。";
+  }
 }
 
 function formatCreatedAt(iso: string): string {
