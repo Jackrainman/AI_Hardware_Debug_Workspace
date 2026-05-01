@@ -1134,7 +1134,7 @@ select:focus-visible {
   display: grid;
   grid-template-columns: minmax(220px, 0.58fr) minmax(0, 1fr);
   gap: 16px 20px;
-  align-items: center;
+  align-items: start;
   min-height: 176px;
   padding: 24px;
   border: 1px solid var(--accent-strong);
@@ -1172,9 +1172,18 @@ select:focus-visible {
 
 .quick-issue-input-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(92px, 0.26fr) minmax(130px, 0.48fr) auto;
+  grid-template-columns: 1fr auto;
   gap: 10px;
   min-width: 0;
+}
+
+.quick-issue-input-row > :first-child {
+  grid-column: 1 / -1;
+}
+
+.quick-issue-input-row > button {
+  grid-column: 1 / -1;
+  justify-self: end;
 }
 
 .quick-issue-input-row input,
@@ -1193,10 +1202,6 @@ select:focus-visible {
 .quick-issue-input-row select {
   color: var(--text-strong);
   font-weight: 650;
-}
-
-.quick-issue-bar .storage-line {
-  grid-column: 2;
 }
 
 .quick-issue-test-controls .storage-controls {
@@ -2594,10 +2599,6 @@ select:focus-visible {
 
   .search-form {
     grid-template-columns: 1fr;
-  }
-
-  .quick-issue-bar .storage-line {
-    grid-column: auto;
   }
 
   .issue-rail .list-view,

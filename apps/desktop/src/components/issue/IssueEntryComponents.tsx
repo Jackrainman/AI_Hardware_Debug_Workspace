@@ -89,6 +89,9 @@ export function QuickIssueCreateBar({
         <span className="quick-issue-label">快速建卡</span>
         <strong>一句话记录现场问题</strong>
         <p>创建后自动打开追记 / 结案区。</p>
+        <p className="storage-line" data-testid="quick-issue-create-status">
+          快速建卡状态：{renderIntakeStatus(status)}
+        </p>
       </div>
       <div className="quick-issue-input-row">
         <input
@@ -99,6 +102,14 @@ export function QuickIssueCreateBar({
           aria-label="一句话描述问题"
           data-testid="quick-issue-create-input"
           required
+        />
+        <input
+          type="text"
+          value={tagsInput}
+          onChange={(event) => setTagsInput(event.target.value)}
+          placeholder="标签：CAN, 底盘"
+          aria-label="问题标签，逗号分隔"
+          data-testid="quick-issue-tags-input"
         />
         <select
           value={severity}
@@ -112,21 +123,10 @@ export function QuickIssueCreateBar({
             </option>
           ))}
         </select>
-        <input
-          type="text"
-          value={tagsInput}
-          onChange={(event) => setTagsInput(event.target.value)}
-          placeholder="标签：CAN, 底盘"
-          aria-label="问题标签，逗号分隔"
-          data-testid="quick-issue-tags-input"
-        />
         <button type="submit" disabled={!canSubmit} data-testid="quick-issue-create-submit">
           创建并打开
         </button>
       </div>
-      <p className="storage-line" data-testid="quick-issue-create-status">
-        快速建卡状态：{renderIntakeStatus(status)}
-      </p>
     </form>
   );
 }
@@ -336,13 +336,12 @@ export function IssueCardListView({
                   className="list-item-select"
                   onClick={() => onSelect(summary.id)}
                   aria-pressed={isSelected}
-                >
+                 >
                   <span className="list-item-title">{summary.title || "未命名问题"}</span>
                   <span className="list-item-meta">
-                    {labelSeverity(summary.severity)} · {labelIssueStatus(summary.status)} ·{" "}
-                    {summary.createdAt}
+                    {labelSeverity(summary.severity)} · {labelIssueStatus(summary.status)}
                   </span>
-                  <span className="list-item-id">编号：{summary.id}</span>
+                  <span className="list-item-meta">{formatCreatedAt(summary.createdAt)}</span>
                 </button>
               </li>
             );
@@ -351,6 +350,12 @@ export function IssueCardListView({
       )}
     </div>
   );
+}
+
+function formatCreatedAt(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function renderIntakeStatus(status: IntakeSubmitStatus): string {
