@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import type { InvestigationRecord } from "../domain/schemas/investigation-record.ts";
 import type { IssueCard } from "../domain/schemas/issue-card.ts";
 import {
   createHttpStorageClient,
@@ -9,8 +8,6 @@ import {
 } from "../storage/http-storage-client.ts";
 import {
   AiDraftOutputSchema,
-  buildAiPromptInput,
-  buildAiPromptTemplate,
   type AiCloseoutDraft,
   type AiDraftOutput,
   type AiPromptTask,
@@ -112,20 +109,16 @@ export async function loadAiProviderStatus(
 
 export async function generateAiCloseoutDraft({
   issue,
-  records,
   closeoutDraft,
   task = "polish_closeout",
   options = {},
 }: {
   issue: IssueCard;
-  records: InvestigationRecord[];
   closeoutDraft: AiCloseoutDraft;
   task?: AiPromptTask;
   options?: HttpStorageClientOptions;
 }): Promise<GenerateAiDraftResult> {
   const client = createHttpStorageClient({ timeoutMs: DEFAULT_AI_HTTP_TIMEOUT_MS, ...options });
-  const promptInput = buildAiPromptInput(task, issue, records, closeoutDraft);
-  const prompt = buildAiPromptTemplate(promptInput);
 
   try {
     const response = await client.request<unknown>(
@@ -133,9 +126,9 @@ export async function generateAiCloseoutDraft({
       {
         method: "POST",
         body: JSON.stringify({
-          task: prompt.task,
-          outputContract: prompt.outputContract,
-          messages: prompt.messages,
+          issueId: issue.id,
+          task,
+          closeoutDraft,
         }),
       },
     );

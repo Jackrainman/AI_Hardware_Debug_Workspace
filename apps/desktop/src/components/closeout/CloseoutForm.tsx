@@ -202,7 +202,6 @@ export function CloseoutForm({
     let source: CloseoutDraftHistorySource = "local-rule";
     const aiResult = await generateAiCloseoutDraft({
       issue: issueCard,
-      records,
       closeoutDraft: { category, rootCause, resolution, prevention },
     });
     if (aiResult.ok) {

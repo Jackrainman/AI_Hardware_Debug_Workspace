@@ -59,7 +59,6 @@ let requestedPath = "";
 let requestedBody: unknown = null;
 const success = await generateAiCloseoutDraft({
   issue,
-  records,
   closeoutDraft: {
     category: "can",
     rootCause: "",
@@ -98,13 +97,16 @@ if (!success.ok || success.output.task !== "polish_closeout") {
 if (!requestedPath.endsWith("/workspaces/workspace-26-r1/ai/closeout-draft")) {
   fail("client should call workspace-scoped AI closeout route", requestedPath);
 }
-if (!JSON.stringify(requestedBody).includes("OutputContract")) {
-  fail("client should send rendered prompt with output contract", requestedBody);
+if (
+  JSON.stringify(requestedBody).includes("OutputContract") ||
+  JSON.stringify(requestedBody).includes("messages") ||
+  (requestedBody as { issueId?: string }).issueId !== issue.id
+) {
+  fail("client should send issueId and draft only; prompt must be server-side", requestedBody);
 }
 
 const invalid = await generateAiCloseoutDraft({
   issue,
-  records,
   closeoutDraft: { category: "", rootCause: "", resolution: "", prevention: "" },
   options: {
     baseUrl: "http://probeflash.test/api",

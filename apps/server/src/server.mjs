@@ -6,6 +6,10 @@ import { fileURLToPath } from "node:url";
 
 import { DEFAULT_WORKSPACE, createProbeFlashDatabase } from "./database.mjs";
 import { generateDeepSeekDraft, getDeepSeekStatus } from "./ai/deepseek-client.mjs";
+import {
+  buildAiPromptTemplate,
+  normalizeAiCloseoutDraftRequest,
+} from "./ai/prompt-templates.mjs";
 import { getReleaseMetadata } from "./release-metadata.mjs";
 
 const SERVER_SRC_DIR = dirname(fileURLToPath(import.meta.url));
@@ -319,8 +323,22 @@ function createRequestHandler({ store, storeInitError, staticDir, releaseMetadat
       }
 
       if (aiCloseoutDraftMatch && method === "POST") {
+        const workspaceId = decodeURIComponent(aiCloseoutDraftMatch[1]);
         const payload = await readJson(req);
-        const result = await generateDeepSeekDraft(payload);
+        const request = normalizeAiCloseoutDraftRequest(payload);
+        if (!request.ok) {
+          return fail(res, 400, "BAD_REQUEST", request.reason, "ai_closeout_draft", false);
+        }
+        const prompt = buildAiPromptTemplate({
+          task: request.task,
+          issue: store.getIssue(workspaceId, request.issueId),
+          records: store.listRecords(workspaceId, request.issueId),
+          closeoutDraft: request.closeoutDraft,
+        });
+        const result = await generateDeepSeekDraft({
+          task: prompt.task,
+          messages: prompt.messages,
+        });
         if (!result.ok) {
           return fail(
             res,
